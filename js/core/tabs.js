@@ -13,6 +13,7 @@
 //  + updateHuntView() вызывает updateHuntModalButton() —
 //    показать / скрыть кнопку «🔍 Искать стаю» в шапке.
 //    В городе кнопка скрыта, на Поляне / в Копи — видна.
+//    (v0.29: кнопка убрана — охота всегда идёт случайной стаей.)
 //
 //  НОВОЕ (v0.12):
 //  + updateMapUI() вызывает updateMapMeta() —
@@ -62,11 +63,6 @@ function updateHuntView() {
 
   if (!isTown) {
     renderMonsters();
-  }
-
-  // ---- НОВОЕ (v0.11): показать/скрыть кнопку «Искать стаю» ----
-  if (typeof updateHuntModalButton === 'function') {
-    updateHuntModalButton();
   }
 }
 

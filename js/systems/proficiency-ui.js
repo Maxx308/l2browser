@@ -4,6 +4,8 @@
 //  + Красивое форматирование бонусов: 1.5 → «+1.5%», 6 → «+6%».
 //  + Тултип владения — авто-скрытие через 7 секунд
 //    (общий таймер с тултипами предметов).
+//  + v0.29: на телефоне подсказка открывается тапом по строке
+//    (повторный тап — закрыть), раньше была только по наведению мыши.
 // ========================================================
 
 // Красиво форматирует число бонуса.
@@ -81,8 +83,7 @@ function buildWeaponRow(category) {
       </div>
     </div>
   `;
-  row.onmouseenter = (e) => showProfTooltip(e, skill, lvl, progress, bonus, 'weapon');
-  row.onmouseleave = () => hideTooltip();
+  attachProfTooltip(row, (e) => showProfTooltip(e, skill, lvl, progress, bonus, 'weapon'));
   return row;
 }
 
@@ -110,9 +111,32 @@ function buildElementRow(elementId) {
       </div>
     </div>
   `;
-  row.onmouseenter = (e) => showProfTooltip(e, el, lvl, progress, bonus, 'element');
-  row.onmouseleave = () => hideTooltip();
+  attachProfTooltip(row, (e) => showProfTooltip(e, el, lvl, progress, bonus, 'element'));
   return row;
+}
+
+// v0.29: подсказка и на телефоне. Раньше была только по наведению мыши:
+// тап давал «наведение», и следующий за ним клик сразу прятал тултип.
+// Теперь клик/тап по строке показывает подсказку (повторный — прячет).
+let __profTipRow = null;
+function attachProfTooltip(row, show) {
+  row.onmouseenter = (e) => { if (!profTouchLike()) { __profTipRow = row; show(e); } };
+  row.onmouseleave = () => { if (!profTouchLike()) { __profTipRow = null; hideTooltip(); } };
+  row.onclick = (e) => {
+    e.stopPropagation();   // общий click по документу прячет тултип — тут он не нужен
+    const tt = document.getElementById('item-tooltip');
+    if (__profTipRow === row && tt && tt.style.display === 'block' && profTouchLike()) {
+      __profTipRow = null;
+      hideTooltip();
+      return;
+    }
+    __profTipRow = row;
+    show(e);
+  };
+}
+
+function profTouchLike() {
+  return window.matchMedia('(hover: none)').matches;
 }
 
 // Тултип при наведении на строку владения.
@@ -129,8 +153,10 @@ function showProfTooltip(e, data, lvl, progress, bonus, kind) {
   lines += `<div class="tt-line effect">Бонус к урону: +${formatBonusPercent(bonus)}%</div>`;
   tt.innerHTML = lines;
   tt.style.display = 'block';
-  tt.style.left = Math.min(window.innerWidth - 340, e.clientX + 15) + 'px';
-  tt.style.top = Math.min(window.innerHeight - 200, e.clientY + 15) + 'px';
+  // v0.29: держим тултип в пределах экрана (на телефоне 340 px — почти вся ширина)
+  const w = tt.offsetWidth || 320, h = tt.offsetHeight || 200;
+  tt.style.left = Math.max(8, Math.min(window.innerWidth - w - 8, e.clientX + 15)) + 'px';
+  tt.style.top = Math.max(8, Math.min(window.innerHeight - h - 8, e.clientY + 15)) + 'px';
 
   // Авто-скрытие через 7 секунд (общий таймер из tooltips.js).
   if (typeof resetTooltipTimer === 'function') resetTooltipTimer();

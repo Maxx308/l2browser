@@ -54,6 +54,10 @@
 //  НОВОЕ (v0.12d):
 //  + Материалы Копи переведены с SVG на PNG:
 //    img/materials/copper.png, tin.png, chitin.png, stone_plates.png.
+//
+//  НОВОЕ (v0.29):
+//  + pack — характер монстра: 'solo' (одиночка) / 'pack' (стайный).
+//    Не указан — обычный. Правила стай — в battle-pack.js.
 // ========================================================
 
 // Подтипы: общие множители.
@@ -114,6 +118,7 @@ const MONSTERS = [
   },
   {
     id: 'ent', name: 'Энт', level: 2,
+    pack: 'solo',   // v0.29: одиночка (battle-pack.js)
     hp: 70, atk: 9, xpReward: 1, attackType: 'physical',
     pDef: 25, mDef: 8,
     goldMin: 20, goldMax: 35, goldChance: 80,
@@ -135,6 +140,7 @@ const MONSTERS = [
   },
   {
     id: 'bandit', name: 'Бандит', level: 3,
+    pack: 'pack',   // v0.29: банда
     hp: 95, atk: 13, xpReward: 1, attackType: 'physical',
     pDef: 33, mDef: 10,
     goldMin: 25, goldMax: 45, goldChance: 80,
@@ -181,6 +187,7 @@ const MONSTERS = [
   },
   {
     id: 'wolf', name: 'Волк', level: 5,
+    pack: 'pack',   // v0.29: стайный
     hp: 170, atk: 18, xpReward: 1, attackType: 'physical',
     pDef: 35, mDef: 12,
     goldMin: 32, goldMax: 53, goldChance: 80,
@@ -241,6 +248,7 @@ const MINE_MONSTERS = [
   },
   {
     id: 'kobold', name: 'Кобольд', level: 7,
+    pack: 'pack',   // v0.29: стайный
     hp: 242, atk: 22, xpReward: 2, attackType: 'physical',
     pDef: 31, mDef: 14,   // v0.20: было 52
     goldMin: 50, goldMax: 80, goldChance: 80,   // v0.25: 0.22 Обола на 1 HP (было 30–50)
@@ -268,6 +276,7 @@ const MINE_MONSTERS = [
   },
   {
     id: 'golem', name: 'Каменный голем', level: 10,
+    pack: 'solo',   // v0.29: одиночка
     hp: 462, atk: 32, xpReward: 2, attackType: 'physical',
     pDef: 39, mDef: 18,   // v0.20: было 65
     goldMin: 110, goldMax: 160, goldChance: 85,   // v0.25: 0.25 Обола на 1 HP (было 50–90)

@@ -120,8 +120,7 @@ function restTargetName() {
   const template = [...MONSTERS, ...MINE_MONSTERS].find(mm => mm.id === t.id);
   if (!template) return '';
   const variant = MONSTER_VARIANTS[t.variantId] || MONSTER_VARIANTS.normal;
-  const name = (variant.prefix + template.name).trim();
-  return name + ((t.count || 1) > 1 ? ` ×${t.count}` : '');
+  return (variant.prefix + template.name).trim();
 }
 
 function restSetBar(kind, value, max, goalPct) {
@@ -194,7 +193,7 @@ function restFightNow() {
   state.battle.waitingTemplate = null;
   updateAutoWaitIndicator();
   logCombat('▶ Привал окончен досрочно — в бой.', 'log-entry levelup');
-  startBattle(template, t.variantId, t.count || 1);
+  startBattle(template, t.variantId);
 }
 
 function restEndHunt() {

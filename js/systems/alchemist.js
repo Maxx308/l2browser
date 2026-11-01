@@ -13,13 +13,18 @@
 //    - Над сеткой — кнопки «Зелёные / Синие / ... / Всё» с количеством.
 //    - Одно подтверждение со сводкой: сколько предметов и сколько пыли.
 //    - Подогнанные предметы (+N) пачкой НЕ распыляются — только вручную.
-//    - Предупреждение, если пыль упрётся в лимит стопки (1000).
+//    - Предупреждение, если пыль упрётся в лимит стопки (v0.29: 99 999).
+//
+//  НОВОЕ (v0.29): ВКЛАДКА «ВОЗВЫШЕНИЕ».
+//    - Редкость предмета +1 ступень за пыль его текущего цвета.
+//    - Бонусы сохраняются + добавляется разница очков; подгонка остаётся.
+//    - Можно возвышать и надетые вещи (они идут первыми в списке).
 //
 //  Данные алхимии — в js/data/alchemy.js.
 // ========================================================
 
 // Текущая активная вкладка.
-let __alchemistTab = 'disenchant';   // 'disenchant' | 'reroll'
+let __alchemistTab = 'disenchant';   // 'disenchant' | 'reroll' | 'ascend'
 
 // Типы экипировки (что можно распылять/перероллить).
 const ALCHEMIST_EQUIP_TYPES = [
@@ -55,7 +60,7 @@ function closeAlchemist() {
 //  ПЕРЕКЛЮЧЕНИЕ ВКЛАДОК
 // --------------------------------------------------------
 function switchAlchemistTab(tab) {
-  if (tab !== 'disenchant' && tab !== 'reroll') return;
+  if (tab !== 'disenchant' && tab !== 'reroll' && tab !== 'ascend') return;
   __alchemistTab = tab;
   renderAlchemistWindow();
 }
@@ -69,20 +74,17 @@ function renderAlchemistWindow() {
     t.classList.toggle('active', t.dataset.tab === __alchemistTab);
   });
 
-  const paneDisenchant = document.getElementById('alchemist-pane-disenchant');
-  const paneReroll = document.getElementById('alchemist-pane-reroll');
-
-  if (paneDisenchant) {
-    paneDisenchant.classList.toggle('active', __alchemistTab === 'disenchant');
-  }
-  if (paneReroll) {
-    paneReroll.classList.toggle('active', __alchemistTab === 'reroll');
-  }
+  ['disenchant', 'reroll', 'ascend'].forEach(tab => {
+    const pane = document.getElementById('alchemist-pane-' + tab);
+    if (pane) pane.classList.toggle('active', __alchemistTab === tab);
+  });
 
   if (__alchemistTab === 'disenchant') {
     renderAlchemistDisenchant();
   } else if (__alchemistTab === 'reroll') {
     renderAlchemistReroll();
+  } else if (__alchemistTab === 'ascend') {
+    renderAlchemistAscend();
   }
 }
 
@@ -434,6 +436,141 @@ function rerollItem(item) {
   saveCurrentSlot();
 }
 
+// ========================================================
+//  ВКЛАДКА «ВОЗВЫШЕНИЕ» (v0.29)
+// ========================================================
+
+// Надетые вещи (сначала) + вещи из сумки, которые ещё можно возвысить.
+function getAscendItems() {
+  const p = state.player;
+  const equipped = Object.values(p.equipment || {})
+    .filter(it => it && ALCHEMIST_EQUIP_TYPES.includes(it.type) && getAscendTarget(it));
+  const bag = getAlchemistItems().filter(it => getAscendTarget(it));
+  return [...equipped.map(it => ({ item: it, equipped: true })), ...bag.map(it => ({ item: it, equipped: false }))];
+}
+
+function renderAlchemistAscend() {
+  const pane = document.getElementById('alchemist-pane-ascend');
+  if (!pane) return;
+
+  const list = getAscendItems();
+  const intro = `<div class="alchemist-ascend-intro">Возвышение поднимает редкость на ступень: 🟢→🔵→🟣→🟡→🔴. ` +
+    `Платится пылью текущего цвета — как от ${ALCHEMY_ASCEND_ITEMS} распылённых таких же вещей. ` +
+    `Бонусы и подгонка сохраняются, добавляются новые очки.</div>`;
+
+  if (list.length === 0) {
+    pane.innerHTML = intro + `<div class="alchemist-empty">Нечего возвышать.<br><span class="alchemist-empty-sub">Нужны вещи от зелёной до жёлтой — в сумке или надетые.</span></div>`;
+    return;
+  }
+
+  const grid = document.createElement('div');
+  grid.className = 'alchemist-grid';
+  list.forEach(({ item, equipped }) => grid.appendChild(buildAlchemistAscendCard(item, equipped)));
+
+  pane.innerHTML = intro;
+  pane.appendChild(grid);
+}
+
+function buildAlchemistAscendCard(item, equipped) {
+  const card = document.createElement('div');
+  const rarity = item.rarity;
+  const target = getAscendTarget(item);
+  card.className = 'alchemist-card alchemist-card-ascend rarity-' + rarity;
+
+  const price = getAscendPrice(item);
+  const dust = ALCHEMY_DUST[rarity];
+  const dustName = dust ? dust.name : (rarity + ' пыль');
+  const dustColor = dust ? dust.color : '#c8c0b0';
+  const dustIcon = dust ? (SVG[dust.icon] || '') : '';
+  const have = getDustCount(rarity);
+  const enough = have >= price;
+  if (!enough) card.classList.add('alchemist-card-disabled');
+
+  const refineSuffix = (item.refineLevel > 0) ? ` +${item.refineLevel}` : '';
+  const from = RARITIES[rarity], to = RARITIES[target];
+  const extra = getAscendExtraPoints(item);
+
+  card.innerHTML = `
+    <div class="alchemist-card-icon">${item.icon || ''}</div>
+    <div class="alchemist-card-body">
+      <div class="alchemist-card-name rarity-text-${rarity}">${item.name}${refineSuffix}${equipped ? ' <span class="alchemist-card-worn">надето</span>' : ''}</div>
+      <div class="alchemist-card-rarity">
+        <span class="rarity-text-${rarity}">${from.name}</span> → <span class="rarity-text-${target}">${to.name}</span>
+      </div>
+      <div class="alchemist-card-bonuses">Сейчас: ${formatBonusStatsShort(item.bonusStats)} · станет +${extra} ${extra === 1 ? 'очко' : 'очка'}, статы +${from.statPercent}% → +${to.statPercent}%</div>
+      <div class="alchemist-card-yield">
+        <span class="alchemist-card-yield-icon">${dustIcon}</span>
+        <span class="alchemist-card-yield-text" style="color: ${dustColor};">
+          ⬆ Возвышение: ${price.toLocaleString('ru-RU')} ${dustName.toLowerCase()}
+        </span>
+      </div>
+      <div class="alchemist-card-stock ${enough ? '' : 'low'}">
+        У вас: ${have.toLocaleString('ru-RU')} / ${price.toLocaleString('ru-RU')}
+      </div>
+    </div>
+  `;
+
+  card.onmouseenter = (e) => { if (typeof showItemTooltip === 'function') showItemTooltip(e, item); };
+  card.onmouseleave = () => { if (typeof hideTooltip === 'function') hideTooltip(); };
+  card.onclick = () => {
+    if (typeof hideTooltip === 'function') hideTooltip();
+    if (enough) ascendItem(item);
+    else showToast('⚠', `Мало ${dustName.toLowerCase()}: ${have} / ${price}`);
+  };
+  return card;
+}
+
+function ascendItem(item) {
+  const target = getAscendTarget(item);
+  if (!target) return;
+
+  const rarity = item.rarity;
+  const price = getAscendPrice(item);
+  const dust = ALCHEMY_DUST[rarity];
+  const dustName = dust ? dust.name.toLowerCase() : rarity + ' пыль';
+  const have = getDustCount(rarity);
+  if (have < price) {
+    showToast('⚠', `Мало ${dustName}: ${have} / ${price}`);
+    return;
+  }
+
+  const refineSuffix = (item.refineLevel > 0) ? ` +${item.refineLevel}` : '';
+  const extra = getAscendExtraPoints(item);
+  const ok = confirm(
+    `Возвысить «${item.name}${refineSuffix}»?\n\n` +
+    `${RARITIES[rarity].name} → ${RARITIES[target].name}\n` +
+    `Стоимость: ${price.toLocaleString('ru-RU')} ${dustName}.\n` +
+    `Бонусы сохранятся, добавится +${extra} к случайным статам.`
+  );
+  if (!ok) return;
+
+  if (!spendDust(rarity, price)) {
+    showToast('⚠', 'Не удалось списать пыль');
+    return;
+  }
+
+  // Новая редкость + добавочные очки поверх старых бонусов.
+  const add = rollRarityStats(extra, getRarityStatProfile(item));
+  const bonus = { ...(item.bonusStats || {}) };
+  Object.keys(add).forEach(stat => { bonus[stat] = (bonus[stat] || 0) + add[stat]; });
+  item.rarity = target;
+  item.bonusStats = bonus;
+
+  recalcStats();
+
+  const name = `${item.name}${refineSuffix}`;
+  logLoot(`⬆ Возвышение: ${name} → ${RARITIES[target].name} (${formatBonusStatsShort(add)}; −${price} ${dustName})`, 'log-craft rarity-' + target);
+  showToast('⬆', `${name}: ${RARITIES[target].name}!`);
+
+  renderInventory();
+  updateInventoryFooter();
+  if (typeof renderEquipSlots === 'function') renderEquipSlots();
+  updateCharacterPanel();
+  updateTopStatus();
+  renderAlchemistAscend();
+  saveCurrentSlot();
+}
+
 // --------------------------------------------------------
 //  ДОБАВИТЬ ПЫЛЬ В ИНВЕНТАРЬ
 // --------------------------------------------------------
@@ -489,8 +626,7 @@ document.addEventListener('keydown', (e) => {
 //  МАССОВОЕ РАСПЫЛЕНИЕ (v0.17)
 // ========================================================
 
-// Лимит пыли в одной стопке (был зашит числом 1000 в addDustToInventory).
-const ALCHEMY_DUST_STACK_MAX = 1000;
+// Лимит пыли в одной стопке — ALCHEMY_DUST_STACK_MAX в data/alchemy.js (v0.29: 99 999).
 
 const ALCHEMY_BULK_LABELS = {
   green:  'Зелёные',

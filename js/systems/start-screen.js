@@ -581,7 +581,7 @@ function resetStateToFresh() {
   state.battle.active = false;
   state.battle.monsters = [];
   state.battle.monstersATB = 0;
-  state.battle.repeatCount = 1;
+  state.battle.packIncoming = 0;
   state.battle.autoBattle = true;
   state.battle.repeatBattle = false;
   state.battle.playerATB = 0;

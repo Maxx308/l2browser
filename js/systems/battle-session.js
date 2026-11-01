@@ -153,7 +153,96 @@ function openSessionPanel() {
   el.style.display = 'flex';
   document.getElementById('bx-loot-column')?.classList.add('bx-bag-open');
   renderSessionPanel();
+  bsessApplyPanelPos();
 }
+
+// --------------------------------------------------------
+//  ПЕРЕТАСКИВАНИЕ МИНИ-ПАНЕЛИ (v0.25)
+//  Тянем за шапку, место запоминается в браузере игрока.
+//  Двойной клик по шапке — вернуть панель в угол.
+//  На телефоне (≤600px) панель прибита к низу — не таскаем.
+// --------------------------------------------------------
+const BSESS_POS_KEY = 'bsessPanelPos';
+
+function bsessDragAllowed() {
+  return !window.matchMedia('(max-width: 600px)').matches;
+}
+
+function bsessLoadPos() {
+  try { return JSON.parse(localStorage.getItem(BSESS_POS_KEY)); } catch (e) { return null; }
+}
+
+function bsessSavePos(pos) {
+  try {
+    if (pos) localStorage.setItem(BSESS_POS_KEY, JSON.stringify(pos));
+    else localStorage.removeItem(BSESS_POS_KEY);
+  } catch (e) { /* хранилище недоступно — просто не запоминаем */ }
+}
+
+// Ставит панель в left/top (px от родителя), не выпуская за его края.
+function bsessPlacePanel(el, left, top) {
+  const parent = el.offsetParent;
+  if (!parent) return;
+  const maxL = Math.max(0, parent.clientWidth - el.offsetWidth);
+  const maxT = Math.max(0, parent.clientHeight - el.offsetHeight);
+  el.style.left = Math.min(Math.max(0, left), maxL) + 'px';
+  el.style.top = Math.min(Math.max(0, top), maxT) + 'px';
+  el.style.right = 'auto';
+}
+
+function bsessResetPanelPos(el) {
+  el.style.left = el.style.top = el.style.right = '';
+}
+
+function bsessApplyPanelPos() {
+  const el = document.getElementById('bx-session');
+  if (!el) return;
+  const pos = bsessLoadPos();
+  if (!bsessDragAllowed() || !pos) { bsessResetPanelPos(el); return; }
+  bsessPlacePanel(el, pos.left, pos.top);
+}
+
+function bsessInitPanelDrag() {
+  const el = document.getElementById('bx-session');
+  const head = el?.querySelector('.bxs-head');
+  if (!head) return;
+
+  let drag = null; // { id, dx, dy } — смещение курсора от угла панели
+
+  head.addEventListener('pointerdown', e => {
+    if (e.button !== 0 || !bsessDragAllowed() || e.target.closest('button')) return;
+    drag = { id: e.pointerId, dx: e.clientX - el.offsetLeft, dy: e.clientY - el.offsetTop };
+    head.setPointerCapture(e.pointerId);
+    el.classList.add('bxs-dragging');
+    e.preventDefault();
+  });
+
+  head.addEventListener('pointermove', e => {
+    if (!drag || e.pointerId !== drag.id) return;
+    bsessPlacePanel(el, e.clientX - drag.dx, e.clientY - drag.dy);
+  });
+
+  const end = e => {
+    if (!drag || e.pointerId !== drag.id) return;
+    drag = null;
+    el.classList.remove('bxs-dragging');
+    bsessSavePos({ left: el.offsetLeft, top: el.offsetTop });
+  };
+  head.addEventListener('pointerup', end);
+  head.addEventListener('pointercancel', end);
+
+  head.addEventListener('dblclick', e => {
+    if (e.target.closest('button')) return;
+    bsessResetPanelPos(el);
+    bsessSavePos(null);
+  });
+
+  // Окно стало меньше — подвинуть панель, чтобы не уехала за край.
+  window.addEventListener('resize', () => { if (BSESS.panelOpen) bsessApplyPanelPos(); });
+}
+
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bsessInitPanelDrag);
+else bsessInitPanelDrag();
 
 function closeSessionPanel() {
   BSESS.panelOpen = false;

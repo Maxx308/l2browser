@@ -67,6 +67,7 @@ function buyGuildBuff(buffId) {
   }
 
   p.gold -= buff.price;
+  if (buff.packRival && p.guildBuffs[buff.packRival]) p.guildBuffs[buff.packRival].timer = 0;   // v0.29
   p.guildBuffs[buffId].timer = addBuffTime(p.guildBuffs[buffId].timer, buff.duration);
 
   recalcStats();

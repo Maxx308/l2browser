@@ -6,7 +6,7 @@
 //  Логика:
 //  + Клик по предмету в инвентаре → весь стак кладётся на склад.
 //  + Клик по предмету на складе  → весь стак забирается в инвентарь.
-//  + Стакающиеся: до 1000 в ячейке. Что не влезло — остаётся в инвентаре.
+//  + Стакающиеся: до 1000 в ячейке (пыль — до 99 999, v0.29). Что не влезло — остаётся в инвентаре.
 //  + Не стакающиеся: всегда 1 шт. на ячейку.
 //  + Ключ группировки: имя + редкость + бонусные статы.
 //  + Оболы не передаются.
@@ -24,6 +24,11 @@
 const STORAGE_KEY = 'l2browser_storage';
 const STORAGE_MAX_SLOTS = 30;
 const STORAGE_STACK_MAX = 1000;
+
+// v0.29: пыль на складе стакается так же, как в сумке (до 99 999), остальное — до 1000.
+function storageStackMax(item) {
+  return item && item.isDust ? ALCHEMY_DUST_STACK_MAX : STORAGE_STACK_MAX;
+}
 
 const STORAGE_CLOUD_SLOT = 100;
 const STORAGE_UPDATED_KEY = 'l2browser_storage_updated';   // когда склад менялся на этом устройстве
@@ -114,11 +119,11 @@ function mergeStorageArrays(base, extra) {
       const key = getStorageGroupKey(item);
       result.forEach(s => {
         if (left <= 0 || getStorageGroupKey(s) !== key) return;
-        const add = Math.min(STORAGE_STACK_MAX - (s.qty || 1), left);
+        const add = Math.min(storageStackMax(s) - (s.qty || 1), left);
         if (add > 0) { s.qty = (s.qty || 1) + add; left -= add; }
       });
       while (left > 0) {
-        const add = Math.min(STORAGE_STACK_MAX, left);
+        const add = Math.min(storageStackMax(item), left);
         result.push({ ...item, qty: add });
         left -= add;
       }
@@ -336,14 +341,14 @@ function storageDepositItem(item) {
   let targetIdx = -1;
   if (isStackable) {
     const key = getStorageGroupKey(item);
-    targetIdx = arr.findIndex(s => getStorageGroupKey(s) === key && (s.qty || 1) < STORAGE_STACK_MAX);
+    targetIdx = arr.findIndex(s => getStorageGroupKey(s) === key && (s.qty || 1) < storageStackMax(s));
   }
 
   let movedQty = 0;
 
   if (isStackable && targetIdx >= 0) {
     // Стакаем в существующую ячейку.
-    const free = STORAGE_STACK_MAX - (arr[targetIdx].qty || 1);
+    const free = storageStackMax(arr[targetIdx]) - (arr[targetIdx].qty || 1);
     const move = Math.min(free, item.qty);
     arr[targetIdx].qty = (arr[targetIdx].qty || 1) + move;
     movedQty = move;
@@ -362,8 +367,8 @@ function storageDepositItem(item) {
       return;
     }
 
-    // Если стакается и не влезло в существующую — берём до 1000, остаток остаётся.
-    const move = isStackable ? Math.min(STORAGE_STACK_MAX, item.qty) : 1;
+    // Если стакается и не влезло в существующую — берём до лимита стопки, остаток остаётся.
+    const move = isStackable ? Math.min(storageStackMax(item), item.qty) : 1;
     const clone = { ...item, qty: move };
     arr.push(clone);
     movedQty = move;

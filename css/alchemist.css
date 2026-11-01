@@ -321,6 +321,34 @@
   color: #d06060;
 }
 
+/* ---------- v0.29: ВОЗВЫШЕНИЕ ---------- */
+.alchemist-ascend-intro {
+  margin-bottom: calc(14 * var(--u));
+  padding: calc(10 * var(--u)) calc(12 * var(--u));
+  background: linear-gradient(180deg, #17151a, #0e0d10);
+  border: 1px solid var(--border);
+  border-radius: calc(3 * var(--u));
+  font-size: var(--fs-small);
+  color: var(--text-dim);
+  line-height: 1.45;
+}
+.alchemist-card-ascend .alchemist-card-bonuses { white-space: normal; }
+.alchemist-card-rarity .rarity-text-green  { color: #80e080; font-style: normal; }
+.alchemist-card-rarity .rarity-text-blue   { color: #6a9ae0; font-style: normal; }
+.alchemist-card-rarity .rarity-text-purple { color: #c080ff; font-style: normal; }
+.alchemist-card-rarity .rarity-text-yellow { color: #ffd040; font-style: normal; }
+.alchemist-card-rarity .rarity-text-red    { color: #ff5050; font-style: normal; font-weight: 700; }
+.alchemist-card-worn {
+  display: inline-block;
+  margin-left: calc(4 * var(--u));
+  padding: 0 calc(5 * var(--u));
+  border: 1px solid var(--gold);
+  border-radius: calc(8 * var(--u));
+  font-size: var(--fs-tiny);
+  color: var(--gold-bright);
+  vertical-align: middle;
+}
+
 /* Серая (некликабельная) карточка переролла. */
 .alchemist-card.alchemist-card-disabled {
   cursor: not-allowed;

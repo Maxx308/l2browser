@@ -107,11 +107,6 @@ const state = {
   currentWeaponCategory: 'swords',
   currentInventoryPage: 0,
   activeSlotIndex: null,
-
-  // ---- Настройки модалки «Искать стаю» (для будущего этапа) ----
-  huntModal: {
-    count: 1,                  // выбранное количество мобов
-  },
 };
 
 // ========================================================

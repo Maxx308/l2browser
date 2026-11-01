@@ -118,6 +118,18 @@
   color: var(--gold-bright);
   text-shadow: 0 0 calc(4 * var(--u)) #000;
 }
+/* v0.29: удержание на телефоне — без системного меню и выделения */
+.inv-slot { -webkit-touch-callout: none; user-select: none; -webkit-user-select: none; }
+.inv-slot.inv-held { border-color: var(--gold-bright); transform: scale(1.06); }
+.inv-slot.inv-dragging { opacity: 0.35; }
+.inv-drag-ghost {
+  position: fixed; z-index: 2000;
+  pointer-events: none;
+  transform: translate(-50%, -50%) scale(1.08);
+  opacity: 0.9;
+  box-shadow: 0 calc(8 * var(--u)) calc(24 * var(--u)) rgba(0,0,0,.7);
+  transition: none;
+}
 .inv-slot.consumable { border-color: rgba(106,208,106,0.5); }
 .inv-slot.food { border-color: rgba(160,208,128,0.6); }
 .inv-slot.scroll { border-color: rgba(160,120,220,0.6); }
@@ -181,6 +193,46 @@
   color: #a0d080;
   box-shadow: 0 0 calc(10 * var(--u)) rgba(160, 208, 128, 0.3);
   cursor: default;
+}
+
+/* ---------- КОРЗИНА 🗑 (v0.29) ---------- */
+.inventory-pagination { position: relative; min-height: calc(54 * var(--u)); }
+.inv-trash {
+  position: absolute; right: 0; top: calc(10 * var(--u));
+  width: calc(44 * var(--u)); height: calc(44 * var(--u));
+  display: flex; align-items: center; justify-content: center;
+  font-size: calc(20 * var(--u));
+  background: linear-gradient(180deg, #1c1212, #0d0808);
+  border: 1px dashed #6a3a3a;
+  border-radius: calc(3 * var(--u));
+  cursor: help;
+  opacity: 0.75;
+  transition: all 0.15s;
+}
+.inv-trash:hover { opacity: 1; }
+.inv-trash.ready {
+  opacity: 1;
+  border-style: solid; border-color: #a03030;
+  box-shadow: 0 0 calc(10 * var(--u)) rgba(255,80,80,0.4);
+}
+.inv-trash.hot {
+  background: linear-gradient(180deg, #4a1414, #250808);
+  border-color: #ff5050;
+  box-shadow: 0 0 calc(18 * var(--u)) rgba(255,80,80,0.85);
+  transform: scale(1.12);
+}
+
+.inv-hint {
+  margin-top: calc(8 * var(--u));
+  font-size: var(--fs-small);
+  color: var(--text-dim);
+  text-align: center;
+  opacity: 0.75;
+}
+.inv-hint-touch { display: none; }
+@media (hover: none) {
+  .inv-hint-mouse { display: none; }
+  .inv-hint-touch { display: block; }
 }
 
 .inventory-full-msg {

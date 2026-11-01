@@ -114,6 +114,10 @@ function onMonsterDeath(deadMonster) {
   const totalDropMult = 1 + (titleMult - 1) + (luckMult - 1) + (refineDropMult - 1);
   // v0.25: + «Оболы» от подгонки — больше Оболов с каждой выпавшей кучки
   const refineGoldMult = 1 + (p.goldBonusFromRefine || 0) / 100;
+  // v0.29: стайный бонус — по размеру стаи в этом бою (battle-pack.js)
+  const packBonus = getPackRewardBonus();
+  const packDropMult = 1 + packBonus.drop / 100;
+  const packGoldMult = 1 + packBonus.gold / 100;
 
   // ---- ОПЫТ ----
   const tavernXpMult = getXpMultiplierFromTavern();
@@ -141,7 +145,7 @@ function onMonsterDeath(deadMonster) {
   for (let i = 0; i < goldCount; i++) {
     const baseGold = m.goldMin + Math.floor(Math.random() * (m.goldMax - m.goldMin + 1));
     // дробная часть — шансом на +1, иначе +1% на кучке в 5 Оболов съедался округлением
-    const goldRaw = baseGold * mult_ * greedGoldMult * refineGoldMult;
+    const goldRaw = baseGold * mult_ * greedGoldMult * refineGoldMult * packGoldMult;
     let gold = Math.floor(goldRaw) + (Math.random() < goldRaw % 1 ? 1 : 0);
     // v0.25: в Копях суммы круглые — до десятков (+60, а не +57)
     if (p.currentLocation === 'mine') gold = Math.max(10, Math.round(gold / 10) * 10);
@@ -159,6 +163,9 @@ function onMonsterDeath(deadMonster) {
   if (greedGoldMult > 1.0) {
     logLoot(`💰 Жадность ×${greedN}! Оболы +${greedN * GREED_REWARD_PER_MARK}%`, 'log-info');
   }
+  if (packBonus.drop > 0) {
+    logLoot(`🐾 Стая ×${packBonus.size}: дроп +${packBonus.drop}%, Оболы +${packBonus.gold}%`, 'log-info');
+  }
 
   // ---- ПРЕДМЕТЫ ----
   const RARITY_TYPES = [
@@ -171,7 +178,7 @@ function onMonsterDeath(deadMonster) {
   const lootGroups = new Map();
 
   m.drops.forEach(d => {
-    const dropChance = d.chance * mult_ * totalDropMult * greedDropMult;
+    const dropChance = d.chance * mult_ * totalDropMult * greedDropMult * packDropMult;
     const count = rollDropCount(dropChance);
     if (count <= 0) return;
 
@@ -290,6 +297,7 @@ function onMonsterDeath(deadMonster) {
   state.battle.active = false;
   state.battle.monsters = [];
   state.battle.monstersATB = 0;
+  state.battle.packIncoming = 0;
 
   clearAllDebuffs();
 
@@ -304,7 +312,6 @@ function onMonsterDeath(deadMonster) {
     state.battle.waitingTemplate = {
       id: deadTemplateId,
       variantId: deadVariantId,
-      count: (state.battle.repeatCount || 1),
     };
     state.battle.waitingForResume = true;
 
@@ -324,7 +331,6 @@ function onMonsterDeath(deadMonster) {
   if (state.battle.repeatBattle) {
     const nextTemplate = [...MONSTERS, ...MINE_MONSTERS].find(mm => mm.id === deadTemplateId);
     const nextVariantId = deadVariantId;
-    const nextCount = (state.battle.repeatCount || 1);
 
     if (!nextTemplate) {
       document.getElementById('battle-window').classList.remove('active');
@@ -369,7 +375,7 @@ function onMonsterDeath(deadMonster) {
           }
 
           hideMonsterSearching();
-          startBattle(nextTemplate, nextVariantId, nextCount);
+          startBattle(nextTemplate, nextVariantId);   // v0.29: каждый раз новая случайная стая
         }, 1500);
 
       }, 300);

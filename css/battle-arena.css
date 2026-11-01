@@ -315,6 +315,45 @@
 
 .bx-enemy.bx-spawn { animation: bxSpawn .45s ease-out backwards; }   /* v0.26: было .9s — слабых мобов убивали раньше, чем они проявлялись */
 @keyframes bxSpawn { from { opacity: 0; filter: blur(10px) brightness(.2); transform: scale(.6) translateY(20px); } }
+
+/* ---------- v0.29: ПОДМОГА СТАИ ----------
+   .bx-lurker   — силуэт «?»: кто-то на подходе, выйдет в следующий ход стаи.
+   .bx-reinforce — только что пришедший моб: выбегает сбоку с золотой вспышкой. */
+.bx-enemy.bx-lurker { opacity: .85; filter: none; }
+.bx-lurker .bx-card {
+  background: linear-gradient(145deg, #3a3326, #14110c 45%, #2a241a 70%, #0c0a07);
+  animation: bxLurk 1.4s ease-in-out infinite;
+}
+.bx-lurker .bx-pic {
+  background: radial-gradient(ellipse 45% 55% at 50% 62%, rgba(0,0,0,.95), rgba(0,0,0,.6) 60%, transparent 75%),
+              radial-gradient(circle at 50% 30%, rgba(184,148,90,.18), transparent 60%);
+}
+.bx-lurker-mark {
+  position: absolute; inset: 0; z-index: 3;
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Cinzel', serif; font-weight: 700;
+  font-size: calc(var(--h) * .42); color: var(--gold-bright, #e0be7a);
+  text-shadow: 0 0 calc(14 * var(--u)) rgba(224,190,122,.8), 0 0 4px #000;
+  animation: bxLurkMark 1.4s ease-in-out infinite;
+}
+.bx-lurker .fighter-name { color: #b8a27a; font-style: italic; }
+.bx-lurker .bx-bar { opacity: .35; }
+@keyframes bxLurk {
+  0%, 100% { box-shadow: 0 0 0 1px #000, 0 0 calc(6 * var(--u)) rgba(224,190,122,.2); transform: translateX(0); }
+  25%      { transform: translateX(calc(-2 * var(--u))); }
+  50%      { box-shadow: 0 0 0 1px #000, 0 0 calc(22 * var(--u)) rgba(224,190,122,.55); transform: translateX(calc(2 * var(--u))); }
+}
+@keyframes bxLurkMark { 50% { transform: scale(1.12); opacity: .7; } }
+
+.bx-enemy.bx-reinforce { animation: bxReinforce .7s cubic-bezier(.2,.8,.3,1.2) backwards; }
+.bx-enemy.bx-reinforce .bx-card { box-shadow: 0 0 0 1px #000, 0 0 calc(26 * var(--u)) rgba(255,200,90,.85); }
+@keyframes bxReinforce {
+  from { opacity: 0; transform: translateX(calc(80 * var(--u))) scale(.7); filter: brightness(2.2); }
+  60%  { opacity: 1; transform: translateX(calc(-6 * var(--u))) scale(1.04); filter: brightness(1.4); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .bx-lurker .bx-card, .bx-lurker-mark, .bx-enemy.bx-reinforce { animation: none; }
+}
 .bx-unit.bx-dying { animation: bxDie .9s forwards; }
 @keyframes bxDie {
   0% { filter: none; opacity: 1; }

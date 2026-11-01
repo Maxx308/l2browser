@@ -67,6 +67,8 @@ function renderEffectsPanel() {
     let icon = '🔮', cssClass = 'combat';
     if (buffId === 'berserk') { icon = '🩸'; cssClass = 'berserk'; }
     else if (buffId === 'eloquence') { icon = '💬'; cssClass = 'eloquence'; }
+    else if (buffId === 'quietStep') { icon = '🤫'; }   // v0.29
+    else if (buffId === 'provoker') { icon = '📯'; }
 
     chips.push(`<div class="effect-chip ${cssClass}"><span class="ec-icon">${icon}</span><span class="ec-name">${buff.name}</span><span class="ec-value">${formatTime(active.timer)}</span></div>`);
   });

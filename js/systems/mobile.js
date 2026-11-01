@@ -109,15 +109,16 @@ function takeSavedBattle(resume) {
 
   if (resume && !keepWaiting && state.player.currentLocation !== 'town') {
     const m = (b.monsters || [])[0];
-    const last = b.lastTarget || (m ? { id: m.templateId || m.id, variantId: m.variantId, count: b.repeatCount || 1 } : null);
+    const last = b.lastTarget || (m ? { id: m.templateId || m.id, variantId: m.variantId } : null);
     if (last && (b.active || wasRepeat)) {
-      target = { id: last.id, variantId: last.variantId, count: last.count || 1, repeat: wasRepeat };
+      target = { id: last.id, variantId: last.variantId, repeat: wasRepeat };
     }
   }
 
   b.active = false;
   b.monsters = [];
   b.monstersATB = 0;
+  b.packIncoming = 0;
   b.playerATB = 0;
   b.manualWait = null;
   b.manualTarget = null;
@@ -145,7 +146,7 @@ function resumeBattleAfterReload(target) {
 
   // Мало HP/MP по настройкам автостопа — сначала восстановимся, игра сама начнёт бой.
   if (typeof shouldWaitForRecovery === 'function' && shouldWaitForRecovery()) {
-    state.battle.waitingTemplate = { id: target.id, variantId: target.variantId, count: target.count };
+    state.battle.waitingTemplate = { id: target.id, variantId: target.variantId };
     state.battle.waitingForResume = true;
     if (typeof enterRestCamp === 'function') enterRestCamp(true);
     if (typeof updateAutoWaitIndicator === 'function') updateAutoWaitIndicator();
@@ -156,7 +157,7 @@ function resumeBattleAfterReload(target) {
   if (typeof isOnHuntTab === 'function' && !isOnHuntTab()) switchTab('hunt');
   logCombat('▶ Страница обновлена — продолжаем охоту.', 'log-entry levelup');
   showToast('▶', 'Продолжаем охоту');
-  startBattle(template, target.variantId, target.count);
+  startBattle(template, target.variantId);
 }
 
 // Старт страницы: если эта вкладка уже играла — сразу входим в того же персонажа.

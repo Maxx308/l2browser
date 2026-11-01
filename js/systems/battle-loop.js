@@ -133,7 +133,7 @@ function gameLoop() {
   if (state.battle.waitingForResume && !state.battle.active) {
     updateAutoWaitIndicator();
     // v0.25: на привале окно боя открыто поверх любой вкладки — ждать «Охоту» не нужно
-    // (охоту можно начать «Искать стаю» с любой вкладки, и привал зависал навсегда).
+    // (раньше охоту можно было начать «Искать стаю» с любой вкладки, и привал зависал навсегда).
     const restOpen = typeof REST !== 'undefined' && REST.shown;
     if (isReadyToResume() && state.battle.waitingTemplate) {
       if (!isOnHuntTab() && !restOpen) {
@@ -146,7 +146,7 @@ function gameLoop() {
           showToast('▶', 'Бой возобновлён');
           state.battle.waitingForResume = false;
           state.battle.waitingTemplate = null;
-          startBattle(template, tpl.variantId, tpl.count || 1);
+          startBattle(template, tpl.variantId);
         }
       }
     }
@@ -268,6 +268,11 @@ function gameLoop() {
 
       if (state.battle.active && state.player.hp > 0 && getDebuff('player', 'bleed')) {
         applyBleedTickOnPlayer();
+      }
+
+      // ---- v0.29: подкрепления стаи (battle-pack.js) ----
+      if (state.battle.active && state.player.hp > 0) {
+        packClockTick();
       }
     }
 

@@ -71,7 +71,12 @@
 }
 @keyframes bxsIn { from { opacity: 0; transform: translateY(calc(-8 * var(--u))); } }
 
-.bxs-head { display: flex; align-items: center; justify-content: space-between; }
+.bxs-head {
+  display: flex; align-items: center; justify-content: space-between;
+  cursor: grab; user-select: none; touch-action: none;
+}
+.bxs-dragging { animation: none; }
+.bxs-dragging .bxs-head { cursor: grabbing; }
 .bxs-title {
   font-family: 'Cinzel', serif; font-weight: 700;
   font-size: var(--fs-medium); color: var(--gold-bright); letter-spacing: .5px;
@@ -225,6 +230,7 @@ body.bx-peek .bx-peek-bar { display: flex; animation: bxpIn .2s ease-out; }
 @media (max-width: 600px) {
   .bx-farm-rate { gap: calc(6 * var(--u)); margin-left: 0; }
   .bx-farm-rate .bxr-item { padding: calc(1 * var(--u)) calc(6 * var(--u)); }
+  .bxs-head { cursor: default; touch-action: auto; }
   .bx-session {
     position: fixed;
     top: auto; bottom: calc(8 * var(--u)); left: calc(8 * var(--u)); right: calc(8 * var(--u));

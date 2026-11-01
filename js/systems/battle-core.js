@@ -16,6 +16,10 @@
 //  НОВОЕ (v0.16):
 //  + Имя героя под аватаркой теперь берётся из state.player.name,
 //    а не из HTML-заглушки.
+//
+//  НОВОЕ (v0.29):
+//  + Размер стаи всегда случайный (rollPackSize, battle-pack.js).
+//    selectMonsterGroup и выбор ×N убраны вместе с «Искать стаю».
 // ========================================================
 
 // --------------------------------------------------------
@@ -44,30 +48,16 @@ function selectMonster(template, variantId, fromMine = false) {
   document.querySelectorAll('.monster-card').forEach(c => c.classList.remove('selected'));
   const found = document.querySelector(`.monster-card[data-id="${template.id}"][data-variant="${variantId}"]`);
   if (found) found.classList.add('selected');
-  startBattle(template, variantId, 1);
-}
-
-// НОВОЕ (v0.11): выбор группы мобов.
-// Вызывается из модалки «Искать стаю».
-function selectMonsterGroup(template, variantId, count) {
-  if (state.travel.active) return;
-  if (state.player.currentLocation === 'town') return;
-  if (!state.player.classId) {
-    logCombat('Сначала выберите класс у Наставника.', 'log-entry');
-    return;
-  }
-  state.battle.waitingForResume = false;
-  state.battle.waitingTemplate = null;
-
-  startBattle(template, variantId, count);
+  startBattle(template, variantId);
 }
 
 // --------------------------------------------------------
 //  START BATTLE
-//  count — сколько мобов в группе (1 по умолчанию).
+//  v0.29: сколько мобов — решает rollPackSize (характер монстра + бафы).
 // --------------------------------------------------------
-function startBattle(template, variantId, count = 1) {
-  // ---- Создаём группу мобов ----
+function startBattle(template, variantId) {
+  // ---- Создаём стаю ----
+  const count = rollPackSize(template);
   const monsters = createMonsterGroup(template, variantId, count);
   const firstMonster = monsters[0];
 
@@ -79,8 +69,8 @@ function startBattle(template, variantId, count = 1) {
   state.battle.manualWait = null;        // v0.20: ожидание хода в ручном режиме
   state.battle.manualAction = null;
   state.battle.rotWrath = 0;             // v0.19.1: заряды Гнева для Гниения
-  state.battle.repeatCount = count;      // ← НОВОЕ: запоминаем для повтора
-  state.battle.lastTarget = { id: template.id, variantId, count };   // v0.24: продолжить охоту после обновления страницы
+  state.battle.lastTarget = { id: template.id, variantId };   // v0.24: продолжить охоту после обновления страницы
+  packOnBattleStart(template, variantId);   // v0.29: подкрепления
 
   // ---- Стартовый ATB игрока (как раньше) ----
   let startATB = isMage() ? 1.0 : 0;
@@ -209,7 +199,7 @@ function closeBattle() {
   state.battle.active = false;
   state.battle.monsters = [];
   state.battle.monstersATB = 0;
-  state.battle.repeatCount = 1;          // ← НОВОЕ: сбрасываем
+  state.battle.packIncoming = 0;
 
   clearAllDebuffs();
 

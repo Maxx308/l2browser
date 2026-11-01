@@ -45,6 +45,7 @@ function buffShopAllowed(buff) {
 function buffShopDefaultInSet(kind, buff) {
   if (!buffShopAllowed(buff)) return false;
   if (buff.id === 'shieldwall' && !getEquippedShield()) return false;
+  if (buff.packMode) return false;   // v0.29: стайные бафы — только по выбору игрока
   return true;
 }
 
@@ -63,6 +64,8 @@ function buffShopToggleSet(kind, buffId) {
   if (!p.buffSet) p.buffSet = {};
   if (!p.buffSet[kind]) p.buffSet[kind] = {};
   p.buffSet[kind][buffId] = !buffShopInSet(kind, buff);
+  // v0.29: Тихий шаг и Провокатор вместе в наборе быть не могут
+  if (buff.packRival && p.buffSet[kind][buffId]) p.buffSet[kind][buff.packRival] = false;
   buffShopRender(kind);
   if (typeof saveCurrentSlot === 'function') saveCurrentSlot();
 }
@@ -125,12 +128,24 @@ function buffShopApply(kind, items) {
   const p = state.player;
   const d = buffShopDef(kind);
   if (!p.classId) { showToast(d.emoji, 'Сначала выберите класс'); return; }
+
+  // v0.29: стайный баф снимает соперника — спрашиваем, если у того ещё есть время
+  for (const { buff, n } of items) {
+    if (n <= 0 || !buff.packRival) continue;
+    const rival = d.store[buff.packRival];
+    if (rival && rival.timer > 0) {
+      const rivalName = GUILD_BUFFS[buff.packRival].name;
+      if (!confirm(`«${buff.name}» не действует вместе с «${rivalName}».\n\nСнять «${rivalName}» (осталось ${buffShopDur(rival.timer)})? Оболы за него не вернутся.`)) return;
+    }
+  }
+
   let spent = 0;
   const parts = [];
   items.forEach(({ buff, n }) => {
     if (n <= 0) return;
     const cost = n * d.price(buff);
     if (p.gold < cost) return;
+    if (buff.packRival && d.store[buff.packRival]) d.store[buff.packRival].timer = 0;
     if (!d.store[buff.id]) d.store[buff.id] = { timer: 0 };
     p.gold -= cost; spent += cost;
     d.store[buff.id].timer = addBuffTime(d.store[buff.id].timer, n * buff.duration);
@@ -187,6 +202,17 @@ function buffShopEffectsHtml(kind, buff) {
   if (eff.atbPercent) out.push(`<div class="plus">+${eff.atbPercent}% ${buff.id === 'eloquence' ? 'скорость каста' : 'скорость ATB'}</div>`);
   if (eff.accuracyFlat) out.push(`<div class="plus">+${eff.accuracyFlat} к точности</div>`);
   if (eff.blockFlat) out.push(`<div class="plus">+${eff.blockFlat}% к шансу блока</div>`);
+  // v0.29: стайные бафы (battle-pack.js)
+  if (buff.packMode === 'quiet') {
+    out.push(`<div class="plus">Стаи меньше на старте</div>`);
+    out.push(`<div class="plus">Подмога почти не приходит (×${PACK_BUFF_MODS.quiet.reinforceMult})</div>`);
+    out.push(`<div class="minus">Меньше стайного бонуса к дропу</div>`);
+  } else if (buff.packMode === 'provoke') {
+    out.push(`<div class="plus">Больше стайного бонуса: дроп до +${PACK_DROP_MAX}%, Оболы до +${PACK_GOLD_MAX}%</div>`);
+    out.push(`<div class="minus">Стаи больше на старте</div>`);
+    out.push(`<div class="minus">Подмога сбегается (×${PACK_BUFF_MODS.provoke.reinforceMult})</div>`);
+  }
+  if (buff.packRival) out.push(`<div class="note">Не действует вместе с «${GUILD_BUFFS[buff.packRival].name}»</div>`);
   return out.join('');
 }
 

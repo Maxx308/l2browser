@@ -369,6 +369,9 @@ function recalcStats() {
       p.blockChance += eff.blockFlat;
       details.push(`+${eff.blockFlat}% блок`);
     }
+    // v0.29: стайные бафы — не статы, а размер стаи (battle-pack.js)
+    if (buff.packMode === 'quiet') details.push('стаи меньше, подмога редко');
+    if (buff.packMode === 'provoke') details.push('стаи больше, подмога часто');
 
     p.buffBonuses.push(`${buff.name}: ${details.join(', ')}`);
   });

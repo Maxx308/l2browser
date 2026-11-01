@@ -15,7 +15,10 @@
 //  Если удалить этот файл и battle-arena.css — бой работает как раньше
 //  (кроме внешнего вида).
 //
-//  Подключать ПОСЛЕ всех battle-*.js и hunt-modal.js, ДО main.js.
+//  Подключать ПОСЛЕ всех battle-*.js (в т.ч. battle-pack.js), ДО main.js.
+//
+//  v0.29: подкрепления стаи — силуэт «?» на подходе (packIncoming)
+//  и новые карточки дописываются в ряд без перестройки (bxSyncPack).
 //
 //  v0.19: события могут нести свою цель и эффект (opts.mon / opts.fx / opts.text) —
 //  так массовые навыки рисуют удар по каждому мобу отдельно.
@@ -139,8 +142,9 @@ function bxBuildEnemies(group) {
   row.innerHTML = '';
   row.dataset.n = String(group.length);
 
-  const label = document.getElementById('bx-pack-name');
-  if (label) label.textContent = group.length > 1 ? `Стая ×${group.length}` : 'Противник';
+  BX.packLabelN = 0;
+  BX.lurkers = [];
+  bxUpdatePackLabel();
 
   // v0.23: «колода» павших — мёртвые враги складываются в одну стопку
   const deck = document.createElement('div');
@@ -149,51 +153,105 @@ function bxBuildEnemies(group) {
   deck.innerHTML = `<div class="bx-deck-stack"></div><div class="bx-deck-count"></div>`;
   BX.deck = deck;
 
-  group.forEach((m, i) => {
-    const unit = document.createElement('div');
-    unit.className = `bx-unit bx-enemy variant-${m.variantId || 'normal'} bx-spawn`;
-    unit.style.animationDelay = (i * 0.06) + 's';   // v0.26: стая проявляется за ~0.7 с, а не за 1.5 с
-    const crop = BX_ART_CROP[m.templateId || m.id];
-    const picStyle = `background-image:url('${m.art || ''}');` + (crop ? `background-size:${crop.size};background-position:${crop.pos};` : '');
-    unit.innerHTML = `
-      <div class="bx-card">
-        <div class="bx-pic" style="${picStyle}"></div>
-        <div class="bx-flash"></div>
-        <div class="bx-atb bx-atb-mob" data-icon="☠"></div>
-        <div class="debuff-bar bx-status"></div>
-      </div>
-      <div class="fighter-name">${m.name}<span class="bx-lvl">ур. ${m.level || 1}</span></div>
-      <div class="bx-bars">
-        <div class="bar bx-bar hp">
-          <div class="bx-ghost"></div>
-          <div class="bar-fill hp" style="width:100%"></div>
-          <div class="bar-text"></div>
-        </div>
-      </div>`;
-    // v0.20: в ручном режиме тап по врагу — выбор цели
-    unit.addEventListener('click', () => { if (typeof manualSelectTarget === 'function') manualSelectTarget(m.index); });
-    row.insertBefore(unit, deck.parentNode === row ? deck : null);
-    setTimeout(() => unit.classList.remove('bx-spawn'), 500 + i * 60);
-    BX.cards.set(m, {
-      unit,
-      card: unit.querySelector('.bx-card'),
-      pic: unit.querySelector('.bx-pic'),
-      fill: unit.querySelector('.bar-fill'),
-      ghost: unit.querySelector('.bx-ghost'),
-      text: unit.querySelector('.bar-text'),
-      status: unit.querySelector('.bx-status'),
-      atb: unit.querySelector('.bx-atb-mob'),   // v0.23: своя шкала ATB
-      atbP: -1,
-      statusHtml: '',
-      dead: false,
-      pendingDeath: false,
-      pendingSince: 0,
-      mon: m,
-    });
-  });
+  group.forEach((m, i) => bxAddEnemyCard(row, m, i * 0.06));   // v0.26: стая проявляется за ~0.7 с
   row.appendChild(deck);
 
   if (!document.hidden) bxRetrig(document.getElementById('bx-fog'), 'bx-on');
+}
+
+// «Стая ×N» над рядом врагов (N — сколько всего было в бою, вместе с подмогой).
+function bxUpdatePackLabel() {
+  const n = (BX.groupRef || []).length;
+  if (n === BX.packLabelN) return;
+  BX.packLabelN = n;
+  const label = document.getElementById('bx-pack-name');
+  if (label) label.textContent = n > 1 ? `Стая ×${n}` : 'Противник';
+}
+
+// Сколько места занимает ряд: карточки + силуэты + колода.
+function bxUpdateRowSize() {
+  const row = document.getElementById('bx-enemy-row');
+  if (!row) return;
+  const inRow = [...row.children].filter(u => u.classList.contains('bx-enemy')).length;
+  const deckN = BX.deck ? BX.deck.querySelector('.bx-deck-stack').children.length : 0;
+  row.dataset.n = String(Math.max(1, inRow + (deckN > 0 ? 1 : 0)));
+}
+
+// v0.29: подкрепления. Новые мобы → карточка в ряд; «на подходе» → силуэты «?».
+function bxSyncPack(group) {
+  const row = document.getElementById('bx-enemy-row');
+  if (!row || group !== BX.groupRef) return;
+  let changed = false;
+
+  const want = Math.max(0, state.battle.packIncoming || 0);
+  while (BX.lurkers.length > want) { BX.lurkers.pop().remove(); changed = true; }
+  while (BX.lurkers.length < want) {
+    const lurk = document.createElement('div');
+    lurk.className = 'bx-unit bx-enemy bx-lurker bx-spawn';
+    lurk.title = 'Кто-то приближается — появится в следующий ход стаи';
+    lurk.innerHTML = `
+      <div class="bx-card"><div class="bx-pic"></div><div class="bx-lurker-mark">?</div></div>
+      <div class="fighter-name">Шорох…</div>
+      <div class="bx-bars"><div class="bar bx-bar hp"></div></div>`;
+    row.insertBefore(lurk, BX.deck && BX.deck.parentNode === row ? BX.deck : null);
+    setTimeout(() => lurk.classList.remove('bx-spawn'), 500);
+    BX.lurkers.push(lurk);
+    changed = true;
+  }
+
+  let k = 0;
+  group.forEach(m => {
+    if (BX.cards.has(m)) return;
+    bxAddEnemyCard(row, m, k++ * 0.12);
+    changed = true;
+  });
+
+  if (changed) { bxUpdateRowSize(); bxUpdatePackLabel(); }
+}
+
+// Карточка одного врага. Ставится перед колодой (если она уже в ряду).
+function bxAddEnemyCard(row, m, delaySec) {
+  const unit = document.createElement('div');
+  unit.className = `bx-unit bx-enemy variant-${m.variantId || 'normal'} bx-spawn` + (m.reinforcement ? ' bx-reinforce' : '');
+  unit.style.animationDelay = delaySec + 's';
+  const crop = BX_ART_CROP[m.templateId || m.id];
+  const picStyle = `background-image:url('${m.art || ''}');` + (crop ? `background-size:${crop.size};background-position:${crop.pos};` : '');
+  unit.innerHTML = `
+    <div class="bx-card">
+      <div class="bx-pic" style="${picStyle}"></div>
+      <div class="bx-flash"></div>
+      <div class="bx-atb bx-atb-mob" data-icon="☠"></div>
+      <div class="debuff-bar bx-status"></div>
+    </div>
+    <div class="fighter-name">${m.name}<span class="bx-lvl">ур. ${m.level || 1}</span></div>
+    <div class="bx-bars">
+      <div class="bar bx-bar hp">
+        <div class="bx-ghost"></div>
+        <div class="bar-fill hp" style="width:100%"></div>
+        <div class="bar-text"></div>
+      </div>
+    </div>`;
+  // v0.20: в ручном режиме тап по врагу — выбор цели
+  unit.addEventListener('click', () => { if (typeof manualSelectTarget === 'function') manualSelectTarget(m.index); });
+  const deck = BX.deck;
+  row.insertBefore(unit, deck && deck.parentNode === row ? deck : null);
+  setTimeout(() => unit.classList.remove('bx-spawn', 'bx-reinforce'), 500 + delaySec * 1000 + (m.reinforcement ? 700 : 0));
+  BX.cards.set(m, {
+    unit,
+    card: unit.querySelector('.bx-card'),
+    pic: unit.querySelector('.bx-pic'),
+    fill: unit.querySelector('.bar-fill'),
+    ghost: unit.querySelector('.bx-ghost'),
+    text: unit.querySelector('.bar-text'),
+    status: unit.querySelector('.bx-status'),
+    atb: unit.querySelector('.bx-atb-mob'),   // v0.23: своя шкала ATB
+    atbP: -1,
+    statusHtml: '',
+    dead: false,
+    pendingDeath: false,
+    pendingSince: 0,
+    mon: m,
+  });
 }
 
 function bxMonsterStatusHtml(m) {
@@ -252,8 +310,7 @@ function bxUpdateDeck() {
   // живых стало меньше — остальные карты становятся крупнее.
   // v0.26: считаем карточки, которые реально стоят в ряду (павший ещё ~1 с лежит в ряду, пока гаснет),
   // а не живых — иначе при быстрых убийствах карточек больше, чем места, и ряд переносится.
-  const inRow = [...row.children].filter(u => u.classList.contains('bx-enemy')).length;
-  row.dataset.n = String(Math.max(1, inRow + (n > 0 ? 1 : 0)));
+  bxUpdateRowSize();
   bxRetrig(deck, 'bx-bump');
 }
 
@@ -288,6 +345,8 @@ function bxSync() {
   // ---- Мобы ----
   const group = state.battle.monsters || [];
   if (group.length && group !== BX.groupRef) bxBuildEnemies(group);
+  if (group.length) bxSyncPack(group);   // v0.29: подмога и силуэты «?»
+  else if (BX.lurkers && BX.lurkers.length) { BX.lurkers.forEach(l => l.remove()); BX.lurkers = []; }   // бой кончился — шорох тоже
 
   const cur = (typeof getCurrentMonster === 'function') ? getCurrentMonster() : null;
   BX.cards.forEach((c, m) => {

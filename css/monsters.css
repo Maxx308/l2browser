@@ -63,7 +63,32 @@
   background-repeat: no-repeat;
   border-radius: calc(3 * var(--u));
   border: 1px solid var(--border);
+  position: relative;
 }
+
+/* ---------- v0.29: СТАЙНОСТЬ — следы лап в углу портрета ----------
+   1 след — одиночка, 2 — обычный, 3 — стайный (battle-pack.js). */
+.monster-pack {
+  position: absolute; left: calc(4 * var(--u)); bottom: calc(4 * var(--u));
+  display: flex; align-items: center; gap: calc(1 * var(--u));
+  padding: calc(2 * var(--u)) calc(4 * var(--u));
+  background: rgba(10, 8, 5, 0.78);
+  border: 1px solid rgba(184, 148, 90, 0.55);
+  border-radius: calc(10 * var(--u));
+  box-shadow: 0 0 calc(6 * var(--u)) rgba(0,0,0,.8);
+  cursor: help;
+}
+.monster-pack svg {
+  width: calc(12 * var(--u)); height: calc(12 * var(--u));
+  fill: var(--gold-bright);
+  filter: drop-shadow(0 0 calc(3 * var(--u)) rgba(224,190,122,.6));
+}
+.monster-pack svg:nth-child(2) { transform: rotate(-12deg) translateY(calc(-2 * var(--u))); }
+.monster-pack svg:nth-child(3) { transform: rotate(10deg); }
+.monster-pack-solo { border-color: rgba(140, 170, 200, 0.55); }
+.monster-pack-solo svg { fill: #b8d0e8; filter: drop-shadow(0 0 calc(3 * var(--u)) rgba(150,190,230,.5)); }
+.monster-pack-pack { border-color: rgba(255, 120, 80, 0.7); }
+.monster-pack-pack svg { fill: #ff9a6a; filter: drop-shadow(0 0 calc(3 * var(--u)) rgba(255,120,80,.7)); }
 
 .monster-portrait {
   width: calc(80 * var(--u));

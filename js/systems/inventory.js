@@ -25,6 +25,14 @@
 //    - ПКМ (контекстное меню) на предмете → confirm() → удалить всю ячейку.
 //    - Долгое нажатие (0.6 сек) на телефоне → то же самое.
 //    - Всегда спрашиваем подтверждение.
+//
+//  НОВОЕ (v0.29):
+//  + ПКМ и долгое нажатие БОЛЬШЕ НЕ УДАЛЯЮТ — игроки уничтожали вещи,
+//    пытаясь их надеть или посмотреть.
+//  + Уничтожить — только перетащив предмет в ячейку 🗑 «Корзина»
+//    (под сеткой, справа от страниц). Подтверждение осталось.
+//  + Телефон: подержать предмет 0.4 сек — показать его статы;
+//    не отпуская — тянуть в корзину.
 // ========================================================
 
 const INVENTORY_MAX_SLOTS = 60;
@@ -112,7 +120,7 @@ function addToInventory(drop) {
 // ========================================================
 //  УНИЧТОЖЕНИЕ ПРЕДМЕТА (v0.11)
 //  Удаляет всю ячейку (весь стак) после confirm().
-//  Вызывается по ПКМ или по долгому нажатию.
+//  v0.29: вызывается только при броске предмета в корзину 🗑.
 // ========================================================
 function destroyInventoryItem(item) {
   if (!item) return;
@@ -158,47 +166,135 @@ function destroyInventoryItem(item) {
 }
 
 // ========================================================
-//  ДОЛГОЕ НАЖАТИЕ (для телефона)
-//  Привязывается к слоту, шлёт destroyInventoryItem через 0.6 сек.
+//  ПЕРЕТАСКИВАНИЕ В КОРЗИНУ 🗑 (v0.29)
+//  Мышь: зажать предмет и потянуть.
+//  Телефон: подержать 0.4 сек (покажутся статы), потом тянуть.
+//  Отпустили над корзиной — destroyInventoryItem (с подтверждением),
+//  в любом другом месте — ничего не происходит.
 // ========================================================
-function attachLongPressHandler(slot, item) {
-  let pressTimer = null;
-  let longPressFired = false;
+const INV_DRAG_THRESHOLD = 6;    // px: сдвинули дальше — это уже не клик, а перетаскивание
+const INV_HOLD_MS = 400;         // телефон: столько держать, чтобы «поднять» предмет
+const INV_SCROLL_SLOP = 8;       // телефон: сдвиг до удержания — это прокрутка страницы
 
-  const start = (e) => {
-    longPressFired = false;
-    pressTimer = setTimeout(() => {
-      longPressFired = true;
-      destroyInventoryItem(item);
-    }, 600);
-  };
+const INV_EDGE_ZONE = 90;        // px у верха/низа экрана: тащим туда — страница сама едет
+const INV_EDGE_SPEED = 14;       // px за шаг (~60 шагов в секунду)
 
-  const cancel = () => {
-    if (pressTimer) {
-      clearTimeout(pressTimer);
-      pressTimer = null;
+let invDrag = null; // { item, slot, ghost, x, y, timer }
+
+// На телефоне предмет сверху и корзина внизу не влезают в один экран —
+// поднесли предмет к краю, страница прокручивается сама.
+function invEdgeScroll() {
+  if (!invDrag) return;
+  const { y } = invDrag;
+  const dy = y < INV_EDGE_ZONE ? -INV_EDGE_SPEED : (y > window.innerHeight - INV_EDGE_ZONE ? INV_EDGE_SPEED : 0);
+  if (dy) {
+    window.scrollBy(0, dy);
+    document.getElementById('inv-trash')?.classList.toggle('hot', !!invTrashAt(invDrag.x, invDrag.y));
+  }
+}
+
+function invTrashAt(x, y) {
+  const el = document.elementFromPoint(x, y);
+  return el ? el.closest('#inv-trash') : null;
+}
+
+function invDragStart(slot, item, x, y) {
+  hideTooltip();
+  const r = slot.getBoundingClientRect();
+  const ghost = slot.cloneNode(true);
+  ghost.classList.add('inv-drag-ghost');
+  ghost.style.width = r.width + 'px';
+  ghost.style.height = r.height + 'px';
+  document.body.appendChild(ghost);
+  slot.classList.add('inv-dragging');
+  document.getElementById('inv-trash')?.classList.add('ready');
+  invDrag = { item, slot, ghost, x, y, timer: setInterval(invEdgeScroll, 16) };
+  invDragMove(x, y);
+}
+
+function invDragMove(x, y) {
+  if (!invDrag) return;
+  invDrag.x = x; invDrag.y = y;
+  invDrag.ghost.style.left = x + 'px';
+  invDrag.ghost.style.top = y + 'px';
+  document.getElementById('inv-trash')?.classList.toggle('hot', !!invTrashAt(x, y));
+}
+
+function invDragEnd(x, y) {
+  if (!invDrag) return;
+  const { item, slot, ghost, timer } = invDrag;
+  invDrag = null;
+  clearInterval(timer);
+  ghost.remove();
+  slot.classList.remove('inv-dragging');
+  document.getElementById('inv-trash')?.classList.remove('ready', 'hot');
+  if (invTrashAt(x, y)) destroyInventoryItem(item);
+}
+
+function attachInvSlotGestures(slot, item) {
+  let sx = 0, sy = 0;
+  const far = (x, y, d) => Math.hypot(x - sx, y - sy) > d;
+
+  // ---- Мышь ----
+  slot.addEventListener('mousedown', (e) => {
+    if (e.button !== 0) return;
+    e.preventDefault();               // без выделения текста и родного drag картинки
+    sx = e.clientX; sy = e.clientY;
+    slot._skipClick = false;
+
+    const move = (ev) => {
+      if (!invDrag && far(ev.clientX, ev.clientY, INV_DRAG_THRESHOLD)) invDragStart(slot, item, ev.clientX, ev.clientY);
+      invDragMove(ev.clientX, ev.clientY);
+    };
+    const up = (ev) => {
+      document.removeEventListener('mousemove', move);
+      document.removeEventListener('mouseup', up);
+      if (invDrag) { slot._skipClick = true; invDragEnd(ev.clientX, ev.clientY); }
+    };
+    document.addEventListener('mousemove', move);
+    document.addEventListener('mouseup', up);
+  });
+
+  // ---- Телефон ----
+  let holdTimer = null, held = false;
+  const cancelHold = () => { clearTimeout(holdTimer); holdTimer = null; };
+
+  slot.addEventListener('touchstart', (e) => {
+    if (e.touches.length > 1) return;
+    sx = e.touches[0].clientX; sy = e.touches[0].clientY;
+    held = false;
+    cancelHold();
+    holdTimer = setTimeout(() => {
+      holdTimer = null;
+      held = true;
+      slot.classList.add('inv-held');
+      showItemTooltip({ clientX: sx, clientY: sy }, item);
+      if (navigator.vibrate) navigator.vibrate(15);
+    }, INV_HOLD_MS);
+  }, { passive: true });
+
+  slot.addEventListener('touchmove', (e) => {
+    const t = e.touches[0];
+    if (!held) {                      // палец поехал до удержания — это прокрутка
+      if (far(t.clientX, t.clientY, INV_SCROLL_SLOP)) cancelHold();
+      return;
     }
+    e.preventDefault();               // предмет «в руке» — страницу не крутим
+    if (!invDrag && far(t.clientX, t.clientY, INV_DRAG_THRESHOLD)) invDragStart(slot, item, t.clientX, t.clientY);
+    invDragMove(t.clientX, t.clientY);
+  }, { passive: false });
+
+  const touchEnd = (e) => {
+    cancelHold();
+    slot.classList.remove('inv-held');
+    if (!held) return;                // обычный тап — дальше сработает click (надеть)
+    held = false;
+    e.preventDefault();               // не надевать; тултип со статами остаётся
+    const t = e.changedTouches[0];
+    if (invDrag) invDragEnd(e.type === 'touchcancel' ? -1 : t.clientX, e.type === 'touchcancel' ? -1 : t.clientY);
   };
-
-  // touchstart / touchend — для телефона.
-  slot.addEventListener('touchstart', start, { passive: true });
-  slot.addEventListener('touchend', cancel);
-  slot.addEventListener('touchcancel', cancel);
-  slot.addEventListener('touchmove', cancel);
-
-  // mousedown / mouseup — на всякий случай (для мыши тоже пригодится).
-  slot.addEventListener('mousedown', start);
-  slot.addEventListener('mouseup', cancel);
-  slot.addEventListener('mouseleave', cancel);
-
-  // Если сработало долгое нажатие — не даём клику выполниться.
-  slot.addEventListener('click', (e) => {
-    if (longPressFired) {
-      e.preventDefault();
-      e.stopPropagation();
-      longPressFired = false;
-    }
-  }, true);
+  slot.addEventListener('touchend', touchEnd);
+  slot.addEventListener('touchcancel', touchEnd);
 }
 
 // ---------- СЕТКА ПРЕДМЕТОВ ----------
@@ -241,19 +337,17 @@ function renderInventory() {
 
       // ---- Левый клик: использовать / надеть ----
       slot.onclick = () => {
+        if (slot._skipClick) { slot._skipClick = false; return; }   // это было перетаскивание
         if (item.type === 'food') useFood(item);
         else if (isConsumable) logLoot(`${item.name} — расходник.`, 'log-info');
         else equipItem(item);
       };
 
-      // ---- ПКМ: уничтожить (v0.11) ----
-      slot.oncontextmenu = (e) => {
-        e.preventDefault();
-        destroyInventoryItem(item);
-      };
+      // ---- v0.29: ПКМ больше не удаляет; меню браузера при удержании тоже не нужно ----
+      slot.oncontextmenu = (e) => e.preventDefault();
 
-      // ---- Долгое нажатие (v0.11) ----
-      attachLongPressHandler(slot, item);
+      // ---- Перетаскивание в корзину + удержание = статы (v0.29) ----
+      attachInvSlotGestures(slot, item);
 
       slot.onmouseenter = (e) => showItemTooltip(e, item);
       slot.onmouseleave = () => hideTooltip();
@@ -282,6 +376,15 @@ function renderInventoryPagination() {
     btn.onclick = () => setInventoryPage(i);
     cont.appendChild(btn);
   }
+
+  // v0.29: корзина — сюда перетаскивают предмет, чтобы уничтожить
+  const trash = document.createElement('div');
+  trash.id = 'inv-trash';
+  trash.className = 'inv-trash';
+  trash.title = 'Корзина: перетащите сюда предмет, чтобы уничтожить его';
+  trash.innerHTML = '🗑';
+  trash.onclick = () => showToast('🗑', 'Перетащите сюда предмет, чтобы уничтожить его');
+  cont.appendChild(trash);
 }
 
 function setInventoryPage(page) {

@@ -20,6 +20,10 @@ const ALCHEMY_DUST = {
 // Порядок для UI.
 const ALCHEMY_DUST_ORDER = ['green', 'blue', 'purple', 'yellow', 'red'];
 
+// Лимит пыли в одной стопке — и в сумке, и на складе.
+// v0.29: было 1000 (лишнее молча пропадало) → 99 999.
+const ALCHEMY_DUST_STACK_MAX = 99999;
+
 // ========================================================
 //  РАСПЫЛЕНИЕ: сколько пыли даёт предмет
 //  пыль = база_тира × коэффициент_редкости × random(1..3)
@@ -107,4 +111,43 @@ function rollNewBonusStats(item) {
   const points = getRarityPointsForReroll(item.rarity);
   if (points <= 0) return {};
   return rollRarityStats(points, getRarityStatProfile(item));
+}
+
+// ========================================================
+//  ВОЗВЫШЕНИЕ (v0.29): редкость +1 ступень за пыль ТЕКУЩЕГО цвета.
+//  🟢→🔵 за зелёную, 🔵→🟣 за синюю, 🟣→🟡 за фиолетовую, 🟡→🔴 за жёлтую.
+//
+//  Цена = пыль от ALCHEMY_ASCEND_ITEMS распылённых предметов того же
+//  тира и цвета (в среднем распыление даёт ×2 от базы):
+//    цена = 5 × база_тира × коэффициент_редкости × 2
+//
+//    Тир 1: 10 / 20 / 30 / 50
+//    Тир 2: 300 / 600 / 900 / 1500
+//    Тир 3: 1000 / 2000 / 3000 / 5000
+//
+//  Бонусы сохраняются, добавляется разница очков (1 → 2 → 3 → 5 → 7).
+//  Подгонка (+N) сохраняется. Можно и надетые вещи.
+// ========================================================
+const ALCHEMY_ASCEND_ITEMS = 5;
+
+// Следующая редкость или null (белые и красные не возвышаются).
+function getAscendTarget(item) {
+  if (!item || !item.rarity || item.rarity === 'white') return null;
+  const i = RARITY_ORDER.indexOf(item.rarity);
+  if (i < 0 || i >= RARITY_ORDER.length - 1) return null;
+  return RARITY_ORDER[i + 1];
+}
+
+function getAscendPrice(item) {
+  if (!getAscendTarget(item)) return 0;
+  const base = ALCHEMY_TIER_BASE[item.tier || 1] || ALCHEMY_TIER_BASE[1];
+  const mult = ALCHEMY_RARITY_MULT[item.rarity] || 1;
+  return ALCHEMY_ASCEND_ITEMS * base * mult * 2;
+}
+
+// Сколько очков статов добавит возвышение (разница statPoints).
+function getAscendExtraPoints(item) {
+  const to = getAscendTarget(item);
+  if (!to) return 0;
+  return Math.max(0, getRarityPointsForReroll(to) - getRarityPointsForReroll(item.rarity));
 }

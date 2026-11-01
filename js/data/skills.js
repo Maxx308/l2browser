@@ -525,6 +525,20 @@ const GUILD_BUFFS = {
     effects: { blockFlat: 3 },
     desc: 'Укрепляет защиту щитом. +3% к шансу блока.'
   },
+  // v0.29: стаи (battle-pack.js). Действуют не на статы, а на размер стаи и подкрепления.
+  // Вместе не работают: покупка одного снимает другой.
+  quietStep: {
+    id: 'quietStep', name: 'Тихий шаг', iconKey: 'buffQuietStep',
+    price: BUFF_PRICE, duration: BUFF_DURATION,
+    effects: {}, packMode: 'quiet', packRival: 'provoker',
+    desc: 'Чары бесшумной поступи: стаи меньше, подмога почти не приходит.'
+  },
+  provoker: {
+    id: 'provoker', name: 'Провокатор', iconKey: 'buffProvoker',
+    price: BUFF_PRICE, duration: BUFF_DURATION,
+    effects: {}, packMode: 'provoke', packRival: 'quietStep',
+    desc: 'Чары вызова: стаи больше, подмога сбегается со всей округи.'
+  },
 };
 
 // ========================================================
