@@ -1,0 +1,387 @@
+/* ========================================================
+   REFINE.CSS — окно Мастерской (подгонка)
+   Две панели: слева экипировка, справа превью + кнопки.
+   + История последних подгонок внизу.
+   + НОВОЕ (v0.11): две кнопки в ряд — «Подогнать» + «Сбросить».
+   + Кнопки идут ВЫШЕ списка бонусов — список растёт вниз.
+   ======================================================== */
+
+.refine-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.9);
+  z-index: 160;
+  align-items: flex-start;
+  justify-content: center;
+  padding: calc(20 * var(--u));
+  overflow-y: auto;
+}
+.refine-overlay.active { display: flex; }
+
+.refine-window {
+  background: linear-gradient(180deg, var(--bg-2), var(--bg-1));
+  border: 1px solid var(--gold);
+  border-radius: calc(4 * var(--u));
+  width: 100%;
+  max-width: calc(1100 * var(--u));
+  max-height: 92vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 0 calc(50 * var(--u)) rgba(184,148,90,0.4);
+  margin: auto 0;
+}
+
+.refine-header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: calc(14 * var(--u)) calc(18 * var(--u));
+  border-bottom: 1px solid var(--border);
+  background: linear-gradient(180deg, #1a1a22, #0a0a0c);
+  border-top-left-radius: calc(4 * var(--u));
+  border-top-right-radius: calc(4 * var(--u));
+  gap: calc(10 * var(--u));
+  flex-wrap: wrap;
+}
+
+.refine-title {
+  font-family: 'Cinzel', serif;
+  font-size: calc(18 * var(--u));
+  color: var(--gold-bright);
+  letter-spacing: calc(2 * var(--u));
+}
+
+.refine-gold {
+  display: flex;
+  align-items: center;
+  gap: calc(6 * var(--u));
+  font-family: 'Cinzel', serif;
+  font-size: var(--fs-medium);
+  color: var(--gold-bright);
+  padding: calc(4 * var(--u)) calc(10 * var(--u));
+  background: rgba(0,0,0,0.4);
+  border: 1px solid var(--border);
+  border-radius: calc(3 * var(--u));
+}
+
+.refine-body {
+  display: grid;
+  grid-template-columns: 1fr 1.2fr;
+  gap: calc(16 * var(--u));
+  padding: calc(16 * var(--u));
+  overflow-y: auto;
+  flex: 1;
+}
+
+.refine-panel {
+  background: linear-gradient(180deg, #15151a, #0d0d10);
+  border: 1px solid var(--border);
+  border-radius: calc(3 * var(--u));
+  padding: calc(12 * var(--u));
+  display: flex;
+  flex-direction: column;
+}
+
+.refine-panel-title {
+  font-family: 'Cinzel', serif;
+  font-size: var(--fs-small);
+  color: var(--gold);
+  letter-spacing: calc(3 * var(--u));
+  text-align: center;
+  padding-bottom: calc(8 * var(--u));
+  border-bottom: 1px solid var(--border);
+  margin-bottom: calc(10 * var(--u));
+}
+
+/* ---- Список экипировки слева ---- */
+.refine-list {
+  display: flex;
+  flex-direction: column;
+  gap: calc(6 * var(--u));
+}
+
+.refine-list-item {
+  display: flex;
+  align-items: center;
+  gap: calc(10 * var(--u));
+  padding: calc(8 * var(--u)) calc(10 * var(--u));
+  background: linear-gradient(180deg, #0f0f14, #08080c);
+  border: 1px solid var(--border);
+  border-radius: calc(3 * var(--u));
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.refine-list-item:hover {
+  border-color: var(--gold);
+  background: linear-gradient(180deg, #1a1a22, #0d0d10);
+}
+.refine-list-item.selected {
+  border-color: var(--gold-bright);
+  background: linear-gradient(180deg, #1a2a1a, #0d1508);
+  box-shadow: 0 0 calc(15 * var(--u)) rgba(224,190,122,0.3);
+}
+
+.refine-list-icon {
+  width: calc(40 * var(--u));
+  height: calc(40 * var(--u));
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(180deg, #0a0a0c, #050505);
+  border: 1px solid var(--border);
+  border-radius: calc(3 * var(--u));
+  overflow: hidden;
+}
+.refine-list-icon svg { width: calc(32 * var(--u)); height: calc(32 * var(--u)); }
+.refine-list-icon img { width: 100%; height: 100%; object-fit: contain; }
+
+.refine-list-info { flex: 1; min-width: 0; }
+.refine-list-name {
+  font-family: 'Cinzel', serif;
+  font-size: var(--fs-small);
+  color: var(--gold-bright);
+  margin-bottom: calc(2 * var(--u));
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.refine-list-sub {
+  font-size: var(--fs-tiny);
+  color: var(--text-dim);
+}
+
+.refine-empty {
+  text-align: center;
+  color: var(--text-dim);
+  font-style: italic;
+  padding: calc(30 * var(--u)) calc(10 * var(--u));
+  font-size: var(--fs-small);
+}
+
+/* ---- Правая панель: превью + кнопки ---- */
+.refine-preview {
+  display: flex;
+  flex-direction: column;
+  gap: calc(12 * var(--u));
+}
+
+.refine-preview-empty {
+  text-align: center;
+  color: var(--text-dim);
+  font-style: italic;
+  padding: calc(40 * var(--u)) calc(10 * var(--u));
+}
+
+.refine-preview-name {
+  font-family: 'Cinzel', serif;
+  font-size: calc(18 * var(--u));
+  color: var(--gold-bright);
+  text-align: center;
+  letter-spacing: calc(1 * var(--u));
+  padding-bottom: calc(8 * var(--u));
+  border-bottom: 1px solid var(--border);
+}
+
+.refine-preview-tier {
+  font-family: 'Cinzel', serif;
+  font-size: var(--fs-small);
+  color: var(--text-dim);
+  text-align: center;
+}
+
+.refine-preview-levels {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: calc(10 * var(--u));
+  font-family: 'Cinzel', serif;
+  font-size: calc(22 * var(--u));
+  color: var(--gold-bright);
+  margin: calc(6 * var(--u)) 0;
+}
+.refine-preview-levels .arrow { color: var(--text-dim); font-size: calc(16 * var(--u)); }
+.refine-preview-levels .next { color: #a0d080; text-shadow: 0 0 calc(10 * var(--u)) rgba(160,208,128,0.5); }
+
+.refine-stats-row {
+  display: flex;
+  justify-content: space-between;
+  padding: calc(6 * var(--u)) calc(10 * var(--u));
+  background: rgba(0,0,0,0.3);
+  border: 1px solid var(--border);
+  border-radius: calc(3 * var(--u));
+  font-family: 'Cinzel', serif;
+  font-size: var(--fs-small);
+}
+.refine-stats-row .label { color: var(--text-dim); }
+.refine-stats-row .value { color: var(--gold-bright); font-weight: 700; }
+
+.refine-bonus-title {
+  font-family: 'Cinzel', serif;
+  font-size: var(--fs-tiny);
+  color: var(--text-dim);
+  letter-spacing: calc(1.5 * var(--u));
+  text-align: center;
+  margin-top: calc(4 * var(--u));
+}
+
+.refine-bonus-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: calc(4 * var(--u));
+  font-size: var(--fs-small);
+}
+.refine-bonus-list li {
+  padding: calc(4 * var(--u)) calc(8 * var(--u));
+  background: rgba(0,0,0,0.25);
+  border-left: 2px solid var(--gold);
+  border-radius: calc(2 * var(--u));
+  color: #a0d080;
+  font-family: 'Cinzel', serif;
+}
+.refine-bonus-list li.milestone {
+  border-left-color: var(--gold-bright);
+  color: var(--gold-bright);
+  font-weight: 700;
+}
+
+/* ---- Ряд кнопок: Подогнать + Сбросить (v0.11) ---- */
+.refine-action {
+  display: flex;
+  justify-content: center;
+  gap: calc(10 * var(--u));
+  padding-top: calc(6 * var(--u));
+  padding-bottom: calc(4 * var(--u));
+  flex-wrap: wrap;
+}
+
+.refine-btn {
+  font-family: 'Cinzel', serif;
+  font-size: calc(15 * var(--u));
+  padding: calc(10 * var(--u)) calc(28 * var(--u));
+  background: linear-gradient(180deg, #2a3a20, #102008);
+  color: #a0d080;
+  border: 1px solid #4a6a30;
+  border-radius: calc(3 * var(--u));
+  cursor: pointer;
+  transition: all 0.2s;
+  letter-spacing: calc(1 * var(--u));
+  font-weight: 700;
+}
+.refine-btn:hover { box-shadow: 0 0 calc(20 * var(--u)) rgba(160,208,128,0.4); }
+.refine-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+/* ---- v0.17.1: кнопки не прыгают + подгонка пачкой ---- */
+/* Окно прижато к верху, а не по центру: когда список бонусов растёт, окно
+   больше не «переезжает» вверх, и кнопка остаётся под курсором. */
+.refine-window { margin: 4vh 0 auto; }
+.refine-btn-main {
+  min-width: calc(230 * var(--u));
+  font-variant-numeric: tabular-nums;
+}
+.refine-btn-batch {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-width: calc(84 * var(--u));
+  padding: calc(6 * var(--u)) calc(14 * var(--u));
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+.refine-btn-batch small {
+  font-family: var(--font-text);
+  font-size: calc(12 * var(--u));
+  font-weight: 600;
+  letter-spacing: 0;
+  opacity: 0.8;
+}
+.refine-milestone-row { height: calc(32 * var(--u)); align-items: center; overflow: hidden; }
+.refine-milestone-row .value { font-weight: 600; }
+.refine-milestone-row:not(.next) .value { color: var(--text-dim); }
+.refine-milestone-row.next { border-color: var(--gold-bright); }
+
+/* ---- Кнопка «Сбросить» (v0.11) ---- */
+.refine-btn-reset {
+  font-family: 'Cinzel', serif;
+  font-size: calc(15 * var(--u));
+  padding: calc(10 * var(--u)) calc(20 * var(--u));
+  background: linear-gradient(180deg, #3a1010, #200808);
+  color: #ff9090;
+  border: 1px solid #5a2020;
+  border-radius: calc(3 * var(--u));
+  cursor: pointer;
+  transition: all 0.2s;
+  letter-spacing: calc(1 * var(--u));
+  font-weight: 700;
+}
+.refine-btn-reset:hover {
+  border-color: #a03030;
+  color: #ffb0b0;
+  box-shadow: 0 0 calc(20 * var(--u)) rgba(200,60,60,0.4);
+}
+.refine-btn-reset:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+.refine-btn-reset:disabled:hover {
+  border-color: #5a2020;
+  color: #ff9090;
+  box-shadow: none;
+}
+
+/* ---- История ---- */
+.refine-history {
+  border-top: 1px solid var(--border);
+  padding: calc(10 * var(--u)) calc(16 * var(--u));
+  max-height: calc(120 * var(--u));
+  overflow-y: auto;
+  background: rgba(0,0,0,0.3);
+}
+.refine-history-title {
+  font-family: 'Cinzel', serif;
+  font-size: var(--fs-tiny);
+  color: var(--gold);
+  letter-spacing: calc(2 * var(--u));
+  margin-bottom: calc(6 * var(--u));
+}
+.refine-history-entry {
+  font-size: var(--fs-small);
+  color: var(--text-dim);
+  padding: calc(2 * var(--u)) 0;
+  font-family: var(--font-text);
+}
+.refine-history-entry.success { color: #a0d080; }
+.refine-history-entry.milestone { color: var(--gold-bright); font-weight: 700; }
+.refine-history-entry.fail { color: #c08080; }
+/* НОВОЕ (v0.11): запись о сбросе — приглушённо-жёлтая. */
+.refine-history-entry.reset { color: #c0a0a0; font-style: italic; }
+
+/* ---- Адаптив ---- */
+@media (max-width: 900px) {
+  .refine-body {
+    grid-template-columns: 1fr;
+  }
+  .refine-title {
+    font-size: calc(14 * var(--u));
+  }
+}
+@media (max-width: 600px) {
+  .refine-overlay { padding: calc(6 * var(--u)); }
+  .refine-header { padding: calc(8 * var(--u)) calc(10 * var(--u)); }
+  .refine-title { font-size: calc(12.5 * var(--u)); letter-spacing: 0; }
+  .refine-panel { padding: calc(8 * var(--u)); }
+  .refine-preview-name { font-size: calc(15 * var(--u)); }
+  .refine-preview-levels { font-size: calc(18 * var(--u)); }
+  .refine-btn { font-size: calc(13 * var(--u)); padding: calc(8 * var(--u)) calc(20 * var(--u)); }
+  .refine-btn-reset { font-size: calc(13 * var(--u)); padding: calc(8 * var(--u)) calc(14 * var(--u)); }
+  .refine-btn-main { min-width: 0; width: 100%; }
+  .refine-btn-batch { flex: 1; min-width: 0; padding: calc(6 * var(--u)) calc(8 * var(--u)); }
+}

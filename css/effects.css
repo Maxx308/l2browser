@@ -1,0 +1,409 @@
+/* ========================================================
+   EFFECTS.CSS — панель эффектов + тосты
+   + Чипы микстур: компактные, выровнены с остальными.
+   + АДАПТИВНАЯ ВЁРСТКА: планшет и телефон.
+   + ПОДШАГ 0.3 (уборка): удалены стили старого оверлея
+     горения (.monster-burn-overlay, @keyframes burnPulse).
+     Дебаффы показывает renderDebuffBar.
+   ======================================================== */
+
+/* ---------- ПАНЕЛЬ АКТИВНЫХ ЭФФЕКТОВ ---------- */
+.effects-panel {
+  display: none;
+  gap: calc(6 * var(--u));
+  margin-bottom: calc(8 * var(--u));
+  padding: calc(6 * var(--u)) calc(10 * var(--u));
+  background: linear-gradient(180deg, var(--bg-2), var(--bg-1));
+  border: 1px solid var(--border);
+  border-radius: calc(4 * var(--u));
+  box-shadow: var(--shadow);
+  flex-wrap: wrap;
+  align-items: center;
+}
+.effects-panel.active { display: flex; }
+.effects-panel-title {
+  font-family: 'Cinzel', serif;
+  font-size: calc(9 * var(--u));
+  color: var(--gold);
+  letter-spacing: calc(1.5 * var(--u));
+  padding-right: calc(6 * var(--u));
+  border-right: 1px solid var(--border);
+  margin-right: calc(2 * var(--u));
+}
+
+/* ---------- БАЗОВЫЙ ЧИП ---------- */
+.effect-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: calc(4 * var(--u));
+  padding: calc(3 * var(--u)) calc(7 * var(--u));
+  border-radius: calc(3 * var(--u));
+  border: 1px solid;
+  font-family: 'Cinzel', serif;
+  font-size: calc(9.5 * var(--u));
+  letter-spacing: calc(0.3 * var(--u));
+  transition: all 0.2s;
+  position: relative;
+  line-height: 1;
+}
+
+.effect-chip.food {
+  background: linear-gradient(180deg, rgba(30,60,20,0.7), rgba(15,30,10,0.7));
+  border-color: #4a8a30;
+  color: var(--food-bright);
+  box-shadow: 0 0 calc(6 * var(--u)) rgba(120,200,90,0.25);
+}
+.effect-chip.potion {
+  background: linear-gradient(180deg, rgba(60,40,10,0.7), rgba(30,20,5,0.7));
+  border-color: var(--gold);
+  color: var(--gold-bright);
+  box-shadow: 0 0 calc(6 * var(--u)) rgba(184,148,90,0.25);
+}
+.effect-chip.berserk {
+  background: linear-gradient(180deg, rgba(70,20,20,0.7), rgba(35,10,10,0.7));
+  border-color: #a03030;
+  color: #ff8080;
+  box-shadow: 0 0 calc(6 * var(--u)) rgba(200,60,60,0.35);
+}
+.effect-chip.eloquence {
+  background: linear-gradient(180deg, rgba(30,40,80,0.7), rgba(15,20,40,0.7));
+  border-color: #5080d0;
+  color: var(--magic-bright);
+  box-shadow: 0 0 calc(6 * var(--u)) rgba(106,154,224,0.35);
+}
+.effect-chip.combat {
+  background: linear-gradient(180deg, rgba(60,50,20,0.7), rgba(30,25,10,0.7));
+  border-color: #b09040;
+  color: #e0c080;
+  box-shadow: 0 0 calc(6 * var(--u)) rgba(180,144,64,0.35);
+}
+
+/* Чип таверны */
+.effect-chip.tavern {
+  background: linear-gradient(180deg, rgba(60,40,10,0.85), rgba(30,20,5,0.85));
+  border-color: #b8945a;
+  color: #f0d090;
+  box-shadow: 0 0 calc(6 * var(--u)) rgba(184,148,90,0.5);
+}
+
+/* ========================================================
+   ЧИПЫ МИКСТУР
+   ======================================================== */
+
+/* Атака (красный) */
+.effect-chip.mixture-atk {
+  background: linear-gradient(180deg, rgba(80,20,10,0.85), rgba(40,10,5,0.85));
+  border-color: #a03020;
+  color: #ff9090;
+  box-shadow: 0 0 calc(6 * var(--u)) rgba(200,60,40,0.4);
+}
+
+/* Удача (зелёный) */
+.effect-chip.mixture-luck {
+  background: linear-gradient(180deg, rgba(20,60,20,0.85), rgba(10,30,10,0.85));
+  border-color: #3a8a3a;
+  color: #a0e0a0;
+  box-shadow: 0 0 calc(6 * var(--u)) rgba(80,200,80,0.4);
+}
+
+/* Крепость (синий) */
+.effect-chip.mixture-def {
+  background: linear-gradient(180deg, rgba(20,40,80,0.85), rgba(10,20,40,0.85));
+  border-color: #3a5a8a;
+  color: #a0c8ff;
+  box-shadow: 0 0 calc(6 * var(--u)) rgba(80,120,200,0.4);
+}
+
+/* Пульсация */
+.effect-chip.low {
+  animation: mixtureLow 1.2s infinite;
+}
+
+@keyframes mixtureLow {
+  0%, 100% {
+    filter: brightness(1);
+    box-shadow: 0 0 calc(4 * var(--u)) currentColor;
+  }
+  50% {
+    filter: brightness(1.5);
+    box-shadow: 0 0 calc(12 * var(--u)) currentColor;
+  }
+}
+
+/* ---------- ИКОНКА И ТЕКСТ В ЧИПЕ ---------- */
+.effect-chip .ec-icon {
+  font-size: calc(12 * var(--u));
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: calc(13 * var(--u));
+  height: calc(13 * var(--u));
+}
+
+/* SVG-иконка микстуры — компактная, по центру */
+.effect-chip .ec-icon svg {
+  width: calc(13 * var(--u));
+  height: calc(13 * var(--u));
+  display: block;
+}
+
+.effect-chip .ec-name {
+  color: inherit;
+  font-size: calc(10 * var(--u));
+  line-height: 1;
+}
+
+.effect-chip .ec-value {
+  font-weight: 700;
+  color: #fff;
+  text-shadow: 0 0 calc(4 * var(--u)) currentColor;
+  font-size: calc(11 * var(--u));
+  line-height: 1;
+}
+
+/* ---------- TOAST ---------- */
+#toast-container {
+  position: fixed;
+  top: calc(70 * var(--u));
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 500;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: calc(8 * var(--u));
+  pointer-events: none;
+  max-width: 90vw;
+}
+
+.toast {
+  display: inline-flex;
+  align-items: center;
+  gap: calc(10 * var(--u));
+  padding: calc(10 * var(--u)) calc(20 * var(--u));
+  background: linear-gradient(180deg, rgba(30,25,15,0.95), rgba(15,12,8,0.95));
+  border: 1px solid var(--gold);
+  border-radius: calc(4 * var(--u));
+  font-family: 'Cinzel', serif;
+  font-size: var(--fs-medium);
+  color: var(--gold-bright);
+  letter-spacing: calc(0.5 * var(--u));
+  box-shadow: 0 0 calc(20 * var(--u)) rgba(184,148,90,0.4), 0 4px calc(12 * var(--u)) rgba(0,0,0,0.6);
+  opacity: 0;
+  transform: translateY(calc(-10 * var(--u)));
+  transition: opacity 0.35s ease, transform 0.35s ease;
+  white-space: nowrap;
+  max-width: 90vw;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.toast.visible { opacity: 1; transform: translateY(0); }
+.toast-icon { font-size: calc(18 * var(--u)); line-height: 1; filter: drop-shadow(0 0 calc(6 * var(--u)) rgba(224,190,122,0.6)); }
+.toast-text { color: var(--gold-bright); text-shadow: 0 0 calc(8 * var(--u)) rgba(224,190,122,0.4); }
+
+.flash-gold { animation: flashGold 1s ease-out; }
+@keyframes flashGold {
+  0%   { box-shadow: 0 0 0 0 rgba(224,190,122,0); border-color: var(--border); }
+  20%  { box-shadow: 0 0 calc(30 * var(--u)) calc(4 * var(--u)) rgba(224,190,122,0.8); border-color: var(--gold-bright); }
+  60%  { box-shadow: 0 0 calc(30 * var(--u)) calc(4 * var(--u)) rgba(224,190,122,0.8); border-color: var(--gold-bright); }
+  100% { box-shadow: 0 0 0 0 rgba(224,190,122,0); border-color: var(--border); }
+}
+
+/* ========================================================
+   АДАПТАЦИЯ ПОД РАЗНЫЕ ЭКРАНЫ
+   ======================================================== */
+
+/* ---------- ПЛАНШЕТЫ (900-1100px) ---------- */
+@media (max-width: 1100px) {
+  .effects-panel {
+    padding: calc(5 * var(--u)) calc(8 * var(--u));
+    gap: calc(5 * var(--u));
+  }
+  .effect-chip {
+    padding: calc(3 * var(--u)) calc(6 * var(--u));
+    font-size: calc(10 * var(--u));
+  }
+  .effect-chip .ec-name {
+    font-size: calc(10 * var(--u));
+  }
+  .effect-chip .ec-value {
+    font-size: calc(10.5 * var(--u));
+  }
+}
+
+/* ---------- МОБИЛЬНЫЕ ПЛАНШЕТЫ / КРУПНЫЕ ТЕЛЕФОНЫ (700-900px) ---------- */
+@media (max-width: 900px) {
+  .effects-panel {
+    padding: calc(5 * var(--u)) calc(8 * var(--u));
+    gap: calc(4 * var(--u));
+    margin-bottom: calc(6 * var(--u));
+    border-radius: calc(3 * var(--u));
+  }
+  .effects-panel-title {
+    font-size: calc(9 * var(--u));
+    letter-spacing: calc(1 * var(--u));
+    padding-right: calc(5 * var(--u));
+  }
+
+  .effect-chip {
+    padding: calc(2 * var(--u)) calc(5 * var(--u));
+    font-size: calc(9.5 * var(--u));
+    gap: calc(3 * var(--u));
+  }
+  .effect-chip .ec-icon {
+    width: calc(11 * var(--u));
+    height: calc(11 * var(--u));
+  }
+  .effect-chip .ec-icon svg {
+    width: calc(11 * var(--u));
+    height: calc(11 * var(--u));
+  }
+  .effect-chip .ec-name {
+    font-size: calc(9.5 * var(--u));
+  }
+  .effect-chip .ec-value {
+    font-size: calc(10 * var(--u));
+  }
+
+  /* Toast — компактнее */
+  #toast-container {
+    top: calc(90 * var(--u));
+    gap: calc(6 * var(--u));
+  }
+  .toast {
+    padding: calc(8 * var(--u)) calc(14 * var(--u));
+    font-size: calc(12 * var(--u));
+    gap: calc(7 * var(--u));
+  }
+  .toast-icon {
+    font-size: calc(15 * var(--u));
+  }
+}
+
+/* ---------- ТЕЛЕФОНЫ ВЕРТИКАЛЬНО (< 600px) ---------- */
+@media (max-width: 600px) {
+  .effects-panel {
+    padding: calc(4 * var(--u)) calc(6 * var(--u));
+    gap: calc(3 * var(--u));
+    margin-bottom: calc(5 * var(--u));
+  }
+  .effects-panel-title {
+    font-size: calc(8.5 * var(--u));
+    padding-right: calc(4 * var(--u));
+    letter-spacing: calc(0.5 * var(--u));
+    border-right: none;
+    padding-right: 0;
+    margin-right: 0;
+    width: 100%;
+    text-align: center;
+    margin-bottom: calc(2 * var(--u));
+  }
+
+  /* На телефоне чип — компактный, но читаемый */
+  .effect-chip {
+    padding: calc(2 * var(--u)) calc(5 * var(--u));
+    font-size: calc(9.5 * var(--u));
+    gap: calc(2 * var(--u));
+    border-radius: calc(2 * var(--u));
+    letter-spacing: 0;
+  }
+  .effect-chip .ec-icon {
+    width: calc(10 * var(--u));
+    height: calc(10 * var(--u));
+    font-size: calc(10 * var(--u));
+  }
+  .effect-chip .ec-icon svg {
+    width: calc(10 * var(--u));
+    height: calc(10 * var(--u));
+  }
+  .effect-chip .ec-name {
+    font-size: calc(9.5 * var(--u));
+  }
+  .effect-chip .ec-value {
+    font-size: calc(10 * var(--u));
+  }
+
+  /* Toast — почти во всю ширину, по центру */
+  #toast-container {
+    top: calc(80 * var(--u));
+    gap: calc(5 * var(--u));
+    max-width: 94vw;
+    left: 3vw;
+    right: 3vw;
+    transform: none;
+    align-items: center;
+  }
+  .toast {
+    padding: calc(7 * var(--u)) calc(12 * var(--u));
+    font-size: calc(12 * var(--u));
+    gap: calc(6 * var(--u));
+    letter-spacing: calc(0.2 * var(--u));
+    border-radius: calc(3 * var(--u));
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .toast-icon {
+    font-size: calc(14 * var(--u));
+    flex-shrink: 0;
+  }
+  .toast-text {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    min-width: 0;
+  }
+}
+
+/* ---------- МАЛЕНЬКИЕ ТЕЛЕФОНЫ (< 400px) ---------- */
+@media (max-width: 400px) {
+  .effect-chip {
+    padding: calc(2 * var(--u)) calc(4 * var(--u));
+    font-size: calc(9 * var(--u));
+  }
+  .effect-chip .ec-name {
+    font-size: calc(9 * var(--u));
+  }
+  .effect-chip .ec-value {
+    font-size: calc(10 * var(--u));
+  }
+
+  .toast {
+    font-size: calc(11 * var(--u));
+    padding: calc(6 * var(--u)) calc(10 * var(--u));
+  }
+  .toast-icon {
+    font-size: calc(13 * var(--u));
+  }
+}
+
+/* ---------- ГОРИЗОНТАЛЬНЫЙ ТЕЛЕФОН / НИЗКИЙ ЭКРАН ---------- */
+@media (max-height: 600px) and (orientation: landscape) {
+  #toast-container {
+    top: calc(60 * var(--u));
+    left: 50%;
+    right: auto;
+    max-width: 80vw;
+    transform: translateX(-50%);
+  }
+  .toast {
+    padding: calc(6 * var(--u)) calc(12 * var(--u));
+    font-size: calc(12 * var(--u));
+  }
+
+  .effects-panel {
+    padding: calc(4 * var(--u)) calc(8 * var(--u));
+    gap: calc(4 * var(--u));
+  }
+  .effect-chip {
+    padding: calc(2 * var(--u)) calc(5 * var(--u));
+    font-size: calc(9.5 * var(--u));
+  }
+  .effect-chip .ec-name {
+    font-size: calc(9.5 * var(--u));
+  }
+  .effect-chip .ec-value {
+    font-size: calc(10 * var(--u));
+  }
+}

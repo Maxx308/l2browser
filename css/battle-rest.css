@@ -1,0 +1,89 @@
+/* ========================================================
+   BATTLE-REST.CSS — привал на арене (v0.24)
+   Карточка вместо монстров, пока герой восстанавливается.
+   Картинка костра: img/locations/campfire.png (иначе — 🔥).
+   ======================================================== */
+
+.bx-rest {
+  flex-direction: column; align-items: center;
+  gap: calc(8 * var(--u));
+  width: min(100%, calc(360 * var(--u)));
+  padding: calc(16 * var(--u)) calc(18 * var(--u));
+  background: radial-gradient(ellipse at 50% 20%, rgba(255,150,60,.16), transparent 60%),
+              linear-gradient(180deg, rgba(20,14,8,.88), rgba(10,8,6,.92));
+  border: 1px solid #5a4424;
+  border-radius: calc(8 * var(--u));
+  box-shadow: 0 8px 24px rgba(0,0,0,.6), inset 0 0 calc(30 * var(--u)) rgba(255,140,50,.07);
+  text-align: center;
+  animation: bxRestIn .6s ease-out;
+}
+@keyframes bxRestIn { from { opacity: 0; transform: translateY(calc(10 * var(--u))) scale(.97); } to { opacity: 1; transform: none; } }
+
+/* ---- Костёр ---- */
+.bx-rest-fire {
+  position: relative;
+  width: calc(96 * var(--u)); height: calc(96 * var(--u));
+  display: flex; align-items: center; justify-content: center;
+}
+.bx-rest-fire::before {          /* тёплое свечение под костром */
+  content: ""; position: absolute; inset: -20%;
+  background: radial-gradient(circle, rgba(255,150,60,.35), transparent 65%);
+  animation: bxRestGlow 2.4s ease-in-out infinite alternate;
+}
+.bx-rest-fire img { position: relative; width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 4px 10px rgba(0,0,0,.7)); }
+.bx-rest-emoji { position: relative; font-size: calc(56 * var(--u)); line-height: 1; animation: bxRestFlicker 1.3s ease-in-out infinite alternate; }
+.bx-rest-fire.has-img .bx-rest-emoji { display: none; }
+@keyframes bxRestGlow { from { opacity: .55; transform: scale(.92); } to { opacity: 1; transform: scale(1.08); } }
+@keyframes bxRestFlicker { from { transform: scale(1) rotate(-2deg); } to { transform: scale(1.08) rotate(2deg); } }
+
+.bx-rest-title {
+  font-family: 'Cinzel', serif; font-weight: 700;
+  font-size: calc(24 * var(--u)); letter-spacing: .2em;
+  color: var(--gold-bright); text-shadow: 0 2px 8px #000;
+}
+.bx-rest-reason { font-size: calc(14 * var(--u)); color: #e0a070; }
+
+/* ---- Полоски HP / MP ---- */
+.bx-rest-bars { width: 100%; display: flex; flex-direction: column; gap: calc(6 * var(--u)); margin: calc(4 * var(--u)) 0; }
+.bx-rest-row { display: grid; grid-template-columns: calc(22 * var(--u)) 1fr auto; align-items: center; gap: calc(8 * var(--u)); }
+.bx-rest-ico { font-size: calc(15 * var(--u)); }
+.bx-rest-bar {
+  position: relative; height: calc(14 * var(--u));
+  background: #0b0907; border: 1px solid #3a2e1c; border-radius: calc(7 * var(--u));
+  overflow: visible;
+}
+.bx-rest-fill { height: 100%; border-radius: calc(7 * var(--u)); transition: width .9s linear; }
+.bx-rest-row.hp .bx-rest-fill { background: linear-gradient(90deg, #7a1a14, #d84a3a); }
+.bx-rest-row.mp .bx-rest-fill { background: linear-gradient(90deg, #1a3a7a, #4a8ae0); }
+.bx-rest-goal {                   /* отметка «ждём до N%» */
+  position: absolute; top: calc(-4 * var(--u)); bottom: calc(-4 * var(--u));
+  width: 2px; margin-left: -1px;
+  background: var(--gold-bright); box-shadow: 0 0 6px rgba(255,214,120,.8);
+}
+.bx-rest-val { font-size: calc(13 * var(--u)); color: #f1e3c2; white-space: nowrap; min-width: calc(76 * var(--u)); text-align: right; font-weight: 600; }
+
+.bx-rest-eta { font-size: calc(15 * var(--u)); color: #f1e3c2; }
+.bx-rest-next { font-size: calc(13 * var(--u)); color: #9c8f75; font-style: italic; }
+
+.bx-rest-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: calc(8 * var(--u)); margin-top: calc(6 * var(--u)); }
+.bx-rest-actions .btn { min-height: calc(40 * var(--u)); padding: calc(6 * var(--u)) calc(14 * var(--u)); }
+
+/* На привале сцена чуть темнее и теплее */
+.bx-stage.bx-resting .bx-bg { filter: brightness(.6) sepia(.25); transition: filter 1s; }
+
+/* Вертикальный телефон: карточка по центру, на всю ширину */
+@media (max-width: 700px) and (orientation: portrait) {
+  .bx-enemies .bx-rest { width: 100%; }
+}
+@media (max-width: 600px) {
+  .bx-rest { padding: calc(12 * var(--u)); gap: calc(6 * var(--u)); }
+  .bx-rest-fire { width: calc(72 * var(--u)); height: calc(72 * var(--u)); }
+  .bx-rest-emoji { font-size: calc(42 * var(--u)); }
+  .bx-rest-title { font-size: calc(19 * var(--u)); }
+  .bx-rest-val { min-width: calc(64 * var(--u)); font-size: calc(12 * var(--u)); }
+  .bx-rest-actions .btn { font-size: calc(12 * var(--u)); padding: calc(6 * var(--u)) calc(10 * var(--u)); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bx-rest, .bx-rest-fire::before, .bx-rest-emoji { animation: none; }
+}

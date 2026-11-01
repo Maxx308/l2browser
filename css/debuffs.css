@@ -1,0 +1,148 @@
+/* ========================================================
+   DEBUFFS.CSS — панель дебаффов в бою
+   Подключать ПОСЛЕ battle.css.
+   Вынесено из battle.css (v0.12).
+
+   Что внутри:
+   - .debuff-bar — контейнер чипов
+   - .debuff-chip — базовый чип
+   - цвета: burn / bleed / wound / freeze / poison / stun / confused
+   - НОВОЕ (v0.12): greed (метка жадности), web (паутина)
+   - адаптив (медиа-запросы)
+   ======================================================== */
+
+.debuff-bar {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: calc(4 * var(--u));
+  margin-bottom: calc(8 * var(--u));
+  min-height: 0;
+}
+
+.debuff-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: calc(2 * var(--u));
+  padding: calc(2 * var(--u)) calc(6 * var(--u));
+  border-radius: calc(3 * var(--u));
+  border: 1px solid;
+  font-family: 'Cinzel', serif;
+  font-size: calc(11 * var(--u));
+  line-height: 1;
+  cursor: help;
+  transition: all 0.2s;
+  white-space: nowrap;
+  position: relative;
+}
+
+.debuff-chip .dc-icon {
+  font-size: calc(13 * var(--u));
+  line-height: 1;
+}
+
+.debuff-chip .dc-count {
+  font-weight: 700;
+  font-size: calc(12 * var(--u));
+  color: #fff;
+  text-shadow: 0 0 calc(4 * var(--u)) currentColor;
+}
+
+/* --- ЦВЕТА ПО ТИПУ ДЕБАФФА --- */
+.debuff-chip.debuff-burn {
+  background: linear-gradient(180deg, rgba(80,25,5,0.85), rgba(40,10,2,0.85));
+  border-color: #ff8020;
+  color: #ffb060;
+}
+.debuff-chip.debuff-bleed {
+  background: linear-gradient(180deg, rgba(80,10,15,0.85), rgba(40,5,8,0.85));
+  border-color: #c02030;
+  color: #ff7070;
+}
+.debuff-chip.debuff-wound {
+  background: linear-gradient(180deg, rgba(70,50,20,0.85), rgba(35,25,10,0.85));
+  border-color: #c0a060;
+  color: #ffd080;
+}
+.debuff-chip.debuff-freeze {
+  background: linear-gradient(180deg, rgba(10,40,80,0.85), rgba(5,20,40,0.85));
+  border-color: #6a9ae0;
+  color: #a0c8ff;
+}
+.debuff-chip.debuff-poison {
+  background: linear-gradient(180deg, rgba(10,60,15,0.85), rgba(5,30,8,0.85));
+  border-color: #40a040;
+  color: #a0ffa0;
+}
+.debuff-chip.debuff-stun {
+  background: linear-gradient(180deg, rgba(80,70,10,0.85), rgba(40,35,5,0.85));
+  border-color: #e0c040;
+  color: #ffe880;
+}
+.debuff-chip.debuff-confused {
+  background: linear-gradient(180deg, rgba(60,30,70,0.85), rgba(30,15,35,0.85));
+  border-color: #a060c0;
+  color: #d0a0ff;
+}
+
+/* ---- НОВОЕ (v0.12): МЕТКА ЖАДНОСТИ (гном) ---- */
+.debuff-chip.debuff-greed {
+  background: linear-gradient(180deg, rgba(80,60,10,0.85), rgba(40,30,5,0.85));
+  border-color: #ffd040;
+  color: #ffe880;
+  box-shadow: 0 0 calc(8 * var(--u)) rgba(255, 208, 64, 0.5);
+}
+
+/* ---- НОВОЕ (v0.12): ПАУТИНА (Шелкопряд) ---- */
+.debuff-chip.debuff-web {
+  background: linear-gradient(180deg, rgba(60,60,70,0.85), rgba(30,30,40,0.85));
+  border-color: #c0c8d0;
+  color: #e0e8f0;
+  box-shadow: 0 0 calc(6 * var(--u)) rgba(192, 200, 208, 0.4);
+}
+
+/* ========================================================
+   АДАПТАЦИЯ
+   ======================================================== */
+
+@media (max-width: 900px) {
+  .debuff-chip { font-size: calc(11 * var(--u)); padding: calc(2 * var(--u)) calc(5 * var(--u)); }
+  .debuff-chip .dc-icon { font-size: calc(12.5 * var(--u)); }
+  .debuff-chip .dc-count { font-size: calc(11 * var(--u)); }
+}
+
+@media (max-width: 600px) {
+  .debuff-bar { gap: calc(3 * var(--u)); margin-bottom: calc(6 * var(--u)); }
+  .debuff-chip { font-size: calc(10.5 * var(--u)); padding: calc(2 * var(--u)) calc(4 * var(--u)); border-radius: calc(2 * var(--u)); }
+  .debuff-chip .dc-icon { font-size: calc(12 * var(--u)); }
+  .debuff-chip .dc-count { font-size: calc(10.5 * var(--u)); }
+}
+
+@media (max-width: 400px) {
+  .debuff-chip { font-size: calc(10 * var(--u)); padding: calc(1 * var(--u)) calc(4 * var(--u)); }
+  .debuff-chip .dc-icon { font-size: calc(11 * var(--u)); }
+  .debuff-chip .dc-count { font-size: calc(10 * var(--u)); }
+}
+/* v0.19: дебаффы массовых навыков */
+.debuff-chip.debuff-rot {
+  background: linear-gradient(180deg, rgba(30,60,10,0.85), rgba(15,30,5,0.85));
+  border-color: #6fbf2f;
+  color: #b8ff7a;
+}
+.debuff-chip.debuff-entangle {
+  background: linear-gradient(180deg, rgba(20,55,25,0.85), rgba(10,28,12,0.85));
+  border-color: #3f9a4a;
+  color: #9ff0a8;
+}
+.debuff-chip.debuff-rune {
+  background: linear-gradient(180deg, rgba(20,45,80,0.85), rgba(10,22,40,0.85));
+  border-color: #8fd3ff;
+  color: #d8f2ff;
+}
+
+/* v0.19.1: Паралич (Разряд дроу) */
+.debuff-chip.debuff-paralysis { border-color: #8fb8ff; color: #d8e6ff; box-shadow: 0 0 calc(6 * var(--u)) rgba(120,170,255,.6); }
+.debuff-chip.debuff-regen { border-color: #3f8a4a; color: #b8f0c0; background: rgba(40,110,60,.3); }
+.debuff-chip.debuff-guard { border-color: #6a7c96; color: #d4deec; background: rgba(60,80,110,.35); }
+.debuff-chip.debuff-paraimmune { border-color: #556070; color: #9aa6b8; opacity: .8; }

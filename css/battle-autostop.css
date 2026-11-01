@@ -1,0 +1,232 @@
+/* ========================================================
+   BATTLE-AUTOSTOP.CSS — панель авто-стопа / авто-старта
+   Подключать ПОСЛЕ battle.css.
+   Вынесено из battle.css (v0.12).
+
+   Что внутри:
+   - .auto-stop-panel — контейнер
+   - .auto-wait-indicator — индикатор ожидания (HP/MP)
+   - .auto-stop-row — строка (иконка + ползунки)
+   - .auto-slider — общий стиль ползунка
+   - .auto-slider.stop-hp / resume-hp / stop-mp / resume-mp
+   - .auto-slider-value / .auto-slider-tag
+   - адаптив (медиа-запросы)
+   ======================================================== */
+
+.auto-stop-panel {
+  display: flex;
+  flex-direction: column;
+  gap: calc(8 * var(--u));
+  margin-top: calc(12 * var(--u));
+  padding: calc(12 * var(--u)) calc(16 * var(--u));
+  background: linear-gradient(180deg, #0d0d12, #050505);
+  border: 1px solid var(--border);
+  border-radius: calc(3 * var(--u));
+}
+
+.auto-wait-indicator {
+  font-family: 'Cinzel', serif;
+  font-size: var(--fs-base);
+  letter-spacing: calc(0.5 * var(--u));
+  text-align: center;
+  padding: calc(6 * var(--u)) calc(10 * var(--u));
+  border-radius: calc(3 * var(--u));
+  animation: autoWaitPulse 1.5s infinite;
+}
+
+.auto-wait-indicator.wait-hp {
+  color: #ff9090;
+  background: linear-gradient(180deg, rgba(80,20,20,0.6), rgba(40,10,10,0.6));
+  border: 1px solid #a03030;
+  box-shadow: 0 0 calc(8 * var(--u)) rgba(200,60,60,0.4);
+}
+
+.auto-wait-indicator.wait-mp {
+  color: #a0c8ff;
+  background: linear-gradient(180deg, rgba(20,40,80,0.6), rgba(10,20,40,0.6));
+  border: 1px solid #3a5a8a;
+  box-shadow: 0 0 calc(8 * var(--u)) rgba(80,120,200,0.4);
+}
+
+@keyframes autoWaitPulse {
+  0%, 100% { filter: brightness(1); }
+  50%      { filter: brightness(1.35); }
+}
+
+.auto-stop-row {
+  display: grid;
+  grid-template-columns: calc(140 * var(--u)) 1fr;
+  gap: calc(12 * var(--u));
+  align-items: center;
+}
+
+.auto-stop-label {
+  display: flex;
+  align-items: center;
+  gap: calc(6 * var(--u));
+  font-family: 'Cinzel', serif;
+  font-size: var(--fs-base);
+  color: var(--text-dim);
+  letter-spacing: calc(1 * var(--u));
+}
+
+.auto-stop-icon {
+  font-size: calc(16 * var(--u));
+  line-height: 1;
+}
+.auto-stop-icon.hp-icon { color: #ff6060; text-shadow: 0 0 calc(6 * var(--u)) rgba(255,80,80,0.6); }
+.auto-stop-icon.mp-icon { color: #80a8ff; text-shadow: 0 0 calc(6 * var(--u)) rgba(100,140,255,0.6); }
+
+.auto-stop-name { font-size: var(--fs-small); }
+
+.auto-stop-sliders {
+  display: flex;
+  gap: calc(16 * var(--u));
+  flex-wrap: wrap;
+}
+
+.auto-slider-group {
+  display: flex;
+  align-items: center;
+  gap: calc(8 * var(--u));
+  flex: 1;
+  min-width: calc(200 * var(--u));
+}
+
+.auto-slider-tag {
+  font-family: 'Cinzel', serif;
+  font-size: calc(9.5 * var(--u));
+  letter-spacing: calc(1 * var(--u));
+  padding: calc(2 * var(--u)) calc(6 * var(--u));
+  border-radius: calc(2 * var(--u));
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.auto-slider-tag.stop-tag {
+  color: #ff9090;
+  background: rgba(80,20,20,0.5);
+  border: 1px solid #5a2020;
+}
+
+.auto-slider-tag.resume-tag {
+  color: #a0ffa0;
+  background: rgba(20,60,20,0.5);
+  border: 1px solid #205a20;
+}
+
+.auto-slider {
+  flex: 1;
+  appearance: none;
+  -webkit-appearance: none;
+  height: calc(6 * var(--u));
+  border-radius: calc(3 * var(--u));
+  background: #1a1a1a;
+  outline: none;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.auto-slider::-webkit-slider-thumb {
+  appearance: none;
+  -webkit-appearance: none;
+  width: calc(16 * var(--u));
+  height: calc(16 * var(--u));
+  border-radius: 50%;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: 1px solid #000;
+}
+.auto-slider::-moz-range-thumb {
+  width: calc(16 * var(--u));
+  height: calc(16 * var(--u));
+  border-radius: 50%;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: 1px solid #000;
+}
+
+.auto-slider.stop-hp::-webkit-slider-thumb {
+  background: linear-gradient(180deg, #ff6060, #8a1010);
+  box-shadow: 0 0 calc(8 * var(--u)) rgba(255,80,80,0.6);
+}
+.auto-slider.stop-hp::-moz-range-thumb {
+  background: linear-gradient(180deg, #ff6060, #8a1010);
+  box-shadow: 0 0 calc(8 * var(--u)) rgba(255,80,80,0.6);
+}
+.auto-slider.resume-hp::-webkit-slider-thumb {
+  background: linear-gradient(180deg, #ffb0b0, #c04040);
+  box-shadow: 0 0 calc(8 * var(--u)) rgba(255,150,150,0.6);
+}
+.auto-slider.resume-hp::-moz-range-thumb {
+  background: linear-gradient(180deg, #ffb0b0, #c04040);
+  box-shadow: 0 0 calc(8 * var(--u)) rgba(255,150,150,0.6);
+}
+.auto-slider.stop-mp::-webkit-slider-thumb {
+  background: linear-gradient(180deg, #6090ff, #1030a0);
+  box-shadow: 0 0 calc(8 * var(--u)) rgba(80,120,255,0.6);
+}
+.auto-slider.stop-mp::-moz-range-thumb {
+  background: linear-gradient(180deg, #6090ff, #1030a0);
+  box-shadow: 0 0 calc(8 * var(--u)) rgba(80,120,255,0.6);
+}
+.auto-slider.resume-mp::-webkit-slider-thumb {
+  background: linear-gradient(180deg, #b0d0ff, #4060c0);
+  box-shadow: 0 0 calc(8 * var(--u)) rgba(150,180,255,0.6);
+}
+.auto-slider.resume-mp::-moz-range-thumb {
+  background: linear-gradient(180deg, #b0d0ff, #4060c0);
+  box-shadow: 0 0 calc(8 * var(--u)) rgba(150,180,255,0.6);
+}
+
+.auto-slider-value {
+  font-family: 'Cinzel', serif;
+  font-size: var(--fs-small);
+  color: var(--gold-bright);
+  min-width: calc(44 * var(--u));
+  text-align: right;
+  letter-spacing: calc(0.5 * var(--u));
+}
+.auto-slider-value.off {
+  color: var(--text-dim);
+  font-style: italic;
+}
+
+/* ========================================================
+   АДАПТАЦИЯ
+   ======================================================== */
+
+@media (max-width: 1400px) {
+  .auto-stop-panel { padding: calc(10 * var(--u)) calc(12 * var(--u)); }
+}
+
+@media (max-width: 900px) {
+  .auto-stop-panel { padding: calc(10 * var(--u)); }
+  .auto-stop-row { grid-template-columns: 1fr; gap: calc(6 * var(--u)); }
+  .auto-stop-label { justify-content: center; }
+  .auto-stop-sliders { gap: calc(8 * var(--u)); }
+  .auto-slider-group { min-width: 0; }
+}
+
+@media (max-width: 600px) {
+  .auto-stop-panel { padding: calc(8 * var(--u)); gap: calc(6 * var(--u)); }
+  .auto-stop-label { font-size: calc(12 * var(--u)); gap: calc(4 * var(--u)); }
+  .auto-stop-icon { font-size: calc(14 * var(--u)); }
+  .auto-stop-name { font-size: calc(11 * var(--u)); }
+  .auto-stop-sliders { gap: calc(6 * var(--u)); }
+  .auto-slider-group { gap: calc(5 * var(--u)); min-width: 0; flex: 1; }
+  .auto-slider-tag { font-size: calc(9.5 * var(--u)); padding: calc(2 * var(--u)) calc(4 * var(--u)); letter-spacing: 0; }
+  .auto-slider-value { font-size: calc(11 * var(--u)); min-width: calc(36 * var(--u)); }
+  .auto-slider::-webkit-slider-thumb { width: calc(18 * var(--u)); height: calc(18 * var(--u)); }
+  .auto-slider::-moz-range-thumb { width: calc(18 * var(--u)); height: calc(18 * var(--u)); }
+  .auto-wait-indicator { font-size: calc(12 * var(--u)); padding: calc(5 * var(--u)) calc(8 * var(--u)); }
+}
+
+@media (max-width: 400px) {
+  .auto-slider-tag { font-size: calc(8.5 * var(--u)); padding: calc(1 * var(--u)) calc(3 * var(--u)); }
+  .auto-slider-value { font-size: calc(10.5 * var(--u)); min-width: calc(30 * var(--u)); }
+}
+
+@media (max-height: 600px) and (orientation: landscape) {
+  .auto-stop-row { grid-template-columns: calc(120 * var(--u)) 1fr; }
+}

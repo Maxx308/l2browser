@@ -1,0 +1,141 @@
+/* ========================================================
+   STORAGE.CSS — окно склада (общий банк)
+   Две панели: инвентарь слева, склад справа.
+   ======================================================== */
+
+.storage-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.9);
+  z-index: 160;
+  align-items: flex-start;
+  justify-content: center;
+  padding: calc(20 * var(--u));
+  overflow-y: auto;
+}
+.storage-overlay.active { display: flex; }
+
+.storage-window {
+  background: linear-gradient(180deg, var(--bg-2), var(--bg-1));
+  border: 1px solid var(--gold);
+  border-radius: calc(4 * var(--u));
+  width: 100%;
+  max-width: calc(1100 * var(--u));
+  max-height: 92vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 0 calc(50 * var(--u)) rgba(184,148,90,0.4);
+  margin: auto 0;
+}
+
+.storage-header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: calc(14 * var(--u)) calc(18 * var(--u));
+  border-bottom: 1px solid var(--border);
+  background: linear-gradient(180deg, #1a1a22, #0a0a0c);
+  border-top-left-radius: calc(4 * var(--u));
+  border-top-right-radius: calc(4 * var(--u));
+  gap: calc(10 * var(--u));
+  flex-wrap: wrap;
+}
+
+.storage-title {
+  font-family: 'Cinzel', serif;
+  font-size: calc(18 * var(--u));
+  color: var(--gold-bright);
+  letter-spacing: calc(2 * var(--u));
+}
+
+.storage-body {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: calc(16 * var(--u));
+  padding: calc(16 * var(--u));
+  overflow-y: auto;
+  flex: 1;
+}
+
+.storage-panel {
+  background: linear-gradient(180deg, #15151a, #0d0d10);
+  border: 1px solid var(--border);
+  border-radius: calc(3 * var(--u));
+  padding: calc(12 * var(--u));
+  display: flex;
+  flex-direction: column;
+}
+
+.storage-panel-title {
+  font-family: 'Cinzel', serif;
+  font-size: var(--fs-small);
+  color: var(--gold);
+  letter-spacing: calc(3 * var(--u));
+  text-align: center;
+  padding-bottom: calc(8 * var(--u));
+  border-bottom: 1px solid var(--border);
+  margin-bottom: calc(10 * var(--u));
+}
+
+.storage-panel-count {
+  font-family: 'Cinzel', serif;
+  font-size: var(--fs-tiny);
+  color: var(--text-dim);
+  text-align: center;
+  margin-bottom: calc(8 * var(--u));
+}
+
+.storage-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: calc(6 * var(--u));
+  align-content: start;
+}
+
+.storage-hint {
+  font-size: var(--fs-tiny);
+  color: var(--text-dim);
+  font-style: italic;
+  text-align: center;
+  padding: calc(8 * var(--u)) 0;
+  border-top: 1px solid var(--border);
+  margin-top: calc(8 * var(--u));
+}
+
+/* ---------- АДАПТИВ ---------- */
+@media (max-width: 900px) {
+  .storage-window {
+    max-width: 100%;
+  }
+  .storage-body {
+    grid-template-columns: 1fr;
+    padding: calc(10 * var(--u));
+    gap: calc(10 * var(--u));
+  }
+  .storage-title {
+    font-size: calc(14 * var(--u));
+  }
+}
+
+@media (max-width: 600px) {
+  .storage-overlay {
+    padding: calc(6 * var(--u));
+  }
+  .storage-header {
+    padding: calc(8 * var(--u)) calc(10 * var(--u));
+  }
+  .storage-title {
+    font-size: calc(12.5 * var(--u));
+    letter-spacing: 0;
+  }
+  .storage-panel {
+    padding: calc(8 * var(--u));
+  }
+  .storage-grid {
+    gap: calc(5 * var(--u));
+  }
+}

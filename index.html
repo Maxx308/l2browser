@@ -1,0 +1,1277 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<script>
+// ========================================================
+//  АВТО-ПРОВЕРКА ВЕРСИИ
+//  Сравнивает version.txt с запомненной версией.
+//  Если версия изменилась — перезагружает страницу
+//  с уникальным URL, чтобы браузер не брал из кеша.
+// ========================================================
+(function() {
+  try {
+    fetch('version.txt?t=' + Date.now(), { cache: 'no-store' })
+      .then(function(r) { return r.text(); })
+      .then(function(newVersion) {
+        newVersion = String(newVersion).trim();
+        if (!newVersion) return;
+
+        var oldVersion = localStorage.getItem('l2browser_version') || '';
+
+        if (oldVersion && oldVersion !== newVersion) {
+          localStorage.setItem('l2browser_version', newVersion);
+          console.log('[version] Обновление:', oldVersion, '→', newVersion);
+          var url = new URL(location.href);
+          url.searchParams.set('_v', Date.now());
+          location.replace(url.toString());
+          return;
+        }
+
+        localStorage.setItem('l2browser_version', newVersion);
+      })
+      .catch(function() {});
+  } catch (e) {}
+})();
+</script>
+<meta charset="UTF-8">
+<!-- v0.18.1: без этой строки телефон рисует страницу шириной 980px, и мобильная вёрстка не включается -->
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<!-- ?v=... у css/js — чтобы после обновления телефон не брал старые файлы из кэша. Меняется с каждой версией. -->
+<title>L2 Browser — Андервуд</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&display=swap" rel="stylesheet">
+<script>
+// v0.22: шрифт основного текста — выбирается в Настройках (по умолчанию PT Serif).
+// Подключаем сразу, до отрисовки, и только выбранный — чтобы не грузить лишнее.
+var TEXT_FONTS = {
+  ptserif:  { name: 'PT Serif',     css: 'PT+Serif:wght@400;700',              stack: "'PT Serif', Georgia, serif",           weight: 400 },
+  classic:  { name: 'Классический', css: 'Cormorant+Garamond:wght@500;600;700', stack: "'Cormorant Garamond', Georgia, serif", weight: 600 },
+  alegreya: { name: 'Alegreya',     css: 'Alegreya:wght@400;500;700',           stack: "'Alegreya', Georgia, serif",           weight: 400 },
+  lora:     { name: 'Lora',         css: 'Lora:wght@400;500;700',               stack: "'Lora', Georgia, serif",               weight: 400 }
+};
+var TEXT_FONT_STORAGE_KEY = 'l2browser_text_font';
+function applyTextFont(id) {
+  var f = TEXT_FONTS[id] || TEXT_FONTS.ptserif;
+  var href = 'https://fonts.googleapis.com/css2?family=' + f.css + '&display=swap';
+  var link = document.getElementById('font-text-link');
+  if (!link) { link = document.createElement('link'); link.id = 'font-text-link'; link.rel = 'stylesheet'; document.head.appendChild(link); }
+  if (link.getAttribute('href') !== href) link.setAttribute('href', href);
+  document.documentElement.style.setProperty('--font-text', f.stack);
+  document.documentElement.style.setProperty('--font-text-weight', f.weight);
+}
+function getSavedTextFont() { try { var v = localStorage.getItem(TEXT_FONT_STORAGE_KEY); return TEXT_FONTS[v] ? v : 'ptserif'; } catch (e) { return 'ptserif'; } }
+applyTextFont(getSavedTextFont());
+</script>
+
+<!-- Supabase (библиотека для облачных сохранений) -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<link rel="stylesheet" href="css/base.css?v=0.28">
+<link rel="stylesheet" href="css/effects.css?v=0.28">
+<link rel="stylesheet" href="css/monsters.css?v=0.28">
+<link rel="stylesheet" href="css/city-map.css?v=0.28">
+<link rel="stylesheet" href="css/battle.css?v=0.28">
+<link rel="stylesheet" href="css/debuffs.css?v=0.28">
+<link rel="stylesheet" href="css/battle-autostop.css?v=0.28">
+<link rel="stylesheet" href="css/battle-arena.css?v=0.28">
+<link rel="stylesheet" href="css/battle-session.css?v=0.28">
+<link rel="stylesheet" href="css/battle-rest.css?v=0.28">
+<link rel="stylesheet" href="css/hunt-modal.css?v=0.28">
+<link rel="stylesheet" href="css/inventory.css?v=0.28">
+<link rel="stylesheet" href="css/inventory-equip.css?v=0.28">
+<link rel="stylesheet" href="css/inventory-slots.css?v=0.28">
+<link rel="stylesheet" href="css/windows.css?v=0.28">
+<link rel="stylesheet" href="css/screens.css?v=0.28">
+<link rel="stylesheet" href="css/patches.css?v=0.28">
+<link rel="stylesheet" href="css/settings.css?v=0.28">
+<link rel="stylesheet" href="css/cheat.css?v=0.28">
+<link rel="stylesheet" href="css/overlays.css?v=0.28">
+<link rel="stylesheet" href="css/dialogue.css?v=0.28">
+<link rel="stylesheet" href="css/storage.css?v=0.28">
+<link rel="stylesheet" href="css/refine.css?v=0.28">
+<link rel="stylesheet" href="css/alchemist.css?v=0.28">
+<link rel="stylesheet" href="css/leaderboard.css?v=0.28">
+<link rel="stylesheet" href="css/hero-inspect.css?v=0.28">
+</head>
+<body>
+
+<div class="vignette"></div>
+<div id="toast-container"></div>
+
+<!-- ЭКРАН СТАРТА -->
+<div class="screen-overlay active" id="start-screen">
+  <div class="start-bg" style="background-image:url('img/start-bg.jpg')"></div>
+  <div class="patch-tabs" id="patch-tabs"></div>
+
+  <div class="start-content">
+    <h1 class="start-title">L2 BROWSER</h1>
+    <div class="start-subtitle">Андервуд</div>
+
+    <!-- Блок входа в аккаунт -->
+    <div class="cloud-auth" id="cloud-auth" style="display:none;"></div>
+
+    <!-- Замок: показать, если играть нельзя -->
+    <div class="cloud-access-gate" id="cloud-access-gate" style="display:none;"></div>
+
+    <div class="slots-grid" id="slots-grid"></div>
+  </div>
+</div>
+
+<!-- ЭКРАН СОЗДАНИЯ ПЕРСОНАЖА -->
+<div class="screen-overlay" id="create-screen">
+  <div class="create-content">
+    <h2 class="create-title">СОЗДАНИЕ ПЕРСОНАЖА</h2>
+
+    <div class="create-block">
+      <div class="create-block-title">ВЫБЕРИТЕ РАСУ</div>
+      <div class="create-list" id="races-list"></div>
+    </div>
+
+    <div class="create-block">
+      <div class="create-block-title">ВЫБЕРИТЕ КЛАСС</div>
+      <div class="create-list" id="classes-list"></div>
+    </div>
+
+    <div class="create-block">
+      <div class="create-block-title">ИМЯ ПЕРСОНАЖА</div>
+      <input type="text" id="char-name-input" class="char-name-input" maxlength="16" placeholder="Введите имя..." value="">
+      <div class="char-name-hint">Обязательно. От 2 до 16 символов. Так тебя увидят в рейтинге.</div>
+    </div>
+
+    <div class="create-actions">
+      <button class="btn" onclick="closeCreateScreen()">Назад</button>
+      <button class="btn success" id="btn-create-char" onclick="confirmCreateCharacter()" disabled>Выберите класс</button>
+    </div>
+  </div>
+</div>
+
+<div class="app">
+
+  <div class="top-status">
+    <div class="left">
+      <div class="stat-mini">УР. <b id="top-level">1</b></div>
+      <div class="stat-mini">HP <b id="top-hp">0/0</b></div>
+      <div class="hp-mini-bar"><div class="hp-mini-fill" id="top-hp-fill" style="width:0%"></div></div>
+      <div class="stat-mini">MP <b id="top-mp">0/0</b></div>
+      <div class="mp-mini-bar"><div class="mp-mini-fill" id="top-mp-fill" style="width:0%"></div></div>
+    </div>
+    <div class="right">
+      <div class="stat-mini">ОПЫТ <b id="top-xp">0/100</b></div>
+      <div class="xp-mini-bar"><div class="xp-mini-fill" id="top-xp-fill" style="width:0%"></div></div>
+      <button class="btn-hunt" id="btn-hunt-modal" onclick="openHuntModal()" style="display:none;">🔍 Искать стаю</button>
+      <div class="stat-mini">🪙 <b id="top-gold">0</b></div>
+      <div class="skill-points-badge" id="top-skill-points" style="display:none;">НАВЫКИ <b>0</b></div>
+      <button class="btn-cheat" id="btn-cheat" onclick="toggleCheat()" style="display:none;">ЧИТ ×1</button>
+      <button class="btn-settings" id="btn-settings" onclick="openSettings()" title="Настройки">⚙</button>
+      <button class="btn-settings btn-exit" id="btn-exit" onclick="exitToCharacterSelect(true)" title="Выйти к выбору персонажа">🚪</button>
+    </div>
+  </div>
+
+  <div class="effects-panel" id="effects-panel"></div>
+
+  <div class="panel active" id="panel-hunt">
+    <div id="hunt-view">
+      <div class="monsters-grid" id="monsters-grid"></div>
+      <div id="hunt-hint" style="text-align:center; color:var(--text-dim); font-style:italic; padding:20px;">
+        Выберите монстра, чтобы начать бой
+      </div>
+    </div>
+
+    <div id="mine-empty-view" style="display:none;">
+      <div class="mine-empty-box">
+        <div class="mine-empty-icon">⛏</div>
+        <div class="mine-empty-title">КОПИ ПУСТЫ</div>
+        <div class="mine-empty-text">Заброшенные шахты. Пока здесь никого нет — новые обитатели появятся позже.</div>
+      </div>
+    </div>
+
+    <div id="city-view" style="display:none;">
+      <div class="city-header">
+        <div class="city-title">АНДЕРВУД</div>
+        <div class="city-subtitle">Последний оплот людей на краю земель</div>
+      </div>
+      <div class="city-grid">
+
+        <div class="city-card" onclick="openElder()">
+          <div class="city-icon-img" style="background-image:url('img/city/elder.png')"></div>
+        </div>
+
+        <div class="city-card" onclick="openTrader()">
+          <div class="city-icon-img" style="background-image:url('img/city/trader.png')"></div>
+        </div>
+
+        <div class="city-card" onclick="openForge()">
+          <div class="city-icon-img" style="background-image:url('img/city/forge.png')"></div>
+        </div>
+
+        <div class="city-card" onclick="openMentor()">
+          <div class="city-icon-img" style="background-image:url('img/city/mentor.png')"></div>
+        </div>
+
+        <div class="city-card" onclick="openTavern()">
+          <div class="city-icon-img" style="background-image:url('img/city/tavern.png')"></div>
+        </div>
+
+        <div class="city-card" onclick="openGuild()">
+          <div class="city-icon-img" style="background-image:url('img/city/guild.png')"></div>
+        </div>
+
+        <div class="city-card" onclick="openStorage()">
+          <div class="city-icon-img" style="background-image:url('img/city/storage.png')"></div>
+        </div>
+
+        <div class="city-card" onclick="openRefine()">
+          <div class="city-icon-img" style="background-image:url('img/city/refine.png')"></div>
+        </div>
+
+        <div class="city-card" onclick="openAlchemist()">
+          <div class="city-icon-img" style="background-image:url('img/city/alchemist.png')"></div>
+        </div>
+
+        <div class="city-card" id="city-card-leaderboard" onclick="openLeaderboard()" style="display:none;">
+          <div class="city-icon-img" style="background-image:url('img/city/leaderboard.png')"></div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <div class="panel" id="panel-inventory">
+    <div class="panel-title">ИНВЕНТАРЬ</div>
+    <div class="inv-container">
+      <div class="equip-panel">
+        <div class="equip-title">ЭКИПИРОВКА</div>
+
+        <div class="equip-grid">
+          <div class="equip-col">
+            <div class="equip-subtitle">УКРАШЕНИЯ</div>
+            <div class="equip-pair">
+              <div class="equip-slot-wrapper">
+                <div class="equip-slot" data-slot="earring1" onmouseenter="showEquipTooltip(event, 'earring1')" onmouseleave="hideTooltip()"></div>
+                <div class="equip-slot-label">СЕР.1</div>
+              </div>
+              <div class="equip-slot-wrapper">
+                <div class="equip-slot" data-slot="earring2" onmouseenter="showEquipTooltip(event, 'earring2')" onmouseleave="hideTooltip()"></div>
+                <div class="equip-slot-label">СЕР.2</div>
+              </div>
+            </div>
+            <div class="equip-pair">
+              <div class="equip-slot-wrapper">
+                <div class="equip-slot" data-slot="ring1" onmouseenter="showEquipTooltip(event, 'ring1')" onmouseleave="hideTooltip()"></div>
+                <div class="equip-slot-label">КОЛ.1</div>
+              </div>
+              <div class="equip-slot-wrapper">
+                <div class="equip-slot" data-slot="ring2" onmouseenter="showEquipTooltip(event, 'ring2')" onmouseleave="hideTooltip()"></div>
+                <div class="equip-slot-label">КОЛ.2</div>
+              </div>
+            </div>
+            <div class="equip-pair">
+              <div class="equip-slot-wrapper">
+                <div class="equip-slot" data-slot="necklace" onmouseenter="showEquipTooltip(event, 'necklace')" onmouseleave="hideTooltip()"></div>
+                <div class="equip-slot-label">ШЕЯ</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="equip-col">
+            <div class="equip-subtitle">БРОНЯ</div>
+            <div class="equip-pair">
+              <div class="equip-slot-wrapper">
+                <div class="equip-slot" data-slot="helmet" onmouseenter="showEquipTooltip(event, 'helmet')" onmouseleave="hideTooltip()"></div>
+                <div class="equip-slot-label">ШЛЕМ</div>
+              </div>
+              <div class="equip-slot-wrapper">
+                <div class="equip-slot" data-slot="gloves" onmouseenter="showEquipTooltip(event, 'gloves')" onmouseleave="hideTooltip()"></div>
+                <div class="equip-slot-label">ПЕРЧ.</div>
+              </div>
+            </div>
+            <div class="equip-pair">
+              <div class="equip-slot-wrapper">
+                <div class="equip-slot" data-slot="armorTop" onmouseenter="showEquipTooltip(event, 'armorTop')" onmouseleave="hideTooltip()"></div>
+                <div class="equip-slot-label">ВЕРХ</div>
+              </div>
+              <div class="equip-slot-wrapper">
+                <div class="equip-slot" data-slot="armorBottom" onmouseenter="showEquipTooltip(event, 'armorBottom')" onmouseleave="hideTooltip()"></div>
+                <div class="equip-slot-label">НИЗ</div>
+              </div>
+            </div>
+            <div class="equip-pair">
+              <div class="equip-slot-wrapper">
+                <div class="equip-slot" data-slot="boots" onmouseenter="showEquipTooltip(event, 'boots')" onmouseleave="hideTooltip()"></div>
+                <div class="equip-slot-label">БОТ.</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="equip-col">
+            <div class="equip-subtitle">ОРУЖИЕ</div>
+            <div class="equip-pair">
+              <div class="equip-slot-wrapper">
+                <div class="equip-slot" data-slot="weapon" onmouseenter="showEquipTooltip(event, 'weapon')" onmouseleave="hideTooltip()"></div>
+                <div class="equip-slot-label">ОРУЖ.</div>
+              </div>
+            </div>
+            <div class="equip-pair">
+              <div class="equip-slot-wrapper">
+                <div class="equip-slot" data-slot="shield" onmouseenter="showEquipTooltip(event, 'shield')" onmouseleave="hideTooltip()"></div>
+                <div class="equip-slot-label">ЛЕВ. РУКА</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="equip-divider"></div>
+
+        <div class="equip-subtitle equip-subtitle-center">РАСХОДНИКИ</div>
+
+        <div class="equip-consumables">
+          <div class="equip-slot-wrapper">
+            <div class="equip-slot consumable-slot" data-slot="potionSlot">🧪</div>
+            <div class="equip-slot-label">ЗЕЛЬЕ</div>
+          </div>
+          <div class="equip-slot-wrapper">
+            <div class="equip-slot consumable-slot" data-slot="mixtureSlot">⚗</div>
+            <div class="equip-slot-label">МИКСТ.</div>
+          </div>
+        </div>
+
+        <div class="equip-divider"></div>
+
+        <div class="equip-subtitle equip-subtitle-center">НАВЫКИ</div>
+
+        <div class="skill-loadout" id="skill-loadout"></div>
+
+        <div class="skill-loadout-controls" id="skill-loadout-controls" style="display:none;">
+          <button class="btn small" onclick="moveSelectedSkill(-1)">↑ Вверх</button>
+          <button class="btn small" onclick="moveSelectedSkill(1)">↓ Вниз</button>
+          <button class="btn small danger" onclick="clearSelectedSkill()">× Очистить</button>
+        </div>
+
+      </div>
+
+      <div class="items-panel">
+        <div class="items-title">ПРЕДМЕТЫ</div>
+        <div class="inventory-grid" id="inventory-grid"></div>
+        <div class="inventory-pagination" id="inventory-pagination"></div>
+        <div class="inventory-full-msg" id="inventory-full-msg" style="display:none;">ИНВЕНТАРЬ ПЕРЕПОЛНЕН</div>
+      </div>
+
+      <div class="inv-footer">
+        <div class="gold-display">
+          <svg style="width:18px;height:18px;" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="#8a6a20" stroke="#e0be7a" stroke-width="1.5"/><text x="12" y="16" text-anchor="middle" font-size="11" fill="#e0be7a" font-family="serif" font-weight="bold">О</text></svg>
+          <span id="inv-gold">0</span> Оболов
+        </div>
+        <div class="weight-display">Занято слотов: <span id="inv-weight">0</span> / 60</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel" id="panel-character">
+    <div class="panel-title">ПЕРСОНАЖ</div>
+    <!-- v0.25: новый лист персонажа. Компьютер — 3 колонки, планшет — 2, телефон — 1 (группы сворачиваются). -->
+    <div class="cs-sheet">
+      <div class="cs-hero">
+        <div class="cs-who">
+          <div class="cs-portrait" id="cs-portrait"></div>
+          <div>
+            <div class="cs-name" id="cs-name">—</div>
+            <div class="cs-meta"><span id="cs-class">—</span> · <b id="cs-level">1</b> ур.</div>
+          </div>
+        </div>
+        <div class="cs-barlabel"><span>ЗДОРОВЬЕ</span><b id="cs-hp">—</b></div>
+        <div class="cs-bar hp"><i id="cs-hp-fill"></i></div>
+        <div class="cs-barlabel"><span>МАНА</span><b id="cs-mp">—</b></div>
+        <div class="cs-bar mp"><i id="cs-mp-fill"></i></div>
+        <div class="cs-barlabel"><span>ОПЫТ</span><b id="cs-xp">—</b></div>
+        <div class="cs-bar xp"><i id="cs-xp-fill"></i></div>
+
+        <div class="cs-attr-title"><span class="ico">✦</span>ХАРАКТЕРИСТИКИ<em>нажмите — что даёт</em></div>
+        <div class="cs-attrs">
+          <div class="cs-attr" id="cs-row-str" onclick="toggleStatInfo('STR')"><div class="k">STR</div><div class="num" id="cs-str">—</div><div class="n">Сила</div></div>
+          <div class="cs-attr" id="cs-row-dex" onclick="toggleStatInfo('DEX')"><div class="k">DEX</div><div class="num" id="cs-dex">—</div><div class="n">Ловкость</div></div>
+          <div class="cs-attr" id="cs-row-con" onclick="toggleStatInfo('CON')"><div class="k">CON</div><div class="num" id="cs-con">—</div><div class="n">Телосложение</div></div>
+          <div class="cs-attr" id="cs-row-int" onclick="toggleStatInfo('INT')"><div class="k">INT</div><div class="num" id="cs-int">—</div><div class="n">Интеллект</div></div>
+          <div class="cs-attr" id="cs-row-wit" onclick="toggleStatInfo('WIT')"><div class="k">WIT</div><div class="num" id="cs-wit">—</div><div class="n">Мудрость</div></div>
+          <div class="cs-attr" id="cs-row-men" onclick="toggleStatInfo('MEN')"><div class="k">MEN</div><div class="num" id="cs-men">—</div><div class="n">Дух</div></div>
+        </div>
+        <div class="stat-info" id="cs-info-str" style="display:none"></div>
+        <div class="stat-info" id="cs-info-dex" style="display:none"></div>
+        <div class="stat-info" id="cs-info-con" style="display:none"></div>
+        <div class="stat-info" id="cs-info-int" style="display:none"></div>
+        <div class="stat-info" id="cs-info-wit" style="display:none"></div>
+        <div class="stat-info" id="cs-info-men" style="display:none"></div>
+      </div>
+
+      <details class="cs-grp cs-atk" open data-phone="open"><summary><span class="arr">▶</span><span class="ico">⚔</span>АТАКА</summary>
+        <div class="cs-row"><span class="l">Физическая атака</span><span class="v" id="cs-patk">—</span></div>
+        <div class="cs-row"><span class="l">Магическая атака</span><span class="v magic" id="cs-matk">—</span></div>
+        <div class="cs-row"><span class="l">Урон навыков и ДОТов</span><span class="v" id="cs-skillflat">—</span></div>
+        <div class="cs-row"><span class="l">Шанс крита</span><span class="v" id="cs-crit">—</span></div>
+        <div class="cs-row"><span class="l">Сила крита</span><span class="v" id="cs-critmult">—</span></div>
+        <div class="cs-row"><span class="l">Точность</span><span class="v" id="cs-accuracy">—</span></div>
+        <div class="cs-row"><span class="l">Скорость ATB</span><span class="v" id="cs-atb">—</span></div>
+      </details>
+
+      <details class="cs-grp cs-def" open data-phone="open"><summary><span class="arr">▶</span><span class="ico">🛡</span>ЗАЩИТА</summary>
+        <div class="cs-row"><span class="l">Физическая защита</span><span class="v" id="cs-pdef">—</span></div>
+        <div class="cs-row"><span class="l">Магическая защита</span><span class="v magic" id="cs-mdef">—</span></div>
+        <div class="cs-row"><span class="l">Уворот</span><span class="v" id="cs-evasion">—</span></div>
+        <div class="cs-row"><span class="l">Поглощение урона</span><span class="v" id="cs-flatdr">—</span></div>
+        <div class="cs-row"><span class="l">Шанс блока</span><span class="v" id="cs-block">—</span></div>
+        <div class="cs-row"><span class="l">Мана-щит</span><span class="v magic" id="cs-manashield">—</span></div>
+      </details>
+
+      <details class="cs-grp cs-rec" open data-phone="closed"><summary><span class="arr">▶</span><span class="ico">✚</span>ВОССТАНОВЛЕНИЕ</summary>
+        <div class="cs-row"><span class="l">HP вне боя</span><span class="v hp" id="cs-hpregen-out">—</span></div>
+        <div class="cs-row"><span class="l">HP в бою</span><span class="v hp" id="cs-hpregen-in">—</span></div>
+        <div class="cs-row"><span class="l">MP вне боя</span><span class="v mana" id="cs-mpregen">—</span></div>
+        <div class="cs-row"><span class="l">MP в бою</span><span class="v mana" id="cs-mpregen-in">—</span></div>
+      </details>
+
+      <details class="cs-grp cs-loot" open data-phone="closed"><summary><span class="arr">▶</span><span class="ico">🪙</span>ДОБЫЧА И РОСТ</summary>
+        <div class="cs-row" title="Подгонка, навык «Опыт», Отдых в таверне"><span class="l">Опыт</span><span class="v good" id="cs-xpbonus">—</span></div>
+        <div class="cs-row" title="Шанс получить дополнительный опыт владения за удар: подгонка и Расслабон в таверне"><span class="l">Мастерство</span><span class="v good" id="cs-profbonus">—</span></div>
+        <div class="cs-row" title="Больше Оболов с каждой кучки: подгонка"><span class="l">Оболы</span><span class="v obol" id="cs-goldbonus">—</span></div>
+        <div class="cs-row" title="Выше шанс выпадения предметов: подгонка и микстура удачи (без титулов охотника)"><span class="l">Дроп</span><span class="v good" id="cs-dropbonus">—</span></div>
+      </details>
+    </div>
+
+    <div class="cs-bonuses">
+      <details class="cs-grp" open data-phone="closed"><summary><span class="arr">▶</span><span class="ico">❖</span>КОМПЛЕКТЫ<span class="cnt" id="cs-set-count">0</span></summary>
+        <div class="cs-chips" id="cs-set"></div>
+      </details>
+      <details class="cs-grp" open data-phone="closed"><summary><span class="arr">▶</span><span class="ico">✧</span>ПАССИВНЫЕ НАВЫКИ<span class="cnt" id="cs-skill-count">0</span></summary>
+        <div class="cs-chips" id="cs-skill-bonus"></div>
+      </details>
+      <details class="cs-grp" open data-phone="closed"><summary><span class="arr">▶</span><span class="ico">☀</span>УСИЛЕНИЯ<span class="cnt" id="cs-buff-count">0</span></summary>
+        <div class="cs-chips" id="cs-buff"></div>
+      </details>
+    </div>
+  </div>
+
+  <div class="panel" id="panel-proficiency">
+    <div class="panel-title">ВЛАДЕНИЕ</div>
+
+    <div class="prof-block">
+      <div class="prof-block-title">ОРУЖИЕ</div>
+      <div class="prof-list" id="prof-weapons-list"></div>
+    </div>
+
+    <div class="prof-block">
+      <div class="prof-block-title">МАГИЧЕСКИЕ СТИХИИ</div>
+      <div class="prof-list" id="prof-elements-list"></div>
+    </div>
+  </div>
+
+  <div class="panel" id="panel-map">
+    <div class="panel-title">КАРТА МИРА</div>
+    <div class="map-grid">
+      <div class="map-card" data-loc="field" id="map-card-field">
+        <div onclick="tryTravel('field')" style="cursor:pointer;">
+          <svg class="map-icon" viewBox="0 0 100 100">
+            <defs><radialGradient id="fieldGrad" cx="50%" cy="60%"><stop offset="0%" stop-color="#3a5a2a"/><stop offset="100%" stop-color="#0a1508"/></radialGradient></defs>
+            <circle cx="50" cy="50" r="40" fill="url(#fieldGrad)" stroke="#b8945a" stroke-width="1.5"/>
+            <path d="M20 60 Q50 40 80 60" stroke="#1a2a10" stroke-width="2" fill="none"/>
+          </svg>
+          <div class="map-name">Зелёная поляна</div>
+          <div class="map-desc">Тихая поляна на окраине земель.</div>
+          <div class="map-meta" id="map-meta-field"></div>
+        </div>
+        <div id="map-travel-slot"></div>
+      </div>
+      <div class="map-card" data-loc="town" onclick="tryTravel('town')">
+        <svg class="map-icon" viewBox="0 0 100 100">
+          <defs><radialGradient id="townGrad" cx="50%" cy="60%"><stop offset="0%" stop-color="#5a4a3a"/><stop offset="100%" stop-color="#150f08"/></radialGradient></defs>
+          <circle cx="50" cy="50" r="40" fill="url(#townGrad)" stroke="#b8945a" stroke-width="1.5"/>
+          <path d="M35 60 L35 40 L50 30 L65 40 L65 60 Z" fill="#2a1a10" stroke="#b8945a" stroke-width="1.5"/>
+          <rect x="45" y="48" width="10" height="12" fill="#0a0a0a"/>
+        </svg>
+        <div class="map-name">Город Андервуд</div>
+        <div class="map-desc">Последний оплот людей. Безопасная зона.</div>
+        <div class="map-meta" id="map-meta-town"></div>
+        <div id="map-travel-slot-town"></div>
+      </div>
+      <div class="map-card" data-loc="mine" id="map-card-mine">
+        <div onclick="tryTravel('mine')" style="cursor:pointer;">
+          <svg class="map-icon" viewBox="0 0 100 100">
+            <defs><radialGradient id="mineGrad" cx="50%" cy="60%"><stop offset="0%" stop-color="#3a2a1a"/><stop offset="100%" stop-color="#0a0805"/></radialGradient></defs>
+            <circle cx="50" cy="50" r="40" fill="url(#mineGrad)" stroke="#b8945a" stroke-width="1.5"/>
+            <path d="M30 70 L30 45 Q50 30 70 45 L70 70" fill="#1a1008" stroke="#8a7050" stroke-width="1.8" fill-opacity="0.9"/>
+            <path d="M42 70 L42 55 Q50 50 58 55 L58 70" fill="#0a0505" stroke="#8a7050" stroke-width="1.2"/>
+            <path d="M22 72 L78 72" stroke="#b8945a" stroke-width="1.5"/>
+          </svg>
+          <div class="map-name">Копи</div>
+          <div class="map-desc">Заброшенные шахты. Дикая зона для фарма.</div>
+          <div class="map-meta" id="map-meta-mine"></div>
+        </div>
+        <div id="map-travel-slot-mine"></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="tabs">
+  <div class="tab active" data-tab="hunt" id="tab-hunt" onclick="switchTab('hunt')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14.5 17.5L3 6V3h3l11.5 11.5M13 19l6-6M16 16l4 4M19 21l2-2"/></svg>
+    <span id="tab-hunt-label">ГОРОД</span>
+  </div>
+  <div class="tab" data-tab="inventory" onclick="switchTab('inventory')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M5 8h14v12H5zM9 8V5a3 3 0 0 1 6 0v3"/></svg>
+    ИНВЕНТАРЬ
+  </div>
+  <div class="tab" data-tab="character" onclick="switchTab('character')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-7 8-7s8 3 8 7"/></svg>
+    ПЕРСОНАЖ
+  </div>
+  <div class="tab" data-tab="proficiency" onclick="switchTab('proficiency')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2 L15 8 L22 9 L17 14 L18 21 L12 18 L6 21 L7 14 L2 9 L9 8 Z"/></svg>
+    ВЛАДЕНИЕ
+  </div>
+  <div class="tab" data-tab="map" onclick="switchTab('map')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 6l6-3 6 3 6-3v15l-6 3-6-3-6 3zM9 3v15M15 6v15"/></svg>
+    КАРТА
+  </div>
+</div>
+
+<!-- БОЙ — OVERLAY (v0.17: новая арена) -->
+<div class="battle-overlay" id="battle-window">
+  <div class="battle-window-new bx-window">
+    <div class="battle-header">
+      <div class="battle-title">
+        ⚔ <span id="battle-title-text">Бой</span>
+        <span class="battle-status" id="battle-status">ATB заряжается...</span>
+        <span class="bx-farm-rate" id="bx-farm-rate"></span>
+      </div>
+      <div class="battle-kills" id="battle-kills">💀 Убито: 0</div>
+      <button class="btn danger" id="btn-close-battle" onclick="closeBattle()">Закрыть</button>
+    </div>
+
+    <!-- v0.23: мини-панель «Добыча за сессию» (бой не останавливается) -->
+    <div class="bx-session" id="bx-session" style="display:none;">
+      <div class="bxs-head">
+        <span class="bxs-title">🎒 Добыча за сессию</span>
+        <button class="bxs-close" onclick="closeSessionPanel()" title="Закрыть">✕</button>
+      </div>
+      <div class="bxs-stats" id="bxs-stats"></div>
+      <div class="bxs-items" id="bxs-items"></div>
+      <div class="bxs-foot" id="bxs-foot"></div>
+      <button class="btn bxs-open-inv" onclick="openInventoryFromBattle()">🎒 Открыть весь инвентарь</button>
+      <div class="bxs-hint">Бой идёт дальше, пока вы смотрите сумку</div>
+    </div>
+
+    <!-- СЦЕНА -->
+    <div class="bx-stage" id="bx-stage">
+      <div class="bx-bg" id="bx-bg"></div>
+      <div class="bx-fog" id="bx-fog"></div>
+
+      <div class="bx-arena">
+        <!-- ГЕРОЙ -->
+        <div class="bx-unit bx-hero" id="fighter-player">
+          <div class="bx-card" id="bx-hero-card">
+            <div id="player-avatar-slot"></div>
+            <div class="bx-flash"></div>
+            <div class="bx-atb" id="bx-hero-atb" data-icon="⚔"></div>
+            <div class="debuff-bar bx-status" id="player-debuff-bar"></div>
+          </div>
+          <div class="fighter-name" id="player-fighter-name">Воич</div>
+          <div class="bx-bars">
+            <div class="bar bx-bar hp">
+              <div class="bx-ghost" id="bx-hero-hp-ghost"></div>
+              <div class="bar-fill hp" id="player-hp-bar" style="width:100%"></div>
+              <div class="bar-text" id="player-hp-text">0 / 0</div>
+            </div>
+            <div class="bar bx-bar mp">
+              <div class="bar-fill mp" id="player-mp-bar" style="width:0%"></div>
+              <div class="bar-text" id="player-mp-text">0 / 0</div>
+            </div>
+            <!-- v0.25: тонкая шкала опыта (обновляется в updateTopStatus) -->
+            <div class="bx-xp" id="bx-hero-xp" title="Опыт"><div class="bx-xp-fill" id="bx-hero-xp-fill"></div></div>
+          </div>
+          <div class="bx-legacy"><div class="bar"><div class="bar-fill atb" id="player-atb-bar" style="width:0%"></div></div></div>
+        </div>
+
+        <!-- МОНСТРЫ -->
+        <div class="bx-enemies" id="fighter-monster">
+          <div class="monster-normal" id="monster-normal">
+            <div class="bx-group-label">
+              <div class="bx-atb bx-atb-enemy" id="bx-pack-atb" data-icon="☠"></div>
+              <span id="bx-pack-name">Враги</span>
+            </div>
+            <div class="bx-enemy-row" id="bx-enemy-row"></div>
+
+            <!-- Старые элементы — скрыты, нужны для совместимости кода -->
+            <div class="bx-legacy">
+              <div id="monster-avatar-slot"></div>
+              <div class="fighter-name" id="monster-fighter-name">—</div>
+              <div class="debuff-bar" id="monster-debuff-bar"></div>
+              <div class="bar" id="monster-hp-bar-wrap">
+                <div class="bar-fill hp" id="monster-hp-bar" style="width:100%"></div>
+                <div class="group-counter" id="monster-group-counter"></div>
+                <div class="bar-text" id="monster-hp-text">— / —</div>
+              </div>
+              <div class="bar"><div class="bar-fill atb" id="monster-atb-bar" style="width:0%"></div></div>
+            </div>
+          </div>
+
+          <div class="monster-search" id="monster-search" style="display:none;">
+            <div class="monster-search-icon">👣</div>
+            <div class="monster-search-text" id="monster-search-text">🌿 Бродим по чаще...</div>
+          </div>
+
+          <!-- v0.24: привал (автостоп) — js/systems/battle-rest.js -->
+          <div class="bx-rest" id="bx-rest" style="display:none;">
+            <div class="bx-rest-fire">
+              <img src="img/locations/campfire.png" alt="" onload="this.parentNode.classList.add('has-img')" onerror="this.remove()">
+              <span class="bx-rest-emoji">🔥</span>
+            </div>
+            <div class="bx-rest-title">ПРИВАЛ</div>
+            <div class="bx-rest-reason" id="bx-rest-reason"></div>
+            <div class="bx-rest-bars">
+              <div class="bx-rest-row hp">
+                <span class="bx-rest-ico">❤</span>
+                <div class="bx-rest-bar"><div class="bx-rest-fill" id="bx-rest-hp-fill"></div><div class="bx-rest-goal" id="bx-rest-hp-goal"></div></div>
+                <b class="bx-rest-val" id="bx-rest-hp-text"></b>
+              </div>
+              <div class="bx-rest-row mp">
+                <span class="bx-rest-ico">💧</span>
+                <div class="bx-rest-bar"><div class="bx-rest-fill" id="bx-rest-mp-fill"></div><div class="bx-rest-goal" id="bx-rest-mp-goal"></div></div>
+                <b class="bx-rest-val" id="bx-rest-mp-text"></b>
+              </div>
+            </div>
+            <div class="bx-rest-eta" id="bx-rest-eta"></div>
+            <div class="bx-rest-next" id="bx-rest-next"></div>
+            <div class="bx-rest-actions">
+              <button class="btn" onclick="restFightNow()">▶ В бой сейчас</button>
+              <button class="btn danger" onclick="restEndHunt()">⏹ Закончить охоту</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="bx-fx" id="bx-fx"></div>
+    </div>
+
+    <!-- НИЖНЯЯ ПАНЕЛЬ -->
+    <div class="bx-dock">
+      <div class="bx-dock-left">
+        <div class="skills-column" id="skills-column">
+          <div class="skills-column-title">НАВЫКИ</div>
+        </div>
+        <div class="consumables-panel" id="consumables-panel"></div>
+      </div>
+
+      <div class="battle-log-wrapper" id="bx-logs">
+        <div class="log-column">
+          <div class="log-column-header">БОЙ</div>
+          <div class="battle-log" id="battle-log-combat"></div>
+        </div>
+        <div class="log-column" id="bx-loot-column">
+          <div class="log-column-header bx-bag-btn" onclick="toggleSessionPanel()" title="Добыча за сессию и инвентарь">ДОБЫЧА <span class="bx-loot-count" id="bx-loot-count">🎒 0</span><span class="bx-bag-arrow">▾</span></div>
+          <div class="battle-log" id="battle-log-loot"></div>
+        </div>
+        <button class="bx-log-toggle" id="bx-log-toggle" onclick="toggleBattleLogSize()" title="Развернуть журнал">⤢</button>
+      </div>
+    </div>
+
+    <div class="effects-panel" id="effects-panel-battle"></div>
+
+    <div class="auto-wait-indicator" id="auto-wait-indicator" style="display:none;"></div>
+
+    <!-- v0.20: ручной режим (автобой выключен) -->
+    <div class="bx-manual" id="bx-manual" style="display:none;">
+      <div class="bxm-head">
+        <div class="bxm-timer"><div class="bxm-timer-fill" id="bxm-timer-fill"></div><span class="bxm-timer-text" id="bxm-timer-text"></span></div>
+        <div class="bxm-hint" id="bxm-hint"></div>
+      </div>
+      <div class="bxm-actions" id="bxm-actions"></div>
+    </div>
+
+    <div class="battle-controls">
+      <button class="btn active" id="btn-autobattle" onclick="toggleAuto()">⚔ Автобой: ВКЛ</button>
+      <button class="btn" id="btn-repeat" onclick="toggleRepeat()">🔁 Повторять бой: ВЫКЛ</button>
+      <button class="btn" id="btn-autostop-toggle" onclick="toggleAutoStopPanel()">⚙ Авто-стоп</button>
+    </div>
+
+    <div class="auto-stop-panel" id="auto-stop-panel">
+      <div class="auto-stop-row">
+        <div class="auto-stop-label">
+          <span class="auto-stop-icon hp-icon">❤</span>
+          <span class="auto-stop-name">Здоровье</span>
+        </div>
+        <div class="auto-stop-sliders">
+          <div class="auto-slider-group">
+            <span class="auto-slider-tag stop-tag">СТОП</span>
+            <input type="range" id="stopHpSlider" class="auto-slider stop-hp" min="0" max="100" step="5" value="0" oninput="onStopSliderChange('hp')">
+            <span class="auto-slider-value" id="stopHpValue">выкл</span>
+          </div>
+          <div class="auto-slider-group">
+            <span class="auto-slider-tag resume-tag">СТАРТ</span>
+            <input type="range" id="resumeHpSlider" class="auto-slider resume-hp" min="0" max="100" step="5" value="0" oninput="onResumeSliderChange('hp')">
+            <span class="auto-slider-value" id="resumeHpValue">выкл</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="auto-stop-row">
+        <div class="auto-stop-label">
+          <span class="auto-stop-icon mp-icon">💧</span>
+          <span class="auto-stop-name">Мана</span>
+        </div>
+        <div class="auto-stop-sliders">
+          <div class="auto-slider-group">
+            <span class="auto-slider-tag stop-tag">СТОП</span>
+            <input type="range" id="stopMpSlider" class="auto-slider stop-mp" min="0" max="100" step="5" value="0" oninput="onStopSliderChange('mp')">
+            <span class="auto-slider-value" id="stopMpValue">выкл</span>
+          </div>
+          <div class="auto-slider-group">
+            <span class="auto-slider-tag resume-tag">СТАРТ</span>
+            <input type="range" id="resumeMpSlider" class="auto-slider resume-mp" min="0" max="100" step="5" value="0" oninput="onResumeSliderChange('mp')">
+            <span class="auto-slider-value" id="resumeMpValue">выкл</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+
+  </div>
+</div>
+
+<!-- МОДАЛКА «ИСКАТЬ СТАЮ» -->
+<div class="hunt-modal-overlay" id="hunt-modal-overlay">
+  <div class="hunt-modal">
+    <div class="hunt-modal-header">
+      <div class="hunt-modal-title">🔍 ИСКАТЬ СТАЮ</div>
+      <button class="btn danger" onclick="closeHuntModal()">Закрыть</button>
+    </div>
+    <div class="hunt-modal-body">
+      <div class="hunt-modal-count-row">
+        <span class="hunt-modal-count-label">МОБОВ В ГРУППЕ:</span>
+        <div class="hunt-modal-count-buttons" id="hunt-modal-count-buttons">
+          <button class="hunt-count-btn active" data-count="1" onclick="setHuntCount(1)">×1</button>
+          <button class="hunt-count-btn" data-count="2" onclick="setHuntCount(2)">×2</button>
+          <button class="hunt-count-btn" data-count="3" onclick="setHuntCount(3)">×3</button>
+          <button class="hunt-count-btn" data-count="5" onclick="setHuntCount(5)">×5</button>
+        </div>
+      </div>
+      <div class="hunt-modal-hint" id="hunt-modal-hint">
+        Выберите монстра, чтобы начать бой с группой.
+      </div>
+      <div class="monsters-grid" id="hunt-modal-grid"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ОКНО АЛХИМИКА (v0.10) -->
+<div class="alchemist-overlay" id="alchemist-overlay">
+  <div class="alchemist-window">
+    <div class="alchemist-header">
+      <div class="alchemist-title">🧪 АЛХИМИК · РАСПЫЛЕНИЕ И ПЕРЕРОЛЛ</div>
+      <button class="btn danger" onclick="closeAlchemist()">Закрыть</button>
+    </div>
+    <div class="alchemist-tabs">
+      <div class="alchemist-tab active" data-tab="disenchant" onclick="switchAlchemistTab('disenchant')">РАСПЫЛИТЬ</div>
+      <div class="alchemist-tab" data-tab="reroll" onclick="switchAlchemistTab('reroll')">ПЕРЕРОЛЛ</div>
+    </div>
+    <div class="alchemist-content">
+      <div class="alchemist-pane active" id="alchemist-pane-disenchant"></div>
+      <div class="alchemist-pane" id="alchemist-pane-reroll"></div>
+    </div>
+  </div>
+</div>
+
+<div class="travel-overlay overlay-base" id="travel-overlay">
+  <div class="travel-box">
+    <h2 id="travel-title">ПЕРЕХОД</h2>
+    <div class="travel-time" id="travel-time">30</div>
+    <div class="travel-bar"><div class="travel-fill" id="travel-fill"></div></div>
+  </div>
+</div>
+
+<div class="trader-overlay overlay-base" id="trader-overlay">
+  <div class="trader-window window-base">
+    <div class="window-header">
+      <div class="window-header-left">
+        <div class="window-title">🏪 ТОРГОВЕЦ АНДЕРВУДА</div>
+        <div class="window-gold">🪙 <b id="trader-gold">0</b> Оболов</div>
+      </div>
+      <button class="btn danger" onclick="closeTrader()">Закрыть</button>
+    </div>
+    <div class="window-tabs">
+      <div class="window-tab active" data-pane="buy" onclick="switchTraderTab('buy')">КУПИТЬ</div>
+      <div class="window-tab" data-pane="sell" onclick="switchTraderTab('sell')">ПРОДАТЬ</div>
+      <div class="window-tab" data-pane="buyback" id="trader-tab-buyback" onclick="switchTraderTab('buyback')">ВЫКУП</div>
+    </div>
+    <div class="window-content">
+      <div class="pane active" id="trader-pane-buy"></div>
+      <div class="pane" id="trader-pane-sell"></div>
+      <div class="pane" id="trader-pane-buyback"></div>
+    </div>
+  </div>
+</div>
+
+<div class="forge-overlay overlay-base" id="forge-overlay">
+  <div class="forge-window window-base">
+    <div class="window-header">
+      <div class="window-header-left">
+        <div class="window-title">⚒ КУЗНИЦА АНДЕРВУДА</div>
+        <div class="window-gold">🪙 <b id="forge-gold">0</b> Оболов</div>
+      </div>
+      <button class="btn danger" onclick="closeForge()">Закрыть</button>
+    </div>
+    <div class="window-tabs">
+      <div class="window-tab active" data-forge="resources" onclick="switchForgeTab('resources')">РЕСУРСЫ</div>
+      <div class="window-tab" data-forge="armor" onclick="switchForgeTab('armor')">ДОСПЕХИ</div>
+      <div class="window-tab" data-forge="weapons" onclick="switchForgeTab('weapons')">ОРУЖИЕ</div>
+      <div class="window-tab" data-forge="shields" onclick="switchForgeTab('shields')">ЩИТЫ</div>
+      <div class="window-tab" data-forge="jewelry" onclick="switchForgeTab('jewelry')">ЮВЕЛИРКА</div>
+      <div class="window-tab" data-forge="consumables" onclick="switchForgeTab('consumables')">РАСХОДНИКИ</div>
+    </div>
+    <div class="window-subtabs" id="forge-subtabs" style="display:none;"></div>
+    <div class="window-content">
+      <div class="pane active" id="forge-pane-resources"></div>
+      <div class="pane" id="forge-pane-armor"></div>
+      <div class="pane" id="forge-pane-weapons"></div>
+      <div class="pane" id="forge-pane-shields"></div>
+      <div class="pane" id="forge-pane-jewelry"></div>
+      <div class="pane" id="forge-pane-consumables"></div>
+    </div>
+  </div>
+</div>
+
+<div class="mentor-overlay overlay-base" id="mentor-overlay">
+  <div class="mentor-window window-base">
+    <div class="window-header">
+      <div class="window-title">📖 НАСТАВНИК · НАВЫКИ</div>
+      <button class="btn danger" onclick="closeMentor()">Закрыть</button>
+    </div>
+    <div class="window-content">
+      <div class="pane active" id="mentor-pane-skills"></div>
+    </div>
+  </div>
+</div>
+
+<div class="guild-overlay overlay-base" id="guild-overlay">
+  <div class="guild-window window-base">
+    <div class="window-header">
+      <div class="window-header-left">
+        <div class="window-title">🔮 ГИЛЬДИЯ МАГОВ</div>
+        <div class="window-gold">🪙 <b id="guild-gold">0</b> Оболов</div>
+      </div>
+      <button class="btn danger" onclick="closeGuild()">Закрыть</button>
+    </div>
+    <div class="window-content">
+      <div class="bs-setbar" id="guild-setbar"></div>
+      <div class="guild-list" id="guild-list"></div>
+    </div>
+  </div>
+</div>
+
+<div class="tavern-overlay overlay-base" id="tavern-overlay">
+  <div class="tavern-window window-base">
+    <div class="window-header">
+      <div class="window-header-left">
+        <div class="window-title">🍺 ТАВЕРНА «КОЗЬЕ ВЫМЯ»</div>
+        <div class="window-gold">🪙 <b id="tavern-gold">0</b> Оболов</div>
+      </div>
+      <button class="btn danger" onclick="closeTavern()">Закрыть</button>
+    </div>
+    <div class="window-content">
+      <div class="bs-setbar" id="tavern-setbar"></div>
+      <div class="tavern-list guild-list" id="tavern-list"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ОКНО СКЛАДА -->
+<div class="storage-overlay" id="storage-overlay">
+  <div class="storage-window">
+    <div class="storage-header">
+      <div class="storage-title">🏦 СКЛАД АНДЕРВУДА</div>
+      <button class="btn danger" onclick="closeStorage()">Закрыть</button>
+    </div>
+    <div class="storage-body">
+      <div class="storage-panel">
+        <div class="storage-panel-title">ИНВЕНТАРЬ</div>
+        <div class="storage-panel-count">Занято: <span id="storage-inv-count">0 / 60</span></div>
+        <div class="storage-grid" id="storage-inv-grid"></div>
+        <div class="storage-hint">Клик по предмету — положить на склад.</div>
+      </div>
+      <div class="storage-panel">
+        <div class="storage-panel-title">СКЛАД</div>
+        <div class="storage-panel-count">Занято: <span id="storage-store-count">0 / 30</span></div>
+        <div class="storage-grid" id="storage-store-grid"></div>
+        <div class="storage-hint">Клик по предмету — забрать в инвентарь.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ОКНО МАСТЕРСКОЙ (ПОДГОНКА) -->
+<div class="refine-overlay" id="refine-overlay">
+  <div class="refine-window">
+    <div class="refine-header">
+      <div class="refine-title">🔧 МАСТЕРСКАЯ · ПОДГОНКА</div>
+      <div class="refine-gold">🪙 <b id="refine-gold">0</b> Оболов</div>
+      <button class="btn danger" onclick="closeRefine()">Закрыть</button>
+    </div>
+    <div class="refine-body">
+      <div class="refine-panel">
+        <div class="refine-panel-title">ЭКИПИРОВКА</div>
+        <div class="refine-list" id="refine-list"></div>
+      </div>
+      <div class="refine-panel">
+        <div class="refine-panel-title">ПОДГОНКА</div>
+        <div class="refine-preview" id="refine-preview"></div>
+      </div>
+    </div>
+    <div class="refine-history">
+      <div class="refine-history-title">ПОСЛЕДНИЕ ПОДГОНКИ</div>
+      <div id="refine-history-list"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ОКНО РЕЙТИНГА ИГРОКОВ -->
+<div class="leaderboard-overlay" id="leaderboard-overlay">
+  <div class="leaderboard-window">
+    <div class="leaderboard-header">
+      <div class="leaderboard-title">🏆 РЕЙТИНГ ИГРОКОВ</div>
+      <div class="leaderboard-header-right">
+        <button class="leaderboard-refresh-btn" id="leaderboard-refresh-btn" onclick="refreshLeaderboard()" title="Обновить">🔄</button>
+        <button class="btn danger" onclick="closeLeaderboard()">Закрыть</button>
+      </div>
+    </div>
+    <div class="leaderboard-sort">
+      <div class="leaderboard-sort-btn active" data-sort="level" onclick="switchLeaderboardSort('level')">⭐ ПО УРОВНЮ</div>
+      <div class="leaderboard-sort-btn" data-sort="gold" onclick="switchLeaderboardSort('gold')">🪙 ПО ЗОЛОТУ</div>
+      <div class="leaderboard-sort-btn" data-sort="kills" onclick="switchLeaderboardSort('kills')">💀 ПО УБИЙСТВАМ</div>
+    </div>
+    <div class="leaderboard-content" id="leaderboard-list"></div>
+  </div>
+</div>
+
+<!-- v0.25: осмотр героя из рейтинга — js/systems/hero-inspect.js -->
+<div class="inspect-overlay" id="inspect-overlay">
+  <div class="inspect-window">
+    <div class="inspect-head-row">
+      <div class="inspect-head" id="inspect-head"></div>
+      <button class="btn danger inspect-close" onclick="closeHeroInspect()">✕</button>
+    </div>
+    <div class="inspect-body" id="inspect-body"></div>
+  </div>
+</div>
+
+<div class="settings-overlay" id="settings-overlay">
+  <div class="settings-box">
+    <div class="settings-title">⚙ НАСТРОЙКИ</div>
+
+    <div class="settings-label">ШРИФТ ТЕКСТА</div>
+    <div class="settings-buttons" id="textfont-buttons"></div>
+    <div class="settings-current">Текущий: <b id="textfont-current-value">PT Serif</b></div>
+
+    <div class="settings-label">МАСШТАБ ИНТЕРФЕЙСА</div>
+    <div class="settings-buttons" id="settings-buttons"></div>
+    <div class="settings-current">Текущий: <b id="settings-current-value">100%</b></div>
+
+    <div class="settings-label">ЯРКОСТЬ</div>
+    <div class="settings-buttons" id="brightness-buttons"></div>
+    <div class="settings-current">Текущая: <b id="brightness-current-value">100%</b></div>
+
+    <div class="settings-label">КОНТРАСТ</div>
+    <div class="settings-buttons" id="contrast-buttons"></div>
+    <div class="settings-current">Текущий: <b id="contrast-current-value">100%</b></div>
+
+    <div class="settings-divider"></div>
+    <div class="settings-section-title">ФИЛЬТРЫ</div>
+
+    <div class="settings-label">ФИЛЬТР ДОБЫЧИ</div>
+    <div class="settings-filter-row">
+      <input type="range" id="lootFilterSlider" class="settings-slider" min="0" max="5" step="1" value="0" oninput="onLootFilterChange()">
+      <span class="settings-slider-value" id="lootFilterValue">Всё</span>
+    </div>
+    <div class="settings-hint">Предметы с монстров ниже порога не попадают в инвентарь.</div>
+
+    <div class="settings-label">ФИЛЬТР КРАФТА</div>
+    <div class="settings-filter-row">
+      <input type="range" id="craftFilterSlider" class="settings-slider" min="0" max="5" step="1" value="0" oninput="onCraftFilterChange()">
+      <span class="settings-slider-value" id="craftFilterValue">Всё</span>
+    </div>
+    <div class="settings-hint">Если крафт ниже порога — предмет не создаётся, материалы сгорают.</div>
+
+    <div class="settings-divider"></div>
+    <div class="settings-section-title">ИНВЕНТАРЬ</div>
+
+    <div class="settings-label">КАП ОДИНАКОВЫХ ПРЕДМЕТОВ</div>
+    <div class="settings-filter-row">
+      <input type="range" id="stackCapSlider" class="settings-slider" min="0" max="15" step="1" value="3" oninput="onStackCapChange()">
+      <span class="settings-slider-value" id="stackCapValue">3 шт</span>
+    </div>
+    <div class="settings-hint">Сколько одинаковых предметов сета можно копить. 0 — без ограничений. Материалы не считаются.</div>
+
+    <div class="settings-divider"></div>
+    <div class="settings-section-title">АВТОБОЙ</div>
+
+    <div class="settings-hint" style="margin-bottom: 12px;">
+      Бой всегда доигрывается до конца. Стоп срабатывает <b>после</b> убийства монстра — тогда начинается восстановление.
+    </div>
+
+    <div class="settings-label">СТОП / СТАРТ · ЗДОРОВЬЕ</div>
+    <div class="settings-filter-row">
+      <span class="auto-slider-tag stop-tag">СТОП</span>
+      <input type="range" id="stopHpSliderSettings" class="auto-slider stop-hp" min="0" max="100" step="5" value="0" oninput="onStopSliderChangeSettings('hp')">
+      <span class="auto-slider-value" id="stopHpValueSettings">выкл</span>
+    </div>
+    <div class="settings-filter-row">
+      <span class="auto-slider-tag resume-tag">СТАРТ</span>
+      <input type="range" id="resumeHpSliderSettings" class="auto-slider resume-hp" min="0" max="100" step="5" value="0" oninput="onResumeSliderChangeSettings('hp')">
+      <span class="auto-slider-value" id="resumeHpValueSettings">выкл</span>
+    </div>
+
+    <div class="settings-label" style="margin-top: 12px;">СТОП / СТАРТ · МАНА</div>
+    <div class="settings-filter-row">
+      <span class="auto-slider-tag stop-tag">СТОП</span>
+      <input type="range" id="stopMpSliderSettings" class="auto-slider stop-mp" min="0" max="100" step="5" value="0" oninput="onStopSliderChangeSettings('mp')">
+      <span class="auto-slider-value" id="stopMpValueSettings">выкл</span>
+    </div>
+    <div class="settings-filter-row">
+      <span class="auto-slider-tag resume-tag">СТАРТ</span>
+      <input type="range" id="resumeMpSliderSettings" class="auto-slider resume-mp" min="0" max="100" step="5" value="0" oninput="onResumeSliderChangeSettings('mp')">
+      <span class="auto-slider-value" id="resumeMpValueSettings">выкл</span>
+    </div>
+
+    <!-- v0.25: рейтинг -->
+    <div class="settings-divider"></div>
+    <div class="settings-section-title">РЕЙТИНГ</div>
+    <div class="settings-label">МОЁ СНАРЯЖЕНИЕ В РЕЙТИНГЕ</div>
+    <div class="settings-buttons" id="profile-privacy-buttons"></div>
+    <div class="settings-hint">Другие игроки могут нажать на вас в рейтинге и посмотреть, что надето и что прокачано. «Скрыть» — увидят только имя и уровень.</div>
+
+    <!-- v0.24: телефон -->
+    <div class="settings-divider"></div>
+    <div class="settings-section-title">ТЕЛЕФОН</div>
+
+    <div class="settings-label">НЕ ГАСИТЬ ЭКРАН НА ОХОТЕ</div>
+    <div class="settings-buttons" id="wakelock-buttons"></div>
+    <div class="settings-hint" id="wakelock-hint"></div>
+
+    <div class="settings-hint">Обновили страницу — игра сама вернёт вас в этого героя и продолжит охоту.</div>
+    <button class="btn settings-close" onclick="exitToCharacterSelect()">🚪 К выбору персонажа</button>
+
+    <button class="btn danger settings-close" onclick="closeSettings()">Закрыть</button>
+  </div>
+</div>
+
+<div class="soon-overlay" id="soon-overlay">
+  <div class="soon-box">
+    <svg class="soon-icon" viewBox="0 0 100 100">
+      <circle cx="50" cy="50" r="40" fill="none" stroke="#b8945a" stroke-width="1.5" opacity="0.5"/>
+      <path d="M50 20 L50 50 L70 60" stroke="#e0be7a" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+      <circle cx="50" cy="50" r="3" fill="#e0be7a"/>
+    </svg>
+    <div class="soon-title" id="soon-title">СКОРО</div>
+    <div class="soon-text" id="soon-text">В разработке</div>
+    <button class="btn" onclick="closeSoon()">Закрыть</button>
+  </div>
+</div>
+
+<!-- ЧИТ-МЕНЮ -->
+<div class="cheat-overlay" id="cheat-overlay">
+  <div class="cheat-window">
+    <div class="cheat-header">
+      <div class="cheat-title">🎮 ЧИТ-МЕНЮ</div>
+      <button class="btn danger" onclick="closeCheatMenu()">Закрыть</button>
+    </div>
+    <div class="cheat-content" id="cheat-overlay-content"></div>
+  </div>
+</div>
+
+<!-- ОКНО ДИАЛОГА -->
+<div class="dialogue-overlay" id="dialogue-overlay"></div>
+
+<div class="item-tooltip" id="item-tooltip"></div>
+
+<!-- МОДАЛКА РАЗРЕШЕНИЯ КОНФЛИКТОВ (v0.13i) -->
+<div class="cloud-conflict-overlay" id="cloud-conflict-overlay">
+  <div class="cloud-conflict-box">
+    <div class="cloud-conflict-title">⚔ КОНФЛИКТ СОХРАНЕНИЙ</div>
+    <div class="cloud-conflict-subtitle">
+      В слоте есть <b>две разные версии</b> персонажа. Какую загрузить?
+    </div>
+
+    <div class="cloud-conflict-options">
+      <div class="cloud-conflict-card" id="conflict-local-card" onclick="cloudConflictChoose('local')">
+        <div class="cloud-conflict-card-header">
+          <span class="cloud-conflict-card-icon">💾</span>
+          <span class="cloud-conflict-card-title">ЛОКАЛЬНЫЙ</span>
+          <span class="cloud-conflict-card-badge" id="conflict-local-badge"></span>
+        </div>
+        <div class="cloud-conflict-info" id="conflict-local-info"></div>
+        <div class="cloud-conflict-time" id="conflict-local-time"></div>
+      </div>
+
+      <div class="cloud-conflict-card" id="conflict-cloud-card" onclick="cloudConflictChoose('cloud')">
+        <div class="cloud-conflict-card-header">
+          <span class="cloud-conflict-card-icon">☁️</span>
+          <span class="cloud-conflict-card-title">ОБЛАЧНЫЙ</span>
+          <span class="cloud-conflict-card-badge" id="conflict-cloud-badge"></span>
+        </div>
+        <div class="cloud-conflict-info" id="conflict-cloud-info"></div>
+        <div class="cloud-conflict-time" id="conflict-cloud-time"></div>
+      </div>
+    </div>
+
+    <div class="cloud-conflict-hint" id="cloud-conflict-hint"></div>
+
+    <button class="btn" onclick="cloudConflictCancel()">Отмена</button>
+  </div>
+</div>
+
+<!-- МОДАЛКА МИГРАЦИИ ЛОКАЛЬНЫХ СЕЙВОВ В ОБЛАКО (v0.13m) -->
+<div class="cloud-migration-overlay" id="cloud-migration-overlay">
+  <div class="cloud-migration-box">
+    <div class="cloud-migration-icon">📤</div>
+    <div class="cloud-migration-title">МИГРАЦИЯ В ОБЛАКО</div>
+    <div class="cloud-migration-text">
+      У вас <b id="cloud-migration-count">0</b> локальных персонажей, которых нет в облаке.
+      <br><br>
+      Залить их <b>сейчас</b>? После заливки локальные копии будут удалены — игра будет полностью в облаке.
+      <br><br>
+      <span style="font-size: 0.85em; opacity: 0.8;">
+        Это безопасно: сохранения переедут на сервер и будут доступны с любого устройства.
+      </span>
+    </div>
+    <div class="cloud-migration-buttons">
+      <button class="btn success" onclick="cloudMigrationDoIt()">📤 Залить всех</button>
+      <button class="btn" onclick="cloudMigrationCancel()">❌ Пропустить</button>
+      <button class="btn" onclick="cloudMigrationSkipForever()">🚫 Больше не спрашивать</button>
+    </div>
+  </div>
+</div>
+
+<div class="slot-picker" id="slot-picker">
+  <div class="slot-picker-header">
+    <span id="slot-picker-title">ВЫБЕРИТЕ</span>
+    <button class="slot-picker-close" onclick="closeSlotPicker()">×</button>
+  </div>
+  <div class="slot-picker-body" id="slot-picker-body"></div>
+</div>
+
+<!-- ОКНО ВЫБОРА НАВЫКА -->
+<div class="skill-picker" id="skill-picker">
+  <div class="skill-picker-header">
+    <span id="skill-picker-title">ВЫБЕРИТЕ НАВЫК</span>
+    <button class="skill-picker-close" onclick="closeSkillPicker()">×</button>
+  </div>
+  <div class="skill-picker-body" id="skill-picker-body"></div>
+</div>
+
+<!-- ============================================================ -->
+<!--  ПОДКЛЮЧЕНИЕ СКРИПТОВ                                        -->
+<!-- ============================================================ -->
+
+<!-- v0.23: полоска боя, пока открыт инвентарь (бой идёт) -->
+<div class="bx-peek-bar" id="bx-peek-bar" onclick="returnToBattle()">
+  <span class="bxp-icon">⚔</span>
+  <div class="bxp-info">
+    <div class="bxp-status" id="bxp-status">Бой идёт</div>
+    <div class="bxp-bars">
+      <div class="bxp-hp"><div class="bxp-hp-fill" id="bxp-hp-fill"></div><span class="bxp-hp-text" id="bxp-hp-text"></span></div>
+      <div class="bxp-mp"><div class="bxp-mp-fill" id="bxp-mp-fill"></div></div>
+    </div>
+  </div>
+  <button class="btn bxp-back" onclick="event.stopPropagation(); returnToBattle()">Вернуться в бой</button>
+</div>
+
+<script src="js/data/config.js?v=0.28"></script>
+<script src="js/data/classes.js?v=0.28"></script>
+<script src="js/data/races.js?v=0.28"></script>
+
+<!-- ИКОНКИ: разбиты на папку icons/ -->
+<script src="js/data/icons/materials.js?v=0.28"></script>
+<script src="js/data/icons/consumables.js?v=0.28"></script>
+<script src="js/data/icons/equipment.js?v=0.28"></script>
+<script src="js/data/icons/weapons.js?v=0.28"></script>
+<script src="js/data/icons/skills.js?v=0.28"></script>
+<script src="js/data/icons/index.js?v=0.28"></script>
+
+<script src="js/data/monsters.js?v=0.28"></script>
+<script src="js/data/skills.js?v=0.28"></script>
+<script src="js/data/skills-aoe.js?v=0.28"></script>
+<script src="js/data/recipes.js?v=0.28"></script>
+<script src="js/data/weaponSkills.js?v=0.28"></script>
+<script src="js/data/elements.js?v=0.28"></script>
+<script src="js/data/weaponTypes.js?v=0.28"></script>
+<script src="js/data/changelog.js?v=0.28"></script>
+<script src="js/data/npcs.js?v=0.28"></script>
+<script src="js/data/alchemy.js?v=0.28"></script>
+<script src="js/data/dialogues.js?v=0.28"></script>
+<script src="js/data/quests.js?v=0.28"></script>
+
+<script src="js/state.js?v=0.28"></script>
+
+<script src="js/core/helpers.js?v=0.28"></script>
+<script src="js/core/stats.js?v=0.28"></script>
+<script src="js/core/top-status.js?v=0.28"></script>
+<script src="js/core/tabs.js?v=0.28"></script>
+<script src="js/core/effects.js?v=0.28"></script>
+<script src="js/core/toast.js?v=0.28"></script>
+
+<script src="js/systems/slots.js?v=0.28"></script>
+<script src="js/systems/cloud.js?v=0.28"></script>
+<script src="js/systems/leaderboard.js?v=0.28"></script>
+<script src="js/systems/hero-inspect.js?v=0.28"></script>
+<script src="js/systems/start-screen.js?v=0.28"></script>
+<script src="js/systems/mobile.js?v=0.28"></script>
+<script src="js/systems/patches.js?v=0.28"></script>
+<script src="js/systems/cheat.js?v=0.28"></script>
+<script src="js/systems/tooltips.js?v=0.28"></script>
+<script src="js/systems/stat-info.js?v=0.28"></script>
+<script src="js/systems/debuffs.js?v=0.28"></script>
+<script src="js/systems/elder.js?v=0.28"></script>
+<script src="js/systems/dialogue.js?v=0.28"></script>
+<script src="js/systems/quests.js?v=0.28"></script>
+<script src="js/systems/mentor.js?v=0.28"></script>
+<script src="js/systems/skill-slots.js?v=0.28"></script>
+<script src="js/systems/player-avatar.js?v=0.28"></script>
+<script src="js/systems/guild.js?v=0.28"></script>
+<script src="js/systems/tavern.js?v=0.28"></script>
+<script src="js/systems/buff-shop.js?v=0.28"></script>
+<script src="js/systems/map.js?v=0.28"></script>
+<script src="js/systems/inventory.js?v=0.28"></script>
+<script src="js/systems/equipment.js?v=0.28"></script>
+<script src="js/systems/trader.js?v=0.28"></script>
+<script src="js/systems/forge.js?v=0.28"></script>
+<script src="js/systems/storage.js?v=0.28"></script>
+<script src="js/systems/refine.js?v=0.28"></script>
+<script src="js/systems/alchemist.js?v=0.28"></script>
+<script src="js/systems/proficiency.js?v=0.28"></script>
+<script src="js/systems/proficiency-ui.js?v=0.28"></script>
+<script src="js/systems/monster-kills.js?v=0.28"></script>
+<script src="js/systems/monster-cards.js?v=0.28"></script>
+
+<!-- ===== БОЙ: разбит на несколько файлов (v0.10) ===== -->
+<script src="js/systems/battle-mixtures.js?v=0.28"></script>
+<script src="js/systems/battle-effects.js?v=0.28"></script>
+<script src="js/systems/battle-skills.js?v=0.28"></script>
+<script src="js/systems/battle-player-attack.js?v=0.28"></script>
+<script src="js/systems/battle-aoe.js?v=0.28"></script>
+<script src="js/systems/battle-weapon-styles.js?v=0.28"></script>
+<script src="js/systems/battle-manual.js?v=0.28"></script>
+<script src="js/systems/battle-monster-attack.js?v=0.28"></script>
+<script src="js/systems/battle-rewards.js?v=0.28"></script>
+<script src="js/systems/battle-search.js?v=0.28"></script>
+<script src="js/systems/battle-autostop.js?v=0.28"></script>
+<script src="js/systems/battle-core.js?v=0.28"></script>
+<script src="js/systems/battle-loop.js?v=0.28"></script>
+<script src="js/systems/battle.js?v=0.28"></script>
+
+<!-- ===== ГРУППОВЫЕ БОИ: модалка (v0.11) ===== -->
+<script src="js/systems/hunt-modal.js?v=0.28"></script>
+<script src="js/systems/battle-fx.js?v=0.28"></script>
+<script src="js/systems/battle-session.js?v=0.28"></script>
+<script src="js/systems/battle-rest.js?v=0.28"></script>
+
+<script src="js/main.js?v=0.28"></script>
+
+</body>
+</html>

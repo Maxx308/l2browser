@@ -1,0 +1,283 @@
+/* ========================================================
+   SETTINGS.CSS — окно настроек ⚙
+   Подключать ДЕСЯТЫМ (после patches.css).
+   + Масштаб интерфейса.
+   + Яркость, контраст.
+   + Ползунки редкости (фильтры добычи и крафта).
+   ======================================================== */
+
+.settings-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.9);
+  z-index: 800;
+  align-items: center;
+  justify-content: center;
+  padding: calc(20 * var(--u));
+  overflow-y: auto;
+}
+.settings-overlay.active { display: flex; }
+
+.settings-box {
+  background: linear-gradient(180deg, var(--bg-2), var(--bg-1));
+  border: 1px solid var(--gold);
+  border-radius: calc(4 * var(--u));
+  max-width: calc(520 * var(--u));
+  width: 100%;
+  padding: calc(24 * var(--u));
+  box-shadow: 0 0 calc(50 * var(--u)) rgba(184,148,90,0.4);
+  max-height: 92vh;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+.settings-box::-webkit-scrollbar { width: calc(6 * var(--u)); }
+.settings-box::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: calc(3 * var(--u));
+}
+
+.settings-title {
+  font-family: 'Cinzel', serif;
+  font-size: var(--fs-h1);
+  color: var(--gold-bright);
+  letter-spacing: calc(3 * var(--u));
+  text-align: center;
+  margin-bottom: calc(20 * var(--u));
+  padding-bottom: calc(10 * var(--u));
+  border-bottom: 1px solid var(--border);
+}
+.settings-label {
+  font-family: 'Cinzel', serif;
+  font-size: var(--fs-base);
+  color: var(--gold);
+  letter-spacing: calc(2 * var(--u));
+  margin-bottom: calc(12 * var(--u));
+  text-align: center;
+}
+.settings-buttons {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: calc(8 * var(--u));
+  margin-bottom: calc(16 * var(--u));
+}
+/* v0.22: выбор шрифта текста — кнопки написаны своим шрифтом */
+#textfont-buttons { grid-template-columns: repeat(2, 1fr); }
+.settings-btn.settings-font-btn { font-size: calc(16 * var(--u)); letter-spacing: 0; text-transform: none; }
+.settings-btn {
+  font-family: 'Cinzel', serif;
+  font-size: var(--fs-base);
+  padding: calc(10 * var(--u));
+  background: linear-gradient(180deg, #1a1a22, #0d0d10);
+  color: var(--gold-bright);
+  border: 1px solid var(--border);
+  border-radius: calc(3 * var(--u));
+  cursor: pointer;
+  transition: all 0.2s;
+  letter-spacing: calc(1 * var(--u));
+}
+.settings-btn:hover {
+  border-color: var(--gold);
+  box-shadow: 0 0 calc(12 * var(--u)) rgba(184,148,90,0.3);
+}
+.settings-btn.active {
+  background: linear-gradient(180deg, #2a3a20, #102008);
+  border-color: #4a6a30;
+  color: #a0d080;
+}
+.settings-current {
+  text-align: center;
+  font-family: 'Cinzel', serif;
+  font-size: var(--fs-medium);
+  color: var(--text-dim);
+  font-style: italic;
+  margin-bottom: calc(16 * var(--u));
+}
+.settings-close {
+  display: block;
+  width: 100%;
+  margin-top: calc(8 * var(--u));
+}
+
+/* ========================================================
+   РАЗДЕЛ «ФИЛЬТРЫ» В НАСТРОЙКАХ
+   ======================================================== */
+
+.settings-divider {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--gold), transparent);
+  margin: calc(20 * var(--u)) 0 calc(16 * var(--u)) 0;
+  opacity: 0.6;
+}
+
+.settings-section-title {
+  font-family: 'Cinzel', serif;
+  font-size: var(--fs-medium);
+  color: var(--gold-bright);
+  letter-spacing: calc(3 * var(--u));
+  text-align: center;
+  margin-bottom: calc(16 * var(--u));
+  text-shadow: 0 0 calc(10 * var(--u)) rgba(224,190,122,0.4);
+}
+
+.settings-filter-row {
+  display: flex;
+  align-items: center;
+  gap: calc(12 * var(--u));
+  margin-bottom: calc(6 * var(--u));
+  padding: 0 calc(4 * var(--u));
+}
+
+.settings-slider {
+  flex: 1;
+  appearance: none;
+  -webkit-appearance: none;
+  height: calc(8 * var(--u));
+  border-radius: calc(4 * var(--u));
+  background: linear-gradient(90deg,
+    #3a3a3a 0%,
+    #3a3a3a 16%,
+    #4a8a30 16%,
+    #4a8a30 33%,
+    #4a6ab0 33%,
+    #4a6ab0 50%,
+    #8a4ad0 50%,
+    #8a4ad0 66%,
+    #b09040 66%,
+    #b09040 83%,
+    #a03020 83%,
+    #a03020 100%);
+  outline: none;
+  cursor: pointer;
+  border: 1px solid var(--border);
+  transition: all 0.2s;
+}
+
+.settings-slider::-webkit-slider-thumb {
+  appearance: none;
+  -webkit-appearance: none;
+  width: calc(20 * var(--u));
+  height: calc(20 * var(--u));
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, var(--gold-bright), var(--gold));
+  border: 2px solid #000;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 0 calc(10 * var(--u)) rgba(224,190,122,0.7);
+}
+.settings-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.1);
+  box-shadow: 0 0 calc(15 * var(--u)) rgba(224,190,122,1);
+}
+.settings-slider::-moz-range-thumb {
+  width: calc(20 * var(--u));
+  height: calc(20 * var(--u));
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, var(--gold-bright), var(--gold));
+  border: 2px solid #000;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 0 calc(10 * var(--u)) rgba(224,190,122,0.7);
+}
+.settings-slider::-moz-range-thumb:hover {
+  transform: scale(1.1);
+  box-shadow: 0 0 calc(15 * var(--u)) rgba(224,190,122,1);
+}
+
+.settings-slider-value {
+  font-family: 'Cinzel', serif;
+  font-size: var(--fs-small);
+  color: var(--gold-bright);
+  min-width: calc(150 * var(--u));
+  text-align: right;
+  letter-spacing: calc(0.5 * var(--u));
+  white-space: nowrap;
+  font-weight: 700;
+  text-shadow: 0 0 calc(6 * var(--u)) rgba(224,190,122,0.4);
+}
+
+.settings-hint {
+  font-size: var(--fs-small);
+  color: var(--text-dim);
+  font-style: italic;
+  text-align: center;
+  margin-bottom: calc(16 * var(--u));
+  line-height: 1.4;
+  padding: 0 calc(8 * var(--u));
+}
+
+/* ---------- АДАПТАЦИЯ НАСТРОЕК ПОД ТЕЛЕФОН ---------- */
+@media (max-width: 600px) {
+  .settings-overlay {
+    padding: calc(10 * var(--u));
+  }
+  .settings-box {
+    padding: calc(16 * var(--u));
+    max-width: 96vw;
+  }
+  .settings-title {
+    font-size: calc(16 * var(--u));
+    margin-bottom: calc(14 * var(--u));
+    padding-bottom: calc(8 * var(--u));
+  }
+  .settings-label {
+    font-size: calc(12.5 * var(--u));
+    letter-spacing: calc(1 * var(--u));
+    margin-bottom: calc(8 * var(--u));
+  }
+  .settings-buttons {
+    gap: calc(5 * var(--u));
+    margin-bottom: calc(12 * var(--u));
+  }
+  .settings-btn {
+    font-size: calc(12 * var(--u));
+    padding: calc(8 * var(--u)) calc(4 * var(--u));
+    letter-spacing: 0;
+  }
+  .settings-current {
+    font-size: calc(12 * var(--u));
+    margin-bottom: calc(12 * var(--u));
+  }
+
+  .settings-section-title {
+    font-size: calc(12.5 * var(--u));
+    letter-spacing: calc(2 * var(--u));
+    margin-bottom: calc(12 * var(--u));
+  }
+
+  .settings-filter-row {
+    gap: calc(8 * var(--u));
+    margin-bottom: calc(4 * var(--u));
+  }
+
+  .settings-slider {
+    height: calc(10 * var(--u));
+  }
+  .settings-slider::-webkit-slider-thumb {
+    width: calc(22 * var(--u));
+    height: calc(22 * var(--u));
+  }
+  .settings-slider::-moz-range-thumb {
+    width: calc(22 * var(--u));
+    height: calc(22 * var(--u));
+  }
+
+  .settings-slider-value {
+    min-width: calc(120 * var(--u));
+    font-size: calc(11.5 * var(--u));
+    text-align: right;
+  }
+
+  .settings-hint {
+    font-size: calc(11 * var(--u));
+    margin-bottom: calc(12 * var(--u));
+  }
+}
+
+@media (max-width: 400px) {
+  .settings-slider-value {
+    min-width: calc(100 * var(--u));
+    font-size: calc(11 * var(--u));
+  }
+}

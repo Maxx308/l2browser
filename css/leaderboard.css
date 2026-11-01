@@ -1,0 +1,292 @@
+/* ========================================================
+   LEADERBOARD.CSS — окно рейтинга игроков
+   Открывается кнопкой 🏆 в городе.
+   Показывает топ-50 по уровню / золоту / убийствам.
+   + Боты (фейковые игроки) подмешиваются к реальным.
+   + Свой персонаж подсвечен золотом.
+   + Если свой вне топ-50 — показываем отдельно внизу.
+   ======================================================== */
+
+.leaderboard-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.9);
+  z-index: 160;
+  align-items: flex-start;
+  justify-content: center;
+  padding: calc(20 * var(--u));
+  overflow-y: auto;
+}
+.leaderboard-overlay.active { display: flex; }
+
+.leaderboard-window {
+  background: linear-gradient(180deg, var(--bg-2), var(--bg-1));
+  border: 1px solid var(--gold);
+  border-radius: calc(4 * var(--u));
+  width: 100%;
+  max-width: calc(820 * var(--u));
+  max-height: 92vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 0 calc(50 * var(--u)) rgba(184,148,90,0.4);
+  margin: auto 0;
+}
+
+/* ---------- ШАПКА ---------- */
+.leaderboard-header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: calc(14 * var(--u)) calc(18 * var(--u));
+  border-bottom: 1px solid var(--border);
+  background: linear-gradient(180deg, #1a1a22, #0a0a0c);
+  border-top-left-radius: calc(4 * var(--u));
+  border-top-right-radius: calc(4 * var(--u));
+  gap: calc(10 * var(--u));
+  flex-wrap: wrap;
+}
+
+.leaderboard-title {
+  font-family: 'Cinzel', serif;
+  font-size: calc(18 * var(--u));
+  color: var(--gold-bright);
+  letter-spacing: calc(2 * var(--u));
+}
+
+.leaderboard-header-right {
+  display: flex;
+  gap: calc(8 * var(--u));
+  align-items: center;
+}
+
+.leaderboard-refresh-btn {
+  font-family: 'Cinzel', serif;
+  font-size: calc(14 * var(--u));
+  padding: calc(6 * var(--u)) calc(12 * var(--u));
+  background: linear-gradient(180deg, #1a1a22, #0d0d10);
+  color: var(--gold-bright);
+  border: 1px solid var(--border);
+  border-radius: calc(3 * var(--u));
+  cursor: pointer;
+  transition: all 0.2s;
+  letter-spacing: calc(0.5 * var(--u));
+}
+.leaderboard-refresh-btn:hover {
+  border-color: var(--gold);
+  box-shadow: 0 0 calc(12 * var(--u)) rgba(184,148,90,0.3);
+}
+.leaderboard-refresh-btn.loading {
+  opacity: 0.5;
+  cursor: wait;
+  animation: lb-spin 1s linear infinite;
+}
+@keyframes lb-spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+/* ---------- КНОПКИ СОРТИРОВКИ ---------- */
+.leaderboard-sort {
+  display: flex;
+  border-bottom: 1px solid var(--border);
+  background: #0a0a0c;
+}
+
+.leaderboard-sort-btn {
+  flex: 1;
+  padding: calc(12 * var(--u)) calc(8 * var(--u));
+  text-align: center;
+  font-family: 'Cinzel', serif;
+  font-size: var(--fs-base);
+  color: var(--text-dim);
+  cursor: pointer;
+  transition: all 0.2s;
+  letter-spacing: calc(1 * var(--u));
+  border-right: 1px solid var(--border);
+  user-select: none;
+}
+.leaderboard-sort-btn:last-child { border-right: none; }
+.leaderboard-sort-btn:hover { color: var(--gold); }
+.leaderboard-sort-btn.active {
+  color: var(--gold-bright);
+  background: linear-gradient(180deg, transparent, rgba(184,148,90,0.1));
+  box-shadow: inset 0 -2px 0 var(--gold);
+}
+
+/* ---------- СПИСОК ---------- */
+.leaderboard-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: calc(10 * var(--u)) calc(12 * var(--u));
+}
+.leaderboard-content::-webkit-scrollbar { width: calc(8 * var(--u)); }
+.leaderboard-content::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: calc(4 * var(--u));
+}
+
+.leaderboard-empty {
+  text-align: center;
+  color: var(--text-dim);
+  font-style: italic;
+  padding: calc(60 * var(--u)) calc(20 * var(--u));
+  font-size: var(--fs-medium);
+}
+
+/* ---------- СТРОКА ---------- */
+.leaderboard-row {
+  display: grid;
+  grid-template-columns: calc(50 * var(--u)) calc(36 * var(--u)) 1fr calc(90 * var(--u)) calc(100 * var(--u)) calc(80 * var(--u));
+  align-items: center;
+  gap: calc(10 * var(--u));
+  padding: calc(8 * var(--u)) calc(12 * var(--u));
+  margin-bottom: calc(4 * var(--u));
+  background: linear-gradient(180deg, #15151a, #0d0d10);
+  border: 1px solid var(--border);
+  border-radius: calc(3 * var(--u));
+  transition: all 0.2s;
+  font-family: 'Cinzel', serif;
+  font-size: var(--fs-small);
+}
+
+.leaderboard-row:hover {
+  border-color: var(--gold);
+  background: linear-gradient(180deg, #1a1a22, #0d0d10);
+}
+
+/* Свой персонаж — золотая подсветка */
+.leaderboard-row.me {
+  border-color: var(--gold-bright);
+  background: linear-gradient(180deg, #2a2410, #15100a);
+  box-shadow: 0 0 calc(12 * var(--u)) rgba(224,190,122,0.4);
+}
+
+/* Топ-3 — особые места */
+.leaderboard-row.rank-1 {
+  border-color: #ffd040;
+  background: linear-gradient(180deg, rgba(60,45,10,0.6), rgba(25,18,5,0.6));
+}
+.leaderboard-row.rank-2 {
+  border-color: #c0c8d0;
+  background: linear-gradient(180deg, rgba(50,50,55,0.5), rgba(20,20,25,0.5));
+}
+.leaderboard-row.rank-3 {
+  border-color: #c08050;
+  background: linear-gradient(180deg, rgba(55,35,15,0.5), rgba(22,14,6,0.5));
+}
+
+/* Столбцы */
+.lb-rank {
+  font-family: 'Cinzel', serif;
+  font-size: var(--fs-medium);
+  color: var(--gold-bright);
+  text-align: center;
+  font-weight: 700;
+}
+.leaderboard-row.rank-1 .lb-rank { color: #ffd040; font-size: calc(17 * var(--u)); }
+.leaderboard-row.rank-2 .lb-rank { color: #d0d8e0; font-size: calc(16 * var(--u)); }
+.leaderboard-row.rank-3 .lb-rank { color: #d09060; font-size: calc(16 * var(--u)); }
+
+.lb-race-icon {
+  width: calc(32 * var(--u));
+  height: calc(32 * var(--u));
+  background-size: cover;
+  background-position: center;
+  border-radius: calc(3 * var(--u));
+  border: 1px solid var(--border);
+}
+
+.lb-name {
+  font-family: 'Cinzel', serif;
+  font-size: var(--fs-base);
+  color: var(--gold-bright);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.lb-class {
+  font-family: var(--font-text);
+  font-size: var(--fs-tiny);
+  color: var(--text-dim);
+  font-style: italic;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Столбец с числом */
+.lb-col {
+  font-family: 'Cinzel', serif;
+  font-size: var(--fs-small);
+  color: var(--text);
+  text-align: right;
+  white-space: nowrap;
+}
+.lb-col .lb-icon {
+  font-size: calc(12.5 * var(--u));
+  margin-right: calc(3 * var(--u));
+  opacity: 0.8;
+}
+
+/* Разделитель перед «своей» строкой (если вне топ-50) */
+.leaderboard-divider {
+  text-align: center;
+  font-family: 'Cinzel', serif;
+  font-size: var(--fs-tiny);
+  color: var(--gold);
+  letter-spacing: calc(2 * var(--u));
+  padding: calc(10 * var(--u)) 0 calc(6 * var(--u));
+  margin: calc(8 * var(--u)) 0 calc(4 * var(--u));
+  border-top: 1px dashed rgba(184,148,90,0.4);
+}
+
+/* ========================================================
+   АДАПТАЦИЯ
+   ======================================================== */
+
+@media (max-width: 900px) {
+  .leaderboard-row {
+    grid-template-columns: calc(40 * var(--u)) calc(30 * var(--u)) 1fr calc(70 * var(--u)) calc(80 * var(--u)) calc(60 * var(--u));
+    gap: calc(6 * var(--u));
+    padding: calc(6 * var(--u)) calc(8 * var(--u));
+    font-size: calc(12 * var(--u));
+  }
+  .lb-race-icon {
+    width: calc(26 * var(--u));
+    height: calc(26 * var(--u));
+  }
+  .lb-name { font-size: calc(12.5 * var(--u)); }
+  .lb-class { font-size: calc(10.5 * var(--u)); }
+  .lb-rank { font-size: calc(12.5 * var(--u)); }
+  .leaderboard-row.rank-1 .lb-rank,
+  .leaderboard-row.rank-2 .lb-rank,
+  .leaderboard-row.rank-3 .lb-rank { font-size: calc(13 * var(--u)); }
+  .lb-col { font-size: calc(11.5 * var(--u)); }
+}
+
+@media (max-width: 600px) {
+  .leaderboard-overlay { padding: calc(6 * var(--u)); }
+  .leaderboard-header { padding: calc(8 * var(--u)) calc(10 * var(--u)); }
+  .leaderboard-title { font-size: calc(13 * var(--u)); letter-spacing: calc(1 * var(--u)); }
+  .leaderboard-refresh-btn { font-size: calc(12.5 * var(--u)); padding: calc(5 * var(--u)) calc(8 * var(--u)); }
+  .leaderboard-sort-btn { font-size: calc(11 * var(--u)); padding: calc(9 * var(--u)) calc(4 * var(--u)); letter-spacing: 0; }
+  .leaderboard-content { padding: calc(8 * var(--u)); }
+
+  .leaderboard-row {
+    grid-template-columns: calc(32 * var(--u)) calc(26 * var(--u)) 1fr calc(54 * var(--u)) calc(66 * var(--u)) calc(50 * var(--u));
+    gap: calc(4 * var(--u));
+    padding: calc(6 * var(--u));
+    font-size: calc(11 * var(--u));
+  }
+  .lb-race-icon { width: calc(22 * var(--u)); height: calc(22 * var(--u)); }
+  .lb-name { font-size: calc(12 * var(--u)); }
+  .lb-class { font-size: calc(10 * var(--u)); }
+  .lb-rank { font-size: calc(12 * var(--u)); }
+  .lb-col { font-size: calc(10.5 * var(--u)); }
+  .lb-col .lb-icon { font-size: calc(11 * var(--u)); }
+}

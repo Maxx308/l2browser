@@ -1,0 +1,390 @@
+/* ========================================================
+   INVENTORY.CSS — инвентарь + редкость
+   Подключать ШЕСТЫМ (после battle.css).
+
+   РАЗБИТ НА 3 ФАЙЛА (разбивка большого файла):
+   - inventory.css        (этот) — инвентарь, сетка, пагинация, редкость.
+   - inventory-equip.css         — экипировка, персонаж, тултип.
+   - inventory-slots.css         — модалки выбора + блок навыков.
+
+   Что оставили здесь:
+   - .inv-container
+   - .items-panel / .items-title
+   - .inventory-grid / .inv-slot / .qty
+   - .inv-footer
+   - .inventory-pagination / .inventory-page-btn
+   - .inventory-full-msg
+   - цвета редкости (.rarity-*)
+   - лог-крафт цвета редкости
+   - адаптив
+   ======================================================== */
+
+/* ---------- ОБЩИЙ КОНТЕЙНЕР ИНВЕНТАРЯ ---------- */
+.inv-container {
+  display: grid;
+  grid-template-columns: calc(420 * var(--u)) 1fr;
+  gap: calc(14 * var(--u));
+  background: linear-gradient(180deg, var(--bg-2), var(--bg-1));
+  border: 1px solid var(--border);
+  border-radius: calc(4 * var(--u));
+  padding: calc(14 * var(--u));
+}
+
+/* ---------- ПАНЕЛЬ ПРЕДМЕТОВ ---------- */
+.items-panel {
+  background: linear-gradient(180deg, #15151a, #0d0d10);
+  border: 1px solid var(--border);
+  border-radius: calc(3 * var(--u));
+  padding: calc(12 * var(--u));
+  display: flex;
+  flex-direction: column;
+}
+
+.items-title {
+  font-family: 'Cinzel', serif;
+  font-size: var(--fs-small);
+  color: var(--gold);
+  letter-spacing: calc(3 * var(--u));
+  text-align: center;
+  padding-bottom: calc(8 * var(--u));
+  border-bottom: 1px solid var(--border);
+  margin-bottom: calc(10 * var(--u));
+}
+
+/* v0.26: ячейка не шире 96 px — на широком мониторе раньше выходило 150–225 px.
+   На большом экране 10 колонок (страница 30 = ровно 3 ряда), сетка по центру. */
+.inventory-grid {
+  display: grid;
+  grid-template-columns: repeat(10, minmax(0, calc(96 * var(--u))));
+  justify-content: center;
+  gap: calc(6 * var(--u));
+}
+.inv-slot {
+  aspect-ratio: 1;
+  background: linear-gradient(180deg, var(--bg-2), var(--bg-1));
+  border: 1px solid var(--border);
+  border-radius: calc(3 * var(--u));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  position: relative;
+  padding: calc(4 * var(--u));
+  overflow: hidden;
+}
+.inv-slot:hover { border-color: var(--gold); }
+.inv-slot.empty { opacity: 0.3; cursor: default; }
+.inv-slot svg {
+  width: calc(30 * var(--u));
+  height: calc(30 * var(--u));
+}
+
+.inv-slot img {
+  width: calc(30 * var(--u));
+  height: calc(30 * var(--u));
+  object-fit: contain;
+  display: block;
+  flex-shrink: 0;
+}
+
+/* v0.26: у всех предметов одинаковая иконка — PNG материалов раньше заливали всю ячейку
+   (inline width:100%), а SVG зелий были крошечными. Название всегда видно под иконкой. */
+.inv-slot > img,
+.inv-slot > svg {
+  width: 62% !important;
+  height: 62% !important;
+  flex: 0 0 auto;
+}
+
+.inv-slot .item-name {
+  font-size: calc(9.5 * var(--u));
+  color: var(--text-dim);
+  text-align: center;
+  margin-top: calc(2 * var(--u));
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  width: 100%;
+  font-family: 'Cinzel', serif;
+}
+.inv-slot .qty {
+  position: absolute;
+  top: calc(3 * var(--u));   /* v0.26: сверху — не наезжает на название */
+  right: calc(5 * var(--u));
+  font-family: 'Cinzel', serif;
+  font-size: var(--fs-small);
+  color: var(--gold-bright);
+  text-shadow: 0 0 calc(4 * var(--u)) #000;
+}
+.inv-slot.consumable { border-color: rgba(106,208,106,0.5); }
+.inv-slot.food { border-color: rgba(160,208,128,0.6); }
+.inv-slot.scroll { border-color: rgba(160,120,220,0.6); }
+
+/* ---------- НИЖНЯЯ ПАНЕЛЬ ИНВЕНТАРЯ ---------- */
+.inv-footer {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: calc(10 * var(--u)) calc(14 * var(--u));
+  margin-top: calc(4 * var(--u));
+  background: linear-gradient(180deg, #0a0a0c, #050505);
+  border: 1px solid var(--border);
+  border-radius: calc(3 * var(--u));
+  font-family: 'Cinzel', serif;
+  font-size: var(--fs-base);
+}
+.inv-footer .gold-display {
+  display: flex;
+  align-items: center;
+  gap: calc(8 * var(--u));
+  color: var(--gold-bright);
+}
+.inv-footer .weight-display { color: var(--text-dim); font-size: var(--fs-small); }
+
+/* ========================================================
+   ПАГИНАЦИЯ + ПЕРЕПОЛНЕНИЕ
+   ======================================================== */
+
+.inventory-pagination {
+  display: flex;
+  justify-content: center;
+  gap: calc(6 * var(--u));
+  margin-top: calc(10 * var(--u));
+  padding-top: calc(10 * var(--u));
+  border-top: 1px solid var(--border);
+  min-height: calc(30 * var(--u));
+}
+
+.inventory-page-btn {
+  font-family: 'Cinzel', serif;
+  font-size: var(--fs-base);
+  min-width: calc(36 * var(--u));
+  padding: calc(5 * var(--u)) calc(12 * var(--u));
+  background: linear-gradient(180deg, #1a1a22, #0d0d10);
+  color: var(--text-dim);
+  border: 1px solid var(--border);
+  border-radius: calc(3 * var(--u));
+  cursor: pointer;
+  transition: all 0.2s;
+  letter-spacing: calc(1 * var(--u));
+}
+.inventory-page-btn:hover {
+  border-color: var(--gold);
+  color: var(--gold);
+}
+.inventory-page-btn.active {
+  background: linear-gradient(180deg, #2a3a20, #102008);
+  border-color: #4a6a30;
+  color: #a0d080;
+  box-shadow: 0 0 calc(10 * var(--u)) rgba(160, 208, 128, 0.3);
+  cursor: default;
+}
+
+.inventory-full-msg {
+  margin-top: calc(10 * var(--u));
+  padding: calc(8 * var(--u)) calc(12 * var(--u));
+  background: linear-gradient(180deg, rgba(60,10,10,0.7), rgba(30,5,5,0.7));
+  border: 1px solid #a03030;
+  border-radius: calc(3 * var(--u));
+  font-family: 'Cinzel', serif;
+  font-size: var(--fs-small);
+  color: #ff8080;
+  text-align: center;
+  letter-spacing: calc(2 * var(--u));
+  text-shadow: 0 0 calc(8 * var(--u)) rgba(255,80,80,0.6);
+  animation: fullMsgPulse 1.4s infinite;
+}
+@keyframes fullMsgPulse {
+  0%, 100% { box-shadow: 0 0 calc(5 * var(--u)) rgba(160,48,48,0.4); }
+  50%      { box-shadow: 0 0 calc(18 * var(--u)) rgba(255,80,80,0.75); }
+}
+
+/* ========================================================
+   ЦВЕТА РЕДКОСТИ
+   ======================================================== */
+
+.inv-slot.rarity-green,
+.equip-slot.rarity-green {
+  border-color: #80e080;
+  box-shadow: 0 0 calc(10 * var(--u)) rgba(128,224,128,0.4);
+}
+
+.inv-slot.rarity-blue,
+.equip-slot.rarity-blue {
+  border-color: #6a9ae0;
+  box-shadow: 0 0 calc(12 * var(--u)) rgba(106,154,224,0.55);
+}
+
+.inv-slot.rarity-purple,
+.equip-slot.rarity-purple {
+  border-color: #c080ff;
+  box-shadow: 0 0 calc(14 * var(--u)) rgba(192,128,255,0.65);
+}
+
+.inv-slot.rarity-yellow,
+.equip-slot.rarity-yellow {
+  border-color: #ffd040;
+  box-shadow: 0 0 calc(16 * var(--u)) rgba(255,208,64,0.75);
+  animation: rarityYellowPulse 2s infinite;
+}
+@keyframes rarityYellowPulse {
+  0%, 100% { box-shadow: 0 0 calc(10 * var(--u)) rgba(255,208,64,0.55); }
+  50%      { box-shadow: 0 0 calc(22 * var(--u)) rgba(255,208,64,0.95); }
+}
+
+.inv-slot.rarity-red,
+.equip-slot.rarity-red {
+  border-color: #ff5050;
+  box-shadow: 0 0 calc(18 * var(--u)) rgba(255,80,80,0.85);
+  animation: rarityRedPulse 1.6s infinite;
+}
+@keyframes rarityRedPulse {
+  0%, 100% { box-shadow: 0 0 calc(12 * var(--u)) rgba(255,80,80,0.65); }
+  50%      { box-shadow: 0 0 calc(26 * var(--u)) rgba(255,80,80,1); }
+}
+
+.log-craft.rarity-green  { color: #80e080; text-shadow: 0 0 calc(6 * var(--u)) rgba(128,224,128,0.5); }
+.log-craft.rarity-blue   { color: #6a9ae0; text-shadow: 0 0 calc(8 * var(--u)) rgba(106,154,224,0.6); }
+.log-craft.rarity-purple { color: #c080ff; text-shadow: 0 0 calc(8 * var(--u)) rgba(192,128,255,0.7); }
+.log-craft.rarity-yellow { color: #ffd040; text-shadow: 0 0 calc(10 * var(--u)) rgba(255,208,64,0.8); font-weight: 700; }
+.log-craft.rarity-red    { color: #ff5050; text-shadow: 0 0 calc(12 * var(--u)) rgba(255,80,80,0.9); font-weight: 700; }
+
+/* ========================================================
+   АДАПТАЦИЯ
+   ======================================================== */
+
+/* ---------- НОУТБУКИ (1100-1400px) ---------- */
+@media (max-width: 1400px) {
+  .inv-container {
+    grid-template-columns: calc(360 * var(--u)) 1fr;
+    gap: calc(12 * var(--u));
+    padding: calc(12 * var(--u));
+  }
+  .inventory-grid {
+    grid-template-columns: repeat(6, minmax(0, calc(96 * var(--u))));
+  }
+}
+
+/* ---------- ПЛАНШЕТЫ (900-1100px) ---------- */
+@media (max-width: 1100px) {
+  .inv-container {
+    grid-template-columns: calc(320 * var(--u)) 1fr;
+    gap: calc(10 * var(--u));
+    padding: calc(10 * var(--u));
+  }
+  .inventory-grid {
+    grid-template-columns: repeat(5, minmax(0, calc(96 * var(--u))));
+  }
+}
+
+/* ---------- МОБИЛЬНЫЕ ПЛАНШЕТЫ (700-900px) ---------- */
+@media (max-width: 900px) {
+  .inv-container {
+    grid-template-columns: 1fr;
+    gap: calc(10 * var(--u));
+    padding: calc(10 * var(--u));
+  }
+  .items-panel {
+    padding: calc(10 * var(--u));
+  }
+  .inventory-grid {
+    grid-template-columns: repeat(5, minmax(0, calc(96 * var(--u))));
+    gap: calc(6 * var(--u));
+  }
+  .inv-footer {
+    flex-direction: column;
+    gap: calc(6 * var(--u));
+    align-items: stretch;
+    text-align: center;
+    padding: calc(8 * var(--u)) calc(10 * var(--u));
+  }
+  .inv-footer .gold-display,
+  .inv-footer .weight-display {
+    justify-content: center;
+  }
+}
+
+/* ---------- ТЕЛЕФОНЫ ВЕРТИКАЛЬНО (< 600px) ---------- */
+@media (max-width: 600px) {
+  .inv-container {
+    padding: calc(8 * var(--u));
+    gap: calc(8 * var(--u));
+  }
+  .items-title {
+    font-size: calc(11 * var(--u));
+    letter-spacing: calc(1.5 * var(--u));
+    padding-bottom: calc(5 * var(--u));
+  }
+  .inventory-grid {
+    grid-template-columns: repeat(4, 1fr);
+    gap: calc(5 * var(--u));
+  }
+  .inv-slot svg {
+    width: calc(26 * var(--u));
+    height: calc(26 * var(--u));
+  }
+  .inv-slot img {
+    width: calc(26 * var(--u));
+    height: calc(26 * var(--u));
+  }
+  .inv-slot .item-name {
+    font-size: calc(9.5 * var(--u));
+  }
+  .inv-slot .qty {
+    font-size: calc(11 * var(--u));
+    bottom: calc(2 * var(--u));
+    right: calc(3 * var(--u));
+  }
+  .inv-footer {
+    font-size: calc(12 * var(--u));
+    padding: calc(6 * var(--u)) calc(8 * var(--u));
+  }
+  .inv-footer .weight-display {
+    font-size: calc(11 * var(--u));
+  }
+}
+
+/* ---------- МАЛЕНЬКИЕ ТЕЛЕФОНЫ (< 400px) ---------- */
+@media (max-width: 400px) {
+  .inventory-grid {
+    grid-template-columns: repeat(4, 1fr);   /* v0.26: было 3 — ячейки ~100 px на телефоне */
+    gap: calc(4 * var(--u));
+  }
+  .inv-slot svg {
+    width: calc(24 * var(--u));
+    height: calc(24 * var(--u));
+  }
+  .inv-slot img {
+    width: calc(24 * var(--u));
+    height: calc(24 * var(--u));
+  }
+}
+
+/* ---------- ГОРИЗОНТАЛЬНЫЙ ТЕЛЕФОН ---------- */
+@media (max-height: 600px) and (orientation: landscape) {
+  .inv-container {
+    grid-template-columns: calc(340 * var(--u)) 1fr;
+    gap: calc(8 * var(--u));
+    padding: calc(8 * var(--u));
+  }
+  .inventory-grid {
+    grid-template-columns: repeat(6, 1fr);
+    gap: calc(4 * var(--u));
+  }
+  .inv-slot svg {
+    width: calc(22 * var(--u));
+    height: calc(22 * var(--u));
+  }
+  .inv-slot img {
+    width: calc(22 * var(--u));
+    height: calc(22 * var(--u));
+  }
+  .inv-slot .item-name {
+    font-size: calc(9 * var(--u));
+  }
+}
+/* v0.20: картинки зелий в сетке инвентаря — крупнее (у их PNG большие поля) */
+#inventory-grid .potion-png { width: 72% !important; height: 72% !important; }

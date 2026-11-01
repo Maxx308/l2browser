@@ -1,0 +1,515 @@
+/* ========================================================
+   BASE.CSS — переменные, body, общие элементы
+   Подключать ПЕРВЫМ.
+   + Масштаб интерфейса через --ui-scale.
+   + Яркость и контраст через --ui-brightness / --ui-contrast.
+   + АДАПТИВНАЯ ВЁРСТКА: подстраивается под любой экран.
+   ======================================================== */
+
+:root {
+  /* Цвета */
+  --bg-0: #0a0a0c; --bg-1: #121216; --bg-2: #1a1a20;
+  --border: #3a3220; --gold: #b8945a; --gold-bright: #e0be7a;
+  --hp: #b02020; --hp-glow: #ff4040;
+  --mp: #2040a0; --mp-glow: #5080ff;
+  --atb: #3a5a8a; --atb-bright: #6a9ad0;
+  --text: #ddd5c5; --text-dim: #a39985;   /* v0.22: ярче — было #c8c0b0 / #7a7264 */
+
+  /* v0.22: шрифт основного текста (меняется в Настройках, см. index.html) */
+  --font-text: 'PT Serif', Georgia, serif;
+  --font-text-weight: 400;
+  --shadow: 0 0 20px rgba(0,0,0,0.8);
+  --magic: #6a9ae0; --magic-bright: #a0c8ff;
+  --potion: #6ad06a; --potion-bright: #a0ffa0;
+  --fire: #ff8020; --fire-bright: #ffb060;
+  --food: #a0d080; --food-bright: #c0f0a0;
+
+  /* МАСШТАБ ИНТЕРФЕЙСА */
+  --ui-scale: 1.0;
+  --u: calc(1px * var(--ui-scale));
+
+  /* ЯРКОСТЬ И КОНТРАСТ */
+  --ui-brightness: 1.0;
+  --ui-contrast: 1.0;
+
+  /* Семантические размеры шрифтов */
+  --fs-tiny:   calc(11 * var(--u));     /* v0.22: было 10 */
+  --fs-small:  calc(12.5 * var(--u));   /* было 11.5 */
+  --fs-base:   calc(13.5 * var(--u));   /* было 13 */
+  --fs-medium: calc(14.5 * var(--u));   /* было 14 */
+  --fs-large:  calc(15 * var(--u));
+  --fs-xl:     calc(16 * var(--u));
+  --fs-h1:     calc(20 * var(--u));
+  --fs-h2:     calc(26 * var(--u));
+  --fs-h3:     calc(32 * var(--u));
+  --fs-hero:   calc(54 * var(--u));
+}
+
+/* ФИЛЬТР ЯРКОСТИ/КОНТРАСТА НА ВСЮ ИГРУ */
+html {
+  filter: brightness(var(--ui-brightness)) contrast(var(--ui-contrast));
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background:
+    radial-gradient(ellipse at 50% 0%, #1a1512 0%, transparent 60%),
+    radial-gradient(ellipse at 50% 100%, #15100c 0%, transparent 60%),
+    var(--bg-0);
+  color: var(--text);
+  font-family: var(--font-text);
+  font-weight: var(--font-text-weight);
+  font-size: var(--fs-medium);
+  min-height: 100vh;
+  overflow-x: hidden;
+  position: relative;
+}
+
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  background: radial-gradient(ellipse at center, transparent 30%, rgba(0,0,0,0.6) 100%);
+  pointer-events: none; z-index: 1;
+}
+
+.app {
+  max-width: calc(1200 * var(--u));
+  margin: 0 auto;
+  padding: calc(20 * var(--u)) calc(20 * var(--u)) calc(100 * var(--u));
+  position: relative; z-index: 2;
+}
+
+h1, h2, h3 {
+  font-family: 'Cinzel', serif;
+  color: var(--gold-bright);
+  text-shadow: 0 0 calc(15 * var(--u)) rgba(184, 148, 90, 0.4);
+  letter-spacing: calc(1 * var(--u));
+}
+
+h1 { font-size: var(--fs-h3); }
+h2 { font-size: var(--fs-h2); }
+h3 { font-size: var(--fs-h1); }
+
+/* ========================================================
+   ВЕРХНЯЯ ПАНЕЛЬ СТАТУСА
+   ======================================================== */
+.top-status {
+  display: flex; justify-content: space-between; align-items: center;
+  background: linear-gradient(180deg, var(--bg-2), var(--bg-1));
+  border: 1px solid var(--border);
+  border-radius: calc(4 * var(--u));
+  padding: calc(10 * var(--u)) calc(16 * var(--u));
+  margin-bottom: calc(12 * var(--u));
+  box-shadow: var(--shadow), inset 0 1px 0 rgba(184,148,90,0.1);
+  flex-wrap: wrap;
+  gap: calc(10 * var(--u));
+}
+
+.top-status .left, .top-status .right {
+  display: flex;
+  gap: calc(14 * var(--u));
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.stat-mini {
+  font-family: 'Cinzel', serif;
+  font-size: var(--fs-base);
+  color: var(--text-dim);
+}
+.stat-mini b { color: var(--gold-bright); font-weight: 700; }
+
+.hp-mini-bar, .xp-mini-bar, .mp-mini-bar {
+  width: calc(100 * var(--u));
+  height: calc(8 * var(--u));
+  background: #000;
+  border: 1px solid var(--border);
+  border-radius: calc(2 * var(--u));
+  overflow: hidden;
+}
+.hp-mini-fill { height: 100%; background: linear-gradient(180deg, var(--hp-glow), var(--hp)); transition: width 0.3s; box-shadow: 0 0 calc(8 * var(--u)) var(--hp-glow); }
+.xp-mini-fill { height: 100%; background: linear-gradient(180deg, #d4b060, #8a6a20); transition: width 0.3s; box-shadow: 0 0 calc(8 * var(--u)) #d4b060; }
+.mp-mini-fill { height: 100%; background: linear-gradient(180deg, var(--mp-glow), var(--mp)); transition: width 0.3s; box-shadow: 0 0 calc(8 * var(--u)) var(--mp-glow); }
+
+.skill-points-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: calc(5 * var(--u));
+  padding: calc(4 * var(--u)) calc(10 * var(--u));
+  background: linear-gradient(180deg, #3a2a10, #1a1208);
+  border: 1px solid var(--gold);
+  border-radius: calc(3 * var(--u));
+  font-family: 'Cinzel', serif;
+  font-size: var(--fs-small);
+  color: var(--gold-bright);
+  letter-spacing: calc(1 * var(--u));
+}
+.skill-points-badge b { color: #fff; text-shadow: 0 0 calc(8 * var(--u)) var(--gold-bright); }
+
+.btn-cheat, .btn-reset {
+  font-family: 'Cinzel', serif;
+  font-size: var(--fs-tiny);
+  padding: calc(5 * var(--u)) calc(10 * var(--u));
+  background: linear-gradient(180deg, #3a1010, #200808);
+  color: #c06060;
+  border: 1px solid #5a2020;
+  border-radius: calc(3 * var(--u));
+  cursor: pointer;
+  transition: all 0.2s;
+  letter-spacing: calc(1 * var(--u));
+}
+.btn-cheat:hover, .btn-reset:hover { border-color: #a03030; box-shadow: 0 0 calc(10 * var(--u)) rgba(160,48,48,0.4); }
+.btn-cheat.on { background: linear-gradient(180deg, #103a10, #082008); color: #80c080; border-color: #205a20; }
+
+/* Кнопка настроек (⚙) */
+.btn-settings {
+  font-family: 'Cinzel', serif;
+  font-size: calc(16 * var(--u));
+  padding: calc(5 * var(--u)) calc(10 * var(--u));
+  background: linear-gradient(180deg, #2a2a3a, #151520);
+  color: var(--gold-bright);
+  border: 1px solid var(--border);
+  border-radius: calc(3 * var(--u));
+  cursor: pointer;
+  transition: all 0.2s;
+  line-height: 1;
+}
+.btn-settings:hover {
+  border-color: var(--gold);
+  box-shadow: 0 0 calc(10 * var(--u)) rgba(184,148,90,0.4);
+}
+/* v0.24: выход к выбору персонажа */
+.btn-exit { background: linear-gradient(180deg, #3a2020, #1a0e0e); }
+.btn-exit:hover { border-color: #a04030; box-shadow: 0 0 calc(10 * var(--u)) rgba(200,80,60,0.4); }
+
+/* ========================================================
+   ОБЩИЕ КНОПКИ
+   ======================================================== */
+.btn {
+  font-family: 'Cinzel', serif;
+  font-size: var(--fs-base);
+  padding: calc(8 * var(--u)) calc(16 * var(--u));
+  background: linear-gradient(180deg, #2a2020, #1a1010);
+  color: var(--gold-bright);
+  border: 1px solid var(--border);
+  border-radius: calc(3 * var(--u));
+  cursor: pointer;
+  transition: all 0.2s;
+  letter-spacing: calc(0.5 * var(--u));
+}
+.btn:hover { border-color: var(--gold); box-shadow: 0 0 calc(12 * var(--u)) rgba(184,148,90,0.3); }
+.btn:disabled { opacity: 0.35; cursor: not-allowed; }
+.btn:disabled:hover { border-color: var(--border); box-shadow: none; }
+.btn.danger { background: linear-gradient(180deg, #3a1010, #200808); border-color: #5a2020; }
+.btn.active { background: linear-gradient(180deg, #2a3a2a, #102010); border-color: #3a5a3a; color: #80c080; }
+.btn.success { background: linear-gradient(180deg, #2a3a20, #102008); border-color: #4a6a30; color: #a0d080; }
+.btn.magic { background: linear-gradient(180deg, #1a2a4a, #0d1528); border-color: #3a5a8a; color: var(--magic-bright); }
+.btn.small { font-size: var(--fs-small); padding: calc(5 * var(--u)) calc(10 * var(--u)); letter-spacing: calc(0.3 * var(--u)); }
+
+/* ========================================================
+   ПАНЕЛИ И ЗАГОЛОВКИ
+   ======================================================== */
+.panel { display: none; }
+.panel.active { display: block; }
+
+.panel-title {
+  font-family: 'Cinzel', serif;
+  font-size: var(--fs-h1);
+  color: var(--gold-bright);
+  margin-bottom: calc(16 * var(--u));
+  padding-bottom: calc(10 * var(--u));
+  border-bottom: 1px solid var(--border);
+  letter-spacing: calc(2 * var(--u));
+}
+
+/* ========================================================
+   ВКЛАДКИ СНИЗУ
+   ======================================================== */
+.tabs {
+  position: fixed; bottom: 0; left: 0; right: 0;
+  background: linear-gradient(180deg, var(--bg-2), #08080a);
+  border-top: 1px solid var(--border);
+  display: flex;
+  z-index: 50;
+  box-shadow: 0 calc(-10 * var(--u)) calc(30 * var(--u)) rgba(0,0,0,0.7);
+}
+.tab {
+  flex: 1;
+  padding: calc(14 * var(--u)) calc(8 * var(--u));
+  text-align: center;
+  cursor: pointer;
+  font-family: 'Cinzel', serif;
+  font-size: var(--fs-base);
+  color: var(--text-dim);
+  border-right: 1px solid var(--border);
+  transition: all 0.2s;
+  letter-spacing: calc(1 * var(--u));
+  display: flex; flex-direction: column; align-items: center;
+  gap: calc(4 * var(--u));
+}
+.tab:last-child { border-right: none; }
+.tab:hover { color: var(--gold); }
+.tab.active { color: var(--gold-bright); background: linear-gradient(180deg, transparent, rgba(184,148,90,0.1)); box-shadow: inset 0 2px 0 var(--gold); }
+.tab svg { width: calc(20 * var(--u)); height: calc(20 * var(--u)); }
+
+/* ========================================================
+   ВСПЛЫВАЮЩИЕ ЦИФРЫ УРОНА
+   ======================================================== */
+.float-dmg {
+  position: fixed;
+  font-family: 'Cinzel', serif;
+  font-weight: 700;
+  font-size: calc(18 * var(--u));
+  pointer-events: none;
+  animation: floatUp 0.9s ease-out forwards;
+  z-index: 100;
+  text-shadow: 0 0 calc(6 * var(--u)) #000, 0 2px calc(4 * var(--u)) #000;
+}
+.float-dmg.dmg { color: #ff5050; }
+.float-dmg.crit { color: #ffaa00; font-size: calc(22 * var(--u)); }
+.float-dmg.magic { color: var(--magic-bright); text-shadow: 0 0 calc(10 * var(--u)) var(--magic); }
+.float-dmg.heal { color: var(--potion-bright); text-shadow: 0 0 calc(10 * var(--u)) var(--potion); }
+.float-dmg.food { color: var(--food-bright); text-shadow: 0 0 calc(10 * var(--u)) var(--food); }
+.float-dmg.block { color: #e0e0e0; font-size: calc(16 * var(--u)); }
+.float-dmg.fire { color: var(--fire-bright); text-shadow: 0 0 calc(10 * var(--u)) var(--fire); }
+.float-dmg.poison { color: #a0ffa0; text-shadow: 0 0 calc(10 * var(--u)) #40a040; }
+@keyframes floatUp {
+  0% { transform: translateY(0); opacity: 1; }
+  100% { transform: translateY(calc(-50 * var(--u))); opacity: 0; }
+}
+
+/* ========================================================
+   SVG-ИКОНКИ В СПИСКАХ
+   ======================================================== */
+.svg-icon { width: calc(13 * var(--u)); height: calc(13 * var(--u)); flex-shrink: 0; }
+
+/* ========================================================
+   ВИНЬЕТКА
+   ======================================================== */
+.vignette {
+  position: fixed; inset: 0; pointer-events: none; z-index: 3;
+  background: radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.7) 100%);
+}
+
+/* ========================================================
+   АДАПТАЦИЯ ПОД РАЗНЫЕ ЭКРАНЫ
+   ======================================================== */
+
+/* ---------- БОЛЬШИЕ МОНИТОРЫ (2K+) ---------- */
+@media (min-width: 1800px) {
+  .app {
+    max-width: calc(1500 * var(--u));
+    padding: calc(24 * var(--u)) calc(24 * var(--u)) calc(110 * var(--u));
+  }
+}
+
+/* ---------- НОУТБУКИ (1100-1400px) ---------- */
+@media (max-width: 1400px) {
+  .app {
+    max-width: 100%;
+    padding: calc(16 * var(--u)) calc(16 * var(--u)) calc(95 * var(--u));
+  }
+  .top-status {
+    padding: calc(8 * var(--u)) calc(12 * var(--u));
+    gap: calc(8 * var(--u));
+  }
+  .top-status .left, .top-status .right {
+    gap: calc(10 * var(--u));
+  }
+}
+
+/* ---------- ПЛАНШЕТЫ (900-1100px) ---------- */
+@media (max-width: 1100px) {
+  .app {
+    padding: calc(14 * var(--u)) calc(12 * var(--u)) calc(90 * var(--u));
+  }
+  .top-status {
+    padding: calc(8 * var(--u)) calc(10 * var(--u));
+  }
+  .stat-mini {
+    font-size: calc(12.5 * var(--u));
+  }
+  .hp-mini-bar, .xp-mini-bar, .mp-mini-bar {
+    width: calc(80 * var(--u));
+  }
+}
+
+/* ---------- МОБИЛЬНЫЕ (600-900px) ---------- */
+@media (max-width: 900px) {
+  .app {
+    padding: calc(10 * var(--u)) calc(8 * var(--u)) calc(85 * var(--u));
+  }
+
+  /* Шапка: переносится на 2-3 строки */
+  .top-status {
+    flex-direction: column;
+    align-items: stretch;
+    padding: calc(8 * var(--u)) calc(10 * var(--u));
+    gap: calc(6 * var(--u));
+  }
+  .top-status .left,
+  .top-status .right {
+    justify-content: space-between;
+    width: 100%;
+    gap: calc(6 * var(--u));
+  }
+
+  .stat-mini {
+    font-size: calc(12.5 * var(--u));
+  }
+  .hp-mini-bar, .xp-mini-bar, .mp-mini-bar {
+    width: calc(70 * var(--u));
+    height: calc(7 * var(--u));
+  }
+
+  .skill-points-badge {
+    font-size: calc(11.5 * var(--u));
+    padding: calc(3 * var(--u)) calc(7 * var(--u));
+  }
+
+  .btn-cheat, .btn-settings {
+    font-size: calc(12 * var(--u));
+    padding: calc(4 * var(--u)) calc(8 * var(--u));
+  }
+  .btn-settings {
+    font-size: calc(14 * var(--u));
+  }
+
+  /* Вкладки — компактнее */
+  .tab {
+    padding: calc(10 * var(--u)) calc(4 * var(--u));
+    font-size: calc(12 * var(--u));
+    gap: calc(2 * var(--u));
+    letter-spacing: calc(0.3 * var(--u));
+  }
+  .tab svg { width: calc(18 * var(--u)); height: calc(18 * var(--u)); }
+}
+
+/* ---------- МОБИЛЬНЫЕ ВЕРТИКАЛЬНО (< 600px) ---------- */
+@media (max-width: 600px) {
+  .app {
+    padding: calc(8 * var(--u)) calc(6 * var(--u)) calc(80 * var(--u));
+  }
+
+  .top-status {
+    padding: calc(6 * var(--u)) calc(8 * var(--u));
+    gap: calc(4 * var(--u));
+    border-radius: calc(3 * var(--u));
+  }
+  .top-status .left,
+  .top-status .right {
+    gap: calc(4 * var(--u));
+  }
+
+  /* Бар HP/MP/XP — уже, чтобы влезли в ряд */
+  .stat-mini {
+    font-size: calc(12 * var(--u));
+  }
+  .hp-mini-bar, .xp-mini-bar, .mp-mini-bar {
+    width: calc(55 * var(--u));
+    height: calc(6 * var(--u));
+  }
+
+  .skill-points-badge {
+    font-size: calc(11 * var(--u));
+    padding: calc(2 * var(--u)) calc(6 * var(--u));
+    letter-spacing: calc(0.5 * var(--u));
+  }
+
+  .btn-cheat, .btn-settings {
+    font-size: calc(11.5 * var(--u));
+    padding: calc(3 * var(--u)) calc(7 * var(--u));
+    letter-spacing: calc(0.5 * var(--u));
+  }
+  .btn-settings {
+    font-size: calc(13 * var(--u));
+  }
+
+  /* Вкладки — иконки крупнее, текст мельче */
+  .tab {
+    padding: calc(8 * var(--u)) calc(2 * var(--u));
+    font-size: calc(10.5 * var(--u));
+    letter-spacing: 0;
+    gap: calc(1 * var(--u));
+  }
+  .tab svg { width: calc(20 * var(--u)); height: calc(20 * var(--u)); }
+
+  /* Кнопки — крупнее для тапа */
+  .btn {
+    font-size: calc(12.5 * var(--u));
+    padding: calc(10 * var(--u)) calc(14 * var(--u));
+    min-height: calc(38 * var(--u));
+  }
+  .btn.small {
+    font-size: calc(12 * var(--u));
+    padding: calc(8 * var(--u)) calc(10 * var(--u));
+  }
+
+  /* Заголовки панелей — компактнее */
+  .panel-title {
+    font-size: calc(16 * var(--u));
+    letter-spacing: calc(1.5 * var(--u));
+    margin-bottom: calc(10 * var(--u));
+    padding-bottom: calc(6 * var(--u));
+  }
+
+  /* Всплывающие цифры — чуть меньше */
+  .float-dmg {
+    font-size: calc(16 * var(--u));
+  }
+  .float-dmg.crit {
+    font-size: calc(20 * var(--u));
+  }
+}
+
+/* ---------- ОЧЕНЬ УЗКИЕ (< 380px) ---------- */
+@media (max-width: 380px) {
+  .hp-mini-bar, .xp-mini-bar, .mp-mini-bar {
+    width: calc(45 * var(--u));
+  }
+  .stat-mini {
+    font-size: calc(11 * var(--u));
+  }
+  .tab {
+    font-size: calc(10 * var(--u));
+  }
+  .tab svg {
+    width: calc(18 * var(--u));
+    height: calc(18 * var(--u));
+  }
+}
+
+/* ---------- ГОРИЗОНТАЛЬНЫЙ ТЕЛЕФОН / НИЗКИЙ ЭКРАН ---------- */
+@media (max-height: 700px) and (orientation: landscape) {
+  .app {
+    padding: calc(6 * var(--u)) calc(10 * var(--u)) calc(70 * var(--u));
+  }
+  .top-status {
+    padding: calc(4 * var(--u)) calc(10 * var(--u));
+    margin-bottom: calc(6 * var(--u));
+  }
+  .hp-mini-bar, .xp-mini-bar, .mp-mini-bar {
+    width: calc(70 * var(--u));
+    height: calc(6 * var(--u));
+  }
+  .tab {
+    padding: calc(6 * var(--u)) calc(8 * var(--u));
+    font-size: calc(11 * var(--u));
+  }
+  .tab svg {
+    width: calc(16 * var(--u));
+    height: calc(16 * var(--u));
+  }
+}
+
+/* ---------- ОЧЕНЬ НИЗКИЙ ЭКРАН ПО ВЫСОТЕ ---------- */
+@media (max-height: 600px) {
+  .top-status {
+    padding: calc(4 * var(--u)) calc(8 * var(--u));
+    margin-bottom: calc(6 * var(--u));
+  }
+  .tab {
+    padding: calc(6 * var(--u)) calc(4 * var(--u));
+  }
+}

@@ -1,0 +1,501 @@
+/* ========================================================
+   MONSTERS.CSS — карточки монстров, варианты, счётчики
+   Подключать ТРЕТЬИМ (после effects.css).
+   + Масштабирование через --ui-scale.
+   + Стили титулов: Охотник / Прославленный / Великолепный.
+   + Анимация для «Великолепного охотника».
+   + АДАПТИВНАЯ ВЁРСТКА: планшет и телефон.
+   + PNG-ИКОНКИ В ДРОП-ЛИСТЕ (.drop-icon-img).
+   ======================================================== */
+
+/* ---------- СЕТКА КАРТОЧЕК: 5 В РЯД ---------- */
+.monsters-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: calc(10 * var(--u));
+  margin-bottom: calc(16 * var(--u));
+}
+@media (max-width: 1100px) {
+  .monsters-grid { grid-template-columns: repeat(4, 1fr); }
+}
+@media (max-width: 900px) {
+  .monsters-grid { grid-template-columns: repeat(3, 1fr); }
+}
+@media (max-width: 600px) {
+  .monsters-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+/* ---------- КАРТОЧКА МОНСТРА ---------- */
+.monster-card {
+  background: linear-gradient(180deg, var(--bg-2), var(--bg-1));
+  border: 1px solid var(--border);
+  border-radius: calc(4 * var(--u));
+  padding: calc(8 * var(--u));
+  cursor: pointer;
+  transition: all 0.25s;
+  position: relative;
+  overflow: hidden;
+}
+.monster-card::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: radial-gradient(circle at 50% 20%, rgba(184,148,90,0.05), transparent 70%);
+  pointer-events: none;
+}
+.monster-card:hover { border-color: var(--gold); box-shadow: 0 0 calc(20 * var(--u)) rgba(184,148,90,0.2); }
+.monster-card.selected { border-color: var(--gold-bright); box-shadow: 0 0 calc(25 * var(--u)) rgba(224,190,122,0.35); }
+.monster-card.selected::after {
+  content: '';
+  position: absolute;
+  top: calc(8 * var(--u)); right: calc(8 * var(--u));
+  width: calc(8 * var(--u)); height: calc(8 * var(--u));
+  background: var(--gold-bright);
+  border-radius: 50%;
+  box-shadow: 0 0 calc(10 * var(--u)) var(--gold-bright);
+}
+.monster-card.magic-type { border-left: 2px solid var(--magic); }
+
+.monster-card .monster-portrait-img {
+  height: calc(100 * var(--u));
+  margin-bottom: calc(6 * var(--u));
+  background-size: cover;
+  background-position: center 25%;
+  background-repeat: no-repeat;
+  border-radius: calc(3 * var(--u));
+  border: 1px solid var(--border);
+}
+
+.monster-portrait {
+  width: calc(80 * var(--u));
+  height: calc(80 * var(--u));
+  margin: 0 auto calc(8 * var(--u));
+  display: block;
+  filter: drop-shadow(0 0 calc(10 * var(--u)) rgba(0,0,0,0.8));
+}
+
+.monster-card .monster-name {
+  font-size: var(--fs-base);
+  margin-bottom: calc(1 * var(--u));
+  font-family: 'Cinzel', serif;
+  color: var(--gold-bright);
+  text-align: center;
+}
+.monster-card .monster-level {
+  font-size: var(--fs-tiny);
+  margin-bottom: calc(6 * var(--u));
+  text-align: center;
+  color: var(--text-dim);
+}
+
+/* ---------- ДРОП-ЛИСТ ---------- */
+.drop-list { line-height: 1.55; color: var(--text-dim); }
+.monster-card .drop-list {
+  font-size: var(--fs-tiny);
+  line-height: 1.4;
+}
+.drop-list .row { display: flex; align-items: center; gap: calc(5 * var(--u)); }
+
+/* ---------- PNG-ИКОНКИ В ДРОП-ЛИСТЕ ---------- */
+.drop-icon-img {
+  width: calc(12 * var(--u));
+  height: calc(12 * var(--u));
+  object-fit: contain;
+  flex-shrink: 0;
+  display: inline-block;
+  vertical-align: middle;
+}
+
+.monster-card .drop-list .row { gap: calc(3 * var(--u)); }
+.drop-list .chance { color: var(--gold); margin-left: auto; font-family: 'Cinzel', serif; }
+.monster-card .drop-list .svg-icon {
+  width: calc(10 * var(--u));
+  height: calc(10 * var(--u));
+}
+
+/* ---------- ВАРИАНТЫ МОНСТРОВ ---------- */
+
+.monster-card.variant-normal {
+  border-color: var(--border);
+}
+.monster-card.variant-normal:hover {
+  border-color: var(--gold);
+}
+
+.monster-card.variant-ancient {
+  border-color: #4a6ab0;
+  box-shadow: 0 0 calc(15 * var(--u)) rgba(74, 106, 176, 0.3);
+}
+.monster-card.variant-ancient:hover {
+  border-color: #6a9ae0;
+  box-shadow: 0 0 calc(25 * var(--u)) rgba(106, 154, 224, 0.5);
+}
+.monster-card.variant-ancient .monster-name {
+  color: #a0c8ff;
+  text-shadow: 0 0 calc(10 * var(--u)) rgba(160, 200, 255, 0.5);
+}
+
+.monster-card.variant-bloody {
+  border-color: #a03030;
+  box-shadow: 0 0 calc(20 * var(--u)) rgba(160, 48, 48, 0.4);
+}
+.monster-card.variant-bloody:hover {
+  border-color: #e04040;
+  box-shadow: 0 0 calc(30 * var(--u)) rgba(224, 64, 64, 0.6);
+}
+.monster-card.variant-bloody .monster-name {
+  color: #ff7070;
+  text-shadow: 0 0 calc(12 * var(--u)) rgba(255, 112, 112, 0.6);
+}
+
+/* Легкое свечение портрета */
+.monster-card.variant-ancient .monster-portrait-img {
+  border-color: #4a6ab0;
+  box-shadow: inset 0 0 calc(30 * var(--u)) rgba(106, 154, 224, 0.25);
+}
+.monster-card.variant-bloody .monster-portrait-img {
+  border-color: #a03030;
+  box-shadow: inset 0 0 calc(30 * var(--u)) rgba(224, 64, 64, 0.3);
+}
+
+/* ---------- СЧЁТЧИК УБИЙСТВ И ОТКРЫТИЕ СТАТОВ ---------- */
+
+.monster-kills {
+  font-family: 'Cinzel', serif;
+  font-size: var(--fs-tiny);
+  color: var(--text-dim);
+  text-align: center;
+  margin-bottom: calc(5 * var(--u));
+  letter-spacing: calc(0.5 * var(--u));
+}
+.monster-card.variant-ancient .monster-kills { color: #8aa8d8; }
+.monster-card.variant-bloody .monster-kills  { color: #d08080; }
+
+.monster-stats {
+  display: flex;
+  justify-content: center;
+  gap: calc(10 * var(--u));
+  font-family: 'Cinzel', serif;
+  font-size: var(--fs-small);
+  color: var(--text);
+  margin-bottom: calc(5 * var(--u));
+}
+.monster-stat {
+  color: var(--gold-bright);
+}
+.monster-stat.stat-hidden {
+  color: var(--text-dim);
+  font-style: italic;
+  opacity: 0.7;
+}
+
+.stat-hidden {
+  color: var(--text-dim);
+  font-style: italic;
+  opacity: 0.7;
+  letter-spacing: calc(1 * var(--u));
+}
+
+.chance-hidden {
+  color: var(--text-dim) !important;
+  font-style: italic;
+  opacity: 0.7;
+}
+
+/* ---------- БАЗОВЫЙ СТИЛЬ ТИТУЛА ---------- */
+.monster-title {
+  font-family: 'Cinzel', serif;
+  font-size: var(--fs-small);
+  text-align: center;
+  margin-top: calc(4 * var(--u));
+  letter-spacing: calc(1 * var(--u));
+}
+
+/* ---------- ТИТУЛ: ОХОТНИК (оранжевый) ---------- */
+.monster-title.hunter {
+  color: #ffb060;
+  text-shadow: 0 0 calc(8 * var(--u)) rgba(255, 176, 96, 0.6);
+}
+
+/* ---------- ТИТУЛ: ПРОСЛАВЛЕННЫЙ ОХОТНИК (золотой, статичный) ---------- */
+.monster-title.glorious {
+  color: #ffd040;
+  text-shadow: 0 0 calc(12 * var(--u)) rgba(255, 208, 64, 0.85);
+  font-size: var(--fs-base);
+  font-weight: 700;
+  letter-spacing: calc(1.5 * var(--u));
+}
+
+/* ---------- ТИТУЛ: ВЕЛИКОЛЕПНЫЙ ОХОТНИК (красно-фиолетовый, анимированный) ---------- */
+.monster-title.magnificent {
+  background: linear-gradient(90deg, #ff5050, #c080ff, #ff5050);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+  font-size: var(--fs-base);
+  font-weight: 700;
+  letter-spacing: calc(2 * var(--u));
+  animation: magnificentGlow 2.5s ease-in-out infinite,
+             magnificentShift 4s linear infinite;
+}
+
+/* Пульсация свечения */
+@keyframes magnificentGlow {
+  0%, 100% {
+    filter: drop-shadow(0 0 calc(4 * var(--u)) rgba(255, 80, 80, 0.6))
+            drop-shadow(0 0 calc(8 * var(--u)) rgba(192, 128, 255, 0.4));
+  }
+  50% {
+    filter: drop-shadow(0 0 calc(10 * var(--u)) rgba(255, 80, 80, 0.95))
+            drop-shadow(0 0 calc(18 * var(--u)) rgba(192, 128, 255, 0.8));
+  }
+}
+
+/* Перелив градиента — сдвиг фона */
+@keyframes magnificentShift {
+  0% { background-position: 0% center; }
+  100% { background-position: 200% center; }
+}
+
+/* ---------- СЧЁТЧИК УБИЙСТВ В ШАПКЕ БОЯ ---------- */
+
+.battle-kills {
+  font-family: 'Cinzel', serif;
+  font-size: var(--fs-base);
+  color: var(--text-dim);
+  letter-spacing: calc(1 * var(--u));
+  padding: calc(6 * var(--u)) calc(12 * var(--u));
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid var(--border);
+  border-radius: calc(3 * var(--u));
+  margin: 0 calc(10 * var(--u));
+  white-space: nowrap;
+}
+
+/* ========================================================
+   АДАПТАЦИЯ ПОД РАЗНЫЕ ЭКРАНЫ
+   ======================================================== */
+
+/* ---------- ПЛАНШЕТЫ (900-1100px) ---------- */
+@media (max-width: 1100px) {
+  .monster-card .monster-portrait-img {
+    height: calc(90 * var(--u));
+  }
+  .monster-card .monster-name {
+    font-size: calc(12 * var(--u));
+  }
+  .monster-card .drop-list {
+    font-size: calc(9.5 * var(--u));
+  }
+  .drop-icon-img {
+    width: calc(11 * var(--u));
+    height: calc(11 * var(--u));
+  }
+}
+
+/* ---------- МОБИЛЬНЫЕ ПЛАНШЕТЫ / КРУПНЫЕ ТЕЛЕФОНЫ (600-900px) ---------- */
+@media (max-width: 900px) {
+  .monsters-grid {
+    gap: calc(8 * var(--u));
+    margin-bottom: calc(12 * var(--u));
+  }
+
+  .monster-card {
+    padding: calc(6 * var(--u));
+  }
+
+  .monster-card .monster-portrait-img {
+    height: calc(80 * var(--u));
+    margin-bottom: calc(5 * var(--u));
+  }
+
+  .monster-card .monster-name {
+    font-size: calc(12 * var(--u));
+  }
+
+  .monster-card .monster-level {
+    font-size: calc(9.5 * var(--u));
+    margin-bottom: calc(4 * var(--u));
+  }
+
+  .monster-kills {
+    font-size: calc(9.5 * var(--u));
+    margin-bottom: calc(4 * var(--u));
+  }
+
+  .monster-card .drop-list {
+    font-size: calc(9.5 * var(--u));
+    line-height: 1.3;
+  }
+
+  .drop-icon-img {
+    width: calc(11 * var(--u));
+    height: calc(11 * var(--u));
+  }
+
+  .monster-stats {
+    gap: calc(6 * var(--u));
+    font-size: calc(10.5 * var(--u));
+    margin-bottom: calc(4 * var(--u));
+  }
+
+  .monster-title {
+    font-size: calc(10 * var(--u));
+    margin-top: calc(3 * var(--u));
+  }
+}
+
+/* ---------- ТЕЛЕФОНЫ ВЕРТИКАЛЬНО (< 600px) ---------- */
+@media (max-width: 600px) {
+  .monsters-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: calc(6 * var(--u));
+    margin-bottom: calc(10 * var(--u));
+  }
+
+  /* Копи: 2 колонки с шахтой */
+  .monsters-grid.mine-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .monster-card {
+    padding: calc(6 * var(--u));
+    border-radius: calc(3 * var(--u));
+  }
+
+  .monster-card .monster-portrait-img {
+    height: calc(90 * var(--u));
+    margin-bottom: calc(5 * var(--u));
+  }
+
+  .monster-card .monster-name {
+    font-size: calc(12 * var(--u));
+    margin-bottom: calc(2 * var(--u));
+  }
+
+  .monster-card .monster-level {
+    font-size: calc(9.5 * var(--u));
+    margin-bottom: calc(4 * var(--u));
+  }
+
+  .monster-kills {
+    font-size: calc(9 * var(--u));
+    margin-bottom: calc(3 * var(--u));
+  }
+
+  .monster-stats {
+    gap: calc(6 * var(--u));
+    font-size: calc(10 * var(--u));
+    margin-bottom: calc(3 * var(--u));
+  }
+
+  .monster-card .drop-list {
+    font-size: calc(9 * var(--u));
+    line-height: 1.25;
+  }
+  .monster-card .drop-list .row {
+    gap: calc(2 * var(--u));
+  }
+  .monster-card .drop-list .svg-icon {
+    width: calc(9 * var(--u));
+    height: calc(9 * var(--u));
+  }
+
+  /* PNG-иконки в дропе — компактные */
+  .drop-icon-img {
+    width: calc(10 * var(--u));
+    height: calc(10 * var(--u));
+  }
+
+  .monster-title {
+    font-size: calc(10 * var(--u));
+    margin-top: calc(3 * var(--u));
+    letter-spacing: calc(0.5 * var(--u));
+  }
+  .monster-title.hunter {
+    font-size: calc(10 * var(--u));
+  }
+  .monster-title.glorious {
+    font-size: calc(10.5 * var(--u));
+    letter-spacing: calc(0.5 * var(--u));
+  }
+  .monster-title.magnificent {
+    font-size: calc(10.5 * var(--u));
+    letter-spacing: calc(0.5 * var(--u));
+  }
+}
+
+/* ---------- МАЛЕНЬКИЕ ТЕЛЕФОНЫ (< 400px) ---------- */
+@media (max-width: 400px) {
+  .monster-card .monster-portrait-img {
+    height: calc(80 * var(--u));
+  }
+
+  .monster-card .monster-name {
+    font-size: calc(11 * var(--u));
+  }
+
+  .monster-card .monster-level {
+    font-size: calc(9 * var(--u));
+  }
+
+  .monster-kills {
+    font-size: calc(8.5 * var(--u));
+  }
+
+  .monster-stats {
+    font-size: calc(9.5 * var(--u));
+    gap: calc(4 * var(--u));
+  }
+
+  .monster-card .drop-list {
+    font-size: calc(8.5 * var(--u));
+  }
+
+  .drop-icon-img {
+    width: calc(9 * var(--u));
+    height: calc(9 * var(--u));
+  }
+}
+
+/* ---------- ГОРИЗОНТАЛЬНЫЙ ТЕЛЕФОН / НИЗКИЙ ЭКРАН ---------- */
+@media (max-height: 600px) and (orientation: landscape) {
+  .monsters-grid {
+    grid-template-columns: repeat(4, 1fr);
+    gap: calc(6 * var(--u));
+  }
+  .monsters-grid.mine-grid {
+    grid-template-columns: repeat(5, 1fr);
+  }
+
+  .monster-card {
+    padding: calc(5 * var(--u));
+  }
+  .monster-card .monster-portrait-img {
+    height: calc(70 * var(--u));
+    margin-bottom: calc(3 * var(--u));
+  }
+  .monster-card .monster-name {
+    font-size: calc(11 * var(--u));
+  }
+  .monster-card .monster-level {
+    font-size: calc(9 * var(--u));
+    margin-bottom: calc(3 * var(--u));
+  }
+  .monster-kills {
+    font-size: calc(8.5 * var(--u));
+    margin-bottom: calc(2 * var(--u));
+  }
+  .monster-card .drop-list {
+    font-size: calc(8.5 * var(--u));
+  }
+  .monster-stats {
+    font-size: calc(9.5 * var(--u));
+    margin-bottom: calc(2 * var(--u));
+  }
+  .drop-icon-img {
+    width: calc(10 * var(--u));
+    height: calc(10 * var(--u));
+  }
+}

@@ -1,0 +1,573 @@
+/* ========================================================
+   INVENTORY-SLOTS.CSS — модалки выбора + блок навыков
+   Вынесено из inventory.css (разбивка большого файла).
+
+   Что внутри:
+   - .slot-picker (модалка выбора расходников)
+   - .slot-picker-thresholds / .slot-picker-threshold-btn
+   - .skill-picker (модалка выбора навыка)
+   - .skill-loadout / .skill-loadout-slot / .skill-loadout-controls
+   - .skill-png-icon (PNG-иконки навыков)
+   - адаптив под планшет / телефон
+   ======================================================== */
+
+/* ========================================================
+   МОДАЛКА ВЫБОРА ДЛЯ СЛОТОВ РАСХОДНИКОВ (slot-picker)
+   ======================================================== */
+
+.slot-picker {
+  position: fixed;
+  display: none;
+  z-index: 500;
+  min-width: calc(240 * var(--u));
+  max-width: calc(320 * var(--u));
+  background: linear-gradient(180deg, #1a1a22, #0a0a0c);
+  border: 1px solid var(--gold);
+  border-radius: calc(4 * var(--u));
+  box-shadow: 0 0 calc(30 * var(--u)) rgba(0,0,0,0.95),
+              0 0 calc(20 * var(--u)) rgba(184,148,90,0.3);
+  overflow: hidden;
+}
+.slot-picker.active { display: block; }
+
+.slot-picker-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: calc(10 * var(--u)) calc(14 * var(--u));
+  background: linear-gradient(180deg, #2a2a36, #15151a);
+  border-bottom: 1px solid var(--border);
+  font-family: 'Cinzel', serif;
+  font-size: var(--fs-small);
+  color: var(--gold-bright);
+  letter-spacing: calc(2 * var(--u));
+}
+
+.slot-picker-close {
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  font-size: calc(20 * var(--u));
+  cursor: pointer;
+  padding: 0 calc(4 * var(--u));
+  line-height: 1;
+  font-family: 'Cinzel', serif;
+  transition: color 0.2s;
+}
+.slot-picker-close:hover { color: #ff5050; }
+
+.slot-picker-body {
+  padding: calc(8 * var(--u));
+  max-height: calc(340 * var(--u));
+  overflow-y: auto;
+}
+.slot-picker-body::-webkit-scrollbar { width: calc(6 * var(--u)); }
+.slot-picker-body::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: calc(3 * var(--u));
+}
+
+.slot-picker-section-label {
+  font-family: 'Cinzel', serif;
+  font-size: var(--fs-tiny);
+  color: var(--text-dim);
+  letter-spacing: calc(1.5 * var(--u));
+  padding: calc(4 * var(--u)) calc(6 * var(--u));
+  text-transform: uppercase;
+}
+
+.slot-picker-divider {
+  height: 1px;
+  background: var(--border);
+  margin: calc(6 * var(--u)) 0;
+}
+
+.slot-picker-item {
+  display: flex;
+  align-items: center;
+  gap: calc(10 * var(--u));
+  padding: calc(8 * var(--u)) calc(10 * var(--u));
+  border-radius: calc(3 * var(--u));
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+  border: 1px solid transparent;
+}
+.slot-picker-item:hover {
+  background: rgba(184,148,90,0.1);
+  border-color: var(--gold);
+}
+.slot-picker-item.current {
+  background: rgba(160,208,128,0.1);
+  border-color: #4a6a30;
+  cursor: default;
+}
+.slot-picker-item.current:hover {
+  background: rgba(160,208,128,0.1);
+  border-color: #4a6a30;
+}
+
+.slot-picker-icon {
+  width: calc(36 * var(--u));
+  height: calc(36 * var(--u));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  background: linear-gradient(180deg, #0a0a0c, #050505);
+  border: 1px solid var(--border);
+  border-radius: calc(3 * var(--u));
+}
+.slot-picker-icon svg {
+  width: calc(28 * var(--u));
+  height: calc(28 * var(--u));
+}
+
+.slot-picker-info {
+  flex: 1;
+  min-width: 0;
+}
+.slot-picker-name {
+  font-family: 'Cinzel', serif;
+  font-size: var(--fs-small);
+  color: var(--gold-bright);
+  margin-bottom: calc(2 * var(--u));
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.slot-picker-stock {
+  font-size: var(--fs-tiny);
+  color: var(--text-dim);
+}
+
+.slot-picker-clear {
+  font-family: 'Cinzel', serif;
+  font-size: var(--fs-tiny);
+  padding: calc(4 * var(--u)) calc(8 * var(--u));
+  background: linear-gradient(180deg, #3a1010, #200808);
+  color: #ff9090;
+  border: 1px solid #5a2020;
+  border-radius: calc(3 * var(--u));
+  cursor: pointer;
+  transition: all 0.2s;
+  letter-spacing: calc(0.5 * var(--u));
+  flex-shrink: 0;
+}
+.slot-picker-clear:hover {
+  border-color: #a03030;
+  color: #ffb0b0;
+}
+
+.slot-picker-empty {
+  text-align: center;
+  color: var(--text-dim);
+  font-style: italic;
+  font-size: var(--fs-small);
+  padding: calc(20 * var(--u)) calc(10 * var(--u));
+  line-height: 1.6;
+}
+
+/* ========================================================
+   ПОРОГ HP ДЛЯ ЗЕЛЬЯ (в модалке)
+   ======================================================== */
+
+.slot-picker-thresholds {
+  display: flex;
+  gap: calc(4 * var(--u));
+  justify-content: space-between;
+  padding: calc(6 * var(--u)) calc(6 * var(--u)) calc(4 * var(--u));
+}
+
+.slot-picker-threshold-btn {
+  flex: 1;
+  font-family: 'Cinzel', serif;
+  font-size: var(--fs-tiny);
+  padding: calc(6 * var(--u)) calc(2 * var(--u));
+  background: linear-gradient(180deg, #1a1a22, #0d0d10);
+  color: var(--text-dim);
+  border: 1px solid var(--border);
+  border-radius: calc(3 * var(--u));
+  cursor: pointer;
+  transition: all 0.2s;
+  letter-spacing: calc(0.3 * var(--u));
+  text-align: center;
+}
+.slot-picker-threshold-btn:hover {
+  border-color: var(--gold);
+  color: var(--gold);
+}
+.slot-picker-threshold-btn.active {
+  background: linear-gradient(180deg, #2a3a20, #102008);
+  border-color: #4a6a30;
+  color: #a0d080;
+  box-shadow: 0 0 calc(8 * var(--u)) rgba(160, 208, 128, 0.4);
+  font-weight: 700;
+}
+
+.slot-picker-threshold-hint {
+  font-size: var(--fs-tiny);
+  color: var(--text-dim);
+  font-style: italic;
+  text-align: center;
+  padding: 0 calc(6 * var(--u)) calc(6 * var(--u));
+  line-height: 1.4;
+}
+
+/* ========================================================
+   БЛОК «НАВЫКИ» В ПАНЕЛИ ИНВЕНТАРЯ
+   3 ячейки навыков под расходниками.
+   ======================================================== */
+
+.skill-loadout {
+  display: flex;
+  gap: calc(12 * var(--u));
+  justify-content: center;
+  padding: calc(6 * var(--u)) 0;
+}
+
+.skill-loadout-slot {
+  width: calc(56 * var(--u));
+  height: calc(56 * var(--u));
+  background: linear-gradient(180deg, #0a0a0c, #050505);
+  border: 1px solid var(--border);
+  border-radius: calc(3 * var(--u));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  position: relative;
+  overflow: hidden;
+}
+.skill-loadout-slot:hover {
+  border-color: var(--gold);
+  box-shadow: 0 0 calc(12 * var(--u)) rgba(184,148,90,0.3);
+}
+.skill-loadout-slot.empty {
+  border-style: dashed;
+  opacity: 0.5;
+}
+.skill-loadout-slot.empty::after {
+  content: '+';
+  font-family: 'Cinzel', serif;
+  font-size: calc(24 * var(--u));
+  color: var(--gold);
+  opacity: 0.6;
+}
+.skill-loadout-slot.filled {
+  border-color: var(--gold);
+  background: linear-gradient(180deg, #1a1a22, #0d0d10);
+}
+.skill-loadout-slot.selected {
+  border-color: var(--gold-bright);
+  box-shadow: 0 0 calc(15 * var(--u)) rgba(224,190,122,0.5);
+}
+.skill-loadout-slot svg {
+  width: calc(36 * var(--u));
+  height: calc(36 * var(--u));
+}
+
+.skill-loadout-slot .slot-number {
+  position: absolute;
+  top: calc(2 * var(--u));
+  left: calc(4 * var(--u));
+  font-family: 'Cinzel', serif;
+  font-size: calc(10.5 * var(--u));
+  color: var(--gold);
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+.skill-loadout-slot .skill-level-badge {
+  position: absolute;
+  top: calc(2 * var(--u));
+  right: calc(4 * var(--u));
+  font-family: 'Cinzel', serif;
+  font-size: calc(10.5 * var(--u));
+  color: var(--gold-bright);
+  text-shadow: 0 0 calc(4 * var(--u)) #000, 0 0 calc(8 * var(--u)) var(--gold-bright);
+  font-weight: 700;
+  pointer-events: none;
+}
+
+.skill-loadout-controls {
+  display: flex;
+  gap: calc(6 * var(--u));
+  justify-content: center;
+  padding: calc(4 * var(--u)) 0;
+}
+
+/* ========================================================
+   МОДАЛКА ВЫБОРА НАВЫКА (skill-picker)
+   ======================================================== */
+
+.skill-picker {
+  position: fixed;
+  display: none;
+  z-index: 500;
+  min-width: calc(320 * var(--u));
+  max-width: calc(420 * var(--u));
+  background: linear-gradient(180deg, #1a1a22, #0a0a0c);
+  border: 1px solid var(--gold);
+  border-radius: calc(4 * var(--u));
+  box-shadow: 0 0 calc(30 * var(--u)) rgba(0,0,0,0.95),
+              0 0 calc(20 * var(--u)) rgba(184,148,90,0.3);
+  overflow: hidden;
+}
+.skill-picker.active { display: block; }
+
+.skill-picker-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: calc(10 * var(--u)) calc(14 * var(--u));
+  background: linear-gradient(180deg, #2a2a36, #15151a);
+  border-bottom: 1px solid var(--border);
+  font-family: 'Cinzel', serif;
+  font-size: var(--fs-small);
+  color: var(--gold-bright);
+  letter-spacing: calc(2 * var(--u));
+}
+
+.skill-picker-close {
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  font-size: calc(20 * var(--u));
+  cursor: pointer;
+  padding: 0 calc(4 * var(--u));
+  line-height: 1;
+  font-family: 'Cinzel', serif;
+  transition: color 0.2s;
+}
+.skill-picker-close:hover { color: #ff5050; }
+
+.skill-picker-body {
+  padding: calc(8 * var(--u));
+  max-height: calc(400 * var(--u));
+  overflow-y: auto;
+}
+.skill-picker-body::-webkit-scrollbar { width: calc(6 * var(--u)); }
+.skill-picker-body::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: calc(3 * var(--u));
+}
+
+.skill-picker-divider {
+  height: 1px;
+  background: var(--border);
+  margin: calc(6 * var(--u)) 0;
+}
+
+.skill-picker-item {
+  display: flex;
+  align-items: center;
+  gap: calc(10 * var(--u));
+  padding: calc(8 * var(--u)) calc(10 * var(--u));
+  border-radius: calc(3 * var(--u));
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+  border: 1px solid transparent;
+}
+.skill-picker-item:hover {
+  background: rgba(184,148,90,0.1);
+  border-color: var(--gold);
+}
+.skill-picker-item.current {
+  background: rgba(160,208,128,0.1);
+  border-color: #4a6a30;
+}
+.skill-picker-item.passive {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.skill-picker-item.passive:hover {
+  background: transparent;
+  border-color: transparent;
+}
+.skill-picker-item.in-other-slot {
+  background: rgba(106,154,224,0.1);
+}
+
+.skill-picker-icon {
+  width: calc(40 * var(--u));
+  height: calc(40 * var(--u));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  background: linear-gradient(180deg, #0a0a0c, #050505);
+  border: 1px solid var(--border);
+  border-radius: calc(3 * var(--u));
+}
+.skill-picker-icon svg {
+  width: calc(32 * var(--u));
+  height: calc(32 * var(--u));
+}
+
+.skill-picker-info {
+  flex: 1;
+  min-width: 0;
+}
+.skill-picker-name {
+  font-family: 'Cinzel', serif;
+  font-size: var(--fs-small);
+  color: var(--gold-bright);
+  margin-bottom: calc(2 * var(--u));
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.skill-picker-info .skill-picker-type {
+  font-size: var(--fs-tiny);
+  color: var(--text-dim);
+  font-style: italic;
+}
+.skill-picker-info .skill-picker-type.active-skill { color: #ffd080; }
+.skill-picker-info .skill-picker-type.passive-skill { color: #a0e0ff; }
+
+.skill-picker-empty {
+  text-align: center;
+  color: var(--text-dim);
+  font-style: italic;
+  font-size: var(--fs-small);
+  padding: calc(20 * var(--u)) calc(10 * var(--u));
+  line-height: 1.6;
+}
+
+/* ========================================================
+   PNG-ИКОНКИ НАВЫКОВ
+   Класс .skill-png-icon — для <img> внутри ячеек навыков.
+   Растягивается на всю ячейку, чёрный фон сливается.
+   ======================================================== */
+
+.skill-png-icon {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  border-radius: calc(3 * var(--u));
+}
+
+/* ---- Наставник: ячейка иконки ---- */
+.skill-card-icon .skill-png-icon {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: calc(2 * var(--u));
+}
+
+/* ---- Бой: слоты навыков слева ---- */
+.skill-slot .skill-png-icon {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: calc(3 * var(--u));
+}
+
+/* ---- Инвентарь: ячейки блока «НАВЫКИ» ---- */
+.skill-loadout-slot .skill-png-icon {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: calc(3 * var(--u));
+}
+
+/* ---- Модалка выбора навыка ---- */
+.skill-picker-icon .skill-png-icon {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: calc(2 * var(--u));
+}
+
+/* ========================================================
+   АДАПТАЦИЯ
+   ======================================================== */
+
+/* ---------- ТЕЛЕФОНЫ ВЕРТИКАЛЬНО (< 600px) ---------- */
+@media (max-width: 600px) {
+  /* ---- slot-picker ---- */
+  .slot-picker {
+    min-width: 0;
+    max-width: 92vw;
+    width: 92vw;
+  }
+  .slot-picker-header {
+    padding: calc(8 * var(--u)) calc(10 * var(--u));
+    font-size: calc(12 * var(--u));
+  }
+  .slot-picker-body {
+    max-height: calc(280 * var(--u));
+    padding: calc(6 * var(--u));
+  }
+  .slot-picker-item {
+    padding: calc(6 * var(--u)) calc(8 * var(--u));
+  }
+  .slot-picker-icon {
+    width: calc(32 * var(--u));
+    height: calc(32 * var(--u));
+  }
+  .slot-picker-icon svg {
+    width: calc(24 * var(--u));
+    height: calc(24 * var(--u));
+  }
+
+  /* ---- Навыки: ячейки ---- */
+  .skill-loadout {
+    gap: calc(8 * var(--u));
+  }
+  .skill-loadout-slot {
+    width: calc(48 * var(--u));
+    height: calc(48 * var(--u));
+  }
+  .skill-loadout-slot svg {
+    width: calc(30 * var(--u));
+    height: calc(30 * var(--u));
+  }
+  .skill-loadout-controls {
+    gap: calc(4 * var(--u));
+  }
+  .skill-loadout-controls .btn.small {
+    font-size: calc(11 * var(--u));
+    padding: calc(5 * var(--u)) calc(8 * var(--u));
+  }
+
+  /* ---- Навыки: модалка ---- */
+  .skill-picker {
+    min-width: 0;
+    max-width: 92vw;
+    width: 92vw;
+  }
+  .skill-picker-header {
+    padding: calc(8 * var(--u)) calc(10 * var(--u));
+    font-size: calc(12 * var(--u));
+  }
+  .skill-picker-body {
+    max-height: calc(320 * var(--u));
+    padding: calc(6 * var(--u));
+  }
+  .skill-picker-item {
+    padding: calc(6 * var(--u)) calc(8 * var(--u));
+  }
+  .skill-picker-icon {
+    width: calc(34 * var(--u));
+    height: calc(34 * var(--u));
+  }
+  .skill-picker-icon svg {
+    width: calc(26 * var(--u));
+    height: calc(26 * var(--u));
+  }
+}
+
+/* ---------- МАЛЕНЬКИЕ ТЕЛЕФОНЫ (< 400px) ---------- */
+@media (max-width: 400px) {
+  .skill-loadout-slot {
+    width: calc(42 * var(--u));
+    height: calc(42 * var(--u));
+  }
+  .skill-loadout-slot svg {
+    width: calc(26 * var(--u));
+    height: calc(26 * var(--u));
+  }
+}

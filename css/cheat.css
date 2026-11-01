@@ -1,0 +1,123 @@
+/* ========================================================
+   CHEAT.CSS — чит-меню
+   Подключать ОДИННАДЦАТЫМ (после settings.css).
+   + Рейты ×1/×10/×100/×1000.
+   + Ресурсы +100/+500/+1000.
+   + Открыть все титулы / сбросить счётчики.
+   ======================================================== */
+
+.cheat-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.9);
+  z-index: 850;
+  align-items: center;
+  justify-content: center;
+  padding: calc(20 * var(--u));
+  overflow-y: auto;
+}
+.cheat-overlay.active { display: flex; }
+
+.cheat-window {
+  background: linear-gradient(180deg, var(--bg-2), var(--bg-1));
+  border: 1px solid var(--gold);
+  border-radius: calc(4 * var(--u));
+  max-width: calc(560 * var(--u));
+  width: 100%;
+  padding: calc(20 * var(--u));
+  box-shadow: 0 0 calc(50 * var(--u)) rgba(184,148,90,0.4);
+  max-height: 92vh;
+  overflow-y: auto;
+}
+
+.cheat-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: calc(12 * var(--u));
+  margin-bottom: calc(16 * var(--u));
+  border-bottom: 1px solid var(--border);
+  gap: calc(10 * var(--u));
+  flex-wrap: wrap;
+}
+
+.cheat-title {
+  font-family: 'Cinzel', serif;
+  font-size: calc(20 * var(--u));
+  color: var(--gold-bright);
+  letter-spacing: calc(3 * var(--u));
+  text-shadow: 0 0 calc(12 * var(--u)) rgba(224,190,122,0.5);
+}
+
+.cheat-content {
+  display: flex;
+  flex-direction: column;
+  gap: calc(14 * var(--u));
+}
+
+.cheat-block {
+  background: linear-gradient(180deg, #15151a, #0d0d10);
+  border: 1px solid var(--border);
+  border-radius: calc(3 * var(--u));
+  padding: calc(12 * var(--u));
+}
+
+.cheat-block-title {
+  font-family: 'Cinzel', serif;
+  font-size: calc(14 * var(--u));
+  color: var(--gold-bright);
+  letter-spacing: calc(2 * var(--u));
+  margin-bottom: calc(4 * var(--u));
+}
+
+.cheat-block-desc {
+  font-size: calc(12.5 * var(--u));
+  color: var(--text-dim);
+  font-style: italic;
+  margin-bottom: calc(10 * var(--u));
+  line-height: 1.4;
+}
+
+.cheat-btn-row {
+  display: flex;
+  gap: calc(8 * var(--u));
+  flex-wrap: wrap;
+}
+
+.cheat-rate-btn {
+  font-family: 'Cinzel', serif;
+  font-size: calc(13 * var(--u));
+  padding: calc(8 * var(--u)) calc(14 * var(--u));
+  background: linear-gradient(180deg, #1a1a22, #0d0d10);
+  color: var(--gold-bright);
+  border: 1px solid var(--border);
+  border-radius: calc(3 * var(--u));
+  cursor: pointer;
+  transition: all 0.2s;
+  letter-spacing: calc(0.5 * var(--u));
+  flex: 1;
+  min-width: calc(70 * var(--u));
+  text-align: center;
+}
+
+.cheat-rate-btn:hover {
+  border-color: var(--gold);
+  box-shadow: 0 0 calc(12 * var(--u)) rgba(184,148,90,0.3);
+}
+
+.cheat-rate-btn.active {
+  background: linear-gradient(180deg, #2a3a20, #102008);
+  border-color: #4a6a30;
+  color: #a0d080;
+  box-shadow: 0 0 calc(12 * var(--u)) rgba(160,208,128,0.4);
+  font-weight: 700;
+}
+
+@media (max-width: 600px) {
+  .cheat-overlay { padding: calc(10 * var(--u)); }
+  .cheat-window { padding: calc(14 * var(--u)); max-width: 96vw; }
+  .cheat-title { font-size: calc(16 * var(--u)); letter-spacing: calc(2 * var(--u)); }
+  .cheat-block { padding: calc(10 * var(--u)); }
+  .cheat-rate-btn { font-size: calc(12.5 * var(--u)); padding: calc(8 * var(--u)) calc(6 * var(--u)); min-width: calc(55 * var(--u)); }
+}

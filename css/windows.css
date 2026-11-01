@@ -1,0 +1,1353 @@
+/* ========================================================
+   WINDOWS.CSS — окна: торговец, кузница, наставник, гильдия, таверна
+   + вкладка «Владение» + сеты
+   Подключать СЕДЬМЫМ (после inventory.css).
+   + Масштабирование через --ui-scale.
+   + Sticky-шапка и flex-start для скролла.
+   + АДАПТИВНАЯ ВЁРСТКА: планшет и телефон.
+   ======================================================== */
+
+/* ---------- БАЗОВЫЕ ОВЕРЛЕИ И ОКНА ---------- */
+.overlay-base {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.9);
+  z-index: 150;
+  align-items: flex-start;
+  justify-content: center;
+  padding: calc(20 * var(--u));
+  overflow-y: auto;
+}
+.overlay-base.active { display: flex; }
+
+.window-base {
+  background: linear-gradient(180deg, var(--bg-2), var(--bg-1));
+  border: 1px solid var(--gold);
+  border-radius: calc(4 * var(--u));
+  width: 100%;
+  max-height: 88vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 0 calc(50 * var(--u)) rgba(184,148,90,0.4);
+  margin: auto 0;
+}
+
+.window-header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: calc(14 * var(--u)) calc(18 * var(--u));
+  border-bottom: 1px solid var(--border);
+  background: linear-gradient(180deg, #1a1a22, #0a0a0c);
+  border-top-left-radius: calc(4 * var(--u));
+  border-top-right-radius: calc(4 * var(--u));
+  gap: calc(10 * var(--u));
+  flex-wrap: wrap;
+}
+.window-title {
+  font-family: 'Cinzel', serif;
+  font-size: calc(18 * var(--u));
+  color: var(--gold-bright);
+  letter-spacing: calc(2 * var(--u));
+}
+
+.window-header-left {
+  display: flex;
+  align-items: center;
+  gap: calc(16 * var(--u));
+  flex-wrap: wrap;
+}
+.window-gold {
+  display: flex;
+  align-items: center;
+  gap: calc(6 * var(--u));
+  font-family: 'Cinzel', serif;
+  font-size: var(--fs-medium);
+  color: var(--gold-bright);
+  padding: calc(4 * var(--u)) calc(10 * var(--u));
+  background: rgba(0,0,0,0.4);
+  border: 1px solid var(--border);
+  border-radius: calc(3 * var(--u));
+}
+.window-gold b { color: #fff; text-shadow: 0 0 calc(8 * var(--u)) var(--gold-bright); }
+
+.window-tabs {
+  display: flex;
+  border-bottom: 1px solid var(--border);
+  background: #0a0a0c;
+  position: sticky;
+  top: calc(46 * var(--u));
+  z-index: 9;
+  flex-wrap: wrap;
+}
+.window-tab {
+  flex: 1;
+  padding: calc(12 * var(--u)) calc(8 * var(--u));
+  text-align: center;
+  font-family: 'Cinzel', serif;
+  font-size: var(--fs-base);
+  color: var(--text-dim);
+  cursor: pointer;
+  transition: all 0.2s;
+  letter-spacing: calc(1 * var(--u));
+  border-right: 1px solid var(--border);
+  min-width: calc(80 * var(--u));
+}
+.window-tab:last-child { border-right: none; }
+.window-tab:hover { color: var(--gold); }
+.window-tab.active {
+  color: var(--gold-bright);
+  background: linear-gradient(180deg, transparent, rgba(184,148,90,0.1));
+  box-shadow: inset 0 -2px 0 var(--gold);
+}
+
+.window-subtabs {
+  display: flex;
+  border-bottom: 1px solid var(--border);
+  background: #050505;
+  padding: 0 calc(12 * var(--u));
+  gap: calc(4 * var(--u));
+  flex-wrap: wrap;
+}
+.window-subtab {
+  padding: calc(8 * var(--u)) calc(14 * var(--u));
+  font-family: 'Cinzel', serif;
+  font-size: var(--fs-small);
+  color: var(--text-dim);
+  cursor: pointer;
+  transition: all 0.2s;
+  letter-spacing: calc(1 * var(--u));
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+}
+.window-subtab:hover { color: var(--gold); }
+.window-subtab.active {
+  color: var(--gold-bright);
+  border-bottom-color: var(--gold);
+}
+
+.window-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: calc(16 * var(--u));
+}
+.window-content::-webkit-scrollbar { width: calc(8 * var(--u)); }
+.window-content::-webkit-scrollbar-thumb { background: var(--border); border-radius: calc(4 * var(--u)); }
+
+.pane { display: none; }
+.pane.active { display: block; }
+
+/* Ширина конкретных окон */
+.trader-window { max-width: calc(750 * var(--u)); }
+.forge-window { max-width: calc(980 * var(--u)); }
+.mentor-window { max-width: calc(900 * var(--u)); }
+.guild-window { max-width: calc(900 * var(--u)); }
+.tavern-window { max-width: calc(900 * var(--u)); }
+
+/* ---------- ТОРГОВЕЦ ---------- */
+.trader-empty {
+  text-align: center;
+  color: var(--text-dim);
+  font-style: italic;
+  padding: calc(40 * var(--u)) calc(20 * var(--u));
+}
+
+.trade-item {
+  display: flex;
+  align-items: center;
+  gap: calc(14 * var(--u));
+  padding: calc(12 * var(--u));
+  background: linear-gradient(180deg, #15151a, #0d0d10);
+  border: 1px solid var(--border);
+  border-radius: calc(3 * var(--u));
+  margin-bottom: calc(10 * var(--u));
+  flex-wrap: wrap;
+}
+.trade-item:hover { border-color: var(--gold); }
+.trade-item-icon {
+  width: calc(48 * var(--u));
+  height: calc(48 * var(--u));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(180deg, #0a0a0c, #050505);
+  border: 1px solid var(--border);
+  border-radius: calc(3 * var(--u));
+  flex-shrink: 0;
+}
+.trade-item-icon svg {
+  width: calc(36 * var(--u));
+  height: calc(36 * var(--u));
+}
+.trade-item-info { flex: 1; min-width: calc(200 * var(--u)); }
+.trade-item-name {
+  font-family: 'Cinzel', serif;
+  font-size: var(--fs-large);
+  color: var(--gold-bright);
+  margin-bottom: calc(4 * var(--u));
+}
+.trade-item-effect { font-size: var(--fs-base); color: var(--potion-bright); }
+.trade-item-desc { font-size: var(--fs-small); color: var(--text-dim); font-style: italic; }
+.trade-item-usage { font-size: var(--fs-small); color: #a0c0e0; margin-top: calc(3 * var(--u)); }
+.trade-item-stock { font-size: var(--fs-small); color: var(--text-dim); margin-top: calc(3 * var(--u)); }
+
+.trade-item-actions {
+  display: flex;
+  align-items: center;
+  gap: calc(8 * var(--u));
+  flex-wrap: wrap;
+}
+.trade-item-price {
+  font-family: 'Cinzel', serif;
+  font-size: var(--fs-medium);
+  color: var(--gold-bright);
+  display: flex;
+  align-items: center;
+  gap: calc(5 * var(--u));
+}
+
+.sell-buttons { display: flex; gap: calc(6 * var(--u)); }
+
+/* ---------- ВЫКУП (v0.18) ---------- */
+.buyback-hint {
+  font-size: var(--fs-small);
+  font-style: italic;
+  color: var(--text-dim);
+  text-align: center;
+  margin-bottom: calc(12 * var(--u));
+}
+.sell-buttons .btn:disabled { opacity: 0.35; cursor: not-allowed; }
+.trade-item-refine { color: var(--gold-bright); font-weight: 700; }
+
+/* ---------- КУЗНИЦА ---------- */
+.recipe-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(calc(440 * var(--u)), 1fr));
+  gap: calc(12 * var(--u));
+}
+
+.recipe-card {
+  background: linear-gradient(180deg, #15151a, #0d0d10);
+  border: 1px solid var(--border);
+  border-radius: calc(3 * var(--u));
+  padding: calc(12 * var(--u));
+  display: flex;
+  gap: calc(12 * var(--u));
+  transition: all 0.2s;
+}
+.recipe-card:hover { border-color: var(--gold); }
+.recipe-card.can-craft { border-color: rgba(120,180,90,0.5); }
+
+.recipe-result {
+  width: calc(64 * var(--u));
+  height: calc(64 * var(--u));
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(180deg, #0a0a0c, #050505);
+  border: 1px solid var(--border);
+  border-radius: calc(3 * var(--u));
+}
+.recipe-result svg {
+  width: calc(44 * var(--u));
+  height: calc(44 * var(--u));
+}
+.recipe-result img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.recipe-body { flex: 1; display: flex; flex-direction: column; }
+.recipe-name {
+  font-family: 'Cinzel', serif;
+  font-size: var(--fs-medium);
+  color: var(--gold-bright);
+  margin-bottom: calc(6 * var(--u));
+}
+.recipe-materials {
+  font-size: var(--fs-small);
+  display: flex;
+  flex-direction: column;
+  gap: calc(3 * var(--u));
+  margin-bottom: calc(8 * var(--u));
+}
+.recipe-mat { display: flex; align-items: center; gap: calc(6 * var(--u)); }
+.recipe-mat.have { color: #a0d080; }
+.recipe-mat.lack { color: #d06060; }
+.recipe-mat .mat-count {
+  margin-left: auto;
+  font-family: 'Cinzel', serif;
+  font-size: var(--fs-small);
+}
+/* v0.25: сколько материала лежит на складе */
+.recipe-mat .mat-store {
+  margin-left: auto;
+  font-size: calc(11 * var(--u));
+  color: #c8b080;
+  opacity: .85;
+  white-space: nowrap;
+}
+.recipe-mat .mat-store + .mat-count { margin-left: calc(6 * var(--u)); }
+.recipe-mat svg {
+  width: calc(16 * var(--u));
+  height: calc(16 * var(--u));
+}
+
+.recipe-action {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: calc(8 * var(--u));
+  flex-wrap: wrap;
+}
+/* v0.18: крафт пачкой 1 / 10 / 100 */
+.craft-qty {
+  display: flex;
+  align-items: center;
+  gap: calc(6 * var(--u));
+  flex-wrap: wrap;
+}
+.craft-qty-max {
+  font-size: var(--fs-small);
+  color: var(--text-dim);
+  margin-right: calc(4 * var(--u));
+}
+.recipe-bonus {
+  font-size: var(--fs-small);
+  color: #a0c0e0;
+  font-style: normal;
+  line-height: 1.5;
+}
+.recipe-bonus.mana { color: var(--mp-glow); }
+.recipe-bonus.magic { color: var(--magic-bright); }
+.recipe-bonus.set-bonus { color: var(--gold-bright); font-style: italic; }
+.recipe-bonus.two-handed { color: #d0a060; font-weight: 600; }
+.recipe-bonus.speed-malus { color: #d0a0a0; }
+.recipe-bonus.magic-stat { color: var(--magic-bright); }
+.recipe-bonus.food-effect { color: var(--food-bright); }
+.recipe-bonus.food-duration { color: #c0f0a0; font-style: italic; }
+.recipe-bonus.crit { color: #ffb060; font-weight: 600; }
+
+/* ---------- НАСТАВНИК ---------- */
+.mentor-info {
+  text-align: center;
+  padding: calc(20 * var(--u));
+  color: var(--text-dim);
+  font-style: italic;
+}
+.mentor-info .current-class {
+  font-family: 'Cinzel', serif;
+  font-size: var(--fs-h1);
+  color: var(--gold-bright);
+  letter-spacing: calc(3 * var(--u));
+  margin-bottom: calc(8 * var(--u));
+  font-style: normal;
+}
+
+.skill-points-header {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: calc(10 * var(--u));
+  padding: calc(12 * var(--u));
+  background: linear-gradient(180deg, #1a1a20, #0a0a0c);
+  border: 1px solid var(--border);
+  border-radius: calc(3 * var(--u));
+  margin-bottom: calc(16 * var(--u));
+  font-family: 'Cinzel', serif;
+  font-size: var(--fs-medium);
+  color: var(--gold-bright);
+  letter-spacing: calc(2 * var(--u));
+}
+.skill-points-header b {
+  font-size: calc(22 * var(--u));
+  color: #fff;
+  text-shadow: 0 0 calc(12 * var(--u)) var(--gold-bright);
+}
+
+.skills-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(calc(390 * var(--u)), 1fr));
+  gap: calc(12 * var(--u));
+}
+
+.skill-card {
+  background: linear-gradient(180deg, #15151a, #0d0d10);
+  border: 1px solid var(--border);
+  border-radius: calc(3 * var(--u));
+  padding: calc(14 * var(--u));
+  display: flex;
+  gap: calc(14 * var(--u));
+  transition: all 0.2s;
+  position: relative;
+}
+.skill-card:hover { border-color: var(--gold); }
+.skill-card.learned {
+  border-color: var(--gold-bright);
+  background: linear-gradient(180deg, #1a2a1a, #0d1508);
+  box-shadow: 0 0 calc(20 * var(--u)) rgba(224,190,122,0.2) inset;
+}
+.skill-card.maxed {
+  border-color: var(--gold-bright);
+  background: linear-gradient(180deg, #2a2a10, #150f08);
+  box-shadow: 0 0 calc(25 * var(--u)) rgba(224,190,122,0.35) inset;
+}
+
+.skill-card-icon {
+  width: calc(64 * var(--u));
+  height: calc(64 * var(--u));
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(180deg, #0a0a0c, #050505);
+  border: 1px solid var(--border);
+  border-radius: calc(3 * var(--u));
+  position: relative;
+}
+.skill-card-icon svg {
+  width: calc(48 * var(--u));
+  height: calc(48 * var(--u));
+}
+.skill-card.learned .skill-card-icon { border-color: var(--gold-bright); }
+.skill-card.maxed .skill-card-icon { border-color: var(--gold-bright); }
+
+.skill-card-level-badge {
+  position: absolute;
+  top: calc(2 * var(--u));
+  right: calc(4 * var(--u));
+  font-family: 'Cinzel', serif;
+  font-size: var(--fs-small);
+  color: var(--gold-bright);
+  text-shadow: 0 0 calc(4 * var(--u)) #000, 0 0 calc(8 * var(--u)) var(--gold-bright);
+  font-weight: 700;
+}
+
+.skill-card-body { flex: 1; display: flex; flex-direction: column; }
+.skill-card-name {
+  font-family: 'Cinzel', serif;
+  font-size: var(--fs-large);
+  color: var(--gold-bright);
+  margin-bottom: calc(3 * var(--u));
+}
+.skill-card-type { font-size: var(--fs-small); color: var(--text-dim); font-style: italic; margin-bottom: calc(8 * var(--u)); }
+.skill-card-type.active-skill { color: #ffd080; }
+.skill-card-type.passive-skill { color: #a0e0ff; }
+
+.skill-card-desc {
+  font-size: var(--fs-base);
+  color: var(--text);
+  line-height: 1.5;
+  margin-bottom: calc(8 * var(--u));
+}
+.skill-card-desc .val { color: var(--gold-bright); font-family: 'Cinzel', serif; }
+.skill-card-next {
+  font-size: var(--fs-small);
+  color: #80d0ff;
+  font-style: italic;
+  margin-bottom: calc(8 * var(--u));
+}
+.skill-card-next .val { color: #b0e0ff; }
+
+.skill-card-action {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: auto;
+  gap: calc(8 * var(--u));
+  flex-wrap: wrap;
+}
+
+.skill-maxed-badge {
+  font-family: 'Cinzel', serif;
+  font-size: var(--fs-small);
+  color: var(--gold-bright);
+  letter-spacing: calc(2 * var(--u));
+  padding: calc(4 * var(--u)) calc(12 * var(--u));
+  border: 1px solid var(--gold);
+  border-radius: calc(3 * var(--u));
+  background: linear-gradient(180deg, rgba(80,60,20,0.7), rgba(40,30,10,0.7));
+  text-shadow: 0 0 calc(8 * var(--u)) var(--gold-bright);
+  font-weight: 700;
+}
+
+/* ---------- ГИЛЬДИЯ МАГОВ / ТАВЕРНА ---------- */
+.guild-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(calc(280 * var(--u)), 1fr));
+  gap: calc(14 * var(--u));
+}
+
+.guild-card {
+  background: linear-gradient(180deg, #15151a, #0d0d10);
+  border: 1px solid var(--border);
+  border-radius: calc(4 * var(--u));
+  padding: calc(16 * var(--u));
+  display: flex;
+  flex-direction: column;
+  gap: calc(10 * var(--u));
+  transition: all 0.2s;
+}
+.guild-card:hover {
+  border-color: var(--gold);
+  box-shadow: 0 0 calc(15 * var(--u)) rgba(184,148,90,0.2);
+}
+
+.guild-card-icon {
+  width: calc(64 * var(--u));
+  height: calc(64 * var(--u));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(180deg, #0a0a0c, #050505);
+  border: 1px solid var(--border);
+  border-radius: calc(3 * var(--u));
+  margin: 0 auto;
+}
+.guild-card-icon svg {
+  width: calc(48 * var(--u));
+  height: calc(48 * var(--u));
+}
+
+.guild-card-name {
+  font-family: 'Cinzel', serif;
+  font-size: calc(17 * var(--u));
+  color: var(--gold-bright);
+  text-align: center;
+  letter-spacing: calc(2 * var(--u));
+}
+.guild-card-effects {
+  font-size: var(--fs-base);
+  line-height: 1.6;
+  text-align: center;
+}
+.guild-card-effects .plus { color: #a0e080; }
+.guild-card-effects .minus { color: #e08080; }
+.guild-card-effects .note { color: var(--text-dim); font-style: italic; }
+
+.guild-card-price {
+  font-family: 'Cinzel', serif;
+  font-size: var(--fs-medium);
+  color: var(--gold-bright);
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: calc(6 * var(--u));
+}
+.guild-card-duration {
+  font-size: var(--fs-small);
+  color: var(--text-dim);
+  text-align: center;
+  font-style: italic;
+}
+.guild-card-actions {
+  display: flex;
+  gap: calc(8 * var(--u));
+  justify-content: center;
+  margin-top: auto;
+}
+
+/* ---------- СЕТЫ ---------- */
+.set-header {
+  background: linear-gradient(180deg, #1a1a22, #0a0a0c);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--gold);
+  border-radius: calc(3 * var(--u));
+  padding: calc(14 * var(--u)) calc(18 * var(--u));
+  margin-bottom: calc(16 * var(--u));
+}
+.set-header-title {
+  font-family: 'Cinzel', serif;
+  font-size: calc(18 * var(--u));
+  color: var(--gold-bright);
+  letter-spacing: calc(3 * var(--u));
+  margin-bottom: calc(6 * var(--u));
+}
+.set-header-bonus {
+  font-size: var(--fs-base);
+  color: #a0d080;
+  margin-bottom: calc(4 * var(--u));
+  font-family: 'Cinzel', serif;
+}
+.set-header-progress {
+  font-size: var(--fs-small);
+  color: var(--text-dim);
+  font-style: italic;
+}
+
+/* ---------- ВКЛАДКА «ВЛАДЕНИЕ» ---------- */
+.prof-block {
+  margin-bottom: calc(24 * var(--u));
+}
+
+.prof-block-title {
+  font-family: 'Cinzel', serif;
+  font-size: var(--fs-large);
+  color: var(--gold);
+  letter-spacing: calc(3 * var(--u));
+  margin-bottom: calc(12 * var(--u));
+  padding-bottom: calc(8 * var(--u));
+  border-bottom: 1px solid var(--border);
+}
+
+.prof-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(calc(340 * var(--u)), 1fr));
+  gap: calc(10 * var(--u));
+}
+
+.prof-row {
+  display: flex;
+  gap: calc(12 * var(--u));
+  padding: calc(10 * var(--u)) calc(12 * var(--u));
+  background: linear-gradient(180deg, #15151a, #0d0d10);
+  border: 1px solid var(--border);
+  border-radius: calc(4 * var(--u));
+  transition: all 0.2s;
+  cursor: help;
+}
+.prof-row:hover {
+  border-color: var(--gold);
+  box-shadow: 0 0 calc(12 * var(--u)) rgba(184,148,90,0.2);
+}
+.prof-row.learned {
+  border-color: var(--gold);
+}
+.prof-row.maxed {
+  border-color: var(--gold-bright);
+  box-shadow: 0 0 calc(15 * var(--u)) rgba(224,190,122,0.3);
+}
+
+.prof-icon {
+  width: calc(48 * var(--u));
+  height: calc(48 * var(--u));
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(180deg, #0a0a0c, #050505);
+  border: 1px solid var(--border);
+  border-radius: calc(3 * var(--u));
+  overflow: hidden;
+}
+.prof-row.learned .prof-icon { border-color: var(--gold); }
+.prof-row.maxed .prof-icon   { border-color: var(--gold-bright); }
+
+.prof-icon img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.prof-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: calc(4 * var(--u));
+  min-width: 0;
+}
+
+.prof-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: calc(8 * var(--u));
+}
+
+.prof-name {
+  font-family: 'Cinzel', serif;
+  font-size: var(--fs-medium);
+  color: var(--gold-bright);
+  letter-spacing: calc(1 * var(--u));
+}
+.prof-row:not(.learned) .prof-name { color: var(--text-dim); }
+
+.prof-level {
+  font-family: 'Cinzel', serif;
+  font-size: var(--fs-small);
+  color: var(--text-dim);
+  white-space: nowrap;
+}
+.prof-row.learned .prof-level { color: var(--gold); }
+.prof-row.maxed .prof-level   { color: var(--gold-bright); font-weight: 700; }
+
+.prof-bar {
+  height: calc(6 * var(--u));
+  background: #000;
+  border: 1px solid var(--border);
+  border-radius: calc(2 * var(--u));
+  overflow: hidden;
+}
+.prof-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #6a4a20, var(--gold-bright));
+  transition: width 0.3s;
+  box-shadow: 0 0 calc(8 * var(--u)) rgba(224,190,122,0.5);
+}
+
+.prof-footer {
+  display: flex;
+  justify-content: space-between;
+  font-size: var(--fs-small);
+  font-family: 'Cinzel', serif;
+}
+.prof-xp {
+  color: var(--text-dim);
+}
+.prof-bonus {
+  color: #a0d080;
+}
+.prof-row.maxed .prof-xp    { color: var(--gold-bright); }
+.prof-row.maxed .prof-bonus { color: var(--gold-bright); font-weight: 700; }
+
+/* ========================================================
+   АДАПТАЦИЯ ПОД РАЗНЫЕ ЭКРАНЫ
+   ======================================================== */
+
+/* ---------- НОУТБУКИ (1100-1400px) ---------- */
+@media (max-width: 1400px) {
+  .window-base {
+    max-height: 92vh;
+  }
+  .recipe-list {
+    grid-template-columns: repeat(auto-fill, minmax(calc(380 * var(--u)), 1fr));
+  }
+  .skills-list {
+    grid-template-columns: repeat(auto-fill, minmax(calc(340 * var(--u)), 1fr));
+  }
+}
+
+/* ---------- ПЛАНШЕТЫ (900-1100px) ---------- */
+@media (max-width: 1100px) {
+  .window-title {
+    font-size: calc(16 * var(--u));
+  }
+  .window-header {
+    padding: calc(12 * var(--u)) calc(14 * var(--u));
+  }
+  .window-content {
+    padding: calc(12 * var(--u));
+  }
+  .recipe-list {
+    grid-template-columns: 1fr;
+  }
+  .skills-list {
+    grid-template-columns: 1fr;
+  }
+  .guild-list {
+    grid-template-columns: repeat(auto-fill, minmax(calc(240 * var(--u)), 1fr));
+  }
+  .prof-list {
+    grid-template-columns: repeat(auto-fill, minmax(calc(280 * var(--u)), 1fr));
+  }
+}
+
+/* ---------- МОБИЛЬНЫЕ ПЛАНШЕТЫ / КРУПНЫЕ ТЕЛЕФОНЫ (700-900px) ---------- */
+@media (max-width: 900px) {
+  .overlay-base {
+    padding: calc(10 * var(--u));
+  }
+  .window-base {
+    max-height: 94vh;
+    border-radius: calc(3 * var(--u));
+  }
+
+  .window-header {
+    padding: calc(10 * var(--u)) calc(12 * var(--u));
+    border-radius: calc(3 * var(--u)) calc(3 * var(--u)) 0 0;
+  }
+  .window-title {
+    font-size: calc(14 * var(--u));
+    letter-spacing: calc(1 * var(--u));
+  }
+  .window-gold {
+    font-size: calc(12.5 * var(--u));
+    padding: calc(3 * var(--u)) calc(7 * var(--u));
+  }
+
+  .window-tabs {
+    top: calc(38 * var(--u));
+  }
+  .window-tab {
+    padding: calc(9 * var(--u)) calc(5 * var(--u));
+    font-size: calc(12 * var(--u));
+    letter-spacing: calc(0.5 * var(--u));
+  }
+  .window-subtab {
+    padding: calc(6 * var(--u)) calc(10 * var(--u));
+    font-size: calc(11.5 * var(--u));
+  }
+
+  .window-content {
+    padding: calc(10 * var(--u));
+  }
+
+  /* Торговец */
+  .trade-item {
+    gap: calc(10 * var(--u));
+    padding: calc(10 * var(--u));
+  }
+  .trade-item-icon {
+    width: calc(40 * var(--u));
+    height: calc(40 * var(--u));
+  }
+  .trade-item-icon svg {
+    width: calc(30 * var(--u));
+    height: calc(30 * var(--u));
+  }
+  .trade-item-info {
+    min-width: 0;
+  }
+  .trade-item-name {
+    font-size: calc(13 * var(--u));
+  }
+  .trade-item-effect {
+    font-size: calc(12.5 * var(--u));
+  }
+  .trade-item-desc,
+  .trade-item-usage,
+  .trade-item-stock {
+    font-size: calc(11.5 * var(--u));
+  }
+  .trade-item-actions {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  /* Рецепты */
+  .recipe-card {
+    padding: calc(10 * var(--u));
+    gap: calc(10 * var(--u));
+  }
+  .recipe-result {
+    width: calc(54 * var(--u));
+    height: calc(54 * var(--u));
+  }
+  .recipe-result svg {
+    width: calc(38 * var(--u));
+    height: calc(38 * var(--u));
+  }
+  .recipe-name {
+    font-size: calc(13 * var(--u));
+  }
+
+  /* Навыки */
+  .skill-card {
+    padding: calc(10 * var(--u));
+    gap: calc(10 * var(--u));
+  }
+  .skill-card-icon {
+    width: calc(52 * var(--u));
+    height: calc(52 * var(--u));
+  }
+  .skill-card-icon svg {
+    width: calc(38 * var(--u));
+    height: calc(38 * var(--u));
+  }
+  .skill-card-name {
+    font-size: calc(13 * var(--u));
+  }
+  .skill-card-desc {
+    font-size: calc(12.5 * var(--u));
+  }
+
+  /* Гильдия / таверна */
+  .guild-card {
+    padding: calc(12 * var(--u));
+    gap: calc(8 * var(--u));
+  }
+  .guild-card-icon {
+    width: calc(52 * var(--u));
+    height: calc(52 * var(--u));
+  }
+  .guild-card-icon svg {
+    width: calc(38 * var(--u));
+    height: calc(38 * var(--u));
+  }
+  .guild-card-name {
+    font-size: calc(14 * var(--u));
+  }
+  .guild-card-effects {
+    font-size: calc(12.5 * var(--u));
+    line-height: 1.5;
+  }
+
+  /* Сеты */
+  .set-header {
+    padding: calc(10 * var(--u)) calc(14 * var(--u));
+  }
+  .set-header-title {
+    font-size: calc(15 * var(--u));
+    letter-spacing: calc(2 * var(--u));
+  }
+  .set-header-bonus {
+    font-size: calc(12.5 * var(--u));
+  }
+  .set-header-progress {
+    font-size: calc(11.5 * var(--u));
+  }
+
+  /* Владение */
+  .prof-block-title {
+    font-size: calc(13 * var(--u));
+    letter-spacing: calc(2 * var(--u));
+  }
+  .prof-row {
+    padding: calc(8 * var(--u)) calc(10 * var(--u));
+    gap: calc(10 * var(--u));
+  }
+  .prof-icon {
+    width: calc(40 * var(--u));
+    height: calc(40 * var(--u));
+  }
+  .prof-name {
+    font-size: calc(12.5 * var(--u));
+  }
+}
+
+/* ---------- ТЕЛЕФОНЫ ВЕРТИКАЛЬНО (< 600px) ---------- */
+@media (max-width: 600px) {
+  .overlay-base {
+    padding: calc(6 * var(--u));
+  }
+  .window-base {
+    max-height: 96vh;
+  }
+
+  .window-header {
+    padding: calc(8 * var(--u)) calc(10 * var(--u));
+  }
+  .window-title {
+    font-size: calc(13 * var(--u));
+    letter-spacing: 0;
+  }
+  .window-gold {
+    font-size: calc(12 * var(--u));
+    padding: calc(2 * var(--u)) calc(6 * var(--u));
+  }
+
+  .window-tabs {
+    top: calc(34 * var(--u));
+  }
+  .window-tab {
+    padding: calc(8 * var(--u)) calc(4 * var(--u));
+    font-size: calc(11 * var(--u));
+    letter-spacing: 0;
+    min-width: calc(60 * var(--u));
+  }
+  .window-subtabs {
+    padding: 0 calc(6 * var(--u));
+    gap: calc(2 * var(--u));
+  }
+  .window-subtab {
+    padding: calc(5 * var(--u)) calc(8 * var(--u));
+    font-size: calc(11 * var(--u));
+    letter-spacing: 0;
+  }
+
+  .window-content {
+    padding: calc(8 * var(--u));
+  }
+
+  /* Торговец */
+  .trade-item {
+    padding: calc(8 * var(--u));
+    gap: calc(8 * var(--u));
+  }
+  .trade-item-icon {
+    width: calc(36 * var(--u));
+    height: calc(36 * var(--u));
+  }
+  .trade-item-icon svg {
+    width: calc(28 * var(--u));
+    height: calc(28 * var(--u));
+  }
+  .trade-item-name {
+    font-size: calc(13 * var(--u));
+  }
+  .trade-item-effect {
+    font-size: calc(12 * var(--u));
+  }
+  .trade-item-desc,
+  .trade-item-usage,
+  .trade-item-stock {
+    font-size: calc(11 * var(--u));
+  }
+  .trade-item-price {
+    font-size: calc(12.5 * var(--u));
+  }
+  .trade-item-actions {
+    gap: calc(5 * var(--u));
+  }
+  .trade-item-actions .btn.small {
+    font-size: calc(11 * var(--u));
+    padding: calc(5 * var(--u)) calc(7 * var(--u));
+  }
+
+  /* Рецепты */
+  .recipe-card {
+    padding: calc(8 * var(--u));
+    gap: calc(8 * var(--u));
+  }
+  .recipe-result {
+    width: calc(46 * var(--u));
+    height: calc(46 * var(--u));
+  }
+  .recipe-result svg {
+    width: calc(32 * var(--u));
+    height: calc(32 * var(--u));
+  }
+  .recipe-name {
+    font-size: calc(12.5 * var(--u));
+    margin-bottom: calc(4 * var(--u));
+  }
+  .recipe-materials {
+    font-size: calc(11 * var(--u));
+    gap: calc(2 * var(--u));
+    margin-bottom: calc(6 * var(--u));
+  }
+  .recipe-mat svg {
+    width: calc(12 * var(--u));
+    height: calc(12 * var(--u));
+  }
+  .recipe-bonus {
+    font-size: calc(11 * var(--u));
+  }
+  .recipe-action {
+    gap: calc(5 * var(--u));
+  }
+  .recipe-action .btn {
+    font-size: calc(12 * var(--u));
+    padding: calc(6 * var(--u)) calc(10 * var(--u));
+  }
+
+  /* Наставник */
+  .skill-points-header {
+    padding: calc(8 * var(--u));
+    font-size: calc(12.5 * var(--u));
+    gap: calc(6 * var(--u));
+    margin-bottom: calc(10 * var(--u));
+  }
+  .skill-points-header b {
+    font-size: calc(18 * var(--u));
+  }
+
+  .skill-card {
+    padding: calc(8 * var(--u));
+    gap: calc(8 * var(--u));
+  }
+  .skill-card-icon {
+    width: calc(44 * var(--u));
+    height: calc(44 * var(--u));
+  }
+  .skill-card-icon svg {
+    width: calc(32 * var(--u));
+    height: calc(32 * var(--u));
+  }
+  .skill-card-name {
+    font-size: calc(13 * var(--u));
+  }
+  .skill-card-type {
+    font-size: calc(11 * var(--u));
+    margin-bottom: calc(5 * var(--u));
+  }
+  .skill-card-desc {
+    font-size: calc(12 * var(--u));
+    line-height: 1.4;
+    margin-bottom: calc(6 * var(--u));
+  }
+  .skill-card-next {
+    font-size: calc(11 * var(--u));
+    margin-bottom: calc(6 * var(--u));
+  }
+  .skill-card-action {
+    gap: calc(6 * var(--u));
+  }
+  .skill-card-action .btn {
+    font-size: calc(12 * var(--u));
+    padding: calc(6 * var(--u)) calc(9 * var(--u));
+    flex: 1;
+    min-width: 0;
+  }
+  .skill-maxed-badge {
+    font-size: calc(11 * var(--u));
+    padding: calc(3 * var(--u)) calc(8 * var(--u));
+  }
+
+  /* Гильдия / таверна — 1 колонка */
+  .guild-list {
+    grid-template-columns: 1fr;
+    gap: calc(10 * var(--u));
+  }
+  .guild-card {
+    padding: calc(10 * var(--u));
+  }
+  .guild-card-icon {
+    width: calc(46 * var(--u));
+    height: calc(46 * var(--u));
+  }
+  .guild-card-icon svg {
+    width: calc(34 * var(--u));
+    height: calc(34 * var(--u));
+  }
+  .guild-card-name {
+    font-size: calc(13.5 * var(--u));
+    letter-spacing: calc(1 * var(--u));
+  }
+  .guild-card-effects {
+    font-size: calc(12 * var(--u));
+    line-height: 1.5;
+  }
+  .guild-card-price {
+    font-size: calc(13 * var(--u));
+  }
+  .guild-card-duration {
+    font-size: calc(11 * var(--u));
+  }
+  .guild-card-actions .btn {
+    font-size: calc(12 * var(--u));
+    padding: calc(6 * var(--u)) calc(12 * var(--u));
+  }
+
+  /* Сеты */
+  .set-header {
+    padding: calc(8 * var(--u)) calc(10 * var(--u));
+    margin-bottom: calc(10 * var(--u));
+  }
+  .set-header-title {
+    font-size: calc(13.5 * var(--u));
+    letter-spacing: calc(1.5 * var(--u));
+  }
+  .set-header-bonus {
+    font-size: calc(12 * var(--u));
+  }
+  .set-header-progress {
+    font-size: calc(11 * var(--u));
+  }
+
+  /* Владение */
+  .prof-block {
+    margin-bottom: calc(14 * var(--u));
+  }
+  .prof-block-title {
+    font-size: calc(12.5 * var(--u));
+    letter-spacing: calc(1 * var(--u));
+    margin-bottom: calc(8 * var(--u));
+    padding-bottom: calc(5 * var(--u));
+  }
+  .prof-list {
+    grid-template-columns: 1fr;
+    gap: calc(8 * var(--u));
+  }
+  .prof-row {
+    padding: calc(8 * var(--u));
+    gap: calc(8 * var(--u));
+  }
+  .prof-icon {
+    width: calc(36 * var(--u));
+    height: calc(36 * var(--u));
+  }
+  .prof-name {
+    font-size: calc(12.5 * var(--u));
+  }
+  .prof-level,
+  .prof-footer {
+    font-size: calc(11 * var(--u));
+  }
+  .prof-bar {
+    height: calc(5 * var(--u));
+  }
+}
+
+/* ---------- МАЛЕНЬКИЕ ТЕЛЕФОНЫ (< 400px) ---------- */
+@media (max-width: 400px) {
+  .window-title {
+    font-size: calc(12.5 * var(--u));
+  }
+  .window-tab {
+    font-size: calc(10.5 * var(--u));
+    letter-spacing: 0;
+    padding-left: calc(4 * var(--u)); padding-right: calc(4 * var(--u));
+  }
+  .trade-item-name {
+    font-size: calc(12.5 * var(--u));
+  }
+  .trade-item-actions .btn.small {
+    font-size: calc(10.5 * var(--u));
+    padding: calc(4 * var(--u)) calc(5 * var(--u));
+  }
+  .skill-card-icon {
+    width: calc(40 * var(--u));
+    height: calc(40 * var(--u));
+  }
+  .skill-card-icon svg {
+    width: calc(28 * var(--u));
+    height: calc(28 * var(--u));
+  }
+}
+
+/* ---------- ГОРИЗОНТАЛЬНЫЙ ТЕЛЕФОН / НИЗКИЙ ЭКРАН ---------- */
+@media (max-height: 600px) and (orientation: landscape) {
+  .window-base {
+    max-height: 92vh;
+  }
+  .window-header {
+    padding: calc(6 * var(--u)) calc(12 * var(--u));
+  }
+  .window-content {
+    padding: calc(8 * var(--u));
+  }
+  /* В горизонтали возвращаем часть сеток в 2 колонки */
+  .guild-list {
+    grid-template-columns: repeat(auto-fill, minmax(calc(220 * var(--u)), 1fr));
+  }
+  .prof-list {
+    grid-template-columns: repeat(auto-fill, minmax(calc(260 * var(--u)), 1fr));
+  }
+}
+/* ---- НОВОЕ: Заголовок с кнопкой сброса в окне Наставника ---- */
+.skill-points-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: calc(10 * var(--u));
+}
+
+.skill-points-header .btn.danger {
+  font-size: calc(12 * var(--u));
+  padding: calc(6 * var(--u)) calc(12 * var(--u));
+  letter-spacing: calc(0.5 * var(--u));
+}
+
+@media (max-width: 600px) {
+  .skill-points-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .skill-points-header .btn.danger {
+    width: 100%;
+    font-size: calc(12.5 * var(--u));
+    padding: calc(8 * var(--u));
+  }
+}
+
+/* ========================================================
+   v0.19.1: ГИЛЬДИЯ / ТАВЕРНА — ПОКУПКА БАФФОВ ПАЧКОЙ
+   ======================================================== */
+.bs-card { position: relative; }
+.bs-card.in-set { border-color: rgba(224,190,122,0.55); }
+.bs-card.is-locked { opacity: 0.55; filter: grayscale(0.6); }
+.bs-card.is-locked:hover { border-color: var(--border); box-shadow: none; }
+
+.bs-set-chip {
+  position: absolute;
+  top: calc(10 * var(--u));
+  right: calc(10 * var(--u));
+  font: inherit;
+  font-size: calc(12 * var(--u));
+  letter-spacing: calc(0.5 * var(--u));
+  padding: calc(3 * var(--u)) calc(8 * var(--u));
+  border-radius: calc(10 * var(--u));
+  border: 1px solid var(--border);
+  background: rgba(0,0,0,0.35);
+  color: var(--text-dim);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.bs-set-chip:hover { border-color: var(--gold); color: var(--gold-bright); }
+.bs-set-chip.on {
+  border-color: var(--gold);
+  color: #1a1408;
+  background: linear-gradient(180deg, var(--gold-bright), var(--gold));
+  font-weight: 700;
+}
+
+.bs-meter { display: flex; flex-direction: column; gap: calc(4 * var(--u)); }
+.bs-meter-track {
+  height: calc(8 * var(--u));
+  border-radius: calc(4 * var(--u));
+  background: #07070a;
+  border: 1px solid var(--border);
+  overflow: hidden;
+}
+.bs-meter-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #6a4f22, var(--gold), var(--gold-bright));
+  transition: width 0.35s ease-out;
+}
+.bs-card.is-full .bs-meter-fill { box-shadow: 0 0 calc(10 * var(--u)) var(--gold-bright); }
+.bs-card.is-full .bs-meter-track { border-color: var(--gold); }
+.bs-meter-text {
+  display: flex;
+  justify-content: space-between;
+  font-size: var(--fs-small);
+  color: var(--text-dim);
+}
+.bs-card.is-full .bs-meter-text span:first-child { color: var(--gold-bright); }
+
+.bs-actions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: calc(6 * var(--u));
+  margin-top: auto;
+}
+.bs-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: calc(2 * var(--u));
+  padding: calc(6 * var(--u)) calc(4 * var(--u));
+  min-width: 0;
+  line-height: 1.2;
+}
+.bs-btn-label { font-weight: 700; white-space: nowrap; }
+/* v0.22: длинные подписи набора («+2 ч 30 мин всем», «Всем на все Оболы») переносятся, а не залезают на соседей */
+.bs-actions-set .bs-btn { min-width: 0; }
+.bs-actions-set .bs-btn-label { white-space: normal; line-height: 1.15; letter-spacing: 0; }
+.bs-btn-price { font-size: calc(12 * var(--u)); opacity: 0.85; white-space: nowrap; }
+.bs-btn-max:not(:disabled) { border-color: var(--gold); }
+
+.bs-locked {
+  margin-top: auto;
+  text-align: center;
+  font-size: var(--fs-small);
+  color: var(--text-dim);
+  font-style: italic;
+  padding: calc(8 * var(--u)) 0;
+}
+
+.bs-setbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: calc(10 * var(--u)) calc(16 * var(--u));
+  margin-bottom: calc(14 * var(--u));
+  padding: calc(12 * var(--u)) calc(14 * var(--u));
+  background: linear-gradient(180deg, #1a1a22, #0a0a0c);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--gold);
+  border-radius: calc(3 * var(--u));
+}
+.bs-setbar:empty { display: none; }
+.bs-setbar-head { display: flex; flex-direction: column; gap: calc(3 * var(--u)); min-width: 0; flex: 1 1 calc(220 * var(--u)); }
+.bs-setbar-title { font-family: 'Cinzel', serif; color: var(--gold-bright); font-size: calc(15 * var(--u)); letter-spacing: calc(1 * var(--u)); }
+.bs-setbar-hint { font-size: var(--fs-small); color: var(--text-dim); }
+.bs-actions-set { flex: 2 1 calc(380 * var(--u)); margin-top: 0; }
+
+@media (max-width: 600px) {
+  .bs-setbar { position: sticky; top: 0; z-index: 2; padding: calc(10 * var(--u)); }
+  .bs-actions-set { flex-basis: 100%; }
+  .bs-btn { padding: calc(6 * var(--u)) calc(2 * var(--u)); font-size: calc(12.5 * var(--u)); }
+  .bs-btn-price { font-size: calc(11 * var(--u)); }
+  .bs-set-chip { top: calc(8 * var(--u)); right: calc(8 * var(--u)); }
+}

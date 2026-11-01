@@ -1,0 +1,122 @@
+/* ========================================================
+   HERO-INSPECT.CSS — окно «Осмотр героя» из рейтинга (v0.25)
+   ======================================================== */
+
+.leaderboard-row.lb-clickable { cursor: pointer; }
+.leaderboard-row.lb-clickable:active { transform: scale(.995); }
+
+.inspect-overlay {
+  display: none;
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,.85);
+  z-index: 170;                      /* поверх рейтинга (160) */
+  align-items: flex-start; justify-content: center;
+  padding: calc(20 * var(--u));
+  overflow-y: auto;
+}
+.inspect-overlay.active { display: flex; }
+
+.inspect-window {
+  width: 100%; max-width: calc(560 * var(--u));
+  background: linear-gradient(180deg, var(--bg-2), var(--bg-1));
+  border: 1px solid var(--gold);
+  border-radius: calc(4 * var(--u));
+  box-shadow: 0 0 calc(30 * var(--u)) rgba(0,0,0,.8);
+}
+
+/* ---- Шапка ---- */
+.inspect-head-row {
+  display: flex; align-items: flex-start; gap: calc(10 * var(--u));
+  padding: calc(14 * var(--u)) calc(16 * var(--u));
+  border-bottom: 1px solid var(--border);
+}
+.inspect-head { flex: 1; display: flex; align-items: center; gap: calc(14 * var(--u)); min-width: 0; }
+.inspect-portrait {
+  width: calc(72 * var(--u)); height: calc(86 * var(--u)); flex: 0 0 auto;
+  background: #0b0907 center top / cover no-repeat;
+  border: 1px solid var(--gold); border-radius: calc(4 * var(--u));
+}
+.inspect-title { min-width: 0; }
+.inspect-name {
+  font-family: 'Cinzel', serif; font-size: calc(20 * var(--u)); color: var(--gold-bright);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.inspect-sub { font-size: calc(13.5 * var(--u)); color: #d8ccb0; margin-top: calc(3 * var(--u)); }
+.inspect-sub.dim, .inspect-body .dim { color: #8a7f68; }
+.inspect-close { padding: calc(6 * var(--u)) calc(12 * var(--u)); }
+
+.inspect-body { padding: calc(14 * var(--u)) calc(16 * var(--u)) calc(18 * var(--u)); }
+
+/* ---- Кукла: 12 слотов ---- */
+.inspect-doll { display: grid; grid-template-columns: repeat(6, 1fr); gap: calc(8 * var(--u)); }
+.inspect-slot { display: flex; flex-direction: column; align-items: center; gap: calc(3 * var(--u)); min-width: 0; }
+.inspect-slot-ico {
+  position: relative; width: 100%; aspect-ratio: 1;
+  display: flex; align-items: center; justify-content: center;
+  background: #0b0907; border: 1px solid #2e2618; border-radius: calc(4 * var(--u));
+  padding: calc(4 * var(--u));
+}
+.inspect-slot.filled .inspect-slot-ico {
+  border-color: var(--rc, #5a4a2a);
+  box-shadow: inset 0 0 calc(10 * var(--u)) color-mix(in srgb, var(--rc, #000) 35%, transparent);
+  cursor: help;
+}
+.inspect-slot-ico img, .inspect-slot-ico svg { width: 100%; height: 100%; object-fit: contain; }
+.inspect-slot-ico em {
+  position: absolute; right: calc(2 * var(--u)); bottom: calc(1 * var(--u));
+  font-style: normal; font-weight: 700; font-size: calc(11 * var(--u));
+  color: #ffe08a; text-shadow: 0 1px 2px #000, 0 0 3px #000;
+}
+.inspect-slot span { font-size: calc(10.5 * var(--u)); color: #8a7f68; white-space: nowrap; }
+.inspect-slot.empty .inspect-slot-ico { opacity: .45; border-style: dashed; }
+
+.inspect-sets { margin-top: calc(10 * var(--u)); font-size: calc(13 * var(--u)); color: #a0d080; display: flex; flex-direction: column; gap: calc(2 * var(--u)); }
+
+.inspect-section {
+  margin: calc(16 * var(--u)) 0 calc(8 * var(--u));
+  font-family: 'Cinzel', serif; font-size: calc(12.5 * var(--u)); letter-spacing: .14em;
+  color: var(--gold); border-bottom: 1px solid #2e2618; padding-bottom: calc(4 * var(--u));
+}
+
+/* ---- Характеристики ---- */
+.inspect-stats { display: grid; grid-template-columns: repeat(2, 1fr); gap: calc(4 * var(--u)) calc(16 * var(--u)); }
+.inspect-stat { display: flex; justify-content: space-between; font-size: calc(13.5 * var(--u)); color: #c8bca0; }
+.inspect-stat b { color: #f1e3c2; font-weight: 600; }
+
+/* ---- Навыки ---- */
+.inspect-skills { display: flex; flex-wrap: wrap; gap: calc(6 * var(--u)); }
+.inspect-skill {
+  position: relative; width: calc(42 * var(--u)); height: calc(42 * var(--u));
+  border: 1px solid #5a4a2a; border-radius: calc(4 * var(--u)); background: #0b0907;
+  display: flex; align-items: center; justify-content: center; color: var(--gold-bright);
+}
+.inspect-skill img { width: 100%; height: 100%; object-fit: cover; border-radius: calc(3 * var(--u)); }
+.inspect-skill em {
+  position: absolute; right: calc(-4 * var(--u)); bottom: calc(-4 * var(--u));
+  min-width: calc(16 * var(--u)); height: calc(16 * var(--u)); border-radius: 50%;
+  background: #2a2010; border: 1px solid var(--gold); color: var(--gold-bright);
+  font-style: normal; font-size: calc(10.5 * var(--u)); display: flex; align-items: center; justify-content: center;
+}
+
+/* ---- Владение ---- */
+.inspect-profs { display: grid; grid-template-columns: repeat(2, 1fr); gap: calc(5 * var(--u)) calc(14 * var(--u)); }
+.inspect-prof { display: flex; align-items: center; gap: calc(8 * var(--u)); font-size: calc(13 * var(--u)); color: #c8bca0; }
+.inspect-prof img { width: calc(22 * var(--u)); height: calc(22 * var(--u)); border-radius: calc(3 * var(--u)); object-fit: cover; }
+.inspect-prof span { flex: 1; }
+.inspect-prof b { color: #f1e3c2; }
+
+/* ---- Загрузка / заметки ---- */
+.inspect-loading { text-align: center; color: #8a7f68; padding: calc(30 * var(--u)) 0; font-style: italic; }
+.inspect-note { display: flex; flex-direction: column; align-items: center; gap: calc(6 * var(--u)); padding: calc(26 * var(--u)) 0; text-align: center; color: #c8bca0; }
+.inspect-note-ico { font-size: calc(36 * var(--u)); }
+.inspect-note b { font-family: 'Cinzel', serif; color: var(--gold-bright); font-size: calc(16 * var(--u)); }
+.inspect-note span { font-size: calc(13 * var(--u)); color: #8a7f68; }
+
+/* ---- Телефон ---- */
+@media (max-width: 600px) {
+  .inspect-overlay { padding: calc(8 * var(--u)); }
+  .inspect-doll { grid-template-columns: repeat(4, 1fr); gap: calc(6 * var(--u)); }
+  .inspect-portrait { width: calc(56 * var(--u)); height: calc(68 * var(--u)); }
+  .inspect-name { font-size: calc(17 * var(--u)); }
+  .inspect-stats, .inspect-profs { grid-template-columns: 1fr; }
+}

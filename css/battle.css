@@ -1,0 +1,667 @@
+/* ========================================================
+   BATTLE.CSS — бой (каркас: окно, бойцы, скиллы, логи)
+   Подключать ПЯТЫМ (после city-map.css).
+   + Масштабирование через --ui-scale.
+   + Адаптив.
+
+   РАЗБИТ НА 4 ФАЙЛА (v0.12):
+   - battle.css (этот) — каркас боя.
+   - debuffs.css        — панель дебаффов и чипы.
+   - battle-autostop.css — панель авто-стопа.
+   - hunt-modal.css     — кнопка «Искать стаю» + модалка.
+
+   Что оставили здесь:
+   - .battle-overlay / .battle-window-new / .battle-window
+   - .battle-header / .battle-title / .battle-status
+   - .fighters / .fighter-panel
+   - .skills-column / .skill-slot / .skill-level-badge
+   - .fighter-avatar / .fighter-name / .fighter-content
+   - .monster-normal / .monster-search / fade-анимации
+   - .bar / .bar-fill / .bar-text / .bar-label
+   - .bar-fill.hp.grouped / .group-counter
+   - .consumables-panel / .consumable-toggle
+   - .battle-log-wrapper / логи
+   - .battle-controls
+   - .monsters-grid.mine-grid
+   - медиа-запросы для этих блоков
+   ======================================================== */
+
+/* ---------- ОКНО БОЯ КАК OVERLAY ---------- */
+.battle-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(5, 5, 7, 0.96);
+  z-index: 400;
+  padding: calc(20 * var(--u));
+  overflow-y: auto;
+  align-items: flex-start;
+  justify-content: center;
+}
+.battle-overlay.active { display: flex; }
+
+.battle-window-new {
+  width: 100%;
+  max-width: calc(1200 * var(--u));
+  background: linear-gradient(180deg, var(--bg-2), var(--bg-1));
+  border: 1px solid var(--gold);
+  border-radius: calc(4 * var(--u));
+  padding: calc(16 * var(--u));
+  box-shadow: 0 0 calc(60 * var(--u)) rgba(184, 148, 90, 0.3);
+  margin: 0 auto;
+  position: relative;
+}
+
+.battle-window {
+  background: linear-gradient(180deg, var(--bg-2), var(--bg-1));
+  border: 1px solid var(--border);
+  border-radius: calc(4 * var(--u));
+  padding: calc(16 * var(--u));
+  margin-bottom: calc(16 * var(--u));
+  box-shadow: var(--shadow);
+  display: none;
+}
+.battle-window.active { display: block; }
+
+/* ---------- ШАПКА БОЯ ---------- */
+.battle-header {
+  position: sticky;
+  top: calc(-16 * var(--u));
+  z-index: 10;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: calc(14 * var(--u));
+  padding: calc(10 * var(--u)) 0;
+  border-bottom: 1px solid var(--border);
+  background: linear-gradient(180deg, var(--bg-2), var(--bg-1));
+  gap: calc(10 * var(--u));
+}
+.battle-title {
+  font-family: 'Cinzel', serif;
+  font-size: calc(18 * var(--u));
+  color: var(--gold-bright);
+  display: flex;
+  align-items: center;
+  gap: calc(10 * var(--u));
+  flex-wrap: wrap;
+}
+.battle-status {
+  font-size: var(--fs-base);
+  color: var(--text-dim);
+  font-style: italic;
+  margin-left: calc(10 * var(--u));
+}
+
+/* ---------- ПАНЕЛИ БОЙЦОВ ---------- */
+.fighters {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  gap: calc(14 * var(--u));
+  margin-bottom: calc(14 * var(--u));
+}
+
+.fighter-panel {
+  background: linear-gradient(180deg, #15151a, #0d0d10);
+  border: 1px solid var(--border);
+  border-radius: calc(4 * var(--u));
+  padding: calc(14 * var(--u));
+  text-align: center;
+  display: flex;
+  gap: calc(12 * var(--u));
+  align-items: flex-start;
+  position: relative;
+}
+.fighter-panel.right { justify-content: center; display: block; }
+
+/* ---------- КОЛОНКА СКИЛЛОВ ---------- */
+.skills-column {
+  display: flex;
+  flex-direction: column;
+  gap: calc(8 * var(--u));
+  flex-shrink: 0;
+}
+.skills-column-title {
+  font-family: 'Cinzel', serif;
+  font-size: calc(9.5 * var(--u));
+  color: var(--gold);
+  letter-spacing: calc(1.5 * var(--u));
+  text-align: center;
+  margin-bottom: calc(2 * var(--u));
+}
+
+.skill-slot {
+  width: calc(60 * var(--u));
+  height: calc(60 * var(--u));
+  background: linear-gradient(180deg, #0a0a0c, #050505);
+  border: 1px solid var(--border);
+  border-radius: calc(3 * var(--u));
+  position: relative;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.skill-slot.learned { border-color: var(--gold); }
+.skill-slot.active {
+  background: linear-gradient(180deg, #103a10, #082008);
+  border-color: #40a040;
+  box-shadow: 0 0 calc(12 * var(--u)) rgba(80,200,80,0.4);
+}
+.skill-slot.cooldown { opacity: 0.4; cursor: wait; }
+.skill-slot.not-learned { opacity: 0.3; cursor: default; }
+.skill-slot svg {
+  width: calc(36 * var(--u));
+  height: calc(36 * var(--u));
+}
+
+.skill-level-badge {
+  position: absolute;
+  top: calc(2 * var(--u));
+  right: calc(4 * var(--u));
+  font-family: 'Cinzel', serif;
+  font-size: calc(10.5 * var(--u));
+  color: var(--gold-bright);
+  text-shadow: 0 0 calc(4 * var(--u)) #000, 0 0 calc(8 * var(--u)) var(--gold-bright);
+  font-weight: 700;
+  pointer-events: none;
+}
+
+.skill-cd-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Cinzel', serif;
+  font-size: calc(16 * var(--u));
+  color: #fff;
+  text-shadow: 0 0 calc(6 * var(--u)) #000;
+  font-weight: 700;
+  border-radius: calc(3 * var(--u));
+}
+
+.skill-toggle-label {
+  position: absolute;
+  bottom: calc(2 * var(--u));
+  left: 0;
+  right: 0;
+  font-family: 'Cinzel', serif;
+  font-size: calc(9 * var(--u));
+  text-align: center;
+  color: var(--text-dim);
+  text-shadow: 0 0 calc(3 * var(--u)) #000;
+  pointer-events: none;
+}
+.skill-slot.active .skill-toggle-label { color: #80e080; }
+
+/* ---------- АВАТАР И ИМЯ ГЕРОЯ ---------- */
+.fighter-content {
+  flex: 1;
+  text-align: center;
+  position: relative;
+}
+
+.fighter-avatar {
+  width: calc(70 * var(--u));
+  height: calc(70 * var(--u));
+  margin: 0 auto calc(8 * var(--u));
+  filter: drop-shadow(0 0 calc(12 * var(--u)) rgba(0,0,0,0.9));
+}
+
+#player-avatar-slot {
+  position: relative;
+  display: inline-block;
+  margin: 0 auto calc(8 * var(--u));
+}
+#player-avatar-slot img.fighter-avatar-img {
+  width: calc(110 * var(--u));
+  height: calc(110 * var(--u));
+  object-fit: cover;
+  border-radius: calc(4 * var(--u));
+  border: 1px solid var(--border);
+  box-shadow: 0 0 calc(15 * var(--u)) rgba(0,0,0,0.8);
+  display: block;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+#player-avatar-slot.class-warrior img.fighter-avatar-img {
+  border-color: var(--gold-bright);
+  box-shadow: 0 0 calc(15 * var(--u)) rgba(224,190,122,0.5),
+              0 0 calc(25 * var(--u)) rgba(0,0,0,0.8);
+}
+#player-avatar-slot.class-mage img.fighter-avatar-img {
+  border-color: var(--magic-bright);
+  box-shadow: 0 0 calc(15 * var(--u)) rgba(106,154,224,0.6),
+              0 0 calc(25 * var(--u)) rgba(0,0,0,0.8);
+}
+
+.fighter-name {
+  font-family: 'Cinzel', serif;
+  font-size: var(--fs-large);
+  color: var(--gold-bright);
+  margin-bottom: calc(10 * var(--u));
+}
+
+.fighter-name.dead {
+  color: #ff5050;
+  font-weight: 700;
+  font-size: calc(17 * var(--u));
+  letter-spacing: calc(2 * var(--u));
+  text-shadow: 0 0 calc(15 * var(--u)) rgba(255, 80, 80, 0.7),
+               0 0 calc(25 * var(--u)) rgba(255, 80, 80, 0.4);
+  animation: deadNamePulse 0.6s ease-out;
+}
+
+@keyframes deadNamePulse {
+  0%   { opacity: 0; transform: scale(0.9); }
+  50%  { opacity: 1; transform: scale(1.05); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+/* ========================================================
+   ПАНЕЛЬ МОНСТРА — ДВА СОСТОЯНИЯ
+   ======================================================== */
+
+.monster-normal {
+  display: block;
+}
+
+#monster-avatar-slot img {
+  width: calc(110 * var(--u));
+  height: calc(110 * var(--u));
+  object-fit: cover;
+  border-radius: calc(4 * var(--u));
+  border: 1px solid var(--border);
+  box-shadow: 0 0 calc(15 * var(--u)) rgba(0,0,0,0.8);
+  display: block;
+  margin: 0 auto calc(8 * var(--u));
+}
+
+/* ---------- СОСТОЯНИЕ ПОИСКА (👣) ---------- */
+
+.monster-search {
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: calc(20 * var(--u)) 0;
+  min-height: calc(200 * var(--u));
+}
+
+.monster-search.active {
+  display: flex;
+}
+
+.monster-search-icon {
+  font-size: calc(80 * var(--u));
+  line-height: 1;
+  margin-bottom: calc(16 * var(--u));
+  filter: drop-shadow(0 0 calc(20 * var(--u)) rgba(224,190,122,0.5));
+  animation: searchPulse 1.4s ease-in-out infinite;
+}
+
+@keyframes searchPulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.85;
+    filter: drop-shadow(0 0 calc(15 * var(--u)) rgba(224,190,122,0.4));
+  }
+  50% {
+    transform: scale(1.15);
+    opacity: 1;
+    filter: drop-shadow(0 0 calc(30 * var(--u)) rgba(224,190,122,0.8));
+  }
+}
+
+.monster-search-text {
+  font-family: 'Cinzel', serif;
+  font-size: calc(15 * var(--u));
+  color: var(--gold-bright);
+  letter-spacing: calc(1.5 * var(--u));
+  text-align: center;
+  text-shadow: 0 0 calc(12 * var(--u)) rgba(224,190,122,0.5);
+  animation: searchTextFade 0.6s ease-out;
+  padding: 0 calc(12 * var(--u));
+  line-height: 1.4;
+}
+
+@keyframes searchTextFade {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ========================================================
+   FADE-IN / FADE-OUT АВАТАРА МОНСТРА
+   ======================================================== */
+
+.fade-out-monster {
+  animation: fadeOutMonster 0.3s ease-in forwards;
+}
+@keyframes fadeOutMonster {
+  from { opacity: 1; transform: scale(1); filter: blur(0); }
+  to   { opacity: 0; transform: scale(0.9); filter: blur(2px); }
+}
+
+.fade-in-monster {
+  animation: fadeInMonster 0.4s ease-out;
+}
+@keyframes fadeInMonster {
+  from { opacity: 0; transform: scale(0.9); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+.fade-in-hp-bar {
+  transition: width 0.5s ease-out !important;
+}
+
+/* ========================================================
+   ПОЛОСКИ HP/MP/ATB
+   ======================================================== */
+
+.bar {
+  height: calc(16 * var(--u));
+  background: #000;
+  border: 1px solid var(--border);
+  border-radius: calc(2 * var(--u));
+  overflow: hidden;
+  position: relative;
+  margin-bottom: calc(6 * var(--u));
+}
+.bar-fill { height: 100%; transition: width 0.25s; }
+.bar-fill.hp { background: linear-gradient(180deg, var(--hp-glow), var(--hp), #6a0a0a); box-shadow: 0 0 calc(10 * var(--u)) var(--hp-glow) inset; }
+.bar-fill.mp { background: linear-gradient(180deg, var(--mp-glow), var(--mp), #0a1a4a); box-shadow: 0 0 calc(10 * var(--u)) var(--mp-glow) inset; }
+.bar-fill.atb { background: linear-gradient(180deg, var(--atb-bright), var(--atb), #1a2a4a); box-shadow: 0 0 calc(10 * var(--u)) var(--atb-bright) inset; }
+
+.bar-fill.hp.dead {
+  background: linear-gradient(180deg, #505050, #303030, #1a1a1a);
+  box-shadow: 0 0 calc(10 * var(--u)) #505050 inset;
+}
+
+.bar-text {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Cinzel', serif;
+  font-size: var(--fs-small);
+  color: #fff;
+  text-shadow: 0 0 calc(4 * var(--u)) #000, 0 0 calc(2 * var(--u)) #000;
+  font-weight: 700;
+}
+.bar-label {
+  font-size: var(--fs-tiny);
+  color: var(--text-dim);
+  font-family: 'Cinzel', serif;
+  letter-spacing: calc(2 * var(--u));
+  margin-top: calc(2 * var(--u));
+  margin-bottom: calc(4 * var(--u));
+}
+
+/* ========================================================
+   ГРУППОВЫЕ БОИ — HP-ПОЛОСКА
+   ======================================================== */
+
+.bar-fill.hp.grouped {
+  background: linear-gradient(180deg, #a01818, #7a1010, #4a0808);
+  box-shadow: 0 0 calc(10 * var(--u)) rgba(160, 24, 24, 0.6) inset;
+}
+
+.group-counter {
+  position: absolute;
+  top: 50%;
+  left: calc(4 * var(--u));
+  transform: translateY(-50%);
+  font-family: 'Cinzel', serif;
+  font-size: calc(13 * var(--u));
+  font-weight: 700;
+  color: #ffffff;
+  text-shadow:
+    0 0 calc(4 * var(--u)) #000,
+    0 0 calc(8 * var(--u)) #ff4040,
+    0 1px calc(2 * var(--u)) #000;
+  pointer-events: none;
+  display: none;
+  z-index: 3;
+  letter-spacing: calc(0.5 * var(--u));
+}
+
+/* ---------- РАСХОДНИКИ ---------- */
+.consumables-panel {
+  display: flex;
+  flex-wrap: wrap;
+  gap: calc(8 * var(--u));
+  margin-top: calc(10 * var(--u));
+  padding-top: calc(10 * var(--u));
+  border-top: 1px solid var(--border);
+  justify-content: center;
+}
+
+.consumable-toggle {
+  font-family: 'Cinzel', serif;
+  font-size: var(--fs-small);
+  padding: calc(5 * var(--u)) calc(10 * var(--u));
+  background: linear-gradient(180deg, #1a1010, #0d0808);
+  color: var(--text-dim);
+  border: 1px solid var(--border);
+  border-radius: calc(3 * var(--u));
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: calc(5 * var(--u));
+}
+.consumable-toggle:hover { border-color: var(--gold); color: var(--gold); }
+.consumable-toggle.on {
+  background: linear-gradient(180deg, #103a10, #082008);
+  color: var(--potion-bright);
+  border-color: #205a20;
+}
+.consumable-toggle.no-items { opacity: 0.4; cursor: not-allowed; }
+.consumable-toggle .ct-count {
+  font-size: var(--fs-tiny);
+  color: var(--gold-bright);
+  margin-left: calc(2 * var(--u));
+  padding: calc(1 * var(--u)) calc(5 * var(--u));
+  background: rgba(0,0,0,0.5);
+  border-radius: calc(2 * var(--u));
+}
+
+.consumable-toggle.not-in-slot {
+  opacity: 0.4;
+  cursor: not-allowed;
+  border-color: #3a3a3a;
+  color: #6a6a6a;
+}
+.consumable-toggle.not-in-slot:hover {
+  border-color: #3a3a3a;
+  color: #6a6a6a;
+}
+
+/* ---------- ЛОГИ ---------- */
+.battle-log-wrapper {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 0;
+  margin-bottom: calc(12 * var(--u));
+  border: 1px solid var(--border);
+  border-radius: calc(3 * var(--u));
+  overflow: hidden;
+  background: #050505;
+  height: calc(220 * var(--u));
+}
+
+.log-column {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.log-column:first-child { border-right: 1px solid var(--border); }
+
+.log-column-header {
+  font-family: 'Cinzel', serif;
+  font-size: var(--fs-small);
+  letter-spacing: calc(3 * var(--u));
+  color: var(--gold);
+  padding: calc(6 * var(--u)) calc(10 * var(--u));
+  background: linear-gradient(180deg, #1a1a20, #0a0a0c);
+  border-bottom: 1px solid var(--border);
+  text-align: center;
+}
+
+.battle-log {
+  flex: 1;
+  padding: calc(8 * var(--u)) calc(10 * var(--u));
+  overflow-y: auto;
+  font-size: var(--fs-base);
+  line-height: 1.6;
+}
+.battle-log::-webkit-scrollbar { width: calc(6 * var(--u)); }
+.battle-log::-webkit-scrollbar-thumb { background: var(--border); border-radius: calc(3 * var(--u)); }
+
+.log-entry { color: var(--text-dim); }
+.log-entry.player { color: #a0b8d0; }
+.log-entry.player-magic { color: var(--magic-bright); text-shadow: 0 0 calc(8 * var(--u)) rgba(106,154,224,0.5); }
+.log-entry.player-skill { color: #ffd080; font-weight: 600; text-shadow: 0 0 calc(8 * var(--u)) rgba(255,208,128,0.6); }
+.log-entry.fire { color: var(--fire-bright); text-shadow: 0 0 calc(8 * var(--u)) var(--fire); }
+.log-entry.food { color: var(--food-bright); text-shadow: 0 0 calc(8 * var(--u)) var(--food); }
+.log-entry.monster { color: #c08080; }
+.log-entry.magic { color: var(--magic-bright); }
+.log-entry.potion { color: var(--potion-bright); }
+.log-entry.block { color: #d0d0d0; font-weight: 600; }
+.log-entry.kill { color: var(--gold-bright); }
+.log-entry.levelup { color: #e0be7a; text-shadow: 0 0 calc(8 * var(--u)) #e0be7a; }
+.log-entry.loss { color: #c06060; }
+.log-entry.separator {
+  color: var(--gold);
+  text-align: center;
+  font-family: 'Cinzel', serif;
+  letter-spacing: calc(3 * var(--u));
+  margin: calc(6 * var(--u)) 0;
+  border-top: 1px dashed rgba(184,148,90,0.2);
+  padding-top: calc(4 * var(--u));
+  font-size: var(--fs-tiny);
+}
+.log-entry.poison { color: #a0ffa0; text-shadow: 0 0 calc(8 * var(--u)) rgba(64,200,64,0.6); }
+
+.log-loot { color: #80c080; }
+.log-gold { color: #d4b060; font-family: 'Cinzel', serif; }
+.log-info { color: var(--text-dim); font-style: italic; font-size: var(--fs-small); }
+.log-craft { color: #a0d080; }
+
+/* ---------- КНОПКИ УПРАВЛЕНИЯ ---------- */
+.battle-controls {
+  display: flex;
+  gap: calc(10 * var(--u));
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-top: calc(10 * var(--u));
+  padding-top: calc(10 * var(--u));
+  border-top: 1px solid var(--border);
+}
+
+.monsters-grid.mine-grid {
+  grid-template-columns: repeat(5, 1fr);
+}
+
+/* ========================================================
+   АДАПТАЦИЯ
+   ======================================================== */
+
+@media (max-width: 1400px) {
+  .battle-window-new { padding: calc(14 * var(--u)); }
+  .fighter-panel { padding: calc(12 * var(--u)); }
+}
+
+@media (max-width: 1100px) {
+  .battle-window-new { padding: calc(12 * var(--u)); }
+  .fighters { gap: calc(10 * var(--u)); }
+  .fighter-panel { padding: calc(10 * var(--u)); gap: calc(8 * var(--u)); }
+  .skill-slot { width: calc(52 * var(--u)); height: calc(52 * var(--u)); }
+  .skill-slot svg { width: calc(32 * var(--u)); height: calc(32 * var(--u)); }
+  #player-avatar-slot img.fighter-avatar-img,
+  #monster-avatar-slot img { width: calc(90 * var(--u)); height: calc(90 * var(--u)); }
+  .battle-log-wrapper { height: calc(200 * var(--u)); }
+  .monster-search-icon { font-size: calc(66 * var(--u)); }
+  .monster-search-text { font-size: calc(13 * var(--u)); }
+}
+
+@media (max-width: 900px) {
+  .battle-overlay { padding: calc(8 * var(--u)); }
+  .battle-window-new { padding: calc(10 * var(--u)); }
+  .battle-header { flex-wrap: wrap; gap: calc(6 * var(--u)); padding: calc(8 * var(--u)) 0; margin-bottom: calc(10 * var(--u)); }
+  .battle-title { font-size: calc(15 * var(--u)); gap: calc(6 * var(--u)); }
+  .battle-status { font-size: calc(12 * var(--u)); }
+  .battle-kills { font-size: calc(12 * var(--u)); padding: calc(4 * var(--u)) calc(8 * var(--u)); margin: 0; }
+  .fighters { grid-template-columns: 1fr; gap: calc(10 * var(--u)); margin-bottom: calc(10 * var(--u)); }
+  .fighter-panel { padding: calc(10 * var(--u)); gap: calc(8 * var(--u)); }
+  .fighter-panel.right { display: block; padding: calc(10 * var(--u)); }
+  .skills-column { flex-direction: row; flex-wrap: wrap; gap: calc(6 * var(--u)); justify-content: center; width: 100%; margin-bottom: calc(6 * var(--u)); }
+  .skills-column-title { width: 100%; margin-bottom: 0; }
+  .skill-slot { width: calc(46 * var(--u)); height: calc(46 * var(--u)); }
+  .skill-slot svg { width: calc(28 * var(--u)); height: calc(28 * var(--u)); }
+  #player-avatar-slot img.fighter-avatar-img,
+  #monster-avatar-slot img { width: calc(80 * var(--u)); height: calc(80 * var(--u)); }
+  .battle-log-wrapper { grid-template-columns: 1fr; height: auto; max-height: calc(300 * var(--u)); }
+  .log-column:first-child { border-right: none; border-bottom: 1px solid var(--border); }
+  .battle-log { height: calc(140 * var(--u)); }
+  .battle-controls { gap: calc(6 * var(--u)); }
+  .battle-controls .btn { flex: 1; min-width: 0; font-size: calc(12 * var(--u)); padding: calc(8 * var(--u)) calc(6 * var(--u)); }
+  .monster-search { min-height: calc(160 * var(--u)); padding: calc(14 * var(--u)) 0; }
+  .monster-search-icon { font-size: calc(56 * var(--u)); margin-bottom: calc(12 * var(--u)); }
+  .monster-search-text { font-size: calc(12.5 * var(--u)); letter-spacing: calc(1 * var(--u)); }
+  .fighter-name.dead { font-size: calc(15 * var(--u)); }
+}
+
+@media (max-width: 600px) {
+  .battle-window-new { padding: calc(8 * var(--u)); }
+  .battle-header { padding: calc(6 * var(--u)) 0; }
+  .battle-title { font-size: calc(13 * var(--u)); letter-spacing: 0; }
+  .battle-status { font-size: calc(11 * var(--u)); margin-left: calc(4 * var(--u)); }
+  .battle-kills { font-size: calc(11 * var(--u)); padding: calc(3 * var(--u)) calc(6 * var(--u)); }
+  .fighter-panel { padding: calc(8 * var(--u)); }
+  .skill-slot { width: calc(42 * var(--u)); height: calc(42 * var(--u)); }
+  .skill-slot svg { width: calc(24 * var(--u)); height: calc(24 * var(--u)); }
+  .skill-level-badge { font-size: calc(10 * var(--u)); top: 1px; right: 2px; }
+  .skill-toggle-label { font-size: calc(8.5 * var(--u)); }
+  #player-avatar-slot img.fighter-avatar-img,
+  #monster-avatar-slot img { width: calc(70 * var(--u)); height: calc(70 * var(--u)); }
+  .fighter-name { font-size: calc(13 * var(--u)); margin-bottom: calc(6 * var(--u)); }
+  .fighter-name.dead { font-size: calc(14 * var(--u)); }
+  .bar { height: calc(14 * var(--u)); margin-bottom: calc(4 * var(--u)); }
+  .bar-text { font-size: calc(11 * var(--u)); }
+  .bar-label { font-size: calc(10 * var(--u)); letter-spacing: calc(1 * var(--u)); }
+  .consumables-panel { margin-top: calc(6 * var(--u)); padding-top: calc(6 * var(--u)); gap: calc(6 * var(--u)); }
+  .consumable-toggle { font-size: calc(11 * var(--u)); padding: calc(4 * var(--u)) calc(8 * var(--u)); }
+  .battle-log-wrapper { max-height: calc(260 * var(--u)); }
+  .battle-log { height: calc(120 * var(--u)); font-size: calc(12 * var(--u)); padding: calc(6 * var(--u)); }
+  .log-column-header { font-size: calc(11 * var(--u)); letter-spacing: calc(2 * var(--u)); padding: calc(4 * var(--u)) calc(6 * var(--u)); }
+  .battle-controls .btn { font-size: calc(11 * var(--u)); padding: calc(6 * var(--u)) calc(4 * var(--u)); letter-spacing: 0; }
+  .monster-search { min-height: calc(140 * var(--u)); padding: calc(12 * var(--u)) 0; }
+  .monster-search-icon { font-size: calc(48 * var(--u)); margin-bottom: calc(10 * var(--u)); }
+  .monster-search-text { font-size: calc(12 * var(--u)); letter-spacing: calc(0.5 * var(--u)); }
+  .group-counter { font-size: calc(12 * var(--u)); left: calc(3 * var(--u)); }
+}
+
+@media (max-width: 400px) {
+  .skill-slot { width: calc(38 * var(--u)); height: calc(38 * var(--u)); }
+  .skill-slot svg { width: calc(22 * var(--u)); height: calc(22 * var(--u)); }
+  #player-avatar-slot img.fighter-avatar-img,
+  #monster-avatar-slot img { width: calc(60 * var(--u)); height: calc(60 * var(--u)); }
+  .battle-controls .btn { font-size: calc(10.5 * var(--u)); padding: calc(6 * var(--u)) calc(3 * var(--u)); }
+  .monster-search-icon { font-size: calc(42 * var(--u)); }
+  .monster-search-text { font-size: calc(11 * var(--u)); }
+}
+
+@media (max-height: 600px) and (orientation: landscape) {
+  .battle-overlay { padding: calc(6 * var(--u)); }
+  .fighters { grid-template-columns: 1.4fr 1fr; }
+  .skills-column { flex-direction: column; }
+  #player-avatar-slot img.fighter-avatar-img,
+  #monster-avatar-slot img { width: calc(70 * var(--u)); height: calc(70 * var(--u)); }
+  .battle-log-wrapper { grid-template-columns: 2fr 1fr; height: calc(140 * var(--u)); }
+  .log-column:first-child { border-right: 1px solid var(--border); border-bottom: none; }
+  .battle-log { height: auto; }
+}

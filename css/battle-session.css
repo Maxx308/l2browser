@@ -1,0 +1,245 @@
+/* ========================================================
+   БОЙ: СЕССИЯ ОХОТЫ, СУМКА, ИНВЕНТАРЬ В БОЮ (v0.23)
+   - .bx-farm-rate      — скорость фарма в шапке боя
+   - .bx-bag-btn        — кликабельный заголовок «ДОБЫЧА 🎒 N»
+   - .bx-session        — мини-панель «Добыча за сессию»
+   - body.bx-peek       — окно боя спрятано, открыт инвентарь
+   - .bx-peek-bar       — полоска боя сверху + «Вернуться в бой»
+   ======================================================== */
+
+/* ---------- ШАПКА: вместо «ATB заряжается...» ---------- */
+.bx-window #battle-status { display: none; }
+
+.bx-farm-rate {
+  display: inline-flex; align-items: center; gap: calc(10 * var(--u));
+  margin-left: calc(6 * var(--u));
+  font-family: var(--font-text);
+  font-size: var(--fs-small);
+  color: var(--text-dim);
+  letter-spacing: 0;
+  white-space: nowrap;
+}
+.bx-farm-rate:empty { display: none; }
+.bx-farm-rate .bxr-item {
+  display: inline-flex; align-items: baseline; gap: calc(3 * var(--u));
+  padding: calc(2 * var(--u)) calc(8 * var(--u));
+  border: 1px solid #2a2418;
+  border-radius: calc(10 * var(--u));
+  background: rgba(0,0,0,.35);
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+.bx-farm-rate small { font-size: .8em; color: var(--text-dim); }
+
+/* ---------- СУМКА: заголовок колонки «ДОБЫЧА» ---------- */
+.bx-window .bx-bag-btn {
+  cursor: pointer;
+  user-select: none;
+  transition: color .15s, background .15s;
+}
+.bx-window .bx-bag-btn:hover { color: var(--gold-bright); background: rgba(224,190,122,.06); }
+.bx-window .bx-bag-btn .bx-loot-count {
+  display: inline-block;
+  padding: 0 calc(7 * var(--u));
+  border: 1px solid #6b5a37;
+  border-radius: calc(10 * var(--u));
+  background: rgba(224,190,122,.08);
+}
+.bx-bag-arrow {
+  display: inline-block; margin-left: calc(5 * var(--u));
+  color: #8a7a5a; font-size: .85em;
+  transition: transform .2s;
+}
+#bx-loot-column.bx-bag-open .bx-bag-arrow { transform: rotate(180deg); color: var(--gold-bright); }
+#bx-loot-column.bx-bag-open .bx-loot-count { border-color: var(--gold-bright); }
+
+/* ---------- МИНИ-ПАНЕЛЬ «ДОБЫЧА ЗА СЕССИЮ» ---------- */
+.bx-session {
+  position: absolute;
+  top: calc(56 * var(--u)); right: calc(14 * var(--u));
+  z-index: 30;
+  width: calc(380 * var(--u));
+  max-width: calc(100% - 28 * var(--u));
+  max-height: calc(470 * var(--u));
+  display: flex; flex-direction: column; gap: calc(10 * var(--u));
+  padding: calc(12 * var(--u)) calc(14 * var(--u)) calc(10 * var(--u));
+  background: linear-gradient(180deg, rgba(26,22,16,.97), rgba(14,12,9,.97));
+  border: 1px solid #6b5a37;
+  border-radius: calc(8 * var(--u));
+  box-shadow: 0 18px 50px rgba(0,0,0,.75), 0 0 0 1px #000;
+  animation: bxsIn .18s ease-out;
+}
+@keyframes bxsIn { from { opacity: 0; transform: translateY(calc(-8 * var(--u))); } }
+
+.bxs-head { display: flex; align-items: center; justify-content: space-between; }
+.bxs-title {
+  font-family: 'Cinzel', serif; font-weight: 700;
+  font-size: var(--fs-medium); color: var(--gold-bright); letter-spacing: .5px;
+}
+.bxs-close {
+  background: none; border: 0; cursor: pointer;
+  color: #8a7a5a; font-size: calc(16 * var(--u)); line-height: 1;
+  padding: calc(4 * var(--u)) calc(6 * var(--u));
+}
+.bxs-close:hover { color: var(--gold-bright); }
+
+.bxs-stats {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: calc(6 * var(--u));
+}
+.bxs-stat {
+  display: flex; flex-direction: column; align-items: center;
+  padding: calc(6 * var(--u)) calc(4 * var(--u));
+  background: rgba(0,0,0,.35);
+  border: 1px solid #2a2418;
+  border-radius: calc(6 * var(--u));
+  line-height: 1.2;
+  text-align: center;
+}
+.bxs-stat span { font-size: calc(14 * var(--u)); }
+.bxs-stat b {
+  font-family: 'Cinzel', serif; font-size: var(--fs-medium);
+  color: var(--text); font-variant-numeric: tabular-nums;
+}
+.bxs-stat i { font-style: normal; font-size: var(--fs-tiny); color: var(--text-dim); }
+.bxs-stat em { font-style: normal; font-size: var(--fs-tiny); color: var(--gold-bright); margin-top: calc(2 * var(--u)); }
+.bxs-note {
+  grid-column: 1 / -1;
+  text-align: center;
+  font-size: var(--fs-small); color: var(--text-dim);
+}
+
+.bxs-items {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(calc(64 * var(--u)), 1fr));
+  gap: calc(6 * var(--u));
+  overflow-y: auto;
+  min-height: calc(76 * var(--u));
+  padding-right: calc(2 * var(--u));
+}
+.bxs-empty {
+  grid-column: 1 / -1;
+  padding: calc(18 * var(--u)) calc(8 * var(--u));
+  text-align: center; font-size: var(--fs-small); color: var(--text-dim);
+  border: 1px dashed #2a2418; border-radius: calc(6 * var(--u));
+}
+.bxs-item {
+  --c: #4a4030;
+  position: relative;
+  display: flex; flex-direction: column; align-items: center; gap: calc(3 * var(--u));
+  padding: calc(5 * var(--u)) calc(3 * var(--u)) calc(4 * var(--u));
+  background: rgba(0,0,0,.4);
+  border: 1px solid var(--c);
+  border-radius: calc(6 * var(--u));
+  animation: bxsIn .2s ease-out;
+}
+.bxs-item.rare { box-shadow: inset 0 0 calc(12 * var(--u)) color-mix(in srgb, var(--c) 35%, transparent); }
+.bxs-ico {
+  width: calc(36 * var(--u)); height: calc(36 * var(--u));
+  display: flex; align-items: center; justify-content: center;
+  font-size: calc(22 * var(--u));
+}
+.bxs-ico img, .bxs-ico svg { width: 100% !important; height: 100% !important; object-fit: contain; }
+.bxs-qty {
+  position: absolute; top: calc(2 * var(--u)); right: calc(3 * var(--u));
+  font-family: 'Cinzel', serif; font-weight: 700;
+  font-size: var(--fs-tiny); color: #fff;
+  text-shadow: 0 1px 2px #000, 0 0 4px #000;
+}
+.bxs-name {
+  width: 100%;
+  font-size: calc(10.5 * var(--u)); line-height: 1.15;
+  color: var(--text-dim); text-align: center;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.bxs-item.rare .bxs-name { color: var(--c); }
+
+.bxs-foot {
+  display: flex; justify-content: space-between; flex-wrap: wrap; gap: calc(6 * var(--u));
+  font-size: var(--fs-small); color: var(--text-dim);
+}
+.bxs-foot:empty { display: none; }
+.bxs-slots.bxs-soon { color: #e0b050; }
+.bxs-slots.bxs-warn { color: #ff6a50; font-weight: 700; }
+.bxs-lost { color: #ff6a50; }
+
+.bxs-open-inv { width: 100%; justify-content: center; }
+.bxs-hint { text-align: center; font-size: var(--fs-tiny); color: var(--text-dim); margin-top: calc(-4 * var(--u)); }
+
+/* ---------- ИНВЕНТАРЬ ПОВЕРХ БОЯ ---------- */
+/* Окно боя прячем, но НЕ закрываем: бой продолжает идти. */
+body.bx-peek .battle-overlay.active { display: none !important; }
+/* Охоту и карту в это время не даём — нельзя начать другой бой или уйти. */
+body.bx-peek .tab[data-tab="hunt"],
+body.bx-peek .tab[data-tab="map"] { display: none; }
+body.bx-peek .app { padding-top: calc(78 * var(--u)); }
+
+.bx-peek-bar {
+  display: none;
+  position: fixed; top: 0; left: 0; right: 0;
+  z-index: 140;
+  align-items: center; gap: calc(12 * var(--u));
+  max-width: calc(1200 * var(--u));
+  margin: 0 auto;
+  padding: calc(9 * var(--u)) calc(14 * var(--u));
+  background: linear-gradient(180deg, #1f1a12, #120f0b);
+  border: 1px solid #6b5a37; border-top: 0;
+  border-radius: 0 0 calc(8 * var(--u)) calc(8 * var(--u));
+  box-shadow: 0 10px 30px rgba(0,0,0,.7);
+  cursor: pointer;
+}
+body.bx-peek .bx-peek-bar { display: flex; animation: bxpIn .2s ease-out; }
+@keyframes bxpIn { from { transform: translateY(-100%); } }
+
+.bxp-icon {
+  font-size: calc(20 * var(--u)); color: var(--gold-bright);
+  animation: bxpPulse 1.6s ease-in-out infinite;
+}
+@keyframes bxpPulse { 50% { opacity: .45; } }
+.bxp-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: calc(4 * var(--u)); }
+.bxp-status {
+  font-size: var(--fs-small); color: var(--text);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.bxp-turn { color: var(--gold-bright); animation: bxpPulse .8s ease-in-out infinite; }
+.bxp-bars { display: flex; flex-direction: column; gap: calc(2 * var(--u)); max-width: calc(360 * var(--u)); }
+.bxp-hp, .bxp-mp {
+  position: relative; overflow: hidden;
+  background: #0a0806; border: 1px solid #2a2418; border-radius: calc(3 * var(--u));
+}
+.bxp-hp { height: calc(14 * var(--u)); }
+.bxp-mp { height: calc(5 * var(--u)); }
+.bxp-hp-fill, .bxp-mp-fill { position: absolute; inset: 0 auto 0 0; transition: width .3s; }
+.bxp-hp-fill { background: linear-gradient(90deg, var(--hp), var(--hp-glow)); }
+.bxp-mp-fill { background: linear-gradient(90deg, var(--mp), var(--mp-glow)); }
+.bxp-hp-text {
+  position: relative; display: block; text-align: center;
+  font-size: calc(10.5 * var(--u)); line-height: calc(14 * var(--u));
+  color: #fff; text-shadow: 0 1px 2px #000;
+  font-variant-numeric: tabular-nums;
+}
+.bx-peek-bar.low { border-color: var(--hp-glow); box-shadow: 0 10px 30px rgba(0,0,0,.7), 0 0 18px rgba(255,64,64,.35); }
+.bx-peek-bar.low .bxp-hp-fill { animation: bxpPulse .9s ease-in-out infinite; }
+.bxp-back { flex-shrink: 0; border-color: var(--gold-bright); color: var(--gold-bright); }
+
+/* ---------- ТЕЛЕФОН ---------- */
+@media (max-width: 600px) {
+  .bx-farm-rate { gap: calc(6 * var(--u)); margin-left: 0; }
+  .bx-farm-rate .bxr-item { padding: calc(1 * var(--u)) calc(6 * var(--u)); }
+  .bx-session {
+    position: fixed;
+    top: auto; bottom: calc(8 * var(--u)); left: calc(8 * var(--u)); right: calc(8 * var(--u));
+    width: auto; max-width: none;
+    max-height: 75vh;
+    z-index: 950;
+  }
+  .bxs-stats { grid-template-columns: repeat(2, 1fr); }
+  .bxs-items { grid-template-columns: repeat(auto-fill, minmax(calc(58 * var(--u)), 1fr)); }
+  body.bx-peek .app { padding-top: calc(70 * var(--u)); }
+  .bx-peek-bar { gap: calc(8 * var(--u)); padding: calc(7 * var(--u)) calc(10 * var(--u)); border-radius: 0; border-left: 0; border-right: 0; }
+  .bxp-back { padding: calc(6 * var(--u)) calc(10 * var(--u)); font-size: var(--fs-small); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bx-session, .bxs-item, body.bx-peek .bx-peek-bar { animation: none; }
+  .bxp-icon, .bxp-turn, .bx-peek-bar.low .bxp-hp-fill { animation: none; }
+}

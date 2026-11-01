@@ -1,0 +1,536 @@
+/* ========================================================
+   CITY-MAP.CSS — город, карта, перемещение
+   Подключать ЧЕТВЁРТЫМ (после monsters.css).
+   + Масштабирование через --ui-scale.
+   + АДАПТИВНАЯ ВЁРСТКА: планшет и телефон.
+   + НОВОЕ: PNG-карточки города (.city-icon-img)
+     — цельные картинки без обрезки (aspect-ratio 1/1).
+   + НОВОЕ: у .city-card padding: 0 — картинка от края до края.
+   + НОВОЕ (v0.12): .map-meta — доп. инфа на карточках
+     (время пешком, диапазон уровней мобов).
+   + НОВОЕ (v0.12): кнопка свитка телепорта на карточке города
+     (.map-travel-btn-scroll, .map-travel-btn-disabled).
+   ======================================================== */
+
+/* ---------- ГОРОД: СЕТКА КАРТОЧЕК ---------- */
+.city-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: calc(16 * var(--u));
+  margin-bottom: calc(16 * var(--u));
+}
+
+.city-card {
+  background: linear-gradient(180deg, var(--bg-2), var(--bg-1));
+  border: 1px solid var(--border);
+  border-radius: calc(4 * var(--u));
+  padding: 0;                                 /* картинка от края до края */
+  cursor: pointer;
+  transition: all 0.3s;
+  position: relative;
+  overflow: hidden;
+  text-align: center;
+}
+.city-card::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: radial-gradient(circle at 50% 30%, rgba(184,148,90,0.08), transparent 70%);
+  pointer-events: none;
+  z-index: 1;
+}
+.city-card:hover {
+  border-color: var(--gold-bright);
+  box-shadow: 0 0 calc(30 * var(--u)) rgba(224,190,122,0.35);
+  transform: translateY(calc(-3 * var(--u)));
+}
+
+/* Старая SVG-иконка (на случай, если где-то ещё используется). */
+.city-icon {
+  width: calc(70 * var(--u));
+  height: calc(70 * var(--u));
+  margin: 0 auto calc(12 * var(--u));
+  display: block;
+  filter: drop-shadow(0 0 calc(12 * var(--u)) rgba(184,148,90,0.5));
+}
+
+/* Карточка города с PNG-фоном — цельная картинка без обрезки. */
+.city-icon-img {
+  width: 100%;
+  aspect-ratio: 1 / 1;                       /* квадрат — под формат картинок */
+  margin: 0;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  border-radius: calc(3 * var(--u));
+  transition: transform 0.3s, box-shadow 0.3s;
+}
+
+.city-card:hover .city-icon-img {
+  transform: scale(1.03);
+  box-shadow: 0 0 calc(20 * var(--u)) rgba(224,190,122,0.4);
+}
+
+/* Текстовые подписи внутри карточки.
+   Сейчас в HTML их нет (текст внутри картинок),
+   но CSS оставляем — на случай использования. */
+.city-name {
+  font-family: 'Cinzel', serif;
+  font-size: calc(17 * var(--u));
+  color: var(--gold-bright);
+  margin-bottom: calc(6 * var(--u));
+  letter-spacing: calc(2 * var(--u));
+}
+.city-desc {
+  font-size: var(--fs-base);
+  color: var(--text-dim);
+  line-height: 1.5;
+  font-style: italic;
+}
+.city-badge {
+  display: inline-block;
+  margin-top: calc(10 * var(--u));
+  padding: calc(2 * var(--u)) calc(10 * var(--u));
+  font-family: 'Cinzel', serif;
+  font-size: var(--fs-tiny);
+  letter-spacing: calc(2 * var(--u));
+  color: var(--gold);
+  border: 1px solid var(--border);
+  border-radius: calc(2 * var(--u));
+  background: rgba(0,0,0,0.4);
+}
+
+.city-header { text-align: center; margin-bottom: calc(24 * var(--u)); }
+.city-title {
+  font-family: 'Cinzel', serif;
+  font-size: var(--fs-h2);
+  color: var(--gold-bright);
+  letter-spacing: calc(4 * var(--u));
+  margin-bottom: calc(6 * var(--u));
+  text-shadow: 0 0 calc(20 * var(--u)) rgba(184,148,90,0.6);
+}
+.city-subtitle {
+  font-size: var(--fs-base);
+  color: var(--text-dim);
+  font-style: italic;
+  letter-spacing: calc(1 * var(--u));
+}
+
+/* ---------- КОПИ: ЗАГЛУШКА «ПУСТО» ---------- */
+.mine-empty-box {
+  text-align: center;
+  padding: calc(80 * var(--u)) calc(20 * var(--u));
+  background: linear-gradient(180deg, var(--bg-2), var(--bg-1));
+  border: 1px solid var(--border);
+  border-radius: calc(4 * var(--u));
+  position: relative;
+  overflow: hidden;
+}
+.mine-empty-box::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: radial-gradient(circle at 50% 40%, rgba(138,112,80,0.1), transparent 70%);
+  pointer-events: none;
+}
+.mine-empty-icon {
+  font-size: calc(64 * var(--u));
+  line-height: 1;
+  margin-bottom: calc(16 * var(--u));
+  opacity: 0.5;
+  filter: drop-shadow(0 0 calc(20 * var(--u)) rgba(184,148,90,0.3));
+}
+.mine-empty-title {
+  font-family: 'Cinzel', serif;
+  font-size: var(--fs-h2);
+  color: var(--gold-bright);
+  letter-spacing: calc(4 * var(--u));
+  margin-bottom: calc(10 * var(--u));
+  text-shadow: 0 0 calc(20 * var(--u)) rgba(224,190,122,0.4);
+}
+.mine-empty-text {
+  font-size: var(--fs-medium);
+  color: var(--text-dim);
+  font-style: italic;
+  max-width: calc(500 * var(--u));
+  margin: 0 auto;
+  line-height: 1.6;
+}
+
+/* ---------- КАРТА МИРА ---------- */
+.map-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: calc(14 * var(--u));
+}
+
+.map-card {
+  background: linear-gradient(180deg, var(--bg-2), var(--bg-1));
+  border: 1px solid var(--border);
+  border-radius: calc(4 * var(--u));
+  padding: calc(20 * var(--u));
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.25s;
+  position: relative;
+}
+.map-card:hover { border-color: var(--gold); }
+.map-card.current {
+  border-color: var(--gold-bright);
+  box-shadow: 0 0 calc(25 * var(--u)) rgba(224,190,122,0.3);
+}
+.map-card.current::after {
+  content: 'ВЫ ЗДЕСЬ';
+  position: absolute;
+  top: calc(8 * var(--u));
+  right: calc(8 * var(--u));
+  font-family: 'Cinzel', serif;
+  font-size: var(--fs-tiny);
+  color: var(--gold-bright);
+}
+.map-icon {
+  width: calc(60 * var(--u));
+  height: calc(60 * var(--u));
+  margin: 0 auto calc(10 * var(--u));
+  display: block;
+}
+.map-name {
+  font-family: 'Cinzel', serif;
+  font-size: calc(17 * var(--u));
+  color: var(--gold-bright);
+  margin-bottom: calc(6 * var(--u));
+}
+.map-desc {
+  font-size: var(--fs-base);
+  color: var(--text-dim);
+  line-height: 1.5;
+}
+
+/* ---------- НОВОЕ (v0.12): ДОП. ИНФА НА КАРТОЧКАХ ---------- */
+.map-meta {
+  display: flex;
+  flex-direction: column;
+  gap: calc(4 * var(--u));
+  margin-top: calc(10 * var(--u));
+  padding-top: calc(8 * var(--u));
+  border-top: 1px dashed rgba(184,148,90,0.2);
+}
+
+.map-meta-line {
+  display: block;
+  font-family: 'Cinzel', serif;
+  font-size: var(--fs-small);
+  color: var(--gold);
+  letter-spacing: calc(0.5 * var(--u));
+  line-height: 1.4;
+}
+
+.map-meta-line.map-meta-safe {
+  color: #a0d080;
+}
+
+/* Кнопка магических троп */
+.map-travel-btn {
+  margin-top: calc(12 * var(--u));
+  display: inline-flex;
+  align-items: center;
+  gap: calc(6 * var(--u));
+  padding: calc(6 * var(--u)) calc(14 * var(--u));
+  background: linear-gradient(180deg, #3a2a10, #1a1208);
+  border: 1px solid var(--gold);
+  border-radius: calc(3 * var(--u));
+  font-family: 'Cinzel', serif;
+  font-size: var(--fs-small);
+  color: var(--gold-bright);
+  cursor: pointer;
+  transition: all 0.2s;
+  letter-spacing: calc(0.5 * var(--u));
+}
+.map-travel-btn:hover {
+  border-color: var(--gold-bright);
+  box-shadow: 0 0 calc(15 * var(--u)) rgba(224,190,122,0.4);
+}
+
+/* ---------- НОВОЕ (v0.12): КНОПКА СВИТКА ТЕЛЕПОРТА ---------- */
+
+.map-travel-btn-scroll {
+  background: linear-gradient(180deg, #2a1a4a, #150d28);
+  border-color: #6a9ae0;
+  color: #a0c8ff;
+}
+.map-travel-btn-scroll:hover {
+  border-color: #a0c8ff;
+  box-shadow: 0 0 calc(15 * var(--u)) rgba(160,200,255,0.4);
+}
+
+.map-travel-btn-disabled,
+.map-travel-btn-disabled:hover,
+.map-travel-btn-disabled:disabled {
+  background: linear-gradient(180deg, #1a1a22, #0d0d10);
+  border-color: var(--border);
+  color: var(--text-dim);
+  cursor: not-allowed;
+  box-shadow: none;
+  opacity: 0.7;
+}
+
+/* ---------- ОВЕРЛЕЙ ПЕРЕМЕЩЕНИЯ ---------- */
+.travel-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.92);
+  z-index: 200;
+  align-items: center;
+  justify-content: center;
+}
+.travel-overlay.active { display: flex; }
+.travel-box {
+  text-align: center;
+  max-width: calc(400 * var(--u));
+  width: 90%;
+  padding: calc(30 * var(--u));
+  background: linear-gradient(180deg, var(--bg-2), var(--bg-1));
+  border: 1px solid var(--gold);
+  border-radius: calc(4 * var(--u));
+}
+.travel-box h2 {
+  margin-bottom: calc(20 * var(--u));
+  font-size: var(--fs-h1);
+  letter-spacing: calc(3 * var(--u));
+}
+.travel-bar {
+  height: calc(20 * var(--u));
+  background: #000;
+  border: 1px solid var(--border);
+  border-radius: calc(3 * var(--u));
+  overflow: hidden;
+  margin-bottom: calc(12 * var(--u));
+}
+.travel-fill {
+  height: 100%;
+  background: linear-gradient(180deg, var(--gold-bright), var(--gold), #6a4a20);
+  width: 0%;
+  transition: width 0.1s linear;
+}
+.travel-time {
+  font-family: 'Cinzel', serif;
+  font-size: calc(24 * var(--u));
+  color: var(--gold-bright);
+  margin-bottom: calc(16 * var(--u));
+}
+
+/* ========================================================
+   АДАПТАЦИЯ ПОД РАЗНЫЕ ЭКРАНЫ
+   ======================================================== */
+
+/* ---------- НОУТБУКИ И БОЛЬШИЕ ПЛАНШЕТЫ (1100-1400px) ---------- */
+@media (max-width: 1400px) {
+  .city-grid {
+    gap: calc(14 * var(--u));
+  }
+}
+
+/* ---------- ПЛАНШЕТЫ (900-1100px) ---------- */
+@media (max-width: 1100px) {
+  .city-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: calc(12 * var(--u));
+  }
+}
+
+/* ---------- МОБИЛЬНЫЕ ПЛАНШЕТЫ / КРУПНЫЕ ТЕЛЕФОНЫ (700-900px) ---------- */
+@media (max-width: 900px) {
+  .city-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: calc(10 * var(--u));
+    margin-bottom: calc(12 * var(--u));
+  }
+  .city-card {
+    border-radius: calc(3 * var(--u));
+  }
+
+  .city-header {
+    margin-bottom: calc(18 * var(--u));
+  }
+  .city-title {
+    font-size: calc(22 * var(--u));
+    letter-spacing: calc(3 * var(--u));
+  }
+  .city-subtitle {
+    font-size: calc(12.5 * var(--u));
+  }
+
+  /* Карта: 2 колонки, компактнее */
+  .map-grid {
+    gap: calc(10 * var(--u));
+  }
+  .map-card {
+    padding: calc(16 * var(--u)) calc(12 * var(--u));
+  }
+  .map-icon {
+    width: calc(52 * var(--u));
+    height: calc(52 * var(--u));
+    margin-bottom: calc(8 * var(--u));
+  }
+  .map-name {
+    font-size: calc(14 * var(--u));
+    margin-bottom: calc(4 * var(--u));
+  }
+  .map-desc {
+    font-size: calc(12 * var(--u));
+    line-height: 1.4;
+  }
+  .map-card.current::after {
+    font-size: calc(10 * var(--u));
+    top: calc(6 * var(--u));
+    right: calc(6 * var(--u));
+  }
+
+  /* Доп. инфа — компактнее */
+  .map-meta {
+    gap: calc(3 * var(--u));
+    margin-top: calc(8 * var(--u));
+    padding-top: calc(6 * var(--u));
+  }
+  .map-meta-line {
+    font-size: calc(11.5 * var(--u));
+  }
+}
+
+/* ---------- ТЕЛЕФОНЫ ВЕРТИКАЛЬНО (< 600px) ---------- */
+@media (max-width: 600px) {
+  .city-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: calc(8 * var(--u));
+    margin-bottom: calc(10 * var(--u));
+  }
+
+  .city-header {
+    margin-bottom: calc(14 * var(--u));
+  }
+  .city-title {
+    font-size: calc(20 * var(--u));
+    letter-spacing: calc(2 * var(--u));
+    margin-bottom: calc(4 * var(--u));
+  }
+  .city-subtitle {
+    font-size: calc(12 * var(--u));
+    letter-spacing: 0;
+  }
+
+  /* Карта — 1 колонка */
+  .map-grid {
+    grid-template-columns: 1fr;
+    gap: calc(10 * var(--u));
+  }
+  .map-card {
+    padding: calc(14 * var(--u));
+  }
+  .map-icon {
+    width: calc(50 * var(--u));
+    height: calc(50 * var(--u));
+    margin-bottom: calc(6 * var(--u));
+  }
+  .map-name {
+    font-size: calc(14 * var(--u));
+    margin-bottom: calc(3 * var(--u));
+  }
+  .map-desc {
+    font-size: calc(12 * var(--u));
+    line-height: 1.35;
+  }
+
+  .map-meta {
+    gap: calc(3 * var(--u));
+    margin-top: calc(8 * var(--u));
+    padding-top: calc(6 * var(--u));
+  }
+  .map-meta-line {
+    font-size: calc(11.5 * var(--u));
+    letter-spacing: 0;
+  }
+
+  .map-travel-btn {
+    font-size: calc(11.5 * var(--u));
+    padding: calc(6 * var(--u)) calc(10 * var(--u));
+    margin-top: calc(8 * var(--u));
+  }
+
+  /* Оверлей перемещения — компактнее */
+  .travel-box {
+    padding: calc(20 * var(--u)) calc(16 * var(--u));
+  }
+  .travel-box h2 {
+    font-size: calc(16 * var(--u));
+    letter-spacing: calc(2 * var(--u));
+    margin-bottom: calc(14 * var(--u));
+  }
+  .travel-time {
+    font-size: calc(20 * var(--u));
+    margin-bottom: calc(10 * var(--u));
+  }
+  .travel-bar {
+    height: calc(16 * var(--u));
+  }
+
+  /* Заглушка Копи */
+  .mine-empty-box {
+    padding: calc(50 * var(--u)) calc(16 * var(--u));
+  }
+  .mine-empty-icon {
+    font-size: calc(48 * var(--u));
+    margin-bottom: calc(12 * var(--u));
+  }
+  .mine-empty-title {
+    font-size: calc(20 * var(--u));
+    letter-spacing: calc(2 * var(--u));
+    margin-bottom: calc(8 * var(--u));
+  }
+  .mine-empty-text {
+    font-size: calc(12.5 * var(--u));
+  }
+}
+
+/* ---------- МАЛЕНЬКИЕ ТЕЛЕФОНЫ (< 400px) ---------- */
+@media (max-width: 400px) {
+  .city-card {
+    border-radius: calc(2 * var(--u));
+  }
+  .map-icon {
+    width: calc(44 * var(--u));
+    height: calc(44 * var(--u));
+  }
+  .map-name {
+    font-size: calc(13 * var(--u));
+  }
+  .map-desc {
+    font-size: calc(11 * var(--u));
+  }
+}
+
+/* ---------- ГОРИЗОНТАЛЬНЫЙ ТЕЛЕФОН / НИЗКИЙ ЭКРАН ---------- */
+@media (max-height: 600px) and (orientation: landscape) {
+  .city-grid {
+    grid-template-columns: repeat(4, 1fr);
+    gap: calc(8 * var(--u));
+  }
+
+  /* Карта — 2 колонки */
+  .map-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: calc(8 * var(--u));
+  }
+  .map-card {
+    padding: calc(10 * var(--u));
+  }
+  .map-icon {
+    width: calc(40 * var(--u));
+    height: calc(40 * var(--u));
+    margin-bottom: calc(5 * var(--u));
+  }
+  .map-name {
+    font-size: calc(12.5 * var(--u));
+  }
+  .map-desc {
+    font-size: calc(11 * var(--u));
+  }
+}

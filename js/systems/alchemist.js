@@ -1,0 +1,647 @@
+// ========================================================
+//  СИСТЕМЫ: АЛХИМИК
+//  Окно с двумя вкладками: РАСПЫЛИТЬ / ПЕРЕРОЛЛ.
+//
+//  ЭТАП 3 (v0.10): ЛОГИКА РАСПЫЛЕНИЯ.
+//  ЭТАП 4 (v0.10): ЛОГИКА ПЕРЕРОЛЛА.
+//    - Сетка инвентаря: только экипировка с редкостью green+.
+//    - Каждая ячейка показывает: текущие бонусы + цену переролла.
+//    - Клик → проверка пыли → confirm() → переролл.
+//    - Если пыли не хватает — карточка серая (не кликабельна).
+//
+//  НОВОЕ (v0.17): МАССОВОЕ РАСПЫЛЕНИЕ.
+//    - Над сеткой — кнопки «Зелёные / Синие / ... / Всё» с количеством.
+//    - Одно подтверждение со сводкой: сколько предметов и сколько пыли.
+//    - Подогнанные предметы (+N) пачкой НЕ распыляются — только вручную.
+//    - Предупреждение, если пыль упрётся в лимит стопки (1000).
+//
+//  Данные алхимии — в js/data/alchemy.js.
+// ========================================================
+
+// Текущая активная вкладка.
+let __alchemistTab = 'disenchant';   // 'disenchant' | 'reroll'
+
+// Типы экипировки (что можно распылять/перероллить).
+const ALCHEMIST_EQUIP_TYPES = [
+  'weapon', 'shield', 'helmet', 'armorTop', 'armorBottom',
+  'gloves', 'boots', 'ring', 'earring', 'necklace'
+];
+
+// --------------------------------------------------------
+//  ОТКРЫТИЕ / ЗАКРЫТИЕ
+// --------------------------------------------------------
+function openAlchemist() {
+  if (state.player.currentLocation !== 'town') return;
+
+  if (typeof cancelWaitingForResume === 'function') {
+    cancelWaitingForResume('открыт алхимик');
+  }
+
+  const overlay = document.getElementById('alchemist-overlay');
+  if (!overlay) return;
+
+  __alchemistTab = 'disenchant';
+
+  overlay.classList.add('active');
+  renderAlchemistWindow();
+}
+
+function closeAlchemist() {
+  const overlay = document.getElementById('alchemist-overlay');
+  if (overlay) overlay.classList.remove('active');
+}
+
+// --------------------------------------------------------
+//  ПЕРЕКЛЮЧЕНИЕ ВКЛАДОК
+// --------------------------------------------------------
+function switchAlchemistTab(tab) {
+  if (tab !== 'disenchant' && tab !== 'reroll') return;
+  __alchemistTab = tab;
+  renderAlchemistWindow();
+}
+
+// --------------------------------------------------------
+//  РЕНДЕР ОКНА
+// --------------------------------------------------------
+function renderAlchemistWindow() {
+  const tabs = document.querySelectorAll('.alchemist-tab');
+  tabs.forEach(t => {
+    t.classList.toggle('active', t.dataset.tab === __alchemistTab);
+  });
+
+  const paneDisenchant = document.getElementById('alchemist-pane-disenchant');
+  const paneReroll = document.getElementById('alchemist-pane-reroll');
+
+  if (paneDisenchant) {
+    paneDisenchant.classList.toggle('active', __alchemistTab === 'disenchant');
+  }
+  if (paneReroll) {
+    paneReroll.classList.toggle('active', __alchemistTab === 'reroll');
+  }
+
+  if (__alchemistTab === 'disenchant') {
+    renderAlchemistDisenchant();
+  } else if (__alchemistTab === 'reroll') {
+    renderAlchemistReroll();
+  }
+}
+
+// --------------------------------------------------------
+//  СПИСОК ПРЕДМЕТОВ (общий для распыления и переролла)
+// --------------------------------------------------------
+function getAlchemistItems() {
+  const p = state.player;
+  return p.inventory.filter(item => {
+    if (!ALCHEMIST_EQUIP_TYPES.includes(item.type)) return false;
+    if (!item.rarity || item.rarity === 'white') return false;
+    return true;
+  });
+}
+
+// ========================================================
+//  ВКЛАДКА «РАСПЫЛИТЬ» (Этап 3)
+// ========================================================
+
+function renderAlchemistDisenchant() {
+  const pane = document.getElementById('alchemist-pane-disenchant');
+  if (!pane) return;
+
+  const items = getAlchemistItems();
+
+  if (items.length === 0) {
+    pane.innerHTML = `<div class="alchemist-empty">Нет предметов для распыления.<br><span class="alchemist-empty-sub">Нужны зелёные и выше (не надетые).</span></div>`;
+    return;
+  }
+
+  const grid = document.createElement('div');
+  grid.className = 'alchemist-grid';
+
+  items.forEach(item => {
+    grid.appendChild(buildAlchemistDisenchantCard(item));
+  });
+
+  pane.innerHTML = '';
+  pane.appendChild(buildAlchemistBulkBar());
+  pane.appendChild(grid);
+}
+
+function buildAlchemistDisenchantCard(item) {
+  const card = document.createElement('div');
+  const rarity = item.rarity || 'white';
+  card.className = 'alchemist-card rarity-' + rarity;
+
+  const yieldData = getDisenchantYield(item);
+  if (!yieldData) return card;
+
+  const qty = item.qty || 1;
+  const qtyMult = qty;
+
+  const minTotal = yieldData.min * qtyMult;
+  const maxTotal = yieldData.max * qtyMult;
+
+  const dust = ALCHEMY_DUST[yieldData.color];
+  const dustName = dust ? dust.name : (yieldData.color + ' пыль');
+  const dustColor = dust ? dust.color : '#c8c0b0';
+  const dustIcon = dust ? (SVG[dust.icon] || '') : '';
+
+  const refineSuffix = (item.refineLevel > 0) ? ` +${item.refineLevel}` : '';
+  const qtySuffix = qty > 1 ? ` ×${qty}` : '';
+
+  const rarityData = RARITIES[rarity];
+
+  card.innerHTML = `
+    <div class="alchemist-card-icon">${item.icon || ''}</div>
+    <div class="alchemist-card-body">
+      <div class="alchemist-card-name rarity-text-${rarity}">${item.name}${refineSuffix}${qtySuffix}</div>
+      <div class="alchemist-card-rarity">${rarityData ? rarityData.name : rarity}</div>
+      <div class="alchemist-card-yield">
+        <span class="alchemist-card-yield-icon">${dustIcon}</span>
+        <span class="alchemist-card-yield-text" style="color: ${dustColor};">
+          Даст: ${minTotal}–${maxTotal} ${dustName.toLowerCase()}
+        </span>
+      </div>
+    </div>
+  `;
+
+  card.onmouseenter = (e) => {
+    if (typeof showItemTooltip === 'function') showItemTooltip(e, item);
+  };
+  card.onmouseleave = () => {
+    if (typeof hideTooltip === 'function') hideTooltip();
+  };
+
+  card.onclick = () => {
+    if (typeof hideTooltip === 'function') hideTooltip();
+    disenchantItem(item);
+  };
+
+  return card;
+}
+
+function disenchantItem(item) {
+  if (!item) return;
+
+  const p = state.player;
+  const idx = p.inventory.indexOf(item);
+  if (idx < 0) return;
+
+  if (!item.rarity || item.rarity === 'white') {
+    showToast('⚠', 'Белые предметы не распыляются');
+    return;
+  }
+
+  const yieldData = getDisenchantYield(item);
+  if (!yieldData) return;
+
+  const qty = item.qty || 1;
+  const dust = ALCHEMY_DUST[yieldData.color];
+  const dustName = dust ? dust.name : (yieldData.color + ' пыль');
+
+  const minTotal = yieldData.min * qty;
+  const maxTotal = yieldData.max * qty;
+
+  const refineSuffix = (item.refineLevel > 0) ? ` +${item.refineLevel}` : '';
+  const qtySuffix = qty > 1 ? ` ×${qty}` : '';
+
+  const ok = confirm(
+    `Распылить «${item.name}${refineSuffix}${qtySuffix}»?\n\n` +
+    `Получите: ${minTotal}–${maxTotal} ${dustName.toLowerCase()}.\n` +
+    `Предмет будет уничтожен.`
+  );
+  if (!ok) return;
+
+  let totalDust = 0;
+  for (let i = 0; i < qty; i++) {
+    const one = getDisenchantYield(item);
+    if (one) totalDust += one.sample;
+  }
+  if (totalDust <= 0) totalDust = 1;
+
+  p.inventory.splice(idx, 1);
+  addDustToInventory(yieldData.color, totalDust);
+
+  const colorTag = yieldData.color;
+  const fullLine = `🗑 Распылено: ${item.name}${refineSuffix}${qtySuffix} → +${totalDust} ${dustName.toLowerCase()}`;
+  if (typeof logLoot === 'function') {
+    logLoot(fullLine, 'log-craft rarity-' + colorTag);
+  }
+  showToast('🗑', `+${totalDust} ${dustName.toLowerCase()}`);
+
+  renderInventory();
+  updateInventoryFooter();
+  renderAlchemistDisenchant();
+  saveCurrentSlot();
+}
+
+// ========================================================
+//  ВКЛАДКА «ПЕРЕРОЛЛ» (Этап 4)
+// ========================================================
+
+function renderAlchemistReroll() {
+  const pane = document.getElementById('alchemist-pane-reroll');
+  if (!pane) return;
+
+  const items = getAlchemistItems();
+
+  if (items.length === 0) {
+    pane.innerHTML = `<div class="alchemist-empty">Нет предметов для переролла.<br><span class="alchemist-empty-sub">Нужны зелёные и выше (не надетые).</span></div>`;
+    return;
+  }
+
+  const grid = document.createElement('div');
+  grid.className = 'alchemist-grid';
+
+  items.forEach(item => {
+    grid.appendChild(buildAlchemistRerollCard(item));
+  });
+
+  pane.innerHTML = '';
+  pane.appendChild(grid);
+}
+
+function buildAlchemistRerollCard(item) {
+  const card = document.createElement('div');
+  const rarity = item.rarity || 'white';
+  card.className = 'alchemist-card alchemist-card-reroll rarity-' + rarity;
+
+  // Цена переролла.
+  const price = getRerollPrice(item);
+  const dustId = rarity;                         // цвет пыли = редкость предмета
+  const dust = ALCHEMY_DUST[dustId];
+  const dustName = dust ? dust.name : (dustId + ' пыль');
+  const dustColor = dust ? dust.color : '#c8c0b0';
+  const dustIcon = dust ? (SVG[dust.icon] || '') : '';
+
+  // Сколько пыли у игрока.
+  const have = getDustCount(dustId);
+  const enough = have >= price;
+
+  // Текущие бонусы.
+  const bonusText = formatBonusStatsShort(item.bonusStats);
+
+  const refineSuffix = (item.refineLevel > 0) ? ` +${item.refineLevel}` : '';
+  const rarityData = RARITIES[rarity];
+
+  // Если пыли не хватает — серая карточка.
+  if (!enough) {
+    card.classList.add('alchemist-card-disabled');
+  }
+
+  card.innerHTML = `
+    <div class="alchemist-card-icon">${item.icon || ''}</div>
+    <div class="alchemist-card-body">
+      <div class="alchemist-card-name rarity-text-${rarity}">${item.name}${refineSuffix}</div>
+      <div class="alchemist-card-rarity">${rarityData ? rarityData.name : rarity}</div>
+      <div class="alchemist-card-bonuses">Сейчас: ${bonusText}</div>
+      <div class="alchemist-card-yield">
+        <span class="alchemist-card-yield-icon">${dustIcon}</span>
+        <span class="alchemist-card-yield-text" style="color: ${dustColor};">
+          🎲 Переролл: ${price} ${dustName.toLowerCase()}
+        </span>
+      </div>
+      <div class="alchemist-card-stock ${enough ? '' : 'low'}">
+        У вас: ${have} / ${price}
+      </div>
+    </div>
+  `;
+
+  card.onmouseenter = (e) => {
+    if (typeof showItemTooltip === 'function') showItemTooltip(e, item);
+  };
+  card.onmouseleave = () => {
+    if (typeof hideTooltip === 'function') hideTooltip();
+  };
+
+  if (enough) {
+    card.onclick = () => {
+      if (typeof hideTooltip === 'function') hideTooltip();
+      rerollItem(item);
+    };
+  } else {
+    card.onclick = () => {
+      showToast('⚠', `Мало ${dustName.toLowerCase()}: ${have} / ${price}`);
+    };
+  }
+
+  return card;
+}
+
+// Короткое описание bonusStats: «+2 STR, +1 DEX» или «—».
+function formatBonusStatsShort(bonusStats) {
+  if (!bonusStats) return '—';
+  const parts = [];
+  Object.keys(bonusStats).forEach(stat => {
+    const val = bonusStats[stat];
+    if (val > 0) parts.push(`+${val} ${stat}`);
+  });
+  if (parts.length === 0) return '—';
+  return parts.join(', ');
+}
+
+// Сколько пыли данного цвета у игрока.
+function getDustCount(colorId) {
+  const dust = ALCHEMY_DUST[colorId];
+  if (!dust) return 0;
+  return state.player.inventory
+    .filter(i => i.name === dust.name)
+    .reduce((sum, i) => sum + (i.qty || 0), 0);
+}
+
+// Списать пыль данного цвета.
+function spendDust(colorId, amount) {
+  const dust = ALCHEMY_DUST[colorId];
+  if (!dust) return false;
+
+  const p = state.player;
+  let need = amount;
+
+  // Идём по всем ячейкам этой пыли и списываем.
+  for (const item of p.inventory) {
+    if (need <= 0) break;
+    if (item.name !== dust.name) continue;
+
+    const take = Math.min(item.qty, need);
+    item.qty -= take;
+    need -= take;
+
+    if (item.qty <= 0) {
+      const idx = p.inventory.indexOf(item);
+      if (idx >= 0) p.inventory.splice(idx, 1);
+    }
+  }
+
+  return need === 0;
+}
+
+// --------------------------------------------------------
+//  ПЕРЕРОЛЛ
+// --------------------------------------------------------
+function rerollItem(item) {
+  if (!item) return;
+
+  const rarity = item.rarity;
+  if (!rarity || rarity === 'white') {
+    showToast('⚠', 'Белые предметы не переролливаются');
+    return;
+  }
+
+  const price = getRerollPrice(item);
+  const dust = ALCHEMY_DUST[rarity];
+  const dustName = dust ? dust.name : (rarity + ' пыль');
+
+  const have = getDustCount(rarity);
+  if (have < price) {
+    showToast('⚠', `Мало ${dustName.toLowerCase()}: ${have} / ${price}`);
+    return;
+  }
+
+  const refineSuffix = (item.refineLevel > 0) ? ` +${item.refineLevel}` : '';
+
+  const ok = confirm(
+    `Перероллить статы «${item.name}${refineSuffix}»?\n\n` +
+    `Стоимость: ${price} ${dustName.toLowerCase()}.\n` +
+    `Текущие бонусы сбросятся и будут раскиданы заново.`
+  );
+  if (!ok) return;
+
+  // Списываем пыль.
+  const spent = spendDust(rarity, price);
+  if (!spent) {
+    showToast('⚠', 'Не удалось списать пыль');
+    return;
+  }
+
+  // Генерируем новые бонусы.
+  const newBonus = rollNewBonusStats(item);
+  item.bonusStats = newBonus;
+
+  // Обновляем статы игрока (если предмет надет — но он не надет, потому что мы берём только из инвентаря).
+  // На всякий случай пересчитаем — вдруг когда-то предмет окажется надет.
+  if (typeof recalcStats === 'function') recalcStats();
+
+  // Логи.
+  const bonusText = formatBonusStatsShort(newBonus);
+  if (typeof logLoot === 'function') {
+    logLoot(`🎲 Переролл: ${item.name}${refineSuffix} → ${bonusText} (−${price} ${dustName.toLowerCase()})`, 'log-craft');
+  }
+  showToast('🎲', `${item.name}${refineSuffix} → новые статы: ${bonusText}`);
+
+  // Обновляем UI.
+  renderInventory();
+  updateInventoryFooter();
+  renderAlchemistReroll();
+  updateCharacterPanel();
+  saveCurrentSlot();
+}
+
+// --------------------------------------------------------
+//  ДОБАВИТЬ ПЫЛЬ В ИНВЕНТАРЬ
+// --------------------------------------------------------
+function addDustToInventory(colorId, amount) {
+  if (!amount || amount <= 0) return;
+
+  const p = state.player;
+  const dust = ALCHEMY_DUST[colorId];
+  if (!dust) return;
+
+  const existing = p.inventory.find(i => i.name === dust.name);
+
+  if (existing) {
+    existing.qty = (existing.qty || 0) + amount;
+    if (existing.qty > ALCHEMY_DUST_STACK_MAX) existing.qty = ALCHEMY_DUST_STACK_MAX;
+    return;
+  }
+
+  if (p.inventory.length >= INVENTORY_MAX_SLOTS) {
+    showToast('📦', 'Инвентарь переполнен — пыль потеряна');
+    return;
+  }
+
+  const iconSvg = SVG[dust.icon] || '';
+  p.inventory.push({
+    id: 'item_' + Date.now() + '_' + Math.random(),
+    name: dust.name,
+    type: 'material',
+    icon: iconSvg,
+    qty: Math.min(ALCHEMY_DUST_STACK_MAX, amount),   // v0.17: тот же лимит, что и у существующей стопки
+    sellPrice: 0,
+    rarity: dust.rarity,
+    isDust: true,
+  });
+}
+
+// --------------------------------------------------------
+//  ЗАКРЫТИЕ ПО КЛИКУ НА ФОН / ESC
+// --------------------------------------------------------
+document.addEventListener('click', (e) => {
+  const overlay = document.getElementById('alchemist-overlay');
+  if (!overlay || !overlay.classList.contains('active')) return;
+  if (e.target === overlay) closeAlchemist();
+});
+
+document.addEventListener('keydown', (e) => {
+  if (e.key !== 'Escape') return;
+  const overlay = document.getElementById('alchemist-overlay');
+  if (overlay && overlay.classList.contains('active')) closeAlchemist();
+});
+
+// ========================================================
+//  МАССОВОЕ РАСПЫЛЕНИЕ (v0.17)
+// ========================================================
+
+// Лимит пыли в одной стопке (был зашит числом 1000 в addDustToInventory).
+const ALCHEMY_DUST_STACK_MAX = 1000;
+
+const ALCHEMY_BULK_LABELS = {
+  green:  'Зелёные',
+  blue:   'Синие',
+  purple: 'Фиолетовые',
+  yellow: 'Жёлтые',
+  red:    'Красные',
+};
+
+// Предметы для распыления пачкой: нужная редкость, без подгонки.
+// rarity — 'green' | 'blue' | ... | 'all'
+function getBulkDisenchantItems(rarity) {
+  return getAlchemistItems().filter(item => {
+    if ((item.refineLevel || 0) > 0) return false;
+    if (rarity !== 'all' && item.rarity !== rarity) return false;
+    return !!getDisenchantYield(item);
+  });
+}
+
+function countItemsQty(items) {
+  return items.reduce((s, i) => s + (i.qty || 1), 0);
+}
+
+// Панель кнопок над сеткой.
+function buildAlchemistBulkBar() {
+  const bar = document.createElement('div');
+  bar.className = 'alchemist-bulk';
+
+  const title = document.createElement('div');
+  title.className = 'alchemist-bulk-title';
+  title.textContent = 'Распылить пачкой:';
+  bar.appendChild(title);
+
+  const btns = document.createElement('div');
+  btns.className = 'alchemist-bulk-buttons';
+
+  ALCHEMY_DUST_ORDER.forEach(rarity => {
+    const n = countItemsQty(getBulkDisenchantItems(rarity));
+    if (n <= 0) return;
+    const b = document.createElement('button');
+    b.className = 'alchemist-bulk-btn rarity-' + rarity;
+    b.innerHTML = `${ALCHEMY_BULK_LABELS[rarity] || rarity} <span class="alchemist-bulk-count">${n}</span>`;
+    b.onclick = () => disenchantBulk(rarity);
+    btns.appendChild(b);
+  });
+
+  const total = countItemsQty(getBulkDisenchantItems('all'));
+  const all = document.createElement('button');
+  all.className = 'alchemist-bulk-btn all';
+  all.innerHTML = `Всё <span class="alchemist-bulk-count">${total}</span>`;
+  if (total <= 0) all.disabled = true;
+  else all.onclick = () => disenchantBulk('all');
+  btns.appendChild(all);
+
+  bar.appendChild(btns);
+
+  const refined = getAlchemistItems().filter(i => (i.refineLevel || 0) > 0).length;
+  if (refined > 0) {
+    const hint = document.createElement('div');
+    hint.className = 'alchemist-bulk-hint';
+    hint.textContent = `Подогнанные предметы (+N) пачкой не распыляются — только по одному (${refined} шт.).`;
+    bar.appendChild(hint);
+  }
+
+  return bar;
+}
+
+// Распылить все подходящие предметы одной редкости (или все).
+function disenchantBulk(rarity) {
+  const p = state.player;
+  const items = getBulkDisenchantItems(rarity);
+  if (items.length === 0) {
+    showToast('⚠', 'Нечего распылять');
+    return;
+  }
+
+  // ---- Сводка по цветам пыли ----
+  const byColor = {};
+  items.forEach(item => {
+    const y = getDisenchantYield(item);
+    if (!y) return;
+    const qty = item.qty || 1;
+    const g = byColor[y.color] || (byColor[y.color] = { count: 0, min: 0, max: 0 });
+    g.count += qty;
+    g.min += y.min * qty;
+    g.max += y.max * qty;
+  });
+
+  const lines = [];
+  const capWarnings = [];
+  ALCHEMY_DUST_ORDER.forEach(color => {
+    const g = byColor[color];
+    if (!g) return;
+    const dust = ALCHEMY_DUST[color];
+    const dustName = dust ? dust.name.toLowerCase() : color;
+    lines.push(`• ${ALCHEMY_BULK_LABELS[color] || color}: ${g.count} шт. → ${g.min}–${g.max} ${dustName}`);
+    const have = getDustCount(color);
+    if (have + g.max > ALCHEMY_DUST_STACK_MAX) {
+      capWarnings.push(`${dustName}: у вас ${have}, лимит ${ALCHEMY_DUST_STACK_MAX}`);
+    }
+  });
+
+  const totalQty = countItemsQty(items);
+  let text = `Распылить ${totalQty} шт.?\n\n${lines.join('\n')}\n\nПредметы будут уничтожены.`;
+  if (rarity === 'all' || rarity === 'yellow' || rarity === 'red') {
+    text += `\nСреди них могут быть ценные вещи — проверьте сетку перед подтверждением.`;
+  }
+  if (capWarnings.length) {
+    text += `\n\n⚠ Пыль сверх лимита пропадёт:\n${capWarnings.join('\n')}`;
+  }
+  if (!confirm(text)) return;
+
+  // ---- Распыление ----
+  const gained = {};
+  items.forEach(item => {
+    const idx = p.inventory.indexOf(item);
+    if (idx < 0) return;
+    const qty = item.qty || 1;
+    let sum = 0, color = null;
+    for (let i = 0; i < qty; i++) {
+      const one = getDisenchantYield(item);
+      if (one) { sum += one.sample; color = one.color; }
+    }
+    if (!color) return;
+    if (sum <= 0) sum = 1;
+    p.inventory.splice(idx, 1);
+    gained[color] = (gained[color] || 0) + sum;
+  });
+
+  const parts = [];
+  ALCHEMY_DUST_ORDER.forEach(color => {
+    const amount = gained[color];
+    if (!amount) return;
+    const before = getDustCount(color);
+    addDustToInventory(color, amount);
+    const real = getDustCount(color) - before;
+    const dust = ALCHEMY_DUST[color];
+    const dustName = dust ? dust.name.toLowerCase() : color;
+    const lost = amount - real;
+    const lostStr = lost > 0 ? ` (сверх лимита пропало ${lost})` : '';
+    parts.push(`+${real} ${dustName}`);
+    if (typeof logLoot === 'function') {
+      logLoot(`🗑 Распылено пачкой: ${byColor[color] ? byColor[color].count : ''} шт. → +${real} ${dustName}${lostStr}`, 'log-craft rarity-' + color);
+    }
+  });
+
+  showToast('🗑', parts.length ? parts.join(', ') : 'Распылено');
+
+  renderInventory();
+  updateInventoryFooter();
+  renderAlchemistDisenchant();
+  saveCurrentSlot();
+}
+

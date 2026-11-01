@@ -1,0 +1,45 @@
+/* ========================================================
+   OVERLAYS.CSS — общие оверлеи («Скоро» и т.п.)
+   Подключать ДВЕНАДЦАТЫМ (после cheat.css).
+   ======================================================== */
+
+.soon-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.9);
+  z-index: 150;
+  align-items: center;
+  justify-content: center;
+  padding: calc(20 * var(--u));
+}
+.soon-overlay.active { display: flex; }
+.soon-box {
+  text-align: center;
+  max-width: calc(400 * var(--u));
+  width: 100%;
+  padding: calc(40 * var(--u)) calc(30 * var(--u));
+  background: linear-gradient(180deg, var(--bg-2), var(--bg-1));
+  border: 1px solid var(--border);
+  border-radius: calc(4 * var(--u));
+}
+.soon-icon {
+  width: calc(80 * var(--u));
+  height: calc(80 * var(--u));
+  margin: 0 auto calc(16 * var(--u));
+  display: block;
+  opacity: 0.7;
+}
+.soon-title {
+  font-family: 'Cinzel', serif;
+  font-size: calc(22 * var(--u));
+  color: var(--gold-bright);
+  letter-spacing: calc(4 * var(--u));
+  margin-bottom: calc(10 * var(--u));
+}
+.soon-text {
+  font-size: var(--fs-medium);
+  color: var(--text-dim);
+  font-style: italic;
+  margin-bottom: calc(20 * var(--u));
+}

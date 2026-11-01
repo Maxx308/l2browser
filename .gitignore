@@ -1,0 +1,8 @@
+# Мусор Windows и редакторов — на GitHub не нужен
+Thumbs.db
+desktop.ini
+*.tmp
+*.bak
+*.log
+.vscode/
+.idea/

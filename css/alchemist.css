@@ -1,0 +1,377 @@
+/* ========================================================
+   ALCHEMIST.CSS — окно Алхимика
+   Две вкладки сверху: РАСПЫЛИТЬ / ПЕРЕРОЛЛ.
+   Формат похож на Мастерскую (модальное окно в центре).
+   + НОВОЕ (v0.10, Этап 3): сетка предметов для распыления.
+   + НОВОЕ (v0.10, Этап 4): сетка предметов для переролла
+     (с ценой, остатком пыли и «серой» карточкой).
+   ======================================================== */
+
+.alchemist-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.9);
+  z-index: 160;
+  align-items: flex-start;
+  justify-content: center;
+  padding: calc(20 * var(--u));
+  overflow-y: auto;
+}
+.alchemist-overlay.active { display: flex; }
+
+.alchemist-window {
+  background: linear-gradient(180deg, var(--bg-2), var(--bg-1));
+  border: 1px solid var(--gold);
+  border-radius: calc(4 * var(--u));
+  width: 100%;
+  max-width: calc(1100 * var(--u));
+  max-height: 92vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 0 calc(50 * var(--u)) rgba(184,148,90,0.4);
+  margin: auto 0;
+}
+
+/* ---------- ШАПКА ---------- */
+.alchemist-header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: calc(14 * var(--u)) calc(18 * var(--u));
+  border-bottom: 1px solid var(--border);
+  background: linear-gradient(180deg, #1a1a22, #0a0a0c);
+  border-top-left-radius: calc(4 * var(--u));
+  border-top-right-radius: calc(4 * var(--u));
+  gap: calc(10 * var(--u));
+  flex-wrap: wrap;
+}
+
+.alchemist-title {
+  font-family: 'Cinzel', serif;
+  font-size: calc(18 * var(--u));
+  color: var(--gold-bright);
+  letter-spacing: calc(2 * var(--u));
+}
+
+/* ---------- ВКЛАДКИ ---------- */
+.alchemist-tabs {
+  display: flex;
+  border-bottom: 1px solid var(--border);
+  background: #0a0a0c;
+}
+
+.alchemist-tab {
+  flex: 1;
+  padding: calc(12 * var(--u)) calc(8 * var(--u));
+  text-align: center;
+  font-family: 'Cinzel', serif;
+  font-size: var(--fs-base);
+  color: var(--text-dim);
+  cursor: pointer;
+  transition: all 0.2s;
+  letter-spacing: calc(1 * var(--u));
+  border-right: 1px solid var(--border);
+}
+.alchemist-tab:last-child { border-right: none; }
+.alchemist-tab:hover { color: var(--gold); }
+.alchemist-tab.active {
+  color: var(--gold-bright);
+  background: linear-gradient(180deg, transparent, rgba(184,148,90,0.1));
+  box-shadow: inset 0 -2px 0 var(--gold);
+}
+
+/* ---------- КОНТЕНТ ---------- */
+.alchemist-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: calc(16 * var(--u));
+}
+.alchemist-content::-webkit-scrollbar { width: calc(8 * var(--u)); }
+.alchemist-content::-webkit-scrollbar-thumb { background: var(--border); border-radius: calc(4 * var(--u)); }
+
+.alchemist-pane {
+  display: none;
+}
+.alchemist-pane.active {
+  display: block;
+}
+
+.alchemist-empty {
+  text-align: center;
+  color: var(--text-dim);
+  font-style: italic;
+  padding: calc(60 * var(--u)) calc(20 * var(--u));
+  font-size: var(--fs-medium);
+  letter-spacing: calc(1 * var(--u));
+}
+.alchemist-empty-sub {
+  font-size: var(--fs-small);
+  opacity: 0.7;
+}
+
+/* ========================================================
+   МАССОВОЕ РАСПЫЛЕНИЕ (v0.17)
+   ======================================================== */
+
+.alchemist-bulk {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: calc(8 * var(--u)) calc(12 * var(--u));
+  margin-bottom: calc(14 * var(--u));
+  padding: calc(10 * var(--u)) calc(12 * var(--u));
+  background: linear-gradient(180deg, #17151a, #0e0d10);
+  border: 1px solid var(--border);
+  border-radius: calc(3 * var(--u));
+}
+.alchemist-bulk-title {
+  font-family: 'Cinzel', serif;
+  font-size: var(--fs-small);
+  letter-spacing: calc(1.5 * var(--u));
+  color: var(--gold);
+}
+.alchemist-bulk-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: calc(6 * var(--u));
+}
+.alchemist-bulk-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: calc(6 * var(--u));
+  padding: calc(6 * var(--u)) calc(12 * var(--u));
+  font-family: var(--font-text);
+  font-size: var(--fs-base);
+  font-weight: 600;
+  color: var(--text);
+  background: #0d0d10;
+  border: 1px solid var(--border);
+  border-radius: calc(3 * var(--u));
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.alchemist-bulk-btn:hover:not(:disabled) { transform: translateY(-1px); }
+.alchemist-bulk-btn:disabled { opacity: 0.35; cursor: default; }
+.alchemist-bulk-count {
+  min-width: calc(20 * var(--u));
+  padding: 0 calc(5 * var(--u));
+  border-radius: calc(9 * var(--u));
+  background: rgba(255,255,255,0.08);
+  font-size: var(--fs-small);
+  text-align: center;
+}
+.alchemist-bulk-btn.rarity-green  { color: #80e080; border-color: #4a7a4a; }
+.alchemist-bulk-btn.rarity-blue   { color: #6a9ae0; border-color: #3a5a8a; }
+.alchemist-bulk-btn.rarity-purple { color: #c080ff; border-color: #6a4a8a; }
+.alchemist-bulk-btn.rarity-yellow { color: #ffd040; border-color: #8a7a30; }
+.alchemist-bulk-btn.rarity-red    { color: #ff5050; border-color: #8a3030; }
+.alchemist-bulk-btn.rarity-green:hover  { box-shadow: 0 0 calc(10 * var(--u)) rgba(128,224,128,0.4); }
+.alchemist-bulk-btn.rarity-blue:hover   { box-shadow: 0 0 calc(10 * var(--u)) rgba(106,154,224,0.45); }
+.alchemist-bulk-btn.rarity-purple:hover { box-shadow: 0 0 calc(10 * var(--u)) rgba(192,128,255,0.5); }
+.alchemist-bulk-btn.rarity-yellow:hover { box-shadow: 0 0 calc(10 * var(--u)) rgba(255,208,64,0.55); }
+.alchemist-bulk-btn.rarity-red:hover    { box-shadow: 0 0 calc(10 * var(--u)) rgba(255,80,80,0.6); }
+.alchemist-bulk-btn.all { color: var(--gold-bright); border-color: var(--gold); }
+.alchemist-bulk-btn.all:hover:not(:disabled) { box-shadow: 0 0 calc(10 * var(--u)) rgba(224,190,122,0.45); }
+.alchemist-bulk-hint {
+  width: 100%;
+  font-size: var(--fs-small);
+  font-style: italic;
+  color: var(--text-dim);
+}
+
+/* ========================================================
+   СЕТКА ПРЕДМЕТОВ
+   ======================================================== */
+
+.alchemist-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: calc(10 * var(--u));
+}
+
+/* ---------- КАРТОЧКА ---------- */
+.alchemist-card {
+  display: flex;
+  gap: calc(10 * var(--u));
+  padding: calc(10 * var(--u));
+  background: linear-gradient(180deg, #15151a, #0d0d10);
+  border: 1px solid var(--border);
+  border-radius: calc(3 * var(--u));
+  cursor: pointer;
+  transition: all 0.2s;
+  position: relative;
+}
+.alchemist-card:hover {
+  border-color: var(--gold);
+  background: linear-gradient(180deg, #1a1a22, #0d0d10);
+  box-shadow: 0 0 calc(15 * var(--u)) rgba(184,148,90,0.3);
+}
+
+/* Цвет рамки по редкости — как в инвентаре. */
+.alchemist-card.rarity-green  { border-color: #80e080; box-shadow: 0 0 calc(8 * var(--u)) rgba(128,224,128,0.3); }
+.alchemist-card.rarity-blue   { border-color: #6a9ae0; box-shadow: 0 0 calc(10 * var(--u)) rgba(106,154,224,0.4); }
+.alchemist-card.rarity-purple { border-color: #c080ff; box-shadow: 0 0 calc(12 * var(--u)) rgba(192,128,255,0.5); }
+.alchemist-card.rarity-yellow { border-color: #ffd040; box-shadow: 0 0 calc(14 * var(--u)) rgba(255,208,64,0.6); }
+.alchemist-card.rarity-red    { border-color: #ff5050; box-shadow: 0 0 calc(16 * var(--u)) rgba(255,80,80,0.7); }
+
+.alchemist-card-icon {
+  width: calc(48 * var(--u));
+  height: calc(48 * var(--u));
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(180deg, #0a0a0c, #050505);
+  border: 1px solid var(--border);
+  border-radius: calc(3 * var(--u));
+  overflow: hidden;
+}
+.alchemist-card-icon svg {
+  width: calc(36 * var(--u));
+  height: calc(36 * var(--u));
+}
+.alchemist-card-icon img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.alchemist-card-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: calc(3 * var(--u));
+}
+
+.alchemist-card-name {
+  font-family: 'Cinzel', serif;
+  font-size: var(--fs-small);
+  color: var(--gold-bright);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Цвет имени по редкости. */
+.alchemist-card-name.rarity-text-green  { color: #80e080; }
+.alchemist-card-name.rarity-text-blue   { color: #6a9ae0; }
+.alchemist-card-name.rarity-text-purple { color: #c080ff; }
+.alchemist-card-name.rarity-text-yellow { color: #ffd040; }
+.alchemist-card-name.rarity-text-red    { color: #ff5050; }
+
+.alchemist-card-rarity {
+  font-size: var(--fs-tiny);
+  color: var(--text-dim);
+  font-style: italic;
+  letter-spacing: calc(0.5 * var(--u));
+}
+
+.alchemist-card-yield {
+  display: flex;
+  align-items: center;
+  gap: calc(4 * var(--u));
+  margin-top: calc(2 * var(--u));
+}
+.alchemist-card-yield-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: calc(14 * var(--u));
+  height: calc(14 * var(--u));
+  flex-shrink: 0;
+}
+.alchemist-card-yield-icon svg {
+  width: 100%;
+  height: 100%;
+}
+.alchemist-card-yield-text {
+  font-family: 'Cinzel', serif;
+  font-size: var(--fs-tiny);
+  font-weight: 700;
+  letter-spacing: calc(0.3 * var(--u));
+}
+
+/* ========================================================
+   НОВОЕ (v0.10, Этап 4): КАРТОЧКА ПЕРЕРОЛЛА
+   ======================================================== */
+
+.alchemist-card-bonuses {
+  font-size: var(--fs-tiny);
+  color: var(--text);
+  font-family: 'Cinzel', serif;
+  letter-spacing: calc(0.3 * var(--u));
+  margin-top: calc(2 * var(--u));
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.alchemist-card-stock {
+  font-size: var(--fs-tiny);
+  color: var(--text-dim);
+  font-family: 'Cinzel', serif;
+  margin-top: calc(3 * var(--u));
+}
+.alchemist-card-stock.low {
+  color: #d06060;
+}
+
+/* Серая (некликабельная) карточка переролла. */
+.alchemist-card.alchemist-card-disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+  filter: grayscale(0.55);
+}
+.alchemist-card.alchemist-card-disabled:hover {
+  border-color: var(--border);
+  background: linear-gradient(180deg, #15151a, #0d0d10);
+  box-shadow: none;
+}
+/* Для серой карточки рамка по редкости всё равно видна, но приглушена. */
+.alchemist-card.alchemist-card-disabled.rarity-green  { border-color: #4a7a4a; box-shadow: none; }
+.alchemist-card.alchemist-card-disabled.rarity-blue   { border-color: #3a5a8a; box-shadow: none; }
+.alchemist-card.alchemist-card-disabled.rarity-purple { border-color: #6a4a8a; box-shadow: none; }
+.alchemist-card.alchemist-card-disabled.rarity-yellow { border-color: #8a7a30; box-shadow: none; }
+.alchemist-card.alchemist-card-disabled.rarity-red    { border-color: #8a3030; box-shadow: none; }
+
+/* ---------- АДАПТИВ ---------- */
+@media (max-width: 900px) {
+  .alchemist-title {
+    font-size: calc(15 * var(--u));
+  }
+  .alchemist-tab {
+    font-size: calc(12.5 * var(--u));
+    padding: calc(10 * var(--u)) calc(6 * var(--u));
+  }
+  .alchemist-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 600px) {
+  .alchemist-overlay { padding: calc(6 * var(--u)); }
+  .alchemist-header { padding: calc(8 * var(--u)) calc(10 * var(--u)); }
+  .alchemist-title { font-size: calc(12.5 * var(--u)); letter-spacing: 0; }
+  .alchemist-tab { font-size: calc(11 * var(--u)); padding: calc(8 * var(--u)) calc(4 * var(--u)); letter-spacing: 0; }
+  .alchemist-content { padding: calc(10 * var(--u)); }
+  .alchemist-grid {
+    grid-template-columns: 1fr;
+    gap: calc(6 * var(--u));
+  }
+  .alchemist-card {
+    padding: calc(8 * var(--u));
+  }
+  .alchemist-card-icon {
+    width: calc(40 * var(--u));
+    height: calc(40 * var(--u));
+  }
+  .alchemist-card-icon svg {
+    width: calc(30 * var(--u));
+    height: calc(30 * var(--u));
+  }
+}

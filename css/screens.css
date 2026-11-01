@@ -1,0 +1,1108 @@
+/* ========================================================
+   SCREENS.CSS — экран старта, создание персонажа
+   Подключать ВОСЬМЫМ (после windows.css).
+   + Масштабирование через --ui-scale.
+   + Убрана пустая полоса справа на экране создания.
+   + Скрытый скроллбар.
+   + Компактный layout.
+   + Расы: 5 в ряд, квадратные портреты (1:1).
+   + Классы: 2 в ряд, по центру.
+
+   РАЗБИТО НА 5 ФАЙЛОВ:
+   - screens.css (этот) — старт + создание персонажа.
+   - patches.css — закладки патчей.
+   - settings.css — окно настроек.
+   - cheat.css — чит-меню.
+   - overlays.css — «Скоро» + общие оверлеи.
+
+   НОВОЕ (v0.13b):
+   + Блок входа в аккаунт (.cloud-auth) на экране старта.
+   НОВОЕ (v0.13f):
+   + Пометки ☁️ на слотах (.slot-cloud-badge).
+   ======================================================== */
+
+/* ---------- ОБЩИЙ КОНТЕЙНЕР ЭКРАНОВ ---------- */
+.screen-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 900;
+  background: #0a0a0c;
+  background-image:
+    radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.6) 100%),
+    radial-gradient(ellipse at 50% 0%, #1a1512 0%, transparent 60%);
+}
+.screen-overlay.active { display: block; }
+
+/* ---------- ЭКРАН СТАРТА ---------- */
+.start-bg {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  filter: brightness(0.5);
+  z-index: 1;
+}
+.start-content {
+  position: relative;
+  z-index: 2;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: calc(40 * var(--u)) calc(20 * var(--u));
+}
+.start-title {
+  font-family: 'Cinzel', serif;
+  font-size: var(--fs-hero);
+  color: var(--gold-bright);
+  letter-spacing: calc(8 * var(--u));
+  text-shadow: 0 0 calc(30 * var(--u)) rgba(224,190,122,0.6);
+  margin-bottom: calc(4 * var(--u));
+}
+.start-subtitle {
+  font-family: 'Cinzel', serif;
+  font-size: calc(18 * var(--u));
+  color: var(--gold);
+  letter-spacing: calc(6 * var(--u));
+  margin-bottom: calc(40 * var(--u));
+  font-style: italic;
+}
+
+/* ---------- СЕТКА СЛОТОВ ---------- */
+.slots-grid {
+  display: grid;
+  grid-template-columns: repeat(5, calc(200 * var(--u)));
+  gap: calc(16 * var(--u));
+  flex-wrap: wrap;
+  justify-content: center;
+}
+@media (max-width: 1100px) {
+  .slots-grid { grid-template-columns: repeat(3, calc(200 * var(--u))); }
+}
+@media (max-width: 700px) {
+  .slots-grid { grid-template-columns: repeat(2, calc(160 * var(--u))); }
+}
+
+.slot-card {
+  position: relative;
+  width: calc(200 * var(--u));
+  height: calc(260 * var(--u));
+  background: linear-gradient(180deg, var(--bg-2), var(--bg-1));
+  border: 2px solid var(--border);
+  border-radius: calc(4 * var(--u));
+  cursor: pointer;
+  transition: all 0.25s;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: calc(10 * var(--u));
+  padding: calc(14 * var(--u));
+  overflow: hidden;
+}
+.slot-card:hover {
+  border-color: var(--gold-bright);
+  box-shadow: 0 0 calc(30 * var(--u)) rgba(224,190,122,0.4);
+  transform: translateY(calc(-4 * var(--u)));
+}
+.slot-card.empty {
+  border-style: dashed;
+  opacity: 0.7;
+}
+.slot-card.empty:hover {
+  opacity: 1;
+  background: linear-gradient(180deg, #1a1a22, #0d0d10);
+}
+
+.slot-plus {
+  font-family: 'Cinzel', serif;
+  font-size: calc(64 * var(--u));
+  color: var(--gold);
+  line-height: 1;
+  text-shadow: 0 0 calc(20 * var(--u)) rgba(184,148,90,0.6);
+}
+.slot-empty-text {
+  font-family: 'Cinzel', serif;
+  font-size: var(--fs-medium);
+  color: var(--text-dim);
+  letter-spacing: calc(3 * var(--u));
+}
+
+.slot-portrait {
+  width: calc(110 * var(--u));
+  height: calc(110 * var(--u));
+  background-size: cover;
+  background-position: center;
+  border: 1px solid var(--gold);
+  border-radius: calc(3 * var(--u));
+  box-shadow: 0 0 calc(15 * var(--u)) rgba(184,148,90,0.4);
+}
+.slot-info { text-align: center; }
+.slot-name {
+  font-family: 'Cinzel', serif;
+  font-size: var(--fs-xl);
+  color: var(--gold-bright);
+  margin-bottom: calc(2 * var(--u));
+}
+.slot-race {
+  font-size: var(--fs-small);
+  color: var(--text-dim);
+  font-style: italic;
+}
+.slot-class {
+  font-size: var(--fs-small);
+  color: var(--text);
+  margin-top: calc(4 * var(--u));
+}
+
+.slot-number {
+  position: absolute;
+  bottom: calc(8 * var(--u));
+  right: calc(12 * var(--u));
+  font-family: 'Cinzel', serif;
+  font-size: var(--fs-medium);
+  color: var(--gold);
+  opacity: 0.6;
+}
+
+.slot-delete {
+  position: absolute;
+  top: calc(6 * var(--u));
+  right: calc(6 * var(--u));
+  width: calc(24 * var(--u));
+  height: calc(24 * var(--u));
+  background: rgba(80,20,20,0.8);
+  border: 1px solid #5a2020;
+  color: #c06060;
+  border-radius: calc(3 * var(--u));
+  font-size: var(--fs-medium);
+  font-family: 'Cinzel', serif;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+.slot-card:hover .slot-delete { opacity: 1; }
+.slot-delete:hover {
+  background: rgba(120,30,30,0.9);
+  border-color: #a03030;
+  color: #ff8080;
+}
+
+/* ========================================================
+   ЭКРАН СОЗДАНИЯ ПЕРСОНАЖА — АДАПТИВНЫЙ
+   ======================================================== */
+
+.create-content {
+  position: relative;
+  z-index: 2;
+  height: 100%;
+  width: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+
+  display: flex;
+  flex-direction: column;
+
+  padding: 2vh 3vw;
+
+  max-width: 1400px;
+  margin: 0 auto;
+}
+.create-content::-webkit-scrollbar {
+  display: none;
+}
+
+.create-title {
+  font-family: 'Cinzel', serif;
+  font-size: calc(26 * var(--u));
+  color: var(--gold-bright);
+  letter-spacing: calc(4 * var(--u));
+  text-align: center;
+  margin-bottom: 2vh;
+  text-shadow: 0 0 calc(20 * var(--u)) rgba(224,190,122,0.5);
+  flex-shrink: 0;
+}
+
+.create-block {
+  margin-bottom: 2vh;
+  flex-shrink: 0;
+}
+.create-block-title {
+  font-family: 'Cinzel', serif;
+  font-size: calc(14 * var(--u));
+  color: var(--gold);
+  letter-spacing: calc(3 * var(--u));
+  margin-bottom: 1vh;
+  padding-bottom: 0.5vh;
+  border-bottom: 1px solid var(--border);
+}
+
+.create-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(calc(170 * var(--u)), 1fr));
+  gap: 1.2vh 1vw;
+}
+
+.create-option {
+  background: linear-gradient(180deg, #15151a, #0d0d10);
+  border: 2px solid var(--border);
+  border-radius: calc(4 * var(--u));
+  padding: 1vh 1vw;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+}
+.create-option:hover {
+  border-color: var(--gold);
+  box-shadow: 0 0 calc(20 * var(--u)) rgba(184,148,90,0.3);
+}
+.create-option.selected {
+  border-color: var(--gold-bright);
+  box-shadow: 0 0 calc(25 * var(--u)) rgba(224,190,122,0.5);
+  background: linear-gradient(180deg, #1a1a22, #0d0d10);
+}
+.create-option.disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  filter: grayscale(0.7);
+}
+.create-option.disabled:hover {
+  border-color: var(--border);
+  box-shadow: none;
+}
+
+.create-portrait {
+  width: 100%;
+  height: 9vh;
+  min-height: calc(70 * var(--u));
+  max-height: calc(120 * var(--u));
+  background-size: cover;
+  background-position: center;
+  border-radius: calc(3 * var(--u));
+  margin-bottom: 0.6vh;
+  border: 1px solid var(--border);
+}
+
+.create-name {
+  font-family: 'Cinzel', serif;
+  font-size: calc(14 * var(--u));
+  color: var(--gold-bright);
+  margin-bottom: 0.3vh;
+}
+
+.create-desc {
+  font-size: calc(11.5 * var(--u));
+  color: var(--text-dim);
+  font-style: italic;
+  margin-bottom: 0.5vh;
+  line-height: 1.3;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.create-bonus,
+.create-stats {
+  font-size: calc(10.5 * var(--u));
+  color: var(--text);
+  font-family: 'Cinzel', serif;
+  line-height: 1.3;
+}
+
+.char-name-input {
+  width: 100%;
+  max-width: calc(400 * var(--u));
+  padding: 1vh 1vw;
+  background: linear-gradient(180deg, #0a0a0c, #050505);
+  border: 1px solid var(--border);
+  border-radius: calc(3 * var(--u));
+  color: var(--gold-bright);
+  font-family: 'Cinzel', serif;
+  font-size: calc(14 * var(--u));
+  letter-spacing: calc(1 * var(--u));
+  transition: all 0.2s;
+  margin-bottom: 0.4vh;
+}
+.char-name-input:focus {
+  outline: none;
+  border-color: var(--gold-bright);
+  box-shadow: 0 0 calc(15 * var(--u)) rgba(224,190,122,0.3);
+}
+.char-name-hint {
+  font-size: calc(11 * var(--u));
+  color: var(--text-dim);
+  font-style: italic;
+}
+
+.create-actions {
+  display: flex;
+  gap: calc(12 * var(--u));
+  justify-content: center;
+  margin-top: 1vh;
+  margin-bottom: 1vh;
+  flex-shrink: 0;
+}
+
+/* ========================================================
+   АДАПТАЦИЯ ЭКРАНА СОЗДАНИЯ ПЕРСОНАЖА
+   ======================================================== */
+
+@media (min-width: 1800px) {
+  .create-content {
+    max-width: 1600px;
+    padding: 3vh 4vw;
+  }
+  .create-list {
+    grid-template-columns: repeat(auto-fit, minmax(calc(200 * var(--u)), 1fr));
+  }
+  .create-portrait {
+    height: 12vh;
+    max-height: calc(160 * var(--u));
+  }
+}
+
+@media (max-width: 1400px) {
+  .create-content {
+    max-width: 1100px;
+    padding: 1.5vh 2vw;
+  }
+  .create-title {
+    font-size: calc(22 * var(--u));
+    margin-bottom: 1.5vh;
+  }
+  .create-block {
+    margin-bottom: 1.5vh;
+  }
+  .create-list {
+    grid-template-columns: repeat(auto-fit, minmax(calc(160 * var(--u)), 1fr));
+    gap: 1vh 0.8vw;
+  }
+  .create-portrait {
+    height: 8vh;
+    min-height: calc(60 * var(--u));
+    max-height: calc(100 * var(--u));
+  }
+}
+
+@media (max-width: 900px) {
+  .create-content {
+    padding: 1.5vh 3vw;
+  }
+  .create-title {
+    font-size: calc(20 * var(--u));
+    letter-spacing: calc(2 * var(--u));
+  }
+  .create-block-title {
+    font-size: calc(12.5 * var(--u));
+    letter-spacing: calc(2 * var(--u));
+  }
+  .create-list {
+    grid-template-columns: repeat(auto-fit, minmax(calc(140 * var(--u)), 1fr));
+    gap: 0.8vh 1vw;
+  }
+  .create-option {
+    padding: 0.8vh 1vw;
+  }
+  .create-portrait {
+    height: 8vh;
+    min-height: calc(60 * var(--u));
+  }
+  .create-name {
+    font-size: calc(12.5 * var(--u));
+  }
+  .create-desc {
+    font-size: calc(11 * var(--u));
+    -webkit-line-clamp: 2;
+  }
+  .create-bonus,
+  .create-stats {
+    font-size: calc(10.5 * var(--u));
+  }
+}
+
+@media (max-width: 600px) {
+  .create-content {
+    padding: 1.5vh 4vw;
+    max-width: 100%;
+  }
+  .create-title {
+    font-size: calc(18 * var(--u));
+    letter-spacing: calc(1.5 * var(--u));
+    margin-bottom: 1.2vh;
+  }
+  .create-block {
+    margin-bottom: 1.2vh;
+  }
+  .create-block-title {
+    font-size: calc(12 * var(--u));
+    margin-bottom: 0.8vh;
+  }
+  .create-list {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.8vh 2vw;
+  }
+  .create-option {
+    padding: 0.8vh 2vw;
+  }
+  .create-portrait {
+    height: 8vh;
+    min-height: calc(60 * var(--u));
+  }
+  .create-name {
+    font-size: calc(13 * var(--u));
+  }
+  .create-desc {
+    font-size: calc(11 * var(--u));
+    line-height: 1.2;
+    -webkit-line-clamp: 2;
+  }
+  .create-bonus,
+  .create-stats {
+    font-size: calc(10.5 * var(--u));
+    line-height: 1.25;
+  }
+  .char-name-input {
+    font-size: calc(14 * var(--u));
+    padding: 1.2vh 3vw;
+  }
+  .char-name-hint {
+    font-size: calc(11 * var(--u));
+  }
+  .create-actions {
+    gap: calc(8 * var(--u));
+    margin-top: 1.5vh;
+  }
+  .create-actions .btn {
+    font-size: calc(12.5 * var(--u));
+    padding: 1.2vh 4vw;
+    flex: 1;
+    max-width: 180px;
+  }
+}
+
+@media (max-width: 600px) {
+  #classes-list {
+    grid-template-columns: 1fr;
+  }
+  #classes-list .create-portrait {
+    height: 12vh;
+    min-height: calc(90 * var(--u));
+  }
+}
+
+@media (max-height: 700px) and (orientation: landscape) {
+  .create-content {
+    padding: 1vh 2vw;
+  }
+  .create-title {
+    font-size: calc(18 * var(--u));
+    margin-bottom: 1vh;
+    letter-spacing: calc(2 * var(--u));
+  }
+  .create-block {
+    margin-bottom: 1vh;
+  }
+  .create-block-title {
+    font-size: calc(12 * var(--u));
+    margin-bottom: 0.5vh;
+    padding-bottom: 0.3vh;
+  }
+  .create-list {
+    grid-template-columns: repeat(auto-fit, minmax(calc(120 * var(--u)), 1fr));
+    gap: 0.6vh 0.6vw;
+  }
+  .create-option {
+    padding: 0.6vh 0.8vw;
+  }
+  .create-portrait {
+    height: 7vh;
+    min-height: calc(45 * var(--u));
+    max-height: calc(80 * var(--u));
+    margin-bottom: 0.3vh;
+  }
+  .create-name {
+    font-size: calc(12 * var(--u));
+    margin-bottom: 0.2vh;
+  }
+  .create-desc {
+    font-size: calc(10 * var(--u));
+    -webkit-line-clamp: 1;
+    margin-bottom: 0.2vh;
+  }
+  .create-bonus,
+  .create-stats {
+    font-size: calc(10 * var(--u));
+  }
+  .char-name-input {
+    font-size: calc(12.5 * var(--u));
+    padding: 0.8vh 1vw;
+  }
+  .create-actions {
+    margin-top: 0.8vh;
+  }
+  .create-actions .btn {
+    font-size: calc(12 * var(--u));
+    padding: 0.8vh 2vw;
+  }
+}
+
+@media (max-width: 380px) {
+  .create-list {
+    grid-template-columns: 1fr;
+  }
+  #classes-list {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-height: 600px) {
+  .create-content {
+    padding: 1vh 2vw;
+  }
+  .create-title {
+    font-size: calc(16 * var(--u));
+    margin-bottom: 0.8vh;
+  }
+  .create-block {
+    margin-bottom: 0.8vh;
+  }
+  .create-portrait {
+    height: 6vh;
+    min-height: calc(40 * var(--u));
+  }
+  .create-desc {
+    -webkit-line-clamp: 1;
+  }
+}
+
+/* ========================================================
+   РАСЫ И КЛАССЫ НА ЭКРАНЕ СОЗДАНИЯ
+   ======================================================== */
+
+#races-list {
+  grid-template-columns: repeat(5, 1fr);
+  gap: 1.2vh 1vw;
+}
+
+@media (max-width: 1100px) { #races-list { grid-template-columns: repeat(4, 1fr); } }
+@media (max-width: 900px)  { #races-list { grid-template-columns: repeat(3, 1fr); } }
+@media (max-width: 600px)  { #races-list { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 380px)  { #races-list { grid-template-columns: 1fr; } }
+
+#races-list .create-portrait {
+  aspect-ratio: 1 / 1;
+  height: auto;
+  min-height: 0;
+  max-height: none;
+}
+
+#classes-list {
+  grid-template-columns: repeat(auto-fit, calc(420 * var(--u)));
+  justify-content: center;
+}
+
+@media (max-width: 900px) {
+  #classes-list { grid-template-columns: 1fr; }
+}
+
+/* ========================================================
+   НОВОЕ (v0.13b): БЛОК ВХОДА В АККАУНТ НА ЭКРАНЕ СТАРТА
+   ======================================================== */
+
+.cloud-auth {
+  width: 100%;
+  max-width: calc(560 * var(--u));
+  margin: 0 auto calc(24 * var(--u));
+  padding: calc(14 * var(--u)) calc(18 * var(--u));
+  background: linear-gradient(180deg, rgba(30,25,15,0.85), rgba(15,12,8,0.9));
+  border: 1px solid var(--border);
+  border-radius: calc(4 * var(--u));
+  box-shadow: 0 0 calc(20 * var(--u)) rgba(0,0,0,0.6);
+  font-family: 'Cinzel', serif;
+}
+
+.cloud-auth-title {
+  font-size: calc(13 * var(--u));
+  color: var(--gold-bright);
+  letter-spacing: calc(2 * var(--u));
+  text-align: center;
+  margin-bottom: calc(10 * var(--u));
+  text-shadow: 0 0 calc(8 * var(--u)) rgba(224,190,122,0.5);
+}
+
+.cloud-auth-hint {
+  font-size: calc(11.5 * var(--u));
+  color: var(--text-dim);
+  font-style: italic;
+  text-align: center;
+  margin-bottom: calc(10 * var(--u));
+  line-height: 1.4;
+}
+
+.cloud-auth-form {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: calc(8 * var(--u));
+  margin-bottom: calc(10 * var(--u));
+}
+
+.cloud-auth-input {
+  width: 100%;
+  padding: calc(8 * var(--u)) calc(10 * var(--u));
+  background: linear-gradient(180deg, #0a0a0c, #050505);
+  border: 1px solid var(--border);
+  border-radius: calc(3 * var(--u));
+  color: var(--gold-bright);
+  font-family: 'Cinzel', serif;
+  font-size: calc(12 * var(--u));
+  letter-spacing: calc(0.5 * var(--u));
+  transition: all 0.2s;
+}
+.cloud-auth-input:focus {
+  outline: none;
+  border-color: var(--gold-bright);
+  box-shadow: 0 0 calc(10 * var(--u)) rgba(224,190,122,0.3);
+}
+.cloud-auth-input::placeholder {
+  color: var(--text-dim);
+  font-style: italic;
+}
+
+.cloud-auth-buttons {
+  display: flex;
+  gap: calc(8 * var(--u));
+  justify-content: center;
+  flex-wrap: wrap;
+}
+.cloud-auth-buttons .btn {
+  flex: 1;
+  min-width: calc(120 * var(--u));
+  font-size: calc(12.5 * var(--u));
+  padding: calc(8 * var(--u)) calc(12 * var(--u));
+}
+
+.cloud-auth-user {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: calc(10 * var(--u));
+  flex-wrap: wrap;
+}
+
+.cloud-auth-user-email {
+  font-size: calc(12.5 * var(--u));
+  color: var(--gold-bright);
+  letter-spacing: calc(0.5 * var(--u));
+  display: flex;
+  align-items: center;
+  gap: calc(6 * var(--u));
+}
+.cloud-auth-user-email::before {
+  content: '👤';
+  font-size: calc(13 * var(--u));
+}
+
+.cloud-auth-status {
+  font-size: calc(11.5 * var(--u));
+  color: var(--text-dim);
+  font-style: italic;
+  text-align: center;
+  margin-top: calc(8 * var(--u));
+  min-height: calc(14 * var(--u));
+}
+.cloud-auth-status.error {
+  color: #e08080;
+}
+.cloud-auth-status.ok {
+  color: #a0d080;
+}
+
+/* ========================================================
+   НОВОЕ (v0.13f): ПОМЕТКА ☁️ НА СЛОТАХ
+   ======================================================== */
+
+.slot-cloud-badge {
+  position: absolute;
+  top: calc(6 * var(--u));
+  left: calc(6 * var(--u));
+  width: calc(22 * var(--u));
+  height: calc(22 * var(--u));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: calc(14 * var(--u));
+  line-height: 1;
+  background: rgba(20, 40, 80, 0.75);
+  border: 1px solid #6a9ae0;
+  border-radius: calc(3 * var(--u));
+  box-shadow: 0 0 calc(8 * var(--u)) rgba(106,154,224,0.5);
+  pointer-events: none;
+  z-index: 2;
+}
+
+.slot-cloud-badge.cloud-only {
+  background: rgba(20, 60, 40, 0.75);
+  border-color: #80e080;
+  box-shadow: 0 0 calc(8 * var(--u)) rgba(128,224,128,0.6);
+  animation: cloudPulse 1.5s ease-in-out infinite;
+}
+
+@keyframes cloudPulse {
+  0%, 100% { opacity: 0.85; }
+  50%      { opacity: 1; }
+}
+
+/* ---------- АДАПТАЦИЯ ---------- */
+@media (max-width: 600px) {
+  .cloud-auth {
+    padding: calc(10 * var(--u)) calc(12 * var(--u));
+    margin-bottom: calc(16 * var(--u));
+  }
+  .cloud-auth-form {
+    grid-template-columns: 1fr;
+    gap: calc(6 * var(--u));
+  }
+  .cloud-auth-title {
+    font-size: calc(12.5 * var(--u));
+    letter-spacing: calc(1 * var(--u));
+  }
+  .cloud-auth-buttons .btn {
+    font-size: calc(12 * var(--u));
+    padding: calc(7 * var(--u)) calc(10 * var(--u));
+  }
+  .cloud-auth-user {
+    justify-content: center;
+  }
+}
+/* ========================================================
+   НОВОЕ (v0.13i): МОДАЛКА КОНФЛИКТА СОХРАНЕНИЙ
+   ======================================================== */
+
+.cloud-conflict-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.88);
+  z-index: 950; /* выше экрана старта (900), ниже тостов (500) */
+  align-items: center;
+  justify-content: center;
+  padding: calc(20 * var(--u));
+  overflow-y: auto;
+}
+.cloud-conflict-overlay.active { display: flex; }
+
+.cloud-conflict-box {
+  background: linear-gradient(180deg, var(--bg-2), var(--bg-1));
+  border: 1px solid var(--gold);
+  border-radius: calc(4 * var(--u));
+  max-width: calc(760 * var(--u));
+  width: 100%;
+  padding: calc(20 * var(--u)) calc(24 * var(--u));
+  box-shadow: 0 0 calc(50 * var(--u)) rgba(184,148,90,0.5);
+  text-align: center;
+}
+
+.cloud-conflict-title {
+  font-family: 'Cinzel', serif;
+  font-size: calc(20 * var(--u));
+  color: var(--gold-bright);
+  letter-spacing: calc(3 * var(--u));
+  margin-bottom: calc(8 * var(--u));
+  text-shadow: 0 0 calc(15 * var(--u)) rgba(224,190,122,0.5);
+}
+
+.cloud-conflict-subtitle {
+  font-size: calc(13 * var(--u));
+  color: var(--text-dim);
+  font-style: italic;
+  margin-bottom: calc(18 * var(--u));
+  line-height: 1.4;
+}
+.cloud-conflict-subtitle b {
+  color: var(--gold-bright);
+  font-style: normal;
+}
+
+.cloud-conflict-options {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: calc(12 * var(--u));
+  margin-bottom: calc(14 * var(--u));
+}
+
+.cloud-conflict-card {
+  background: linear-gradient(180deg, #15151a, #0d0d10);
+  border: 2px solid var(--border);
+  border-radius: calc(4 * var(--u));
+  padding: calc(14 * var(--u));
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: left;
+}
+.cloud-conflict-card:hover {
+  border-color: var(--gold-bright);
+  box-shadow: 0 0 calc(20 * var(--u)) rgba(224,190,122,0.4);
+  transform: translateY(calc(-2 * var(--u)));
+}
+.cloud-conflict-card.newer {
+  border-color: #a0d080;
+  box-shadow: 0 0 calc(15 * var(--u)) rgba(160,208,128,0.5);
+}
+.cloud-conflict-card.newer:hover {
+  border-color: #c0f0a0;
+  box-shadow: 0 0 calc(25 * var(--u)) rgba(160,208,128,0.7);
+}
+
+.cloud-conflict-card-header {
+  display: flex;
+  align-items: center;
+  gap: calc(8 * var(--u));
+  margin-bottom: calc(10 * var(--u));
+  padding-bottom: calc(8 * var(--u));
+  border-bottom: 1px solid var(--border);
+}
+
+.cloud-conflict-card-icon {
+  font-size: calc(18 * var(--u));
+  line-height: 1;
+}
+
+.cloud-conflict-card-title {
+  font-family: 'Cinzel', serif;
+  font-size: calc(13 * var(--u));
+  color: var(--gold-bright);
+  letter-spacing: calc(1.5 * var(--u));
+  flex: 1;
+}
+
+.cloud-conflict-card-badge {
+  font-family: 'Cinzel', serif;
+  font-size: calc(10 * var(--u));
+  color: #a0d080;
+  background: rgba(40,80,30,0.5);
+  border: 1px solid #4a8a30;
+  border-radius: calc(2 * var(--u));
+  padding: calc(2 * var(--u)) calc(6 * var(--u));
+  letter-spacing: calc(1 * var(--u));
+  text-transform: uppercase;
+  display: none;
+}
+.cloud-conflict-card-badge.visible { display: inline-block; }
+
+.cloud-conflict-info {
+  font-size: calc(12.5 * var(--u));
+  color: var(--text);
+  line-height: 1.5;
+  margin-bottom: calc(8 * var(--u));
+}
+.cloud-conflict-info .name {
+  font-family: 'Cinzel', serif;
+  color: var(--gold-bright);
+  font-size: calc(13 * var(--u));
+  margin-bottom: calc(4 * var(--u));
+  display: block;
+}
+.cloud-conflict-info .line {
+  color: var(--text-dim);
+  font-size: calc(12 * var(--u));
+}
+
+.cloud-conflict-time {
+  font-family: 'Cinzel', serif;
+  font-size: calc(11 * var(--u));
+  color: var(--text-dim);
+  font-style: italic;
+  border-top: 1px dashed rgba(184,148,90,0.2);
+  padding-top: calc(6 * var(--u));
+  margin-top: calc(6 * var(--u));
+}
+
+.cloud-conflict-hint {
+  font-size: calc(12.5 * var(--u));
+  color: var(--text-dim);
+  font-style: italic;
+  margin-bottom: calc(14 * var(--u));
+  line-height: 1.4;
+}
+.cloud-conflict-hint b {
+  color: #a0d080;
+  font-style: normal;
+}
+
+/* ---------- АДАПТАЦИЯ ---------- */
+@media (max-width: 600px) {
+  .cloud-conflict-overlay { padding: calc(10 * var(--u)); }
+  .cloud-conflict-box {
+    padding: calc(14 * var(--u)) calc(12 * var(--u));
+  }
+  .cloud-conflict-title {
+    font-size: calc(15 * var(--u));
+    letter-spacing: calc(2 * var(--u));
+  }
+  .cloud-conflict-options {
+    grid-template-columns: 1fr;
+    gap: calc(8 * var(--u));
+  }
+  .cloud-conflict-card {
+    padding: calc(10 * var(--u));
+  }
+}
+/* ========================================================
+   НОВОЕ (v0.13l): ЗАМОК ДОСТУПА (cloud-access-gate)
+   ======================================================== */
+
+.cloud-access-gate {
+  width: 100%;
+  max-width: calc(560 * var(--u));
+  margin: 0 auto calc(24 * var(--u));
+  padding: calc(24 * var(--u)) calc(20 * var(--u));
+  background: linear-gradient(180deg, rgba(30,25,15,0.85), rgba(15,12,8,0.9));
+  border: 1px solid var(--border);
+  border-radius: calc(4 * var(--u));
+  box-shadow: 0 0 calc(20 * var(--u)) rgba(0,0,0,0.6);
+  text-align: center;
+}
+
+.cloud-gate-icon {
+  font-size: calc(48 * var(--u));
+  line-height: 1;
+  margin-bottom: calc(10 * var(--u));
+  filter: drop-shadow(0 0 calc(15 * var(--u)) rgba(184,148,90,0.5));
+  opacity: 0.9;
+}
+
+.cloud-gate-title {
+  font-family: 'Cinzel', serif;
+  font-size: calc(18 * var(--u));
+  color: var(--gold-bright);
+  letter-spacing: calc(3 * var(--u));
+  margin-bottom: calc(12 * var(--u));
+  text-shadow: 0 0 calc(15 * var(--u)) rgba(224,190,122,0.5);
+}
+
+.cloud-gate-text {
+  font-size: calc(13 * var(--u));
+  color: var(--text-dim);
+  font-style: italic;
+  line-height: 1.5;
+}
+/* ========================================================
+   НОВОЕ (v0.13m): МОДАЛКА МИГРАЦИИ + ЗНАЧОК 💾 НА СЛОТАХ
+   ======================================================== */
+
+/* Значок «только локальный» — жёлтый. */
+.slot-cloud-badge.local-only {
+  background: rgba(80, 60, 10, 0.85);
+  border-color: #ffd040;
+  box-shadow: 0 0 calc(8 * var(--u)) rgba(255, 208, 64, 0.6);
+}
+
+/* Модалка миграции. */
+.cloud-migration-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.88);
+  z-index: 955;
+  align-items: center;
+  justify-content: center;
+  padding: calc(20 * var(--u));
+  overflow-y: auto;
+}
+.cloud-migration-overlay.active { display: flex; }
+
+.cloud-migration-box {
+  background: linear-gradient(180deg, var(--bg-2), var(--bg-1));
+  border: 1px solid var(--gold);
+  border-radius: calc(4 * var(--u));
+  max-width: calc(520 * var(--u));
+  width: 100%;
+  padding: calc(24 * var(--u)) calc(22 * var(--u));
+  box-shadow: 0 0 calc(50 * var(--u)) rgba(184,148,90,0.5);
+  text-align: center;
+}
+
+.cloud-migration-icon {
+  font-size: calc(52 * var(--u));
+  line-height: 1;
+  margin-bottom: calc(10 * var(--u));
+  filter: drop-shadow(0 0 calc(15 * var(--u)) rgba(184,148,90,0.6));
+}
+
+.cloud-migration-title {
+  font-family: 'Cinzel', serif;
+  font-size: calc(19 * var(--u));
+  color: var(--gold-bright);
+  letter-spacing: calc(3 * var(--u));
+  margin-bottom: calc(14 * var(--u));
+  text-shadow: 0 0 calc(15 * var(--u)) rgba(224,190,122,0.5);
+}
+
+.cloud-migration-text {
+  font-size: calc(13 * var(--u));
+  color: var(--text);
+  line-height: 1.55;
+  margin-bottom: calc(20 * var(--u));
+}
+.cloud-migration-text b {
+  color: var(--gold-bright);
+}
+
+.cloud-migration-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: calc(8 * var(--u));
+}
+.cloud-migration-buttons .btn {
+  width: 100%;
+}
+
+@media (max-width: 600px) {
+  .cloud-migration-overlay { padding: calc(10 * var(--u)); }
+  .cloud-migration-box {
+    padding: calc(18 * var(--u)) calc(14 * var(--u));
+  }
+  .cloud-migration-title {
+    font-size: calc(15 * var(--u));
+    letter-spacing: calc(2 * var(--u));
+  }
+  .cloud-migration-text {
+    font-size: calc(12.5 * var(--u));
+  }
+}
+
+/* ========================================================
+   v0.18.1: СТАРТОВЫЙ ЭКРАН НА ТЕЛЕФОНЕ
+   Раньше на телефоне эти правила не работали (не было meta viewport),
+   и слоты (200px) не помещались в колонки по 160px — налезали друг на друга.
+   ======================================================== */
+@media (max-width: 700px) {
+  #start-screen { overflow-y: auto; }
+  .start-content {
+    height: auto;
+    min-height: 100%;
+    justify-content: flex-start;
+    padding: calc(118 * var(--u)) calc(16 * var(--u)) calc(24 * var(--u));
+  }
+  .start-title { font-size: calc(34 * var(--u)); letter-spacing: calc(4 * var(--u)); text-align: center; }
+  .start-subtitle { font-size: calc(13 * var(--u)); letter-spacing: calc(3 * var(--u)); margin-bottom: calc(20 * var(--u)); }
+  .slots-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
+    max-width: calc(360 * var(--u));
+    gap: calc(10 * var(--u));
+  }
+  .slot-card { width: 100%; height: calc(190 * var(--u)); padding: calc(10 * var(--u)); gap: calc(6 * var(--u)); }
+  .slot-delete { opacity: 1; }
+  .slot-portrait { width: calc(84 * var(--u)); height: calc(84 * var(--u)); }
+  .slot-name { font-size: calc(14 * var(--u)); }
+}
