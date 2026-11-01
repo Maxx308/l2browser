@@ -290,8 +290,18 @@ function renderCloudAuth() {
   const box = document.getElementById('cloud-auth');
   if (!box) return;
 
+  // v0.29.1: без библиотеки входа раньше блок молча прятался — игрок видел замок и не видел формы.
   if (!supabaseClient) {
-    box.style.display = 'none';
+    box.style.display = 'block';
+    box.innerHTML = `
+      <div class="cloud-auth-title">ВХОД В АККАУНТ</div>
+      <div class="cloud-auth-status error">
+        Не удалось загрузить вход. Проверьте интернет (или VPN) и обновите страницу.
+      </div>
+      <div class="cloud-auth-buttons">
+        <button class="btn" onclick="location.reload()">Обновить</button>
+      </div>
+    `;
     return;
   }
 
