@@ -245,7 +245,7 @@ const RECIPES = {
       materials: [{ name: 'Руда железа', qty: 40 }, { name: 'Клей', qty: 10 }, { name: 'Шкура волка', qty: 5 }] },
 
     { id: 'axeBattle', name: 'Боевой топор', category: 'axes', price: CRAFT_PRICE_GEAR, tier: 2,
-      result: { name: 'Боевой топор', icon: 'img/weapons/axe_battle.png', type: 'weapon', sellPrice: 31.5,
+      result: { name: 'Боевой топор', icon: 'img/weapons/axe_battle.png', type: 'weapon', sellPrice: 32,   // v0.29.2: было 31.5 — дробь оставалась в Оболах
         stats: { pAtk: 11 } },
       materials: [{ name: 'Руда железа', qty: 25 }, { name: 'Клей', qty: 5 }] },
 
@@ -255,12 +255,12 @@ const RECIPES = {
       materials: [{ name: 'Руда железа', qty: 50 }, { name: 'Клей', qty: 15 }, { name: 'Клык', qty: 5 }] },
 
     { id: 'dagger', name: 'Кинжал', category: 'daggers', price: CRAFT_PRICE_GEAR, tier: 2,
-      result: { name: 'Кинжал', icon: 'img/weapons/dagger.png', type: 'weapon', sellPrice: 18.9,
+      result: { name: 'Кинжал', icon: 'img/weapons/dagger.png', type: 'weapon', sellPrice: 19,
         stats: { pAtk: 8, atbSpeedMod: 0.05, critChance: 3 } },
       materials: [{ name: 'Руда железа', qty: 15 }, { name: 'Клей', qty: 3 }] },
 
     { id: 'daggerShadow', name: 'Клинок Тени', category: 'daggers', price: CRAFT_PRICE_GEAR, tier: 2,
-      result: { name: 'Клинок Тени', icon: 'img/weapons/dagger_shadow.png', type: 'weapon', sellPrice: 49.2,
+      result: { name: 'Клинок Тени', icon: 'img/weapons/dagger_shadow.png', type: 'weapon', sellPrice: 49,
         stats: { pAtk: 15, atbSpeedMod: 0.10, critChance: 7 } },
       materials: [{ name: 'Руда железа', qty: 30 }, { name: 'Шкура волка', qty: 8 }, { name: 'Клык', qty: 3 }] },
 
@@ -275,17 +275,17 @@ const RECIPES = {
       materials: [{ name: 'Ветвь', qty: 50 }, { name: 'Руда железа', qty: 20 }, { name: 'Клей', qty: 10 }] },
 
     { id: 'bowShort', name: 'Короткий лук', category: 'bows', price: CRAFT_PRICE_GEAR, tier: 2,
-      result: { name: 'Короткий лук', icon: 'img/weapons/bow_short.png', type: 'weapon', sellPrice: 23.4,
+      result: { name: 'Короткий лук', icon: 'img/weapons/bow_short.png', type: 'weapon', sellPrice: 23,
         stats: { pAtk: 16, atbSpeedMod: 0.05 }, twoHanded: true },   // v0.27: двуручное ×1.35
       materials: [{ name: 'Ветвь', qty: 30 }, { name: 'Нить', qty: 5 }, { name: 'Клей', qty: 3 }] },
 
     { id: 'bowLong', name: 'Длинный лук', category: 'bows', price: CRAFT_PRICE_GEAR, tier: 2,
-      result: { name: 'Длинный лук', icon: 'img/weapons/bow_long.png', type: 'weapon', sellPrice: 44.4,
+      result: { name: 'Длинный лук', icon: 'img/weapons/bow_long.png', type: 'weapon', sellPrice: 44,
         stats: { pAtk: 27 }, twoHanded: true },   // v0.27: двуручное ×1.35
       materials: [{ name: 'Ветвь', qty: 60 }, { name: 'Нить', qty: 15 }, { name: 'Клей', qty: 8 }] },
 
     { id: 'crossbow', name: 'Арбалет', category: 'crossbows', price: CRAFT_PRICE_GEAR, tier: 2,
-      result: { name: 'Арбалет', icon: 'img/weapons/crossbow.png', type: 'weapon', sellPrice: 30.3,
+      result: { name: 'Арбалет', icon: 'img/weapons/crossbow.png', type: 'weapon', sellPrice: 30,
         stats: { pAtk: 20 }, twoHanded: true },   // v0.27: двуручное ×1.35
       materials: [{ name: 'Ветвь', qty: 25 }, { name: 'Руда железа', qty: 15 }, { name: 'Клей', qty: 10 }] },
 

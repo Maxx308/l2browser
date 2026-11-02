@@ -240,6 +240,8 @@ function loadSlotAndStart(slotIndex, opts) {
   Object.assign(state.player, saved.player);
   // v0.26: метка чита — только своя (у старого сейва поля нет, прошлый герой не должен «передать» её)
   state.player.usedCheat = !!(saved.player && saved.player.usedCheat);
+  // v0.29.2: дробные цены продажи оставляли хвост в Оболах (34500.199999997) — убираем у старых героев
+  state.player.gold = Math.max(0, Math.round(Number(state.player.gold) || 0));
   if (saved.battle) Object.assign(state.battle, saved.battle);
 
   // v0.24: бой из сейва не продолжается — иначе герой «в бою» без окна боя и ничего нельзя сделать.

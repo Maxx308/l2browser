@@ -452,18 +452,34 @@ function getItemStat(item, stat) {
   return base + getRarityStatBonus(item, stat);
 }
 
-// v0.26: очки редкости — всегда в статы класса героя (без класса — по профилю предмета).
+// v0.29.2: «своя» группа статов — по самой вещи, а не по герою, который её нашёл
+// (склад общий: мантия, выбитая воином, приходила магу с СИЛ/ЛОВ/ВЫН).
+// Посохи, жезлы, мантии → маг; остальное оружие, щиты, доспехи → воин;
+// бижутерия и всё неясное → по классу героя (без класса — все шесть статов).
+const RARITY_MAGIC_SETS   = ['robe', 'silk'];
+const RARITY_WARRIOR_SETS = ['gambeson', 'chain', 'patched'];
+
 function getRarityStatProfile(item) {
+  const t = item && item.type;
+  if (t !== 'ring' && t !== 'earring' && t !== 'necklace') {
+    if (RARITY_MAGIC_SETS.includes(item && item.setId)) return 'magic';
+    if (RARITY_WARRIOR_SETS.includes(item && item.setId)) return 'warrior';
+    if (t === 'shield') return 'warrior';
+    const own = getItemStatProfile(item);
+    if (own !== 'neutral') return own;
+  }
   const cls = state.player && state.player.classId;
   if (cls === 'mage') return 'magic';
   if (cls) return 'warrior';
-  return getItemStatProfile(item);
+  return 'neutral';
 }
 
 const RARITY_ORDER = ['white', 'green', 'blue', 'purple', 'yellow', 'red'];
 const RARITY_STAT_POOL = ['STR', 'DEX', 'CON', 'INT', 'WIT', 'MEN'];
 const RARITY_STATS_WARRIOR = ['STR', 'DEX', 'CON'];
 const RARITY_STATS_MAGIC   = ['INT', 'WIT', 'MEN'];
+// v0.29.2: шанс, что очко уйдёт в статы другой группы (в v0.26 убирали 30% — вещи вышли слишком сильными).
+const RARITY_OFFCLASS_CHANCE = 25;
 
 // ========================================================
 //  МИКСТУРЫ — КОНСТАНТЫ ЭФФЕКТОВ
@@ -570,11 +586,12 @@ function rollRarityStats(points, profile = 'neutral') {
   const bonus = {};
   if (!points || points <= 0) return bonus;
 
-  // v0.26: очки идут только в свою группу (раньше 30% уходило в чужую).
+  // v0.29.2: каждое очко с шансом RARITY_OFFCLASS_CHANCE уходит в чужую группу.
   for (let i = 0; i < points; i++) {
     let group;
-    if (profile === 'magic') group = RARITY_STATS_MAGIC;
-    else if (profile === 'warrior') group = RARITY_STATS_WARRIOR;
+    const off = Math.random() * 100 < RARITY_OFFCLASS_CHANCE;
+    if (profile === 'magic') group = off ? RARITY_STATS_WARRIOR : RARITY_STATS_MAGIC;
+    else if (profile === 'warrior') group = off ? RARITY_STATS_MAGIC : RARITY_STATS_WARRIOR;
     else group = RARITY_STAT_POOL;
 
     const stat = group[Math.floor(Math.random() * group.length)];

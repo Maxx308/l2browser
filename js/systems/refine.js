@@ -205,6 +205,7 @@ function openRefine() {
 }
 
 function closeRefine() {
+  stopRefineBatch();   // v0.29.2: закрыли окно — пачка останавливается
   document.getElementById('refine-overlay').classList.remove('active');
 }
 
@@ -259,6 +260,7 @@ function renderRefineList() {
     `;
 
     el.onclick = () => {
+      if (__refineBatch) { showToast('⏩', 'Идёт подгонка — сначала «Стоп»'); return; }
       __refineSelectedSlot = slot;
       renderRefineList();
       renderRefinePreview();
@@ -325,8 +327,14 @@ function renderRefinePreview() {
   };
   refineBtnHtml += batchBtn(5) + batchBtn(10);
 
+  // v0.29.2: пока идёт пачка — вместо кнопок «Стоп» с ходом подгонки.
+  const batch = __refineBatch;
+  if (batch) {
+    refineBtnHtml = `<button class="refine-btn refine-btn-main refine-btn-stop" onclick="stopRefineBatch()">⏹ Стоп<small>попытка ${batch.tries} · до +${batch.target} · −${batch.gold} 🪙</small></button>`;
+  }
+
   // Кнопка «Сбросить» — доступна только если есть что сбрасывать.
-  const canReset = lvl > 0;
+  const canReset = lvl > 0 && !batch;
   let resetBtnHtml;
   if (canReset) {
     resetBtnHtml = `<button class="refine-btn-reset" onclick="confirmResetRefine()">🗑 Сбросить</button>`;
@@ -417,12 +425,15 @@ function renderRefineHistory() {
     } else if (h.type === 'batch') {
       const failStr = h.fails > 0 ? `, неудач ${h.fails}` : '';
       const msStr = h.milestones > 0 ? `, вех ${h.milestones}` : '';
-      const stopStr = h.stopped ? ' — остановлено: мало Оболов' : '';
-      text = `⏩ ${h.itemName}: +${h.fromLevel} → +${h.toLevel} (попыток ${h.tries}${failStr}${msStr}, −${h.gold} 🪙)${stopStr}`;
-    } else if (h.success) {
-      text = `${h.itemName}: +${h.newLevel} → ${h.bonus.label}${h.isMilestone ? ' (веха!)' : ''}`;
+      const stopStr = h.stopped ? ' — остановлено: мало Оболов' : (h.userStopped ? ' — остановлено' : '');
+      text = `⏩ Итого ${h.itemName}: +${h.fromLevel} → +${h.toLevel} (попыток ${h.tries}${failStr}${msStr}, −${h.gold} 🪙)${stopStr}`;
     } else {
-      text = `${h.itemName}: Неудача (−${h.price} 🪙)`;
+      // v0.29.2: у попыток пачки — номер и шанс, чтобы было видно, что каждая бросается отдельно
+      const pre = h.batchTry ? `#${h.batchTry} ` : '';
+      const ch = h.chance ? ` · шанс ${h.chance}%` : '';
+      text = h.success
+        ? `${pre}${h.itemName}: +${h.newLevel} → ${h.bonus.label}${h.isMilestone && !/веха/.test(h.bonus.label) ? ' (веха!)' : ''}${ch}`
+        : `${pre}${h.itemName}: Неудача (−${h.price} 🪙)${ch}`;
     }
     el.className = cls;
     el.textContent = text;
@@ -456,6 +467,7 @@ function applyRefine() {
       bonus: result.bonus,
       isMilestone: result.isMilestone,
       price: result.price,
+      chance: result.chance,
     });
     showToast('🔧', `Успех! +${result.newLevel}: ${result.bonus.label}`);
     logLoot(`🔧 Подгонка: ${itemName} → +${result.newLevel} (${result.bonus.label})`, 'log-craft');
@@ -464,6 +476,7 @@ function applyRefine() {
       success: false,
       itemName,
       price: result.price,
+      chance: result.chance,
     });
     showToast('💢', `Подгонка не удалась (−${result.price} 🪙)`);
     logLoot(`💢 Подгонка не удалась: ${itemName} (−${result.price} 🪙)`, 'log-info');
@@ -530,8 +543,13 @@ function estimateRefineBatch(item, from, to) {
   return { tries: Math.ceil(tries), gold: Math.ceil(tries) * price, price };
 }
 
+// v0.29.2: пачка идёт по одной попытке в REFINE_BATCH_STEP_MS — каждая видна в истории,
+// раньше все попытки проходили мгновенно и игрок видел только итоговую сумму.
+const REFINE_BATCH_STEP_MS = 450;
+let __refineBatch = null;   // идущая пачка: { item, slot, target, fromLevel, tries, fails, gold, milestones, stopped, timer }
+
 function applyRefineBatch(levels) {
-  if (!__refineSelectedSlot) return;
+  if (!__refineSelectedSlot || __refineBatch) return;
   const item = state.player.equipment[__refineSelectedSlot];
   if (!item) return;
 
@@ -548,41 +566,78 @@ function applyRefineBatch(levels) {
   const ok = confirm(
     `Подгонять «${item.name}» с +${fromLevel} до +${target}?\n\n` +
     `Ожидаемо: ~${est.tries} попыток, ~${est.gold} Оболов (у вас ${p.gold}).\n` +
-    `Одна попытка — ${est.price} Оболов. Неудача уровень не снимает.\n` +
+    `Одна попытка — ${est.price} Оболов, шанс бросается на каждую отдельно.\n` +
+    `Неудача уровень не снимает. Остановить можно в любой момент.\n` +
     `Если Оболы кончатся — подгонка остановится.`
   );
   if (!ok) return;
 
-  const itemName = item.name;
-  let tries = 0, fails = 0, gold = 0, milestones = 0, stopped = false;
-  const gained = {};      // label → сколько раз
+  __refineBatch = {
+    item, slot: __refineSelectedSlot, target, fromLevel,
+    tries: 0, fails: 0, gold: 0, milestones: 0, stopped: false, gained: {}, timer: null,
+  };
+  renderRefineWindow();
+  __refineBatch.timer = setTimeout(refineBatchStep, REFINE_BATCH_STEP_MS);
+}
 
-  let guard = 2000;
-  while ((item.refineLevel || 0) < target && guard-- > 0) {
-    const r = tryRefineItem(item);
-    if (r.reason === 'Мало Оболов') { stopped = true; break; }
-    if (r.reason === 'Максимум подгонки') break;
-    tries++;
-    gold += r.price || 0;
-    if (r.success) {
-      if (r.isMilestone) milestones++;
-      gained[r.bonus.label] = (gained[r.bonus.label] || 0) + 1;
-    } else {
-      fails++;
-    }
+// Одна попытка пачки: бросок, строка в истории, следующая — через паузу.
+function refineBatchStep() {
+  const b = __refineBatch;
+  if (!b) return;
+  b.timer = null;
+  const item = b.item;
+  if (state.player.equipment[b.slot] !== item || (item.refineLevel || 0) >= b.target) { finishRefineBatch(); return; }
+
+  const r = tryRefineItem(item);
+  if (r.reason === 'Мало Оболов') { b.stopped = true; finishRefineBatch(); return; }
+  if (r.reason === 'Максимум подгонки') { finishRefineBatch(); return; }
+
+  b.tries++;
+  b.gold += r.price || 0;
+  if (r.success) {
+    if (r.isMilestone) b.milestones++;
+    b.gained[r.bonus.label] = (b.gained[r.bonus.label] || 0) + 1;
+  } else {
+    b.fails++;
   }
+  __refineHistory.unshift(r.success
+    ? { success: true, itemName: item.name, newLevel: r.newLevel, bonus: r.bonus, isMilestone: r.isMilestone, price: r.price, chance: r.chance, batchTry: b.tries }
+    : { success: false, itemName: item.name, price: r.price, chance: r.chance, batchTry: b.tries });
+  if (__refineHistory.length > 20) __refineHistory.length = 20;
 
-  const toLevel = item.refineLevel || 0;
+  if ((item.refineLevel || 0) >= b.target) { finishRefineBatch(); return; }
+  renderRefineWindow();
+  b.timer = setTimeout(refineBatchStep, REFINE_BATCH_STEP_MS);
+}
+
+// Кнопка «Стоп» и закрытие Мастерской.
+function stopRefineBatch() {
+  if (!__refineBatch) return;
+  __refineBatch.userStopped = true;
+  finishRefineBatch();
+}
+
+function finishRefineBatch() {
+  const b = __refineBatch;
+  if (!b) return;
+  if (b.timer) clearTimeout(b.timer);
+  __refineBatch = null;
+
+  const itemName = b.item.name;
+  const toLevel = b.item.refineLevel || 0;
   __refineHistory.unshift({
-    type: 'batch', itemName, fromLevel, toLevel, tries, fails, gold, milestones, stopped,
+    type: 'batch', itemName, fromLevel: b.fromLevel, toLevel, tries: b.tries, fails: b.fails, gold: b.gold,
+    milestones: b.milestones, stopped: b.stopped, userStopped: !!b.userStopped,
   });
   if (__refineHistory.length > 20) __refineHistory.length = 20;
 
-  const bonusStr = Object.keys(gained).map(k => gained[k] > 1 ? `${k} ×${gained[k]}` : k).join(', ');
-  logLoot(`⏩ Подгонка пачкой: ${itemName} +${fromLevel} → +${toLevel}, попыток ${tries}, −${gold} 🪙${bonusStr ? ' · ' + bonusStr : ''}`, 'log-craft');
-  if (stopped) showToast('🪙', `Оболы кончились на +${toLevel}`);
-  else showToast('⏩', `${itemName}: +${fromLevel} → +${toLevel} (−${gold} 🪙)`);
+  const bonusStr = Object.keys(b.gained).map(k => b.gained[k] > 1 ? `${k} ×${b.gained[k]}` : k).join(', ');
+  logLoot(`⏩ Подгонка пачкой: ${itemName} +${b.fromLevel} → +${toLevel}, попыток ${b.tries}, −${b.gold} 🪙${bonusStr ? ' · ' + bonusStr : ''}`, 'log-craft');
+  if (b.stopped) showToast('🪙', `Оболы кончились на +${toLevel}`);
+  else if (b.userStopped) showToast('⏹', `Остановлено на +${toLevel} (−${b.gold} 🪙)`);
+  else showToast('⏩', `${itemName}: +${b.fromLevel} → +${toLevel} (−${b.gold} 🪙)`);
 
+  if (typeof saveCurrentSlot === 'function') saveCurrentSlot();   // неудачные попытки тоже списали Оболы
   renderRefineWindow();
 }
 

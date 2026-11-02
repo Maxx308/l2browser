@@ -192,7 +192,9 @@ function sellItemByKey(groupKey, count) {
 
   const totalAvailable = matching.reduce((s, i) => s + i.qty, 0);
   const remainingStart = Math.min(count, totalAvailable);
-  const price = matching[0].sellPrice || 1;
+  // v0.29.2: у части кованого оружия sellPrice был дробный (31.5, 18.9…) — Оболы получали хвост после точки.
+  // Округляем здесь, чтобы и уже выкованные вещи продавались за целые Оболы.
+  const price = Math.max(1, Math.round(matching[0].sellPrice || 1));
   let remaining = remainingStart;
   let totalSold = 0;
 

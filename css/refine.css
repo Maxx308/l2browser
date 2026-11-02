@@ -303,6 +303,14 @@
   letter-spacing: 0;
   opacity: 0.8;
 }
+/* v0.29.2: «Стоп» во время пошаговой подгонки пачкой */
+.refine-btn-stop {
+  display: inline-flex; flex-direction: column; align-items: center; justify-content: center;
+  line-height: 1.15;
+  border-color: #a03030;
+  background: linear-gradient(180deg, #3a1414, #1c0808);
+}
+.refine-btn-stop small { font-family: var(--font-text); font-size: calc(12 * var(--u)); font-weight: 600; letter-spacing: 0; opacity: 0.85; }
 .refine-milestone-row { height: calc(32 * var(--u)); align-items: center; overflow: hidden; }
 .refine-milestone-row .value { font-weight: 600; }
 .refine-milestone-row:not(.next) .value { color: var(--text-dim); }
