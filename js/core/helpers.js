@@ -72,6 +72,14 @@ function logLoot(text, cls = 'log-loot') {
   while (log.children.length > 500) log.removeChild(log.firstChild);
 }
 
+// v0.30: окончания под пол героя. «{м|ж}» в тексте → первое для мужского, второе для женского.
+// Пример: «Я очутил{ся|ась}», «Слушай, {парень|дочка}». Пол — state.player.gender ('f' — женский).
+// Пол пока не выбирается, поэтому везде мужской; когда появятся героини — тексты переписывать не придётся.
+function heroText(str) {
+  const female = state.player && state.player.gender === 'f';
+  return String(str).replace(/\{([^{}|]*)\|([^{}]*)\}/g, (_, m, f) => (female ? f : m));
+}
+
 // Множитель рейтов (опыт, золото, дроп).
 // Берётся из state.player.cheatRate. Если там 0/undefined — считаем 1.
 function mult() {

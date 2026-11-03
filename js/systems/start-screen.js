@@ -242,6 +242,10 @@ function loadSlotAndStart(slotIndex, opts) {
   state.player.usedCheat = !!(saved.player && saved.player.usedCheat);
   // v0.29.2: дробные цены продажи оставляли хвост в Оболах (34500.199999997) — убираем у старых героев
   state.player.gold = Math.max(0, Math.round(Number(state.player.gold) || 0));
+  // v0.30: летопись и сумка — только свои (у старого сейва полей нет, прошлый герой не должен «передать» их)
+  state.player.chronicle = (saved.player && saved.player.chronicle) || null;
+  state.player.bag = (saved.player && saved.player.bag) || null;
+  if (typeof ensureChronicle === 'function') ensureChronicle();
   if (saved.battle) Object.assign(state.battle, saved.battle);
 
   // v0.24: бой из сейва не продолжается — иначе герой «в бою» без окна боя и ничего нельзя сделать.
@@ -519,6 +523,9 @@ function confirmCreateCharacter() {
   state.player.hp = state.player.maxHp;
   state.player.mp = state.player.maxMp;
 
+  // v0.30: первые записи летописи — герой появляется в мире, сумка просыпается
+  if (typeof startChronicleForNewHero === 'function') startChronicleForNewHero();
+
   state.activeSlotIndex = pendingSlotIndex;
   saveCurrentSlot();
 
@@ -579,6 +586,8 @@ function resetStateToFresh() {
   state.player.weaponSkills = {};
   state.player.elements = {};
   state.player.monsterKills = {};
+  state.player.chronicle = typeof makeFreshChronicle === 'function' ? makeFreshChronicle() : null;   // v0.30
+  state.player.bag = typeof makeFreshBag === 'function' ? makeFreshBag() : null;
 
   state.battle.active = false;
   state.battle.monsters = [];

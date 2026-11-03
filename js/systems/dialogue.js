@@ -2,6 +2,10 @@
 //  СИСТЕМЫ: ДВИЖОК ДИАЛОГОВ
 //  Открывает окно с портретом NPC, текстом и кнопками.
 //  Читает данные из DIALOGUES (js/data/dialogues.js).
+//  v0.30: тексты идут через heroText() — «{м|ж}» под пол героя.
+//         opt.text может быть функцией (галочка у заданного вопроса),
+//         node.onEnter() — вызывается, когда реплика показана.
+//         «*…*» в тексте — действие/описание (не речь).
 // ========================================================
 
 let __activeDialogue = null;
@@ -38,6 +42,9 @@ function renderDialogue(npc, node) {
   const overlay = document.getElementById('dialogue-overlay');
   if (!overlay) return;
 
+  // v0.30: реплика что-то открывает (например, кусок Энциклопедии).
+  if (typeof node.onEnter === 'function') node.onEnter();
+
   const npcIconHtml = (typeof NPC_SVG !== 'undefined' && NPC_SVG[npc.icon])
     ? NPC_SVG[npc.icon]
     : `<div class="dialogue-portrait-fallback">?</div>`;
@@ -45,7 +52,8 @@ function renderDialogue(npc, node) {
   const buttonsHtml = node.options.map((opt, idx) => {
     let cls = 'dialogue-option';
     if (opt.action === 'close') cls += ' dialogue-option-close';
-    return `<button class="${cls}" onclick="onDialogueOption(${idx})">${opt.text}</button>`;
+    const text = typeof opt.text === 'function' ? opt.text() : opt.text;
+    return `<button class="${cls}" onclick="onDialogueOption(${idx})">${heroText(text)}</button>`;
   }).join('');
 
   overlay.innerHTML = `
@@ -55,7 +63,7 @@ function renderDialogue(npc, node) {
       </div>
       <div class="dialogue-content">
         <div class="dialogue-name">${npc.fullName || npc.name}</div>
-        <div class="dialogue-text">${node.text}</div>
+        <div class="dialogue-text">${heroText(node.text).replace(/\*([^*]+)\*/g, '<span class="dlg-act">$1</span>')}</div>
         <div class="dialogue-options" id="dialogue-options">
           ${buttonsHtml}
         </div>
@@ -99,11 +107,19 @@ function onDialogueOption(idx) {
 }
 
 function closeDialogue() {
+  const npcId = __activeDialogue && __activeDialogue.npcId;
   __activeDialogue = null;
   const overlay = document.getElementById('dialogue-overlay');
   if (overlay) {
     overlay.classList.remove('active');
     overlay.innerHTML = '';
+  }
+  // v0.30: поговорили со Старейшиной — герой узнал, где оказался (летопись перепишется),
+  // в Энциклопедии появились Андервуд и Старейшина.
+  if (npcId === 'elder' && typeof learnChronicleFact === 'function') {
+    learnChronicleFact('start_place');
+    unlockLore('underwood');
+    unlockLore('elder');
   }
 }
 

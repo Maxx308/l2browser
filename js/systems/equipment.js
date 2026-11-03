@@ -182,6 +182,8 @@ function renderEquipSlots() {
   document.querySelectorAll('.equip-slot').forEach(el => {
     const slotKey = el.dataset.slot;
     if (slotKey === 'potionSlot' || slotKey === 'mixtureSlot') return;
+    // v0.30: сумка — не снаряжение (её нельзя снять), рисуется отдельно
+    if (slotKey === 'bag') { if (typeof renderBagSlot === 'function') renderBagSlot(el); return; }
 
     const item = p.equipment[slotKey];
     const isShieldLocked = slotKey === 'shield' && twoHanded;

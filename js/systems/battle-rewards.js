@@ -430,6 +430,7 @@ function onPlayerDeath() {
   const lostXp = Math.floor(p.xp * 0.1);
   p.xp = Math.max(0, p.xp - lostXp);
   logCombat(`☠ ${p.name} погиб. Потеряно ${lostXp} опыта (10%).`, 'log-entry loss');
+  if (typeof bumpChronicleCounter === 'function') bumpChronicleCounter('deaths');   // v0.30: скрытый счётчик
 
   p.foodTimer = 0;
   p.foodTickAccum = 0;

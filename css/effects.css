@@ -148,6 +148,15 @@
   display: block;
 }
 
+/* v0.30: PNG-значок бафа — чуть крупнее ячейки (свечение по краям), место в строке то же */
+.effect-chip .ec-icon .buff-png-icon {
+  width: 150%;
+  height: 150%;
+  margin: -25%;
+  display: block;
+  object-fit: contain;
+}
+
 .effect-chip .ec-name {
   color: inherit;
   font-size: calc(10 * var(--u));

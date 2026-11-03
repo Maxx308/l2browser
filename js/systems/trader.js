@@ -31,6 +31,9 @@ function openTrader() {
 
   document.getElementById('trader-overlay').classList.add('active');
   renderTraderBuy(); renderTraderSell(); renderTraderBuyback(); updateTraderGold();
+
+  // v0.30: Энциклопедия — познакомились с Торговцем
+  if (typeof unlockLore === 'function') { unlockLore('trader'); unlockLore('underwood.trade'); unlockLoreArticle('obol'); }
 }
 function closeTrader() { document.getElementById('trader-overlay').classList.remove('active'); }
 
@@ -283,6 +286,12 @@ function buyItem(shopId, count) {
   else logLoot(`Куплено: ${item.name} ×${actualCount}, −${totalCost} оболов`, 'log-info');
   updateTopStatus(); updateTraderGold(); updateForgeGold(); updateGuildGold?.();
   renderInventory(); renderTraderBuy(); renderTraderSell(); updateInventoryFooter(); renderConsumablesPanel();
+
+  // v0.30: купил — в Энциклопедии открылась статья о товаре
+  if (typeof unlockLore === 'function') unlockLore('item.' + shopId);
+  // v0.30: шаг поручения отмечается сразу при покупке, а не только у Старейшины
+  const fs = getQuestProgress('firstSteps');
+  if (fs && fs.stage !== 'done') updateQuestProgress('firstSteps');
 
   saveCurrentSlot();
 }

@@ -221,6 +221,7 @@ function disenchantItem(item) {
 
   p.inventory.splice(idx, 1);
   addDustToInventory(yieldData.color, totalDust);
+  if (typeof bumpChronicleCounter === 'function') bumpChronicleCounter('disenchanted', qty);   // v0.30: скрытый счётчик
 
   const colorTag = yieldData.color;
   const fullLine = `🗑 Распылено: ${item.name}${refineSuffix}${qtySuffix} → +${totalDust} ${dustName.toLowerCase()}`;

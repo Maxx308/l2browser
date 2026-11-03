@@ -1,0 +1,168 @@
+/* ========================================================
+   CHRONICLE.CSS (v0.30)
+   - Вкладка «Хроники»: разделы, записи летописи, ответы
+   - Красная точка на кнопке «Хроники»
+   - Группа «Владение» в листе персонажа
+   - Слот сумки в снаряжении
+   ======================================================== */
+
+/* ---- Точка «есть новое» на нижней кнопке ---- */
+.tab[data-tab="chronicle"] { position: relative; }
+.tab.has-news::after {
+  content: ''; position: absolute;
+  top: calc(8 * var(--u)); left: calc(50% + 12 * var(--u));
+  width: calc(8 * var(--u)); height: calc(8 * var(--u));
+  border-radius: 50%; background: var(--hp-glow);
+  box-shadow: 0 0 calc(6 * var(--u)) var(--hp-glow);
+}
+
+/* ---- Разделы ---- */
+.chron-subs { display: flex; gap: calc(4 * var(--u)); margin-bottom: calc(14 * var(--u)); }
+.chron-sub {
+  flex: 1; text-align: center; cursor: pointer;
+  padding: calc(9 * var(--u)) calc(4 * var(--u));
+  font-family: 'Cinzel', serif; font-weight: 700; font-size: var(--fs-small); letter-spacing: calc(2 * var(--u));
+  color: var(--text-dim); border: 1px solid var(--border); background: var(--bg-1);
+  border-radius: calc(3 * var(--u)); transition: all .2s;
+}
+.chron-sub:hover { color: var(--gold); }
+.chron-sub.active { color: var(--gold-bright); border-color: var(--gold); background: var(--bg-2); }
+
+.chron-body { max-width: calc(760 * var(--u)); margin: 0 auto; }
+.chron-soon {
+  color: var(--text-dim); font-style: italic; text-align: center;
+  border: 1px dashed var(--border); border-radius: calc(4 * var(--u));
+  padding: calc(24 * var(--u)) calc(16 * var(--u));
+}
+
+/* ---- Записи летописи ---- */
+.chron-entry {
+  background: var(--bg-1); border: 1px solid #2a2418; border-left: 2px solid var(--border);
+  border-radius: 0; padding: calc(10 * var(--u)) calc(12 * var(--u));
+  margin-bottom: calc(8 * var(--u)); line-height: 1.5;
+}
+.chron-entry.bag { border-left-color: var(--gold); }
+.chron-entry.pending { border-left-color: var(--gold-bright); background: var(--bg-2); }
+.chron-meta { color: var(--text-dim); font-size: var(--fs-tiny); margin-bottom: calc(3 * var(--u)); }
+.chron-meta b { color: var(--gold-bright); font-weight: 500; }
+.chron-entry.bag .chron-text { font-style: italic; }
+.chron-title {
+  font-family: 'Cinzel', serif; font-weight: 700; font-size: var(--fs-small); letter-spacing: calc(1 * var(--u));
+  color: var(--gold); margin-bottom: calc(2 * var(--u));
+}
+.chron-fact { color: var(--gold-bright); }
+.chron-reply { color: var(--text-dim); font-size: var(--fs-small); margin-top: calc(6 * var(--u)); }
+.chron-answers { display: flex; flex-wrap: wrap; gap: calc(6 * var(--u)); margin-top: calc(8 * var(--u)); }
+.chron-answer {
+  flex: 1 1 auto; cursor: pointer;
+  font-family: var(--font-text); font-size: var(--fs-small); color: var(--gold-bright);
+  background: transparent; border: 1px solid var(--gold); border-radius: calc(3 * var(--u));
+  padding: calc(6 * var(--u)) calc(10 * var(--u));
+}
+.chron-answer:hover { background: rgba(184,148,90,0.12); }
+
+/* ---- Поручения ---- */
+.quest-group {
+  font-family: 'Cinzel', serif; font-size: var(--fs-tiny); letter-spacing: calc(1 * var(--u));
+  color: var(--text-dim); margin: calc(14 * var(--u)) 0 calc(6 * var(--u));
+}
+.quest-group:first-child { margin-top: 0; }
+.quest-card {
+  background: var(--bg-1); border: 1px solid #2a2418; border-left: 2px solid var(--gold);
+  padding: calc(10 * var(--u)) calc(12 * var(--u)); margin-bottom: calc(8 * var(--u)); line-height: 1.5;
+}
+.quest-card.offered { border-left-color: var(--gold-bright); border-left-style: dashed; }
+.quest-card.done { border-left-color: var(--border); opacity: .75; }
+.quest-head { display: flex; justify-content: space-between; align-items: baseline; gap: calc(8 * var(--u)); flex-wrap: wrap; margin-bottom: calc(4 * var(--u)); }
+.quest-name { font-family: 'Cinzel', serif; font-weight: 700; color: var(--gold-bright); }
+.quest-giver { color: var(--text-dim); font-size: var(--fs-tiny); }
+.quest-text { color: var(--text); font-size: var(--fs-small); }
+.quest-card.done .quest-text { color: var(--text-dim); }
+.quest-steps { margin: calc(8 * var(--u)) 0; }
+.quest-step { font-size: var(--fs-small); padding: calc(2 * var(--u)) 0; }
+.quest-mark { display: inline-block; width: calc(16 * var(--u)); text-align: center; margin-right: calc(4 * var(--u)); }
+.quest-step.done { color: var(--text-dim); text-decoration: line-through; }
+.quest-step.done .quest-mark { color: var(--gold); text-decoration: none; }
+.quest-step.now { color: var(--gold-bright); }
+.quest-step.later { color: var(--text-dim); opacity: .6; }
+.quest-reward { font-size: var(--fs-small); border-top: 1px solid #2a2418; padding-top: calc(6 * var(--u)); }
+.quest-reward span { color: var(--text-dim); margin-right: calc(8 * var(--u)); }
+
+/* ---- Энциклопедия ---- */
+.chron-sub { position: relative; }
+.chron-sub.has-news::after {
+  content: ''; position: absolute; top: calc(4 * var(--u)); right: calc(6 * var(--u));
+  width: calc(6 * var(--u)); height: calc(6 * var(--u)); border-radius: 50%; background: var(--hp-glow);
+}
+.lore { display: grid; grid-template-columns: calc(200 * var(--u)) minmax(0, 1fr); gap: calc(12 * var(--u)); }
+.lore-list { font-size: var(--fs-small); }
+.lore-cat {
+  font-family: 'Cinzel', serif; font-size: var(--fs-tiny); letter-spacing: calc(1 * var(--u));
+  color: var(--text-dim); margin: calc(12 * var(--u)) 0 calc(4 * var(--u));
+}
+.lore-cat:first-child { margin-top: 0; }
+.lore-item {
+  padding: calc(5 * var(--u)) calc(8 * var(--u)); cursor: pointer; color: var(--text);
+  border: 1px solid transparent; border-radius: calc(3 * var(--u));
+}
+.lore-item:hover { color: var(--gold-bright); }
+.lore-item.active { border-color: var(--gold); background: var(--bg-2); color: var(--gold-bright); }
+.lore-item.locked { color: var(--text-dim); opacity: .6; cursor: default; }
+.lore-new {
+  margin-left: calc(6 * var(--u)); font-size: var(--fs-tiny); color: var(--gold-bright);
+  border: 1px solid var(--gold); border-radius: calc(3 * var(--u)); padding: 0 calc(4 * var(--u));
+}
+.lore-article {
+  background: var(--bg-1); border: 1px solid #2a2418; border-radius: calc(3 * var(--u));
+  padding: calc(14 * var(--u)) calc(16 * var(--u)); line-height: 1.6; min-height: calc(160 * var(--u));
+}
+.lore-empty { color: var(--text-dim); font-style: italic; text-align: center; padding-top: calc(50 * var(--u)); }
+.lore-back { display: none; color: var(--gold); cursor: pointer; font-size: var(--fs-small); margin-bottom: calc(8 * var(--u)); }
+.lore-head { display: flex; align-items: center; gap: calc(10 * var(--u)); margin-bottom: calc(10 * var(--u)); }
+.lore-icon { width: calc(40 * var(--u)); height: calc(40 * var(--u)); flex: none; }
+.lore-icon svg, .lore-icon img { width: 100%; height: 100%; }
+.lore-title { font-family: 'Cinzel', serif; font-weight: 700; font-size: calc(17 * var(--u)); color: var(--gold-bright); }
+.lore-kind { color: var(--text-dim); font-size: var(--fs-tiny); }
+.lore-text { margin: 0 0 calc(10 * var(--u)); }
+.lore-text.locked { color: var(--text-dim); font-size: var(--fs-small); opacity: .7; }
+.lore-label { color: var(--gold); font-size: var(--fs-small); }
+.lore-stats { border-top: 1px solid #2a2418; padding-top: calc(8 * var(--u)); font-size: var(--fs-small); }
+.lore-stats div { margin-bottom: calc(5 * var(--u)); }
+.lore-stats span { display: inline-block; min-width: calc(100 * var(--u)); color: var(--text-dim); }
+
+/* ---- Владение в листе персонажа ---- */
+.cs-prof { margin-top: calc(18 * var(--u)); }
+.cs-prof .cnt { color: var(--gold); }
+.cs-prof-sub {
+  font-family: 'Cinzel', serif; font-size: var(--fs-tiny); letter-spacing: calc(2 * var(--u));
+  color: var(--text-dim); margin: calc(10 * var(--u)) 0 calc(8 * var(--u));
+}
+.cs-prof-sub:first-of-type { margin-top: calc(4 * var(--u)); }
+
+/* ---- Слот сумки ---- */
+.equip-slot.bag-slot { border-color: var(--gold); color: var(--gold); cursor: pointer; }
+.equip-slot.bag-slot svg { opacity: .9; }
+/* Пока не познакомились с Заплечником — слот еле мерцает (приглашение, не навязчиво) */
+.equip-slot.bag-slot.bag-calls { animation: bagCalls 2.6s ease-in-out infinite; }
+@keyframes bagCalls {
+  0%, 100% { box-shadow: 0 0 0 rgba(224,190,122,0); }
+  50%      { box-shadow: 0 0 calc(10 * var(--u)) rgba(224,190,122,.55); }
+}
+
+/* Летопись: кто говорит, действия в репликах, абзацы */
+.chron-who { color: var(--gold); }
+.chron-text { white-space: pre-line; }
+.chron-entry.bag .chron-text .chron-act { font-style: normal; color: var(--text-dim); }
+
+@media (max-width: 600px) {
+  .cs-prof { margin-top: calc(8 * var(--u)); }
+  .chron-sub { font-size: calc(10 * var(--u)); letter-spacing: calc(1 * var(--u)); padding: calc(8 * var(--u)) calc(2 * var(--u)); }
+  .tab.has-news::after { top: calc(5 * var(--u)); left: calc(50% + 10 * var(--u)); }
+  /* Энциклопедия на телефоне: либо список, либо статья */
+  .lore { grid-template-columns: minmax(0, 1fr); }
+  .lore:not(.has-open) .lore-article { display: none; }
+  .lore.has-open .lore-list { display: none; }
+  .lore-back { display: block; }
+  .chron-sub.has-news::after { top: calc(2 * var(--u)); right: calc(2 * var(--u)); }
+  .lore-stats span { display: block; min-width: 0; }
+}

@@ -69,6 +69,7 @@ function renderEffectsPanel() {
     else if (buffId === 'eloquence') { icon = '💬'; cssClass = 'eloquence'; }
     else if (buffId === 'quietStep') { icon = '🤫'; }   // v0.29
     else if (buffId === 'provoker') { icon = '📯'; }
+    if (buff.iconPng) icon = buffIconHtml(buff);         // v0.30: PNG-значок вместо эмодзи
 
     chips.push(`<div class="effect-chip ${cssClass}"><span class="ec-icon">${icon}</span><span class="ec-name">${buff.name}</span><span class="ec-value">${formatTime(active.timer)}</span></div>`);
   });
@@ -84,6 +85,7 @@ function renderEffectsPanel() {
       let icon = '🍺';
       if (buffId === 'rest')  icon = '🛏';
       if (buffId === 'relax') icon = '🍺';
+      if (buff.iconPng) icon = buffIconHtml(buff);   // v0.30
 
       chips.push(`<div class="effect-chip tavern"><span class="ec-icon">${icon}</span><span class="ec-name">${buff.name}</span><span class="ec-value">${formatTime(active.timer)}</span></div>`);
     });

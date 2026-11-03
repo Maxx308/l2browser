@@ -16,8 +16,13 @@ Object.values(SKILLS).forEach(skill => {
   }
 });
 
+// v0.30: у бафов Гильдии и Таверны — PNG-значки (img/buffs), SVG остаются запасом
+function buffIconHtml(buff) {
+  return buff.iconPng ? `<img src="${buff.iconPng}" alt="" class="buff-png-icon">` : '';
+}
 Object.values(GUILD_BUFFS).forEach(buff => {
-  if (buff.iconKey && SVG[buff.iconKey]) buff.icon = SVG[buff.iconKey];
+  if (buff.iconPng) buff.icon = buffIconHtml(buff);
+  else if (buff.iconKey && SVG[buff.iconKey]) buff.icon = SVG[buff.iconKey];
 });
 
 // ========================================================
@@ -468,6 +473,14 @@ function updateCharacterPanel() {
   }
   fillCsChips('cs-buff', 'cs-buff-count', buffs, 'Нет активных усилений');
 
+  // ---- v0.30: Владение (бывшая вкладка) — в заголовке оружие в руках ----
+  if (typeof renderProficiencyPanel === 'function') renderProficiencyPanel();
+  const profCur = document.getElementById('cs-prof-current');
+  if (profCur) {
+    const ws = wCat && typeof WEAPON_SKILLS !== 'undefined' ? WEAPON_SKILLS[wCat] : null;
+    profCur.textContent = ws ? `${ws.name} · ${getWeaponSkillLevel(wCat)} ур.` : '';
+  }
+
   // v0.22: раскрытая подсказка по характеристике — обновить цифры
   if (typeof renderStatInfo === 'function' && openStatInfo) renderStatInfo();
 }
@@ -506,6 +519,7 @@ function initGame() {
   syncFilterSliders();
   syncAutoStopSettingsUI();
   syncStackCapSlider();
+  if (typeof updateChronicleDot === 'function') updateChronicleDot();   // v0.30
 
   document.getElementById('btn-autobattle').classList.add('active');
   switchTab('hunt');

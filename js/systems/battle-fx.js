@@ -99,10 +99,60 @@ function bxNum(el, html, cls) {
   const c = bxCenter(el);
   bxAdd('bx-num ' + (cls || ''), c.x + (Math.random() * 48 - 24), c.y - 20, html, '', 1400);
 }
+// --------------------------------------------------------
+//  v0.30: КАРТИНКИ ЭФФЕКТОВ (img/fx, опись — img/fx/ОПИСЬ.txt)
+//  Вместо нарисованных стилями разрезов/вспышек — картинка поверх карточки цели.
+//  Цифры урона, искры, тряска на крите — как были.
+// --------------------------------------------------------
+const BX_FX_DIR = 'img/fx/';
+// Обычный удар героя — по оружию в руках.
+const BX_WEAPON_IMG = { swords: 'b_12', axes: 'c_47', maces: 'b_14', daggers: 'b_42', spears: 'c_15', bows: 'b_25', crossbows: 'b_27', staves: 'b_24' };
+const BX_UNARMED_IMG = 'c_34';
+// Удар монстра — по виду.
+const BX_MONSTER_IMG = { silkworm: 'c_11', ent: 'b_54', bandit: 'c_16', frog: 'b_16', wolf: 'b_11', goblin: 'c_12', kobold: 'b_28', arachnid: 'c_46', golem: 'c_56' };
+const BX_MONSTER_IMG_PHYS = 'c_34', BX_MONSTER_IMG_MAGIC = 'b_32';
+// События массовых навыков (ev.fx) → попадание.
+const BX_EVENT_IMG = {
+  'slash': 'c_26', 'slash-red': 'a_12', 'slash-green': 'b_54', 'slash-blue': 'b_31',
+  'proj:fire': 'b_35', 'proj:ice': 'b_36', 'proj:arcane': 'b_24', 'proj:life': 'c_24',
+  'bolt': 'b_18', 'ice': 'b_41', 'blizzard': 'c_45', 'toxic': 'b_43', 'rune': 'a_44',
+};
+// Снаряды-картинки. На всех картинках голова снаряда смотрит влево-вниз (135°) — доворачиваем к цели.
+const BX_PROJ_IMG = { fire: 'c_22', ice: 'c_23', dark: 'c_27', arrow: 'c_21', toxic: 'c_24' };
+const BX_PROJ_IMG_HEADING = 135;
+const BX_HEAL_IMG = 'c_36';
+
+function bxFxSrc(key) { return BX_FX_DIR + key + '.png'; }
+
+// Картинка попадания поверх карточки: вспыхнула, чуть выросла, погасла.
+// opts: k — размер от карточки, rot — поворот (иначе случайный ±12°), flip — зеркально.
+function bxFxImg(cardEl, key, opts) {
+  if (!cardEl || !key) return;
+  const o = opts || {};
+  const c = bxCenter(cardEl);
+  const r = cardEl.getBoundingClientRect();
+  const s = Math.round(Math.min(r.width, r.height || r.width) * (o.k || 1.05));
+  const rot = o.rot !== undefined ? o.rot : Math.round(Math.random() * 24 - 12);
+  bxAdd('bx-img', c.x, c.y, `<img src="${bxFxSrc(key)}" alt="">`, `width:${s}px;height:${s}px;--r:${rot}deg;--sx:${o.flip ? -1 : 1}`, 650);
+}
+
+// Подгрузить заранее — чтобы первая вспышка не мигнула пустым местом.
+const BX_FX_PRELOADED = [];
+function bxPreloadFx() {
+  const keys = new Set([...Object.values(BX_WEAPON_IMG), ...Object.values(BX_MONSTER_IMG), ...Object.values(BX_EVENT_IMG),
+    ...Object.values(BX_PROJ_IMG), BX_UNARMED_IMG, BX_MONSTER_IMG_PHYS, BX_MONSTER_IMG_MAGIC, BX_HEAL_IMG,
+    'b_53', 'b_55', 'b_45', 'c_38']);
+  keys.forEach(k => { const im = new Image(); im.src = bxFxSrc(k); BX_FX_PRELOADED.push(im); });
+}
+bxPreloadFx();
+
 function bxProjectile(kind, fromEl, toEl, ms) {
   return new Promise(resolve => {
     const a = bxCenter(fromEl), b = bxCenter(toEl);
-    const d = bxAdd('bx-proj ' + kind, a.x, a.y, '', '', ms + 200);
+    const pi = BX_PROJ_IMG[kind];
+    const d = pi
+      ? bxAdd('bx-proj img', a.x, a.y, `<img src="${bxFxSrc(pi)}" alt="" style="transform:rotate(${-BX_PROJ_IMG_HEADING}deg)">`, '', ms + 200)
+      : bxAdd('bx-proj ' + kind, a.x, a.y, '', '', ms + 200);
     if (!d || typeof d.animate !== 'function') { setTimeout(resolve, ms); return; }
     const ang = Math.atan2(b.y - a.y, b.x - a.x) * 180 / Math.PI;
     const dx = b.x - a.x, dy = b.y - a.y;
@@ -391,35 +441,37 @@ function bxPlayerActionLook(skill) {
     if (skill.fxAnim === 'melee') return { mode: 'melee', fx: skill.id === 'bloodHarvest' ? 'rage' : null, aoe: true };
     return { mode: 'aoe-cast', aoe: true };
   }
+  // v0.30: img — картинка попадания (img/fx); imgEach — на каждый удар (второй — зеркально).
   if (skill) {
     switch (skill.id) {
-      case 'powerStrike':     return { mode: 'melee', fx: 'slash', color: '#ffd27a' };
-      case 'doubleStrike':    return { mode: 'melee', fx: 'double', color: '#ffe8b0' };
-      case 'orcRage':         return { mode: 'melee', fx: 'rage', color: '#ff3a2a' };
-      case 'dwarfGreed':      return { mode: 'melee', fx: 'slash', color: '#ffc94a', sparks: '#ffd34d' };
-      case 'fireball':        return { mode: 'proj', proj: 'fire', burst: 'fire', sparks: '#ffb04a', ms: 420 };
-      case 'iceArrow':        return { mode: 'proj', proj: 'ice', burst: 'ice', sparks: '#bff1ff', ms: 300 };
-      case 'spiritWrath':     return { mode: 'proj', proj: 'dark', burst: 'dark', sparks: '#c58cff', ms: 420, rage: true };
-      case 'dwarfGreedMagic': return { mode: 'proj', proj: 'gold', burst: 'gold', sparks: '#ffd34d', ms: 380 };
-      case 'discharge':       return { mode: 'bolt', burst: 'light', sparks: '#cfe0ff' };
+      case 'powerStrike':     return { mode: 'melee', fx: 'slash', color: '#ffd27a', img: 'b_53' };
+      case 'doubleStrike':    return { mode: 'melee', fx: 'double', color: '#ffe8b0', img: 'b_12', imgEach: true };
+      case 'orcRage':         return { mode: 'melee', fx: 'rage', color: '#ff3a2a', img: 'b_55' };
+      case 'dwarfGreed':      return { mode: 'melee', fx: 'slash', color: '#ffc94a', sparks: '#ffd34d', img: 'b_45' };
+      case 'fireball':        return { mode: 'proj', proj: 'fire', burst: 'fire', sparks: '#ffb04a', ms: 420, img: 'b_35' };
+      case 'iceArrow':        return { mode: 'proj', proj: 'ice', burst: 'ice', sparks: '#bff1ff', ms: 300, img: 'b_36' };
+      case 'spiritWrath':     return { mode: 'proj', proj: 'dark', burst: 'dark', sparks: '#c58cff', ms: 420, rage: true, img: 'b_32' };
+      case 'dwarfGreedMagic': return { mode: 'proj', proj: 'gold', burst: 'gold', sparks: '#ffd34d', ms: 380, img: 'c_38' };
+      case 'discharge':       return { mode: 'bolt', burst: 'light', sparks: '#cfe0ff', img: 'b_18' };
     }
     if (skill.isHeal) return { mode: 'heal' };
   }
-  if (isMage()) return { mode: 'proj', proj: 'arcane', burst: 'arcane', sparks: '#b8d4ff', ms: 320 };
+  if (isMage()) return { mode: 'proj', proj: 'arcane', burst: 'arcane', sparks: '#b8d4ff', ms: 320, img: BX_WEAPON_IMG.staves };
   const w = p.equipment && p.equipment.weapon;
   const cat = (w && typeof getWeaponCategory === 'function') ? getWeaponCategory(w.name) : null;
-  if (cat === 'bows' || cat === 'crossbows') return { mode: 'proj', proj: 'arrow', burst: null, ms: 220, slash: true };
-  return { mode: 'melee', fx: 'slash', color: '#ffd27a' };
+  if (cat === 'bows' || cat === 'crossbows') return { mode: 'proj', proj: 'arrow', burst: null, ms: 220, slash: true, img: BX_WEAPON_IMG[cat] };
+  return { mode: 'melee', fx: 'slash', color: '#ffd27a', img: BX_WEAPON_IMG[cat] || BX_UNARMED_IMG };
 }
 
 function bxMonsterActionLook(m) {
   const id = m && (m.templateId || m.id);
+  const img = BX_MONSTER_IMG[id];
   if (m && m.attackType === 'magic') {
-    if (id === 'frog') return { mode: 'proj', proj: 'toxic', burst: 'toxic', ms: 380 };
-    return { mode: 'proj', proj: 'dark', burst: 'dark', ms: 380 };
+    if (id === 'frog' || id === 'arachnid') return { mode: 'proj', proj: 'toxic', burst: 'toxic', ms: 380, img: img || BX_MONSTER_IMG_MAGIC };
+    return { mode: 'proj', proj: 'dark', burst: 'dark', ms: 380, img: img || BX_MONSTER_IMG_MAGIC };
   }
-  if (id === 'wolf') return { mode: 'melee', fx: 'claw' };
-  return { mode: 'melee', fx: 'slash', color: '#ff6a4a' };
+  if (id === 'wolf') return { mode: 'melee', fx: 'claw', img };
+  return { mode: 'melee', fx: 'slash', color: '#ff6a4a', img: img || BX_MONSTER_IMG_PHYS };
 }
 
 // v0.19.1: размер разреза/когтей — от размера карточки, а не фиксированный.
@@ -437,6 +489,12 @@ function bxImpact(cardEl, look, isFirst) {
   const c = bxCenter(cardEl);
   const sz = bxSlashSize(cardEl);
   const szClaw = bxSlashSize(cardEl, 0.95);
+  // v0.30: есть картинка — рисуем её вместо разреза/вспышки (искры оставляем).
+  if (look.img) {
+    if (isFirst || look.imgEach) bxFxImg(cardEl, look.img, { flip: !!look.imgEach && !isFirst });
+    if (look.sparks && isFirst) bxSparks(c.x, c.y, look.sparks, 12);
+    return;
+  }
   if (look.fx === 'slash' && isFirst) bxAdd('bx-slash', c.x, c.y, '', `${sz}--r:${Math.round(Math.random() * 30 - 15)}deg;--c:${look.color || '#ffd27a'}`, 600);
   if (look.fx === 'double') bxAdd('bx-slash', c.x, c.y, '', `${sz}--r:${isFirst ? -18 : 22}deg;--c:${look.color}`, 600);
   if (look.fx === 'rage' && isFirst) {
@@ -493,7 +551,7 @@ function bxPlayEvents(events, delay, look, attackerCard) {
         if (t === 'heal') {
           bxRetrig(cardEl, 'bx-heal');
           const c = bxCenter(cardEl);
-          bxAdd('bx-burst heal', c.x, c.y, '', '', 700);
+          bxFxImg(cardEl, BX_HEAL_IMG, { k: 0.9, rot: 0 });   // v0.30: зелёный крест вместо вспышки
           bxSparks(c.x, c.y, '#7dff9a', 10);
         }
       } else if (t === 'dodge') {
@@ -520,6 +578,14 @@ function bxPlayEvents(events, delay, look, attackerCard) {
 // v0.19: эффект конкретного события (массовые навыки, тики).
 function bxEventFx(cardEl, fx, hit) {
   const c = bxCenter(cardEl);
+  // v0.30: картинка попадания. Разрезы и снаряды — только при попадании, остальное — всегда.
+  const im = BX_EVENT_IMG[fx];
+  if (im) {
+    if (fx === 'bolt') bxAdd('bx-bolt', c.x, 0, '', `height:${Math.max(60, c.y)}px`, 500);
+    if (hit || !(fx.startsWith('slash') || fx.startsWith('proj:') || fx === 'bolt')) bxFxImg(cardEl, im, { k: fx.startsWith('slash') ? 1.05 : 0.95 });
+    if (fx === 'blizzard') bxShake();
+    return;
+  }
   const slashColors = { 'slash': '#ffd27a', 'slash-red': '#ff3a2a', 'slash-green': '#7dff9a', 'slash-blue': '#9fd0ff' };
   if (slashColors[fx]) {
     if (hit) bxAdd('bx-slash', c.x, c.y, '', `${bxSlashSize(cardEl)}--r:${Math.round(Math.random() * 40 - 20)}deg;--c:${slashColors[fx]}`, 600);

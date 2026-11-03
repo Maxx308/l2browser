@@ -496,31 +496,31 @@ const SKILLS = {
 
 const GUILD_BUFFS = {
   berserk: {
-    id: 'berserk', name: 'Берсерк', iconKey: 'buffBerserk',
+    id: 'berserk', name: 'Берсерк', iconKey: 'buffBerserk', iconPng: 'img/buffs/berserk.png',
     price: BUFF_PRICE, duration: BUFF_DURATION,
     effects: { pAtkPercent: 4, mAtkPercent: 8, atbPercent: 5, pDefPercent: -4, mDefPercent: -8 },
     desc: 'Ярость берсерка: мощнее, но уязвимее.'
   },
   eloquence: {
-    id: 'eloquence', name: 'Говорливость', iconKey: 'buffEloquence',
+    id: 'eloquence', name: 'Говорливость', iconKey: 'buffEloquence', iconPng: 'img/buffs/eloquence.png',
     price: BUFF_PRICE, duration: BUFF_DURATION,
     effects: { atbPercent: 15 }, mageOnly: true,
     desc: 'Только для магических классов: ускоряет скорость каста.'
   },
   combat: {
-    id: 'combat', name: 'Боевое усиление', iconKey: 'buffCombat',
+    id: 'combat', name: 'Боевое усиление', iconKey: 'buffCombat', iconPng: 'img/buffs/combat.png',
     price: BUFF_PRICE, duration: BUFF_DURATION,
     effects: { pAtkPercent: 6, pDefPercent: 6 },
     desc: 'Универсальное боевое усиление.'
   },
   accuracy: {
-    id: 'accuracy', name: 'Меткость', iconKey: 'buffCombat',
+    id: 'accuracy', name: 'Меткость', iconKey: 'buffCombat', iconPng: 'img/buffs/accuracy.png',
     price: BUFF_PRICE, duration: BUFF_DURATION,
     effects: { accuracyFlat: 5 },
     desc: 'Гильдейские маги накладывают чары точности. +5 к точности.'
   },
   shieldwall: {
-    id: 'shieldwall', name: 'Расширить щит', iconKey: 'buffCombat',
+    id: 'shieldwall', name: 'Расширить щит', iconKey: 'buffCombat', iconPng: 'img/buffs/shieldwall.png',
     price: BUFF_PRICE, duration: BUFF_DURATION,
     effects: { blockFlat: 3 },
     desc: 'Укрепляет защиту щитом. +3% к шансу блока.'
@@ -528,13 +528,13 @@ const GUILD_BUFFS = {
   // v0.29: стаи (battle-pack.js). Действуют не на статы, а на размер стаи и подкрепления.
   // Вместе не работают: покупка одного снимает другой.
   quietStep: {
-    id: 'quietStep', name: 'Тихий шаг', iconKey: 'buffQuietStep',
+    id: 'quietStep', name: 'Тихий шаг', iconKey: 'buffQuietStep', iconPng: 'img/buffs/quietStep.png',
     price: BUFF_PRICE, duration: BUFF_DURATION,
     effects: {}, packMode: 'quiet', packRival: 'provoker',
     desc: 'Чары бесшумной поступи: стаи меньше, подмога почти не приходит.'
   },
   provoker: {
-    id: 'provoker', name: 'Провокатор', iconKey: 'buffProvoker',
+    id: 'provoker', name: 'Провокатор', iconKey: 'buffProvoker', iconPng: 'img/buffs/provoker.png',
     price: BUFF_PRICE, duration: BUFF_DURATION,
     effects: {}, packMode: 'provoke', packRival: 'quietStep',
     desc: 'Чары вызова: стаи больше, подмога сбегается со всей округи.'
@@ -551,6 +551,7 @@ const TAVERN_BUFFS = {
     name: 'Отдых',
     desc: 'Хорошо посидеть, отдохнуть от дороги. Опыт капает быстрее.',
     iconKey: 'tavernRest',
+    iconPng: 'img/buffs/rest.png',   // v0.30
     effect: 'xpPercent',
     value: TAVERN_XP_BONUS_PERCENT,
     duration: TAVERN_BUFF_DURATION,
@@ -561,6 +562,7 @@ const TAVERN_BUFFS = {
     name: 'Расслабон',
     desc: 'Поговорить, выпить, посмеяться. Дело спорится — умения растут быстрее.',
     iconKey: 'tavernRelax',
+    iconPng: 'img/buffs/relax.png',   // v0.30
     effect: 'profPercent',
     value: TAVERN_PROF_BONUS_PERCENT,
     duration: TAVERN_BUFF_DURATION,

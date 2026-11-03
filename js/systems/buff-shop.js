@@ -30,7 +30,7 @@ function buffShopDef(kind) {
   return {
     kind, defs: Object.values(TAVERN_BUFFS), store: p.tavernBuffs,
     price: () => getTavernBuffPrice(),
-    icon: (b) => TAVERN_SVG[b.iconKey] || '',
+    icon: (b) => (b.iconPng ? buffIconHtml(b) : TAVERN_SVG[b.iconKey] || ''),
     emoji: '🍺', listId: 'tavern-list', barId: 'tavern-setbar',
   };
 }

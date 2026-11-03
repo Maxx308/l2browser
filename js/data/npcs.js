@@ -26,12 +26,22 @@ const NPCS = {
     icon: 'alchemist',
     dialogueStart: null,
   },
+
+  // v0.30: говорящая сумка. Имя «???», пока не представился (факт bag_name в летописи).
+  bag: {
+    id: 'bag',
+    get name() { return typeof bagSpeakerName === 'function' ? bagSpeakerName() : '???'; },
+    desc: '',
+    icon: 'bag',
+    dialogueStart: null,
+  },
 };
 
 // ========================================================
 //  SVG-заглушки портретов NPC
 // ========================================================
 const NPC_SVG = {
+  bag: `<img src="img/bags/bag01_worn.png" alt="" style="object-fit:contain; padding:8%; box-sizing:border-box;">`,
   elder: `<svg viewBox="0 0 100 100" style="width:100%;height:100%;">
     <defs>
       <radialGradient id="elderBg" cx="50%" cy="40%">

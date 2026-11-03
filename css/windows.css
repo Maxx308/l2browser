@@ -514,6 +514,13 @@
   width: calc(48 * var(--u));
   height: calc(48 * var(--u));
 }
+/* v0.30: PNG-значки бафов — на всю рамку */
+.guild-card-icon .buff-png-icon {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
 
 .guild-card-name {
   font-family: 'Cinzel', serif;

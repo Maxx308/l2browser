@@ -87,7 +87,10 @@
   margin-bottom: calc(16 * var(--u));
   min-height: calc(80 * var(--u));
   font-style: italic;
+  white-space: pre-line;   /* v0.30: абзацы «\n\n» в репликах */
 }
+/* v0.30: действие/описание в реплике — не речь */
+.dialogue-text .dlg-act { font-style: normal; color: var(--text-dim); }
 .dialogue-text b,
 .dialogue-text strong {
   font-style: normal;

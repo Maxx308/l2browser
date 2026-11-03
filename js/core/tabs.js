@@ -22,6 +22,9 @@
 //
 //  НОВОЕ (v0.26):
 //  + Кнопка «Магические тропы» на каждой соседней локации (свиток убран).
+//
+//  НОВОЕ (v0.30):
+//  + Вкладка «Владение» ушла в лист персонажа, вместо неё — «Хроники».
 // ========================================================
 
 function switchTab(tab) {
@@ -45,7 +48,7 @@ function switchTab(tab) {
   }
   if (tab === 'map') updateMapUI();
   if (tab === 'hunt') updateHuntView();
-  if (tab === 'proficiency') renderProficiencyPanel();
+  if (tab === 'chronicle') openChroniclePanel();
 }
 
 // Три возможных вида вкладки «ОХОТА»:
