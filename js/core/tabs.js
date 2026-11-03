@@ -81,6 +81,7 @@ function updateMapUI() {
 }
 
 // v0.26: тропа на каждой локации, куда из текущей есть путь (цена — getMagicPathPrice).
+// v0.31: рядом — «🚶 Пешком · время» (раньше пешком было только кликом по карточке; клик тоже остался).
 const MAP_TRAVEL_SLOTS = { field: 'map-travel-slot', town: 'map-travel-slot-town', mine: 'map-travel-slot-mine' };
 
 function updateMapTravelButton() {
@@ -88,9 +89,17 @@ function updateMapTravelButton() {
   Object.keys(MAP_TRAVEL_SLOTS).forEach(loc => {
     const slot = document.getElementById(MAP_TRAVEL_SLOTS[loc]);
     if (!slot) return;
-    const price = loc === p.currentLocation ? null : getMagicPathPrice(p.currentLocation, loc);
-    if (price === null) { slot.innerHTML = ''; return; }
-    const poor = (p.gold || 0) < price;
-    slot.innerHTML = `<button class="map-travel-btn${poor ? ' map-travel-btn-disabled' : ''}" onclick="event.stopPropagation(); useMagicPath('${loc}')"${poor ? ` title="Нужно ${price} Оболов"` : ''}>🌀 Магические тропы · 🪙 ${price}</button>`;
+    const here = loc === p.currentLocation;
+    const walk = here ? null : getTravelTimeFromCurrent(loc);
+    const price = here ? null : getMagicPathPrice(p.currentLocation, loc);
+    const btns = [];
+    if (walk !== null) {
+      btns.push(`<button class="map-travel-btn map-walk-btn" onclick="event.stopPropagation(); tryTravel('${loc}')">🚶 Пешком · ${formatTravelTime(walk)}</button>`);
+    }
+    if (price !== null) {
+      const poor = (p.gold || 0) < price;
+      btns.push(`<button class="map-travel-btn${poor ? ' map-travel-btn-disabled' : ''}" onclick="event.stopPropagation(); useMagicPath('${loc}')"${poor ? ` title="Нужно ${price} Оболов"` : ''}>🌀 Магические тропы · 🪙 ${price}</button>`);
+    }
+    slot.innerHTML = btns.length ? `<div class="map-travel-btns">${btns.join('')}</div>` : '';
   });
 }

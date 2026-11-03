@@ -34,6 +34,7 @@ function openTrader() {
 
   // v0.30: Энциклопедия — познакомились с Торговцем
   if (typeof unlockLore === 'function') { unlockLore('trader'); unlockLore('underwood.trade'); unlockLoreArticle('obol'); }
+  if (typeof updateTalkButtons === 'function') updateTalkButtons();   // v0.31: точка на «Поговорить»
 }
 function closeTrader() { document.getElementById('trader-overlay').classList.remove('active'); }
 
@@ -238,6 +239,7 @@ function sellItemByKey(groupKey, count) {
   renderTraderBuyback();
   updateInventoryFooter();
 
+  if (typeof markDeed === 'function') markDeed('trader.sold');   // v0.31: тема «Почему скупаешь так дёшево?»
   saveCurrentSlot();
 }
 
@@ -292,6 +294,7 @@ function buyItem(shopId, count) {
   // v0.30: шаг поручения отмечается сразу при покупке, а не только у Старейшины
   const fs = getQuestProgress('firstSteps');
   if (fs && fs.stage !== 'done') updateQuestProgress('firstSteps');
+  if (typeof markDeed === 'function') markDeed('trader.bought');   // v0.31: тема «Откуда у тебя товар?»
 
   saveCurrentSlot();
 }

@@ -80,6 +80,11 @@ function ensureChronicle() {
   }
   if (!c.counters) c.counters = {};
   ['trust', 'deaths', 'disenchanted'].forEach(k => { if (typeof c.counters[k] !== 'number') c.counters[k] = 0; });
+  // v0.31: дела героя (js/systems/townsfolk.js). Старый герой у Торговца уже и покупал, и продавал.
+  if (!c.deeds) {
+    c.deeds = {};
+    if (p.level > 1) { c.deeds['trader.bought'] = Date.now(); c.deeds['trader.sold'] = Date.now(); }
+  }
 }
 
 // ---- Факты: что герой уже узнал ----

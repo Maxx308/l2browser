@@ -121,6 +121,13 @@
 .lore-head { display: flex; align-items: center; gap: calc(10 * var(--u)); margin-bottom: calc(10 * var(--u)); }
 .lore-icon { width: calc(40 * var(--u)); height: calc(40 * var(--u)); flex: none; }
 .lore-icon svg, .lore-icon img { width: 100%; height: 100%; }
+/* v0.31: портрет жителя в шапке статьи */
+.lore-portrait {
+  width: calc(96 * var(--u)); height: calc(96 * var(--u)); flex: none;
+  border: 1px solid var(--gold); border-radius: calc(3 * var(--u)); overflow: hidden;
+  box-shadow: 0 0 calc(12 * var(--u)) rgba(184,148,90,0.3);
+}
+.lore-portrait img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .lore-title { font-family: 'Cinzel', serif; font-weight: 700; font-size: calc(17 * var(--u)); color: var(--gold-bright); }
 .lore-kind { color: var(--text-dim); font-size: var(--fs-tiny); }
 .lore-text { margin: 0 0 calc(10 * var(--u)); }
@@ -165,4 +172,5 @@
   .lore-back { display: block; }
   .chron-sub.has-news::after { top: calc(2 * var(--u)); right: calc(2 * var(--u)); }
   .lore-stats span { display: block; min-width: 0; }
+  .lore-portrait { width: calc(76 * var(--u)); height: calc(76 * var(--u)); }
 }

@@ -39,6 +39,10 @@ function openForge() {
   renderForgeAll();
   updateForgeGold();
   if (typeof refreshStorageFromCloud === 'function') refreshStorageFromCloud();   // v0.25: склад из облака
+
+  // v0.31: Энциклопедия — кузнец; точка на «Поговорить»
+  if (typeof unlockLore === 'function') unlockLore('smith');
+  if (typeof updateTalkButtons === 'function') updateTalkButtons();
 }
 function closeForge() { document.getElementById('forge-overlay').classList.remove('active'); }
 
@@ -444,6 +448,7 @@ function craftItem(category, recipeId) {
     showToast('⚒', `${res.name} (${rarity.name}) — сгорел (−${price} 🪙)`);
 
     renderForgeAll(); updateInventoryFooter(); updateForgeGold();
+    if (typeof markDeed === 'function') markDeed('forge.burned');   // v0.31: тема у кузнеца
     saveCurrentSlot();
     return;
   }
@@ -478,6 +483,7 @@ function craftItem(category, recipeId) {
     showToast('✨', `Создано: ${res.name} (${rarity.name})${bonusText ? ' · ' + bonusText : ''} (−${price} 🪙)`);
   }
 
+  if (typeof markDeed === 'function') markDeed('forge.crafted');   // v0.31: тема у кузнеца
   saveCurrentSlot();
 }
 
@@ -586,6 +592,7 @@ function craftItemBatch(category, recipeId, count) {
 
   renderInventory(); renderForgeAll(); updateInventoryFooter(); updateForgeGold();
   if (typeof updateTopStatus === 'function') updateTopStatus();
+  if (typeof markDeed === 'function') markDeed('forge.crafted');   // v0.31: тема у кузнеца
   saveCurrentSlot();
 }
 

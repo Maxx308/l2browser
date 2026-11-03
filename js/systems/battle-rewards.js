@@ -129,13 +129,8 @@ function onMonsterDeath(deadMonster) {
   const xpRaw = baseXpGain * tavernXpMult * skillXpMult * greedXpMult;
   const xpGain = Math.floor(xpRaw) + (Math.random() < xpRaw % 1 ? 1 : 0);
 
-  let xpLog = `💀 ${m.name} убит! +${xpGain} опыта.`;
-  const bonusNotes = [];
-  if (tavernXpMult > 1.0) bonusNotes.push(`Отдых +${TAVERN_XP_BONUS_PERCENT}%`);
-  if (skillXpMult > 1.0) bonusNotes.push(`Опыт +${xpBonusTotal}%`);
-  if (greedN > 0) bonusNotes.push(`Жадность ×${greedN} +${greedN * GREED_XP_PER_MARK}%`);
-  if (bonusNotes.length > 0) xpLog += ` (${bonusNotes.join(', ')})`;
-  logCombat(xpLog, 'log-entry kill');
+  // v0.31: постоянные бонусы (Отдых, Опыт от подгонки) не пишем — видны в «Эффектах»; жадность — припиской
+  logCombat(`💀 ${m.name} убит! +${xpGain} опыта`, 'log-entry kill', greedN > 0 ? `💰 жадность ×${greedN}: +${greedN * GREED_XP_PER_MARK}%` : '');
   p.xp += xpGain;
 
   // ---- ЗОЛОТО ----
@@ -152,19 +147,16 @@ function onMonsterDeath(deadMonster) {
     p.gold += gold;
     totalGold += gold;
   }
-  if (totalGold > 0) {
-    logLoot(`🪙 +${totalGold} Оболов`, 'log-gold');
-  }
+  // v0.31: бонусы жадности и стаи — не отдельными строками, а припиской к своей строке:
+  // к Оболам — их часть, к первой выпавшей вещи — часть про дроп. Не выпало — и приписки нет.
+  const goldNotes = [], dropNotes = [];
+  if (greedGoldMult > 1.0) goldNotes.push(`💰 жадность ×${greedN}: +${greedN * GREED_REWARD_PER_MARK}%`);
+  if (packBonus.gold > 0)  goldNotes.push(`🐾 стая ×${packBonus.size}: +${packBonus.gold}%`);
+  if (greedDropMult > 1.0) dropNotes.push(`💰 жадность ×${greedN}: дроп +${greedN * GREED_REWARD_PER_MARK}%`);
+  if (packBonus.drop > 0)  dropNotes.push(`🐾 стая ×${packBonus.size}: дроп +${packBonus.drop}%`);
 
-  // ---- v0.12: лог срабатывания метки ----
-  if (greedDropMult > 1.0) {
-    logLoot(`💰 Жадность ×${greedN}! Дроп +${greedN * GREED_REWARD_PER_MARK}%`, 'log-info');
-  }
-  if (greedGoldMult > 1.0) {
-    logLoot(`💰 Жадность ×${greedN}! Оболы +${greedN * GREED_REWARD_PER_MARK}%`, 'log-info');
-  }
-  if (packBonus.drop > 0) {
-    logLoot(`🐾 Стая ×${packBonus.size}: дроп +${packBonus.drop}%, Оболы +${packBonus.gold}%`, 'log-info');
+  if (totalGold > 0) {
+    logLoot(`🪙 +${totalGold} Оболов`, 'log-gold', goldNotes.join(' · '));
   }
 
   // ---- ПРЕДМЕТЫ ----
@@ -220,16 +212,18 @@ function onMonsterDeath(deadMonster) {
     }
   });
 
+  let dropNote = dropNotes.join(' · ');   // приписка про дроп — только к первой вещи
   lootGroups.forEach(group => {
     const rarity = group.rarity ? RARITIES[group.rarity] : null;
     const countStr = group.count > 1 ? ` ×${group.count}` : '';
 
     if (rarity && rarity.id !== 'white') {
       const bonusText = formatRarityBonus(group.bonusStats);
-      logLoot(`✨ ${group.name}${countStr} (${rarity.name})${bonusText ? ' · ' + bonusText : ''}`, 'log-loot');
+      logLoot(`✨ ${group.name}${countStr} (${rarity.name})${bonusText ? ' · ' + bonusText : ''}`, 'log-loot', dropNote);
     } else {
-      logLoot(`📦 ${group.name}${countStr}`, 'log-loot');
+      logLoot(`📦 ${group.name}${countStr}`, 'log-loot', dropNote);
     }
+    dropNote = '';
   });
 
   // ---- ЛЕВЕЛАП ----

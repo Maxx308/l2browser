@@ -35,6 +35,10 @@ function openMentor() {
 
   document.getElementById('mentor-overlay').classList.add('active');
   renderMentorSkills();
+
+  // v0.31: Энциклопедия — наставник; точка на «Поговорить»
+  if (typeof unlockLore === 'function') unlockLore('mentor');
+  if (typeof updateTalkButtons === 'function') updateTalkButtons();
 }
 
 function closeMentor() { document.getElementById('mentor-overlay').classList.remove('active'); }
@@ -90,7 +94,8 @@ function resetSkills() {
   
   logCombat(`🔄 Навыки сброшены. Возвращено ${totalSpent} очков. (−${price} 🪙)`, 'log-entry levelup');
   showToast('🔄', `Навыки сброшены (−${price} 🪙)`);
-  
+  if (typeof markDeed === 'function') markDeed('mentor.reset');   // v0.31: тема у наставника
+
   saveCurrentSlot();
 }
 
@@ -191,5 +196,6 @@ function upgradeSkill(skillId) {
   if (typeof renderSkillLoadout === 'function') renderSkillLoadout();
 
   logCombat(`✦ ${skill.name} → Ур. ${p.learnedSkills[skillId]}`, 'log-entry levelup');
+  if (typeof markDeed === 'function') markDeed('mentor.learned');   // v0.31: тема у наставника
   saveCurrentSlot();
 }

@@ -6,6 +6,8 @@
 //         opt.text может быть функцией (галочка у заданного вопроса),
 //         node.onEnter() — вызывается, когда реплика показана.
 //         «*…*» в тексте — действие/описание (не речь).
+//  v0.31: node.text и node.options тоже могут быть функциями
+//         (приветствие «впервые / снова», темы по уровню — js/systems/townsfolk.js).
 // ========================================================
 
 let __activeDialogue = null;
@@ -49,7 +51,10 @@ function renderDialogue(npc, node) {
     ? NPC_SVG[npc.icon]
     : `<div class="dialogue-portrait-fallback">?</div>`;
 
-  const buttonsHtml = node.options.map((opt, idx) => {
+  const options = typeof node.options === 'function' ? node.options() : node.options;
+  const nodeText = typeof node.text === 'function' ? node.text() : node.text;
+
+  const buttonsHtml = options.map((opt, idx) => {
     let cls = 'dialogue-option';
     if (opt.action === 'close') cls += ' dialogue-option-close';
     const text = typeof opt.text === 'function' ? opt.text() : opt.text;
@@ -63,7 +68,7 @@ function renderDialogue(npc, node) {
       </div>
       <div class="dialogue-content">
         <div class="dialogue-name">${npc.fullName || npc.name}</div>
-        <div class="dialogue-text">${heroText(node.text).replace(/\*([^*]+)\*/g, '<span class="dlg-act">$1</span>')}</div>
+        <div class="dialogue-text">${heroText(nodeText).replace(/\*([^*]+)\*/g, '<span class="dlg-act">$1</span>')}</div>
         <div class="dialogue-options" id="dialogue-options">
           ${buttonsHtml}
         </div>
@@ -72,13 +77,13 @@ function renderDialogue(npc, node) {
   `;
 
   __activeDialogue.currentNode = node;
+  __activeDialogue.currentOptions = options;
 }
 
 function onDialogueOption(idx) {
   if (!__activeDialogue || !__activeDialogue.currentNode) return;
 
-  const node = __activeDialogue.currentNode;
-  const opt = node.options[idx];
+  const opt = __activeDialogue.currentOptions[idx];
   if (!opt) return;
 
   if (opt.action === 'close') {

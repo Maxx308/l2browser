@@ -70,6 +70,93 @@
   box-shadow: 0 0 calc(20 * var(--u)) rgba(224,190,122,0.4);
 }
 
+/* v0.31: карточки Андервуда — деревянная рамка и подпись кодом.
+   Картинка без текста и рамки (img/city/underwood/*.jpg, 512×512),
+   название — в .city-card-label. Карточки с текстом на картинке
+   (без .city-card-wood и подписи) выглядят как раньше. */
+.city-card.city-card-wood {
+  --frame: calc(9 * var(--u));
+  padding: var(--frame);
+  border: 1px solid #120c07;
+  border-radius: calc(4 * var(--u));
+  background:
+    repeating-linear-gradient(90deg, rgba(0,0,0,0.25) 0 1px, transparent 1px 5px),
+    repeating-linear-gradient(90deg, rgba(255,214,160,0.07) 0 2px, transparent 2px 13px),
+    linear-gradient(180deg, #5a3e29, #3a2819 50%, #2b1d13);
+  box-shadow: 0 calc(3 * var(--u)) calc(10 * var(--u)) rgba(0,0,0,0.55);
+}
+.city-card.city-card-wood::before { display: none; }      /* золотой отсвет — только у старых */
+/* Железные заклёпки по углам рамки. */
+.city-card.city-card-wood::after {
+  --rivet: radial-gradient(circle,
+    #cdb998 0 calc(var(--frame) * 0.12),
+    #7d6a55 calc(var(--frame) * 0.24),
+    #2a2019 calc(var(--frame) * 0.32) calc(var(--frame) * 0.4),
+    transparent calc(var(--frame) * 0.46));
+  content: '';
+  position: absolute; inset: 0;
+  pointer-events: none;
+  z-index: 3;
+  background: var(--rivet), var(--rivet), var(--rivet), var(--rivet);
+  background-size: calc(var(--frame) * 2) calc(var(--frame) * 2);
+  background-position: 0 0, 100% 0, 0 100%, 100% 100%;
+  background-repeat: no-repeat;
+}
+.city-card.city-card-wood .city-icon-img {
+  border-radius: calc(2 * var(--u));
+  box-shadow: inset 0 0 0 1px rgba(0,0,0,0.7), 0 0 0 1px #1a120b;
+  transition: filter 0.3s;
+}
+/* Наведение: не золото, а тёплый свет фонаря. */
+.city-card.city-card-wood:hover {
+  border-color: #120c07;
+  box-shadow: 0 0 calc(22 * var(--u)) rgba(255,160,70,0.3), 0 calc(3 * var(--u)) calc(10 * var(--u)) rgba(0,0,0,0.55);
+}
+.city-card.city-card-wood:hover .city-icon-img {
+  transform: none;
+  filter: brightness(1.15) saturate(1.05);
+  box-shadow: inset 0 0 0 1px rgba(0,0,0,0.7), 0 0 0 1px #1a120b;
+}
+
+/* Название поверх тёмного низа картинки: золото с тенью и черта с ромбиком,
+   как было на старых картинках. Размер — от ширины карточки (cqw). */
+.city-card.city-card-wood { container-type: inline-size; }
+.city-card-label {
+  position: absolute;
+  left: var(--frame, 0); right: var(--frame, 0);
+  bottom: 7%;
+  z-index: 2;
+  font-family: 'Cinzel', var(--font-text, Georgia, serif);
+  font-weight: 700;
+  font-size: calc(17 * var(--u));
+  font-size: 8.8cqw;
+  line-height: 1.2;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  background: linear-gradient(180deg, #fff4d2 0%, #f3d38e 38%, #cf9d4f 72%, #94672c 100%) 0 0 / 100% 1.2em repeat-y;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 0 1px rgba(0,0,0,0.95)) drop-shadow(0 0.08em 0.12em rgba(0,0,0,0.85));
+  pointer-events: none;
+}
+.city-card-label::after {
+  content: '◆';
+  display: block;
+  width: 62%;
+  margin: 0.2em auto 0;
+  font-size: 0.34em;
+  line-height: 1;
+  letter-spacing: 0;
+  color: #d9b26a;
+  -webkit-text-fill-color: #d9b26a;
+  background: linear-gradient(90deg,
+    transparent, rgba(217,178,106,0.8) 30%, rgba(217,178,106,0.8) 43%, transparent 44%,
+    transparent 56%, rgba(217,178,106,0.8) 57%, rgba(217,178,106,0.8) 70%, transparent) center / 100% 1px no-repeat;
+}
+
 /* Текстовые подписи внутри карточки.
    Сейчас в HTML их нет (текст внутри картинок),
    но CSS оставляем — на случай использования. */
@@ -204,6 +291,27 @@
   line-height: 1.5;
 }
 
+/* v0.31: фон локации на карточке перехода (img/locations/map/*.jpg, 960×540).
+   Затемнение сверху — чтобы текст читался; к середине чуть светлее — видно место.
+   Новая локация = ещё одна строка с её data-loc. */
+.map-card[data-loc] {
+  --map-shade: linear-gradient(180deg, rgba(10,10,14,0.62) 0%, rgba(10,10,14,0.58) 45%, rgba(10,10,14,0.86) 100%);
+  background-size: cover;
+  background-position: center;
+  /* без кружков-иконок карточка стала ниже — держим высоту, чтобы место было видно */
+  min-height: calc(210 * var(--u));
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+.map-card[data-loc="field"] { background-image: var(--map-shade), url('../img/locations/map/field.jpg'); }
+.map-card[data-loc="town"]  { background-image: var(--map-shade), url('../img/locations/map/town.jpg'); }
+.map-card[data-loc="mine"]  { background-image: var(--map-shade), url('../img/locations/map/mine.jpg'); }
+.map-card[data-loc] .map-name,
+.map-card[data-loc] .map-desc,
+.map-card[data-loc] .map-meta { text-shadow: 0 1px 3px rgba(0,0,0,0.95), 0 0 calc(10 * var(--u)) rgba(0,0,0,0.8); }
+.map-card[data-loc] .map-desc { color: #d6ccb8; }
+
 /* ---------- НОВОЕ (v0.12): ДОП. ИНФА НА КАРТОЧКАХ ---------- */
 .map-meta {
   display: flex;
@@ -217,14 +325,68 @@
 .map-meta-line {
   display: block;
   font-family: 'Cinzel', serif;
-  font-size: var(--fs-small);
-  color: var(--gold);
+  font-size: var(--fs-medium);
+  color: var(--gold-bright);
   letter-spacing: calc(0.5 * var(--u));
   line-height: 1.4;
 }
 
 .map-meta-line.map-meta-safe {
   color: #a0d080;
+}
+
+/* v0.31: «🚶 Пешком» и «🌀 Магические тропы» рядом. */
+.map-travel-btns {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: calc(8 * var(--u));
+  margin-top: calc(12 * var(--u));
+}
+.map-travel-btns .map-travel-btn { margin-top: 0; }
+.map-walk-btn {
+  background: linear-gradient(180deg, #2a2418, #14110b);
+  border-color: rgba(184,148,90,0.75);
+}
+
+/* v0.31: значки титулов — левый верхний угол карточки. */
+.map-titles {
+  position: absolute;
+  top: calc(8 * var(--u));
+  left: calc(8 * var(--u));
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: calc(4 * var(--u));
+  z-index: 2;
+  pointer-events: auto;
+}
+.map-titles:empty { display: none; }
+.map-title {
+  font-family: 'Cinzel', serif;
+  font-size: var(--fs-small);
+  letter-spacing: calc(0.5 * var(--u));
+  padding: calc(3 * var(--u)) calc(10 * var(--u));
+  border-radius: calc(10 * var(--u));
+  background: rgba(0,0,0,0.6);
+  border: 1px solid currentColor;
+  cursor: help;
+  white-space: nowrap;
+}
+.map-title.hunter {
+  color: #ffb060;
+  text-shadow: 0 0 calc(8 * var(--u)) rgba(255,176,96,0.6);
+}
+.map-title.glorious {
+  color: #ffd040;
+  font-weight: 700;
+  text-shadow: 0 0 calc(10 * var(--u)) rgba(255,208,64,0.85);
+}
+/* Как у монстров (анимации — в monsters.css). */
+.map-title.magnificent {
+  color: #ff7090;
+  font-weight: 700;
+  animation: magnificentGlow 2.5s ease-in-out infinite;
 }
 
 /* Кнопка магических троп */
@@ -392,7 +554,7 @@
     padding-top: calc(6 * var(--u));
   }
   .map-meta-line {
-    font-size: calc(11.5 * var(--u));
+    font-size: calc(13 * var(--u));
   }
 }
 
@@ -416,6 +578,8 @@
     font-size: calc(12 * var(--u));
     letter-spacing: 0;
   }
+
+  .city-card.city-card-wood { --frame: calc(6 * var(--u)); }
 
   /* Карта — 1 колонка */
   .map-grid {
@@ -445,7 +609,7 @@
     padding-top: calc(6 * var(--u));
   }
   .map-meta-line {
-    font-size: calc(11.5 * var(--u));
+    font-size: calc(13 * var(--u));
     letter-spacing: 0;
   }
 
@@ -454,6 +618,9 @@
     padding: calc(6 * var(--u)) calc(10 * var(--u));
     margin-top: calc(8 * var(--u));
   }
+  .map-travel-btns { margin-top: calc(10 * var(--u)); gap: calc(6 * var(--u)); }
+  .map-title { font-size: calc(11 * var(--u)); padding: calc(2 * var(--u)) calc(7 * var(--u)); }
+  .map-card[data-loc] { min-height: calc(190 * var(--u)); padding-top: calc(34 * var(--u)); }
 
   /* Оверлей перемещения — компактнее */
   .travel-box {

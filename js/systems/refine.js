@@ -72,6 +72,7 @@ function tryRefineItem(item) {
   const success = roll < chance;
 
   if (!success) {
+    if (typeof markDeed === 'function') markDeed('refine.failed');   // v0.31: тема у мастерицы
     return {
       success: false,
       reason: 'Неудача',
@@ -105,6 +106,7 @@ function tryRefineItem(item) {
   if (!item.refineBonuses[key]) item.refineBonuses[key] = 0;
   item.refineBonuses[key] = Math.round((item.refineBonuses[key] + bonus.value) * 100) / 100;   // 0.5% и 0.15/сек не копят хвосты
   item.refineFlatV = REFINE_FLAT_VERSION;   // v0.25: HP/MP/реген уже по таблице тиров — миграция не тронет
+  if (isMilestone && typeof markDeed === 'function') markDeed('refine.milestone');   // v0.31: тема у мастерицы
 
   if (typeof recalcStats === 'function') recalcStats();
   if (typeof updateTopStatus === 'function') updateTopStatus();
@@ -202,6 +204,10 @@ function openRefine() {
 
   document.getElementById('refine-overlay').classList.add('active');
   renderRefineWindow();
+
+  // v0.31: Энциклопедия — мастерица; точка на «Поговорить»
+  if (typeof unlockLore === 'function') unlockLore('refiner');
+  if (typeof updateTalkButtons === 'function') updateTalkButtons();
 }
 
 function closeRefine() {

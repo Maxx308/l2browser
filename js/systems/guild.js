@@ -18,6 +18,10 @@ function openGuild() {
   document.getElementById('guild-overlay').classList.add('active');
   renderGuildList();
   updateGuildGold();
+
+  // v0.31: Энциклопедия — эльфийка из Гильдии; точка на «Поговорить»
+  if (typeof unlockLore === 'function') unlockLore('guildmage');
+  if (typeof updateTalkButtons === 'function') updateTalkButtons();
 }
 function closeGuild() { document.getElementById('guild-overlay').classList.remove('active'); }
 

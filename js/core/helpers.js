@@ -53,20 +53,34 @@ function spawnFloatDamage(elementId, dmg, type) {
 }
 
 // Запись в лог боя (левая колонка)
-function logCombat(text, cls = 'log-entry') {
+// v0.31: note — приписка тусклым шрифтом в той же строке (Цикл мастера, метка, поджог…).
+function logCombat(text, cls = 'log-entry', note) {
   const log = document.getElementById('battle-log-combat');
   const div = document.createElement('div');
   div.className = cls; div.textContent = text;
+  if (note) {
+    const span = document.createElement('span');
+    span.className = 'log-note';
+    span.textContent = ' · ' + note;
+    div.appendChild(span);
+  }
   log.appendChild(div);
   log.scrollTop = log.scrollHeight;
   while (log.children.length > 500) log.removeChild(log.firstChild);
 }
 
 // Запись в лог добычи (правая колонка)
-function logLoot(text, cls = 'log-loot') {
+// v0.31: note — приписка тусклым шрифтом в той же строке («· 🐾 стая ×5: +20%»), чтобы не занимать отдельную строку.
+function logLoot(text, cls = 'log-loot', note) {
   const log = document.getElementById('battle-log-loot');
   const div = document.createElement('div');
   div.className = cls; div.textContent = text;
+  if (note) {
+    const span = document.createElement('span');
+    span.className = 'log-note';
+    span.textContent = ' · ' + note;
+    div.appendChild(span);
+  }
   log.appendChild(div);
   log.scrollTop = log.scrollHeight;
   while (log.children.length > 500) log.removeChild(log.firstChild);

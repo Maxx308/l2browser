@@ -548,6 +548,8 @@
 .log-loot { color: #80c080; }
 .log-gold { color: #d4b060; font-family: 'Cinzel', serif; }
 .log-info { color: var(--text-dim); font-style: italic; font-size: var(--fs-small); }
+/* v0.31: приписка в строке добычи (бонус стаи / жадности) */
+.log-note { color: var(--text-dim); font-family: var(--font-text, Georgia, serif); font-style: italic; font-size: var(--fs-small); }
 .log-craft { color: #a0d080; }
 
 /* ---------- КНОПКИ УПРАВЛЕНИЯ ---------- */

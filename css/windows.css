@@ -75,6 +75,35 @@
 }
 .window-gold b { color: #fff; text-shadow: 0 0 calc(8 * var(--u)) var(--gold-bright); }
 
+/* v0.31: «Поговорить» с владельцем — рядом с «Закрыть». */
+.window-header-actions {
+  display: flex;
+  align-items: center;
+  gap: calc(8 * var(--u));
+  margin-left: auto;
+}
+.talk-btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: calc(6 * var(--u));
+}
+.talk-btn svg {
+  width: calc(17 * var(--u));
+  height: calc(17 * var(--u));
+  flex-shrink: 0;
+}
+/* Есть о чём поговорить — красная точка, как на «Хрониках». */
+.talk-btn.has-news::after {
+  content: '';
+  position: absolute;
+  top: calc(-4 * var(--u)); right: calc(-4 * var(--u));
+  width: calc(9 * var(--u)); height: calc(9 * var(--u));
+  border-radius: 50%;
+  background: var(--hp-glow);
+  box-shadow: 0 0 calc(6 * var(--u)) var(--hp-glow);
+}
+
 .window-tabs {
   display: flex;
   border-bottom: 1px solid var(--border);
@@ -936,6 +965,8 @@
     font-size: calc(13 * var(--u));
     letter-spacing: 0;
   }
+  .talk-btn-label { display: none; }   /* на телефоне — только значок */
+  .talk-btn { padding-left: calc(10 * var(--u)); padding-right: calc(10 * var(--u)); }
   .window-gold {
     font-size: calc(12 * var(--u));
     padding: calc(2 * var(--u)) calc(6 * var(--u));

@@ -82,32 +82,32 @@ applyTextFont(getSavedTextFont());
      v0.29.1: лежит в игре, а не на CDN — на телефонах jsdelivr не всегда открывается, и форма входа пропадала. -->
 <script src="js/vendor/supabase-2.118.0.js"></script>
 
-<link rel="stylesheet" href="css/base.css?v=0.30">
-<link rel="stylesheet" href="css/effects.css?v=0.30">
-<link rel="stylesheet" href="css/monsters.css?v=0.30">
-<link rel="stylesheet" href="css/city-map.css?v=0.30">
-<link rel="stylesheet" href="css/battle.css?v=0.30">
-<link rel="stylesheet" href="css/debuffs.css?v=0.30">
-<link rel="stylesheet" href="css/battle-autostop.css?v=0.30">
-<link rel="stylesheet" href="css/battle-arena.css?v=0.30">
-<link rel="stylesheet" href="css/battle-session.css?v=0.30">
-<link rel="stylesheet" href="css/battle-rest.css?v=0.30">
-<link rel="stylesheet" href="css/inventory.css?v=0.30">
-<link rel="stylesheet" href="css/inventory-equip.css?v=0.30">
-<link rel="stylesheet" href="css/inventory-slots.css?v=0.30">
-<link rel="stylesheet" href="css/windows.css?v=0.30">
-<link rel="stylesheet" href="css/screens.css?v=0.30">
-<link rel="stylesheet" href="css/patches.css?v=0.30">
-<link rel="stylesheet" href="css/settings.css?v=0.30">
-<link rel="stylesheet" href="css/cheat.css?v=0.30">
-<link rel="stylesheet" href="css/overlays.css?v=0.30">
-<link rel="stylesheet" href="css/dialogue.css?v=0.30">
-<link rel="stylesheet" href="css/storage.css?v=0.30">
-<link rel="stylesheet" href="css/refine.css?v=0.30">
-<link rel="stylesheet" href="css/alchemist.css?v=0.30">
-<link rel="stylesheet" href="css/leaderboard.css?v=0.30">
-<link rel="stylesheet" href="css/hero-inspect.css?v=0.30">
-<link rel="stylesheet" href="css/chronicle.css?v=0.30">
+<link rel="stylesheet" href="css/base.css?v=0.31">
+<link rel="stylesheet" href="css/effects.css?v=0.31">
+<link rel="stylesheet" href="css/monsters.css?v=0.31">
+<link rel="stylesheet" href="css/city-map.css?v=0.31">
+<link rel="stylesheet" href="css/battle.css?v=0.31">
+<link rel="stylesheet" href="css/debuffs.css?v=0.31">
+<link rel="stylesheet" href="css/battle-autostop.css?v=0.31">
+<link rel="stylesheet" href="css/battle-arena.css?v=0.31">
+<link rel="stylesheet" href="css/battle-session.css?v=0.31">
+<link rel="stylesheet" href="css/battle-rest.css?v=0.31">
+<link rel="stylesheet" href="css/inventory.css?v=0.31">
+<link rel="stylesheet" href="css/inventory-equip.css?v=0.31">
+<link rel="stylesheet" href="css/inventory-slots.css?v=0.31">
+<link rel="stylesheet" href="css/windows.css?v=0.31">
+<link rel="stylesheet" href="css/screens.css?v=0.31">
+<link rel="stylesheet" href="css/patches.css?v=0.31">
+<link rel="stylesheet" href="css/settings.css?v=0.31">
+<link rel="stylesheet" href="css/cheat.css?v=0.31">
+<link rel="stylesheet" href="css/overlays.css?v=0.31">
+<link rel="stylesheet" href="css/dialogue.css?v=0.31">
+<link rel="stylesheet" href="css/storage.css?v=0.31">
+<link rel="stylesheet" href="css/refine.css?v=0.31">
+<link rel="stylesheet" href="css/alchemist.css?v=0.31">
+<link rel="stylesheet" href="css/leaderboard.css?v=0.31">
+<link rel="stylesheet" href="css/hero-inspect.css?v=0.31">
+<link rel="stylesheet" href="css/chronicle.css?v=0.31">
 </head>
 <body>
 
@@ -207,44 +207,56 @@ applyTextFont(getSavedTextFont());
       </div>
       <div class="city-grid">
 
-        <div class="city-card" onclick="openElder()">
-          <div class="city-icon-img" style="background-image:url('img/city/elder.png')"></div>
+        <!-- v0.31: картинки Андервуда без текста (img/city/underwood), подпись — кодом.
+             Старые карточки с текстом (img/city/*.png) — запас для Ильграда. -->
+        <div class="city-card city-card-wood" onclick="openElder()">
+          <div class="city-icon-img" style="background-image:url('img/city/underwood/elder.jpg')"></div>
+          <div class="city-card-label">Старейшина</div>
         </div>
 
-        <div class="city-card" onclick="openTrader()">
-          <div class="city-icon-img" style="background-image:url('img/city/trader.png')"></div>
+        <div class="city-card city-card-wood" onclick="openTrader()">
+          <div class="city-icon-img" style="background-image:url('img/city/underwood/trader.jpg')"></div>
+          <div class="city-card-label">Торговец</div>
         </div>
 
-        <div class="city-card" onclick="openForge()">
-          <div class="city-icon-img" style="background-image:url('img/city/forge.png')"></div>
+        <div class="city-card city-card-wood" onclick="openForge()">
+          <div class="city-icon-img" style="background-image:url('img/city/underwood/forge.jpg')"></div>
+          <div class="city-card-label">Кузница</div>
         </div>
 
-        <div class="city-card" onclick="openMentor()">
-          <div class="city-icon-img" style="background-image:url('img/city/mentor.png')"></div>
+        <div class="city-card city-card-wood" onclick="openMentor()">
+          <div class="city-icon-img" style="background-image:url('img/city/underwood/mentor.jpg')"></div>
+          <div class="city-card-label">Наставник</div>
         </div>
 
-        <div class="city-card" onclick="openTavern()">
-          <div class="city-icon-img" style="background-image:url('img/city/tavern.png')"></div>
+        <div class="city-card city-card-wood" onclick="openTavern()">
+          <div class="city-icon-img" style="background-image:url('img/city/underwood/tavern.jpg')"></div>
+          <div class="city-card-label">Таверна</div>
         </div>
 
-        <div class="city-card" onclick="openGuild()">
-          <div class="city-icon-img" style="background-image:url('img/city/guild.png')"></div>
+        <div class="city-card city-card-wood" onclick="openGuild()">
+          <div class="city-icon-img" style="background-image:url('img/city/underwood/guild.jpg')"></div>
+          <div class="city-card-label">Гильдия магов</div>
         </div>
 
-        <div class="city-card" onclick="openStorage()">
-          <div class="city-icon-img" style="background-image:url('img/city/storage.png')"></div>
+        <div class="city-card city-card-wood" onclick="openStorage()">
+          <div class="city-icon-img" style="background-image:url('img/city/underwood/storage.jpg')"></div>
+          <div class="city-card-label">Склад</div>
         </div>
 
-        <div class="city-card" onclick="openRefine()">
-          <div class="city-icon-img" style="background-image:url('img/city/refine.png')"></div>
+        <div class="city-card city-card-wood" onclick="openRefine()">
+          <div class="city-icon-img" style="background-image:url('img/city/underwood/refine.jpg')"></div>
+          <div class="city-card-label">Мастерская</div>
         </div>
 
-        <div class="city-card" onclick="openAlchemist()">
-          <div class="city-icon-img" style="background-image:url('img/city/alchemist.png')"></div>
+        <div class="city-card city-card-wood" onclick="openAlchemist()">
+          <div class="city-icon-img" style="background-image:url('img/city/underwood/alchemist.jpg')"></div>
+          <div class="city-card-label">Алхимик</div>
         </div>
 
-        <div class="city-card" id="city-card-leaderboard" onclick="openLeaderboard()" style="display:none;">
-          <div class="city-icon-img" style="background-image:url('img/city/leaderboard.png?v=0.30')"></div>
+        <div class="city-card city-card-wood" id="city-card-leaderboard" onclick="openLeaderboard()" style="display:none;">
+          <div class="city-icon-img" style="background-image:url('img/city/underwood/leaderboard.jpg')"></div>
+          <div class="city-card-label">Зал славы</div>
         </div>
 
       </div>
@@ -496,11 +508,6 @@ applyTextFont(getSavedTextFont());
     <div class="map-grid">
       <div class="map-card" data-loc="field" id="map-card-field">
         <div onclick="tryTravel('field')" style="cursor:pointer;">
-          <svg class="map-icon" viewBox="0 0 100 100">
-            <defs><radialGradient id="fieldGrad" cx="50%" cy="60%"><stop offset="0%" stop-color="#3a5a2a"/><stop offset="100%" stop-color="#0a1508"/></radialGradient></defs>
-            <circle cx="50" cy="50" r="40" fill="url(#fieldGrad)" stroke="#b8945a" stroke-width="1.5"/>
-            <path d="M20 60 Q50 40 80 60" stroke="#1a2a10" stroke-width="2" fill="none"/>
-          </svg>
           <div class="map-name">Зелёная поляна</div>
           <div class="map-desc">Тихая поляна на окраине земель.</div>
           <div class="map-meta" id="map-meta-field"></div>
@@ -508,12 +515,6 @@ applyTextFont(getSavedTextFont());
         <div id="map-travel-slot"></div>
       </div>
       <div class="map-card" data-loc="town" onclick="tryTravel('town')">
-        <svg class="map-icon" viewBox="0 0 100 100">
-          <defs><radialGradient id="townGrad" cx="50%" cy="60%"><stop offset="0%" stop-color="#5a4a3a"/><stop offset="100%" stop-color="#150f08"/></radialGradient></defs>
-          <circle cx="50" cy="50" r="40" fill="url(#townGrad)" stroke="#b8945a" stroke-width="1.5"/>
-          <path d="M35 60 L35 40 L50 30 L65 40 L65 60 Z" fill="#2a1a10" stroke="#b8945a" stroke-width="1.5"/>
-          <rect x="45" y="48" width="10" height="12" fill="#0a0a0a"/>
-        </svg>
         <div class="map-name">Город Андервуд</div>
         <div class="map-desc">Последний оплот людей. Безопасная зона.</div>
         <div class="map-meta" id="map-meta-town"></div>
@@ -521,13 +522,6 @@ applyTextFont(getSavedTextFont());
       </div>
       <div class="map-card" data-loc="mine" id="map-card-mine">
         <div onclick="tryTravel('mine')" style="cursor:pointer;">
-          <svg class="map-icon" viewBox="0 0 100 100">
-            <defs><radialGradient id="mineGrad" cx="50%" cy="60%"><stop offset="0%" stop-color="#3a2a1a"/><stop offset="100%" stop-color="#0a0805"/></radialGradient></defs>
-            <circle cx="50" cy="50" r="40" fill="url(#mineGrad)" stroke="#b8945a" stroke-width="1.5"/>
-            <path d="M30 70 L30 45 Q50 30 70 45 L70 70" fill="#1a1008" stroke="#8a7050" stroke-width="1.8" fill-opacity="0.9"/>
-            <path d="M42 70 L42 55 Q50 50 58 55 L58 70" fill="#0a0505" stroke="#8a7050" stroke-width="1.2"/>
-            <path d="M22 72 L78 72" stroke="#b8945a" stroke-width="1.5"/>
-          </svg>
           <div class="map-name">Копи</div>
           <div class="map-desc">Заброшенные шахты. Дикая зона для фарма.</div>
           <div class="map-meta" id="map-meta-mine"></div>
@@ -800,7 +794,14 @@ applyTextFont(getSavedTextFont());
         <div class="window-title">🏪 ТОРГОВЕЦ АНДЕРВУДА</div>
         <div class="window-gold">🪙 <b id="trader-gold">0</b> Оболов</div>
       </div>
-      <button class="btn danger" onclick="closeTrader()">Закрыть</button>
+      <!-- v0.31: «Поговорить» с владельцем (js/systems/townsfolk.js) -->
+      <div class="window-header-actions">
+        <button class="btn talk-btn" data-npc="trader" onclick="talkToOwner('trader')" title="Поговорить с Торговцем">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v10H9l-5 4z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><circle cx="9" cy="10" r="1.1" fill="currentColor"/><circle cx="12.5" cy="10" r="1.1" fill="currentColor"/><circle cx="16" cy="10" r="1.1" fill="currentColor"/></svg>
+          <span class="talk-btn-label">Поговорить</span>
+        </button>
+        <button class="btn danger" onclick="closeTrader()">Закрыть</button>
+      </div>
     </div>
     <div class="window-tabs">
       <div class="window-tab active" data-pane="buy" onclick="switchTraderTab('buy')">КУПИТЬ</div>
@@ -822,7 +823,13 @@ applyTextFont(getSavedTextFont());
         <div class="window-title">⚒ КУЗНИЦА АНДЕРВУДА</div>
         <div class="window-gold">🪙 <b id="forge-gold">0</b> Оболов</div>
       </div>
-      <button class="btn danger" onclick="closeForge()">Закрыть</button>
+      <div class="window-header-actions">
+        <button class="btn talk-btn" data-npc="smith" onclick="talkToOwner('smith')" title="Поговорить с кузнецом">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v10H9l-5 4z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><circle cx="9" cy="10" r="1.1" fill="currentColor"/><circle cx="12.5" cy="10" r="1.1" fill="currentColor"/><circle cx="16" cy="10" r="1.1" fill="currentColor"/></svg>
+          <span class="talk-btn-label">Поговорить</span>
+        </button>
+        <button class="btn danger" onclick="closeForge()">Закрыть</button>
+      </div>
     </div>
     <div class="window-tabs">
       <div class="window-tab active" data-forge="resources" onclick="switchForgeTab('resources')">РЕСУРСЫ</div>
@@ -848,7 +855,13 @@ applyTextFont(getSavedTextFont());
   <div class="mentor-window window-base">
     <div class="window-header">
       <div class="window-title">📖 НАСТАВНИК · НАВЫКИ</div>
-      <button class="btn danger" onclick="closeMentor()">Закрыть</button>
+      <div class="window-header-actions">
+        <button class="btn talk-btn" data-npc="mentor" onclick="talkToOwner('mentor')" title="Поговорить с наставником">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v10H9l-5 4z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><circle cx="9" cy="10" r="1.1" fill="currentColor"/><circle cx="12.5" cy="10" r="1.1" fill="currentColor"/><circle cx="16" cy="10" r="1.1" fill="currentColor"/></svg>
+          <span class="talk-btn-label">Поговорить</span>
+        </button>
+        <button class="btn danger" onclick="closeMentor()">Закрыть</button>
+      </div>
     </div>
     <div class="window-content">
       <div class="pane active" id="mentor-pane-skills"></div>
@@ -863,7 +876,13 @@ applyTextFont(getSavedTextFont());
         <div class="window-title">🔮 ГИЛЬДИЯ МАГОВ</div>
         <div class="window-gold">🪙 <b id="guild-gold">0</b> Оболов</div>
       </div>
-      <button class="btn danger" onclick="closeGuild()">Закрыть</button>
+      <div class="window-header-actions">
+        <button class="btn talk-btn" data-npc="guildmage" onclick="talkToOwner('guildmage')" title="Поговорить с эльфийкой">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v10H9l-5 4z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><circle cx="9" cy="10" r="1.1" fill="currentColor"/><circle cx="12.5" cy="10" r="1.1" fill="currentColor"/><circle cx="16" cy="10" r="1.1" fill="currentColor"/></svg>
+          <span class="talk-btn-label">Поговорить</span>
+        </button>
+        <button class="btn danger" onclick="closeGuild()">Закрыть</button>
+      </div>
     </div>
     <div class="window-content">
       <div class="bs-setbar" id="guild-setbar"></div>
@@ -879,7 +898,13 @@ applyTextFont(getSavedTextFont());
         <div class="window-title">🍺 ТАВЕРНА «КОЗЬЕ ВЫМЯ»</div>
         <div class="window-gold">🪙 <b id="tavern-gold">0</b> Оболов</div>
       </div>
-      <button class="btn danger" onclick="closeTavern()">Закрыть</button>
+      <div class="window-header-actions">
+        <button class="btn talk-btn" data-npc="hostess" onclick="talkToOwner('hostess')" title="Поговорить с хозяйкой">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v10H9l-5 4z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><circle cx="9" cy="10" r="1.1" fill="currentColor"/><circle cx="12.5" cy="10" r="1.1" fill="currentColor"/><circle cx="16" cy="10" r="1.1" fill="currentColor"/></svg>
+          <span class="talk-btn-label">Поговорить</span>
+        </button>
+        <button class="btn danger" onclick="closeTavern()">Закрыть</button>
+      </div>
     </div>
     <div class="window-content">
       <div class="bs-setbar" id="tavern-setbar"></div>
@@ -918,7 +943,13 @@ applyTextFont(getSavedTextFont());
     <div class="refine-header">
       <div class="refine-title">🔧 МАСТЕРСКАЯ · ПОДГОНКА</div>
       <div class="refine-gold">🪙 <b id="refine-gold">0</b> Оболов</div>
-      <button class="btn danger" onclick="closeRefine()">Закрыть</button>
+      <div class="window-header-actions">
+        <button class="btn talk-btn" data-npc="refiner" onclick="talkToOwner('refiner')" title="Поговорить с мастерицей">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v10H9l-5 4z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><circle cx="9" cy="10" r="1.1" fill="currentColor"/><circle cx="12.5" cy="10" r="1.1" fill="currentColor"/><circle cx="16" cy="10" r="1.1" fill="currentColor"/></svg>
+          <span class="talk-btn-label">Поговорить</span>
+        </button>
+        <button class="btn danger" onclick="closeRefine()">Закрыть</button>
+      </div>
     </div>
     <div class="refine-body">
       <div class="refine-panel">
@@ -1188,99 +1219,100 @@ applyTextFont(getSavedTextFont());
   <button class="btn bxp-back" onclick="event.stopPropagation(); returnToBattle()">Вернуться в бой</button>
 </div>
 
-<script src="js/data/config.js?v=0.30"></script>
-<script src="js/data/classes.js?v=0.30"></script>
-<script src="js/data/races.js?v=0.30"></script>
+<script src="js/data/config.js?v=0.31"></script>
+<script src="js/data/classes.js?v=0.31"></script>
+<script src="js/data/races.js?v=0.31"></script>
 
 <!-- ИКОНКИ: разбиты на папку icons/ -->
-<script src="js/data/icons/materials.js?v=0.30"></script>
-<script src="js/data/icons/consumables.js?v=0.30"></script>
-<script src="js/data/icons/equipment.js?v=0.30"></script>
-<script src="js/data/icons/weapons.js?v=0.30"></script>
-<script src="js/data/icons/skills.js?v=0.30"></script>
-<script src="js/data/icons/index.js?v=0.30"></script>
+<script src="js/data/icons/materials.js?v=0.31"></script>
+<script src="js/data/icons/consumables.js?v=0.31"></script>
+<script src="js/data/icons/equipment.js?v=0.31"></script>
+<script src="js/data/icons/weapons.js?v=0.31"></script>
+<script src="js/data/icons/skills.js?v=0.31"></script>
+<script src="js/data/icons/index.js?v=0.31"></script>
 
-<script src="js/data/monsters.js?v=0.30"></script>
-<script src="js/data/skills.js?v=0.30"></script>
-<script src="js/data/skills-aoe.js?v=0.30"></script>
-<script src="js/data/recipes.js?v=0.30"></script>
-<script src="js/data/weaponSkills.js?v=0.30"></script>
-<script src="js/data/elements.js?v=0.30"></script>
-<script src="js/data/weaponTypes.js?v=0.30"></script>
-<script src="js/data/changelog.js?v=0.30"></script>
-<script src="js/data/npcs.js?v=0.30"></script>
-<script src="js/data/alchemy.js?v=0.30"></script>
-<script src="js/data/dialogues.js?v=0.30"></script>
-<script src="js/data/encyclopedia.js?v=0.30"></script>
-<script src="js/data/quests.js?v=0.30"></script>
+<script src="js/data/monsters.js?v=0.31"></script>
+<script src="js/data/skills.js?v=0.31"></script>
+<script src="js/data/skills-aoe.js?v=0.31"></script>
+<script src="js/data/recipes.js?v=0.31"></script>
+<script src="js/data/weaponSkills.js?v=0.31"></script>
+<script src="js/data/elements.js?v=0.31"></script>
+<script src="js/data/weaponTypes.js?v=0.31"></script>
+<script src="js/data/changelog.js?v=0.31"></script>
+<script src="js/data/npcs.js?v=0.31"></script>
+<script src="js/data/alchemy.js?v=0.31"></script>
+<script src="js/data/dialogues.js?v=0.31"></script>
+<script src="js/data/encyclopedia.js?v=0.31"></script>
+<script src="js/data/quests.js?v=0.31"></script>
 
-<script src="js/state.js?v=0.30"></script>
+<script src="js/state.js?v=0.31"></script>
 
-<script src="js/core/helpers.js?v=0.30"></script>
-<script src="js/core/stats.js?v=0.30"></script>
-<script src="js/core/top-status.js?v=0.30"></script>
-<script src="js/core/tabs.js?v=0.30"></script>
-<script src="js/core/effects.js?v=0.30"></script>
-<script src="js/core/toast.js?v=0.30"></script>
+<script src="js/core/helpers.js?v=0.31"></script>
+<script src="js/core/stats.js?v=0.31"></script>
+<script src="js/core/top-status.js?v=0.31"></script>
+<script src="js/core/tabs.js?v=0.31"></script>
+<script src="js/core/effects.js?v=0.31"></script>
+<script src="js/core/toast.js?v=0.31"></script>
 
-<script src="js/systems/slots.js?v=0.30"></script>
-<script src="js/systems/cloud.js?v=0.30"></script>
-<script src="js/systems/leaderboard.js?v=0.30"></script>
-<script src="js/systems/hero-inspect.js?v=0.30"></script>
-<script src="js/systems/start-screen.js?v=0.30"></script>
-<script src="js/systems/mobile.js?v=0.30"></script>
-<script src="js/systems/patches.js?v=0.30"></script>
-<script src="js/systems/cheat.js?v=0.30"></script>
-<script src="js/systems/tooltips.js?v=0.30"></script>
-<script src="js/systems/stat-info.js?v=0.30"></script>
-<script src="js/systems/debuffs.js?v=0.30"></script>
-<script src="js/systems/elder.js?v=0.30"></script>
-<script src="js/systems/dialogue.js?v=0.30"></script>
-<script src="js/systems/quests.js?v=0.30"></script>
-<script src="js/systems/mentor.js?v=0.30"></script>
-<script src="js/systems/skill-slots.js?v=0.30"></script>
-<script src="js/systems/player-avatar.js?v=0.30"></script>
-<script src="js/systems/guild.js?v=0.30"></script>
-<script src="js/systems/tavern.js?v=0.30"></script>
-<script src="js/systems/buff-shop.js?v=0.30"></script>
-<script src="js/systems/map.js?v=0.30"></script>
-<script src="js/systems/inventory.js?v=0.30"></script>
-<script src="js/systems/equipment.js?v=0.30"></script>
-<script src="js/systems/trader.js?v=0.30"></script>
-<script src="js/systems/forge.js?v=0.30"></script>
-<script src="js/systems/storage.js?v=0.30"></script>
-<script src="js/systems/refine.js?v=0.30"></script>
-<script src="js/systems/alchemist.js?v=0.30"></script>
-<script src="js/systems/proficiency.js?v=0.30"></script>
-<script src="js/systems/proficiency-ui.js?v=0.30"></script>
-<script src="js/systems/chronicle.js?v=0.30"></script>
-<script src="js/systems/encyclopedia.js?v=0.30"></script>
-<script src="js/systems/monster-kills.js?v=0.30"></script>
-<script src="js/systems/monster-cards.js?v=0.30"></script>
+<script src="js/systems/slots.js?v=0.31"></script>
+<script src="js/systems/cloud.js?v=0.31"></script>
+<script src="js/systems/leaderboard.js?v=0.31"></script>
+<script src="js/systems/hero-inspect.js?v=0.31"></script>
+<script src="js/systems/start-screen.js?v=0.31"></script>
+<script src="js/systems/mobile.js?v=0.31"></script>
+<script src="js/systems/patches.js?v=0.31"></script>
+<script src="js/systems/cheat.js?v=0.31"></script>
+<script src="js/systems/tooltips.js?v=0.31"></script>
+<script src="js/systems/stat-info.js?v=0.31"></script>
+<script src="js/systems/debuffs.js?v=0.31"></script>
+<script src="js/systems/elder.js?v=0.31"></script>
+<script src="js/systems/dialogue.js?v=0.31"></script>
+<script src="js/systems/townsfolk.js?v=0.31"></script>
+<script src="js/systems/quests.js?v=0.31"></script>
+<script src="js/systems/mentor.js?v=0.31"></script>
+<script src="js/systems/skill-slots.js?v=0.31"></script>
+<script src="js/systems/player-avatar.js?v=0.31"></script>
+<script src="js/systems/guild.js?v=0.31"></script>
+<script src="js/systems/tavern.js?v=0.31"></script>
+<script src="js/systems/buff-shop.js?v=0.31"></script>
+<script src="js/systems/map.js?v=0.31"></script>
+<script src="js/systems/inventory.js?v=0.31"></script>
+<script src="js/systems/equipment.js?v=0.31"></script>
+<script src="js/systems/trader.js?v=0.31"></script>
+<script src="js/systems/forge.js?v=0.31"></script>
+<script src="js/systems/storage.js?v=0.31"></script>
+<script src="js/systems/refine.js?v=0.31"></script>
+<script src="js/systems/alchemist.js?v=0.31"></script>
+<script src="js/systems/proficiency.js?v=0.31"></script>
+<script src="js/systems/proficiency-ui.js?v=0.31"></script>
+<script src="js/systems/chronicle.js?v=0.31"></script>
+<script src="js/systems/encyclopedia.js?v=0.31"></script>
+<script src="js/systems/monster-kills.js?v=0.31"></script>
+<script src="js/systems/monster-cards.js?v=0.31"></script>
 
 <!-- ===== БОЙ: разбит на несколько файлов (v0.10) ===== -->
-<script src="js/systems/battle-mixtures.js?v=0.30"></script>
-<script src="js/systems/battle-effects.js?v=0.30"></script>
-<script src="js/systems/battle-skills.js?v=0.30"></script>
-<script src="js/systems/battle-player-attack.js?v=0.30"></script>
-<script src="js/systems/battle-aoe.js?v=0.30"></script>
-<script src="js/systems/battle-weapon-styles.js?v=0.30"></script>
-<script src="js/systems/battle-manual.js?v=0.30"></script>
-<script src="js/systems/battle-monster-attack.js?v=0.30"></script>
-<script src="js/systems/battle-rewards.js?v=0.30"></script>
-<script src="js/systems/battle-search.js?v=0.30"></script>
-<script src="js/systems/battle-autostop.js?v=0.30"></script>
-<script src="js/systems/battle-core.js?v=0.30"></script>
-<script src="js/systems/battle-loop.js?v=0.30"></script>
-<script src="js/systems/battle.js?v=0.30"></script>
+<script src="js/systems/battle-mixtures.js?v=0.31"></script>
+<script src="js/systems/battle-effects.js?v=0.31"></script>
+<script src="js/systems/battle-skills.js?v=0.31"></script>
+<script src="js/systems/battle-player-attack.js?v=0.31"></script>
+<script src="js/systems/battle-aoe.js?v=0.31"></script>
+<script src="js/systems/battle-weapon-styles.js?v=0.31"></script>
+<script src="js/systems/battle-manual.js?v=0.31"></script>
+<script src="js/systems/battle-monster-attack.js?v=0.31"></script>
+<script src="js/systems/battle-rewards.js?v=0.31"></script>
+<script src="js/systems/battle-search.js?v=0.31"></script>
+<script src="js/systems/battle-autostop.js?v=0.31"></script>
+<script src="js/systems/battle-core.js?v=0.31"></script>
+<script src="js/systems/battle-loop.js?v=0.31"></script>
+<script src="js/systems/battle.js?v=0.31"></script>
 
 <!-- ===== ГРУППОВЫЕ БОИ: модалка (v0.11) ===== -->
-<script src="js/systems/battle-pack.js?v=0.30"></script>
-<script src="js/systems/battle-fx.js?v=0.30"></script>
-<script src="js/systems/battle-session.js?v=0.30"></script>
-<script src="js/systems/battle-rest.js?v=0.30"></script>
+<script src="js/systems/battle-pack.js?v=0.31"></script>
+<script src="js/systems/battle-fx.js?v=0.31"></script>
+<script src="js/systems/battle-session.js?v=0.31"></script>
+<script src="js/systems/battle-rest.js?v=0.31"></script>
 
-<script src="js/main.js?v=0.30"></script>
+<script src="js/main.js?v=0.31"></script>
 
 </body>
 </html>

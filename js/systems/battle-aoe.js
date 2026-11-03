@@ -151,6 +151,7 @@ function performAoeSkill(skill, data) {
   const lvl = getSkillLevel(skill.id);
   const kind = skill.aoe.kind;
   let line = '';
+  const notes = [];   // v0.31: эффекты — припиской в той же строке, а не отдельными строками
 
   switch (kind) {
 
@@ -160,8 +161,8 @@ function performAoeSkill(skill, data) {
         .map(h => ({ ...h, type: h.crit ? 'crit' : 'dmg' }));
       const r = aoeApply(hits);
       aoeGiveXp(skill, []);
-      line = `🌀 КРУГОВОЙ УДАР (Ур.${lvl})! Целей: ${hits.length}, урон: ${r.total}.`;
-      if (r.kills > 0 && typeof humanCycleOnKill === 'function') humanCycleOnKill('whirlwind');   // v0.19.1: Цикл мастера
+      line = `🌀 Круговой удар: ${r.total} (целей: ${hits.length})`;
+      if (r.kills > 0 && typeof humanCycleOnKill === 'function') notes.push(humanCycleOnKill('whirlwind'));   // v0.19.1: Цикл мастера
       break;
     }
 
@@ -170,6 +171,7 @@ function performAoeSkill(skill, data) {
       const ELEM = ['fire', 'ice', 'lightning'];
       const used = new Set();
       const hits = [];
+      let burned = 0, froze = 0, shocked = 0;
       for (let i = 0; i < data.shots; i++) {
         const alive = aoeAlive();
         if (!alive.length) break;
@@ -183,23 +185,26 @@ function performAoeSkill(skill, data) {
           if (el === 'fire') {
             const pureMAtk = Math.floor(5 + p.INT * 0.8);
             addDebuff('monster', 'burn', m.index, { turnsLeft: 3, damage: Math.max(1, Math.floor(pureMAtk * 0.12)) });
-            logCombat(`🔥 ${m.name} подожжён!`, 'log-entry fire');
+            burned++;
           } else if (el === 'ice') {
             addDebuff('monster', 'freeze', m.index, { turnsLeft: 1 });
-            logCombat(`❄ ${m.name} заморожен!`, 'log-entry magic');
+            froze++;
           } else {
             cutMonstersATB(0.15);
-            logCombat(`⚡ Разряд сбил ATB стаи!`, 'log-entry player-magic');
+            shocked++;
           }
         }
       }
       const r = aoeApply(hits);
       aoeGiveXp(skill, [...used]);
-      line = `✦ СТИХИЙНЫЙ ЗАЛП (Ур.${lvl})! Снарядов: ${hits.length}, урон: ${r.total}.`;
+      line = `✦ Стихийный залп: ${r.total} (снарядов: ${hits.length})`;
+      if (burned) notes.push(`🔥 подожжено: ${burned}`);
+      if (froze) notes.push(`❄ заморожено: ${froze}`);
+      if (shocked) notes.push(`⚡ ATB стаи −${15 * shocked}%`);
       // v0.19.1: «Стихийный резонанс» — все три стихии в одном залпе → следующий Шар / Ледяная стрела без маны
       if (used.size >= 3 && !getDebuff('player', 'resonance')) {
         addDebuff('player', 'resonance', { turnsLeft: 1 });
-        line += ' Стихийный резонанс: следующий Огненный шар или Ледяная стрела — без маны!';
+        notes.push('✦ резонанс: следующий Шар или Стрела без маны');
       }
       break;
     }
@@ -211,12 +216,12 @@ function performAoeSkill(skill, data) {
         .map(h => ({ ...h, type: h.crit ? 'crit' : 'dmg' }));
       const r = aoeApply(hits);
       aoeGiveXp(skill);
-      let healStr = '';
       if (r.kills > 0) {
         const healed = aoeHeal(p.maxHp * data.healPercent / 100 * r.kills);
-        if (healed > 0) healStr = ` Жатва: +${healed} HP.`;
+        notes.push(`убито: ${r.kills}`);
+        if (healed > 0) notes.push(`🩸 +${healed} HP`);
       }
-      line = `🩸 КРОВАВАЯ ЖАТВА (Ур.${lvl})! Целей: ${hits.length}, урон: ${r.total}, убито: ${r.kills}.${healStr}`;
+      line = `🩸 Кровавая жатва: ${r.total} (целей: ${hits.length})`;
       break;
     }
 
@@ -232,7 +237,8 @@ function performAoeSkill(skill, data) {
         spawnFloatDamage('fighter-monster', 0, 'poison', { mon: m, fx: 'toxic', text: two ? '☠ Гниение ×2' : '☠ Гниение' });
       });
       aoeGiveXp(skill);
-      line = `☠ МОР (Ур.${lvl})! Гниение на ${targets.length} врагах: ${perTurn} урона за ход, ${data.turns} хода.` + (doubled ? ` Второй слой: ${doubled}.` : '');
+      line = `☠ Мор: гниение на ${targets.length} врагах, ${perTurn} × ${data.turns} хода`;
+      if (doubled) notes.push(`второй слой: ${doubled}`);
       break;
     }
 
@@ -247,7 +253,8 @@ function performAoeSkill(skill, data) {
       });
       const r = aoeApply(hits);
       aoeGiveXp(skill);
-      line = `🌿 ТЕРНОВЫЙ ВИХРЬ (Ур.${lvl})! Целей: ${hits.length}, урон: ${r.total}. Опутаны: точность −${data.accReduction}%.`;
+      line = `🌿 Терновый вихрь: ${r.total} (целей: ${hits.length})`;
+      notes.push(`опутаны: точность −${data.accReduction}%`);
       // v0.19.1: комбо — враг погиб от Вихря → бесплатное Дыхание природы
       // (без маны, без отката, при любом HP; один раз за Вихрь, ×1.5 если убито 2+).
       if (r.kills > 0 && typeof triggerNatureBreath === 'function') triggerNatureBreath(r.kills);
@@ -264,7 +271,9 @@ function performAoeSkill(skill, data) {
       const r = aoeApply(hits);
       aoeGiveXp(skill);
       const healed = aoeHeal(r.total * data.healPercent / 100);
-      line = `🌿 ПОХИЩЕНИЕ ЖИЗНИ (Ур.${lvl})!${comboMult > 1 ? ' Исцеление питает удар: +50%!' : ''} Урон: ${r.total}${healed > 0 ? `, +${healed} HP` : ''}.`;
+      line = `🌿 Похищение жизни: ${r.total}`;
+      if (healed > 0) notes.push(`+${healed} HP`);
+      if (comboMult > 1) notes.push('Исцеление питает удар: +50%');
       break;
     }
 
@@ -276,7 +285,8 @@ function performAoeSkill(skill, data) {
       const r = aoeApply(hits);
       cutMonstersATB(data.atbCut / 100);
       aoeGiveXp(skill);
-      line = `⚡ ИСКРОВОЙ РАЗРЕЗ (Ур.${lvl})! Урон: ${r.total}, ATB стаи −${data.atbCut}%.`;
+      line = `⚡ Искровой разрез: ${r.total}`;
+      notes.push(`ATB стаи −${data.atbCut}%`);
       break;
     }
 
@@ -292,17 +302,17 @@ function performAoeSkill(skill, data) {
       });
       const r = aoeApply(hits);
       aoeGiveXp(skill);
-      if (conductor) logCombat(`⚡ Парализованный враг проводит ток: молния не слабеет на прыжках!`, 'log-entry player-magic');
+      if (conductor) notes.push('проводник: молния не слабеет');
       // Цепной разум: шанс снизить КД
       const chainLvl = p.learnedSkills['chainMind'] || 0;
       if (chainLvl > 0 && SKILLS['chainMind']) {
         const cd = SKILLS['chainMind'].levels[chainLvl - 1];
         if (cd && cd.chance && Math.random() * 100 < cd.chance) {
           state.battle.skillCooldowns[skill.id] = Math.max(0, (state.battle.skillCooldowns[skill.id] || 0) - 1);
-          logCombat(`🧠 Цепной разум! КД «Цепной молнии» снижен на 1.`, 'log-entry player-skill');
+          notes.push('🧠 Цепной разум: КД −1');
         }
       }
-      line = `⚡ ЦЕПНАЯ МОЛНИЯ (Ур.${lvl})! Прыжков: ${hits.length}, урон: ${r.total}.`;
+      line = `⚡ Цепная молния: ${r.total} (прыжков: ${hits.length})`;
       break;
     }
 
@@ -323,7 +333,8 @@ function performAoeSkill(skill, data) {
       });
       const r = aoeApply(hits);
       aoeGiveXp(skill);
-      line = `❄ ЛЕДЯНОЙ РАСКОЛ (Ур.${lvl})! Целей: ${hits.length}, урон: ${r.total}, заморожено: ${frozen}.`;
+      line = `❄ Ледяной раскол: ${r.total} (целей: ${hits.length})`;
+      if (frozen) notes.push(`❄ заморожено: ${frozen}`);
       break;
     }
 
@@ -339,12 +350,13 @@ function performAoeSkill(skill, data) {
         multiplier: data.multiplier, targets: data.targets, atbCut: data.atbCut, lvl,
       };
       aoeGiveXp(skill);
-      line = `✶ РУНА ВЬЮГИ (Ур.${lvl})! Руна начерчена — буран обрушится на следующий ход.`;
+      line = `✶ Руна вьюги начерчена`;
+      notes.push('буран — на следующий ход');
       break;
     }
   }
 
-  if (line) logCombat(line, skill.classId === 'mage' ? 'log-entry player-magic' : 'log-entry player-skill');
+  if (line) logCombat(line, skill.classId === 'mage' ? 'log-entry player-magic' : 'log-entry player-skill', notes.filter(Boolean).join(' · '));
 
   const mixtureData = getActiveMixtureData();
   if (mixtureData && mixtureData.chargeType === 'playerAttacks') tickMixtureCharge();
@@ -378,7 +390,7 @@ function tickBlizzardRune() {
   if (typeof copyGreedMarks === 'function') copyGreedMarks(hits.filter(h => !h.miss).map(h => h.m), 'mage');
   const r = aoeApply(hits);
   cutMonstersATB(rune.atbCut / 100);
-  logCombat(`🌨 БУРАН (Руна вьюги, Ур.${rune.lvl})! Урон: ${r.total}, ATB стаи −${rune.atbCut}%.`, 'log-entry player-magic');
+  logCombat(`🌨 Буран: ${r.total}`, 'log-entry player-magic', `ATB стаи −${rune.atbCut}%`);
   updateBattleUI();
 }
 

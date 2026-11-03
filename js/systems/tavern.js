@@ -18,6 +18,10 @@ function openTavern() {
   document.getElementById('tavern-overlay').classList.add('active');
   renderTavernBuffs();
   updateTavernGold();
+
+  // v0.31: Энциклопедия — хозяйка таверны; точка на «Поговорить»
+  if (typeof unlockLore === 'function') unlockLore('hostess');
+  if (typeof updateTalkButtons === 'function') updateTalkButtons();
 }
 
 function closeTavern() {

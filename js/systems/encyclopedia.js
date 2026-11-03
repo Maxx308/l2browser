@@ -44,10 +44,11 @@ function unlockLore(key, silent) {
 }
 
 // Открыть статью целиком (все куски), всплывашка одна.
+// Куски byTalk (из разговоров с жителями) так не открываются.
 function unlockLoreArticle(id, silent) {
   const a = getLoreArticle(id);
   if (!a) return;
-  a.parts.forEach((p, i) => unlockLore(p.key, silent || i > 0));
+  a.parts.forEach((p, i) => { if (!p.byTalk) unlockLore(p.key, silent || i > 0); });
 }
 
 function loreHasNews() {
@@ -102,8 +103,10 @@ function renderLoreArticle(a) {
   let html = `<div class="lore-back" onclick="closeLoreArticle()">← К списку</div>`;
   html += `<div class="lore-head">`;
   if (a.shop && typeof SVG !== 'undefined' && SVG[a.shop.icon]) html += `<div class="lore-icon">${SVG[a.shop.icon]}</div>`;
+  if (a.portrait) html += `<div class="lore-portrait"><img src="${a.portrait}" alt=""></div>`;   // v0.31: портрет жителя
   html += `<div><div class="lore-title">${escChronicle(a.title)}</div>`;
-  html += `<div class="lore-kind">${escChronicle(a.kind)}${a.parts.length > 1 ? ` · открыто ${knownParts} из ${a.parts.length}` : ''}</div></div></div>`;
+  const kind = a.race ? `${a.race} · ${a.kind}` : a.kind;   // v0.31: раса жителя
+  html += `<div class="lore-kind">${escChronicle(kind)}${a.parts.length > 1 ? ` · открыто ${knownParts} из ${a.parts.length}` : ''}</div></div></div>`;
 
   if (a.shop) {
     const it = a.shop;

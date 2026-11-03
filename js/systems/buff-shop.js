@@ -154,6 +154,7 @@ function buffShopApply(kind, items) {
     if (card) flashCard(card);
   });
   if (!parts.length) { showToast('🪙', 'Нечего покупать или мало Оболов'); return; }
+  if (typeof markDeed === 'function') markDeed(kind + '.buff');   // v0.31: 'tavern.buff' / 'guild.buff' — темы разговоров
 
   recalcStats();
   updateTopStatus(); updateCharacterPanel();

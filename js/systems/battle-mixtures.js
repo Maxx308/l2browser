@@ -23,10 +23,12 @@ function getActiveMixtureData() {
   return MIXTURE_EFFECTS[m.id] || null;
 }
 
-// Тратит 1 заряд активной микстуры.
+// Тратит 1 заряд активной микстуры (n — сколько зарядов: v0.31 — Двойной удар и удар
+// двумя оружиями тратят 2, по заряду на каждый замах).
 // Если заряды кончились — пытается подставить такую же из инвентаря.
 // Если в инвентаре нет — очищает слот микстуры.
-function tickMixtureCharge() {
+function tickMixtureCharge(n = 1) {
+  if (n > 1) { for (let i = 0; i < n; i++) tickMixtureCharge(1); return; }
   const m = getActiveMixture();
   if (!m) return;
 

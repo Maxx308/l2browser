@@ -6,9 +6,9 @@
 //    диалога Старшины.
 //
 //  НОВОЕ (v0.12):
-//  + updateMapMeta() — рисует на каждой карточке карты:
-//    «🚶 Пешком: 30 сек» (время от текущей локации) и
+//  + updateMapMeta() — рисует на каждой карточке карты
 //    «⚔ Мобы: ур. 1–7» (диапазон уровней с подтипами).
+//    v0.31: время пешком — на кнопке «🚶 Пешком», в углу — значки титулов.
 //
 //  НОВОЕ (v0.26):
 //  + Свиток телепортации убран. Магические тропы — из любой
@@ -156,20 +156,13 @@ function getMonsterLevelRange(loc) {
 }
 
 // Обновляет блоки .map-meta на всех карточках.
+// v0.31: время пешком переехало на кнопку «🚶 Пешком» (updateMapTravelButton в tabs.js).
 function updateMapMeta() {
   ['field', 'town', 'mine'].forEach(loc => {
     const el = document.getElementById('map-meta-' + loc);
     if (!el) return;
 
     const parts = [];
-
-    // Время пешком.
-    const travelTime = getTravelTimeFromCurrent(loc);
-    if (travelTime !== null) {
-      parts.push(`<span class="map-meta-line">🚶 Пешком: ${formatTravelTime(travelTime)}</span>`);
-    } else if (loc === state.player.currentLocation) {
-      // Уже тут — ничего не пишем, «ВЫ ЗДЕСЬ» и так есть сверху.
-    }
 
     // Уровни мобов (только для диких локаций).
     const range = getMonsterLevelRange(loc);
@@ -180,7 +173,55 @@ function updateMapMeta() {
     }
 
     el.innerHTML = parts.join('');
+    updateMapTitles(loc);
   });
+}
+
+// ========================================================
+//  v0.31: ЗНАЧКИ ТИТУЛОВ НА КАРТОЧКЕ ЛОКАЦИИ (левый верхний угол)
+//  «Охотник» — сколько пар монстр × подтип набили 1000+ (👑 5/27),
+//  «Прославленный» — все монстры одного подтипа, «Великолепный» — все подтипы.
+//  Пока ни одного титула нет — угол пустой.
+// ========================================================
+function getLocationTitleStats(loc) {
+  const mons = getMonstersByLocation(loc);
+  if (!mons.length) return null;
+  const done = (m, v) => getMonsterKills(m.id, v) >= KILL_THRESHOLDS.title;
+  let hunters = 0;
+  mons.forEach(m => ALL_VARIANTS.forEach(v => { if (done(m, v)) hunters++; }));
+  const glorious = ALL_VARIANTS.filter(v => mons.every(m => done(m, v)));
+  return {
+    hunters,
+    total: mons.length * ALL_VARIANTS.length,
+    glorious,
+    magnificent: glorious.length === ALL_VARIANTS.length,
+  };
+}
+
+function updateMapTitles(loc) {
+  const card = document.querySelector(`.map-card[data-loc="${loc}"]`);
+  if (!card) return;
+  let box = card.querySelector('.map-titles');
+  if (!box) {
+    box = document.createElement('div');
+    box.className = 'map-titles';
+    card.appendChild(box);
+  }
+
+  const s = getLocationTitleStats(loc);
+  const badges = [];
+  if (s && s.magnificent) {
+    badges.push(`<span class="map-title magnificent" title="Великолепный охотник: все монстры всех подтипов — по 1000+ убийств. Дроп и Оболы ×3">🌟 Великолепный охотник</span>`);
+  } else if (s) {
+    if (s.glorious.length) {
+      const names = s.glorious.map(getVariantDisplayName).join(', ');
+      badges.push(`<span class="map-title glorious" title="Прославленный охотник: все ${names} — по 1000+ убийств. Дроп и Оболы ×2">👑 Прославленный${s.glorious.length > 1 ? ' ×' + s.glorious.length : ''}</span>`);
+    }
+    if (s.hunters > 0) {
+      badges.push(`<span class="map-title hunter" title="Титул «Охотник» (1000+ убийств): ${s.hunters} из ${s.total} — монстр × подтип">👑 ${s.hunters}/${s.total}</span>`);
+    }
+  }
+  box.innerHTML = badges.join('');
 }
 
 // ========================================================

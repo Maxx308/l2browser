@@ -100,15 +100,16 @@ function onDischargeZeroed(m) {
 // ---- v0.19.1: ЧЕЛОВЕК-ВОИН — «Цикл мастера» ----
 // Убийство Двойным ударом → КД Кругового −1; Круговым → КД Сильного −1; Сильным → КД Двойного −1.
 const HUMAN_CYCLE = { doubleStrike: 'whirlwind', whirlwind: 'powerStrike', powerStrike: 'doubleStrike' };
+// v0.31: возвращает приписку для строки удара («Цикл мастера: КД «…» −1») или '' — отдельной строкой не пишет.
 function humanCycleOnKill(fromId) {
   const p = state.player;
-  if (p.raceId !== 'human' || isMage()) return;
+  if (p.raceId !== 'human' || isMage()) return '';
   const to = HUMAN_CYCLE[fromId];
-  if (!to || !p.learnedSkills[to] || !SKILLS[to]) return;
+  if (!to || !p.learnedSkills[to] || !SKILLS[to]) return '';
   const cd = state.battle.skillCooldowns[to] || 0;
-  if (cd <= 0) return;
+  if (cd <= 0) return '';
   state.battle.skillCooldowns[to] = cd - 1;
-  logCombat(`🔁 Цикл мастера: КД «${SKILLS[to].name}» −1.`, 'log-entry player-skill');
+  return `🔁 Цикл мастера: КД «${SKILLS[to].name}» −1`;
 }
 
 // ---- МЕЧИ: парирование физического удара ----
