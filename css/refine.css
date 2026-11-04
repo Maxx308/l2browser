@@ -155,6 +155,52 @@
   color: var(--text-dim);
 }
 
+/* v0.31: редкость в списке — полоска слева, рамка иконки, цвет имени (--rar ставит refine.js) */
+.refine-list-item { border-left: calc(3 * var(--u)) solid var(--rar, var(--border)); }
+.refine-list-item .refine-list-icon { border-color: var(--rar, var(--border)); }
+.refine-list-item:not(.rarity-white) .refine-list-icon { box-shadow: 0 0 calc(8 * var(--u)) var(--rar-glow, transparent); }
+.refine-list-item .refine-list-name { color: var(--rar, var(--gold-bright)); }
+.refine-list-item .refine-list-name b { color: var(--gold-bright); }
+.refine-list-rar { color: var(--rar, var(--text-dim)); }
+.refine-list-item.rarity-red .refine-list-name { text-shadow: 0 0 calc(8 * var(--u)) var(--rar-glow); }
+/* Подогнанные до конца — бледные и почти без цвета, наведение/выбор возвращает яркость */
+.refine-list-item.maxed { opacity: 0.4; filter: grayscale(0.7); }
+.refine-list-item.maxed .refine-list-icon { box-shadow: none; }
+.refine-list-item.maxed .refine-list-progress span { color: #8fbf7a; }
+.refine-list-item.maxed:hover { opacity: 0.75; filter: grayscale(0.3); }
+.refine-list-item.maxed.selected { opacity: 1; filter: none; }
+
+.refine-list-progress {
+  display: flex;
+  align-items: center;
+  gap: calc(6 * var(--u));
+  margin-top: calc(3 * var(--u));
+  font-size: var(--fs-tiny);
+  color: var(--text-dim);
+}
+.refine-list-progress span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.refine-list-bar {
+  flex: 0 0 calc(54 * var(--u));
+  height: calc(4 * var(--u));
+  background: rgba(255,255,255,0.08);
+  border-radius: calc(2 * var(--u));
+  overflow: hidden;
+}
+.refine-list-bar div { height: 100%; background: var(--rar, var(--gold)); }
+
+/* v0.32: ссылка на статью «Подгонка» в Энциклопедии */
+.refine-help-link {
+  margin-top: calc(6 * var(--u));
+  padding: calc(6 * var(--u));
+  text-align: center;
+  font-size: var(--fs-small);
+  color: var(--gold);
+  cursor: pointer;
+  border: 1px dashed rgba(184,148,90,0.3);
+  border-radius: calc(3 * var(--u));
+}
+.refine-help-link:hover { color: var(--gold-bright); border-color: var(--gold); }
+
 .refine-empty {
   text-align: center;
   color: var(--text-dim);

@@ -141,6 +141,7 @@ function buffShopApply(kind, items) {
 
   let spent = 0;
   const parts = [];
+  const lore = [];   // v0.32: Энциклопедия — статьи наложенных бафов
   items.forEach(({ buff, n }) => {
     if (n <= 0) return;
     const cost = n * d.price(buff);
@@ -150,11 +151,15 @@ function buffShopApply(kind, items) {
     p.gold -= cost; spent += cost;
     d.store[buff.id].timer = addBuffTime(d.store[buff.id].timer, n * buff.duration);
     parts.push(`${buff.name} +${buffShopDur(n * buff.duration)}`);
+    lore.push('buff.' + buff.id);
     const card = document.querySelector(`#${d.listId} [data-buff-id="${buff.id}"]`);
     if (card) flashCard(card);
   });
   if (!parts.length) { showToast('🪙', 'Нечего покупать или мало Оболов'); return; }
   if (typeof markDeed === 'function') markDeed(kind + '.buff');   // v0.31: 'tavern.buff' / 'guild.buff' — темы разговоров
+  if (typeof unlockLoreMany === 'function') unlockLoreMany(lore);
+  if (typeof annalsFirst === 'function') lore.forEach(k => annalsFirst(k));   // v0.32: летопись — «впервые ощутил…»
+  if (typeof rapportService === 'function') rapportService(kind === 'guild' ? 'guildmage' : 'hostess');   // v0.32: отношения
 
   recalcStats();
   updateTopStatus(); updateCharacterPanel();

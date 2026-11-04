@@ -18,7 +18,6 @@ const REST = {
   shown: false,
   timer: null,
   reason: '',
-  sample: null,     // { t, hp, mp } — от начала привала, для расчёта скорости восстановления
 };
 
 // Сколько показывать «Победу» перед карточкой привала.
@@ -37,7 +36,6 @@ function enterRestCamp(instant) {
   if (p.stopHpPercent > 0 && hpPct < p.stopHpPercent) REST.reason = `Здоровье ниже ${p.stopHpPercent}%`;
   else if (p.stopMpPercent > 0 && mpPct < p.stopMpPercent) REST.reason = `Мана ниже ${p.stopMpPercent}%`;
   else REST.reason = 'Восстанавливаем силы';
-  REST.sample = { t: performance.now(), hp: p.hp, mp: p.mp };
 
   clearTimeout(REST.timer);
   REST.timer = setTimeout(showRestCamp, (instant || document.hidden) ? 0 : REST_SHOW_DELAY_MS);
@@ -66,6 +64,8 @@ function showRestCamp() {
 
   REST.shown = true;
   renderRestCamp();
+  if (typeof unlockLore === 'function') unlockLore('camp');   // v0.32: Энциклопедия — «Привал»
+  if (typeof annalsFirst === 'function') annalsFirst('camp');   // v0.32: летопись
 }
 
 // Из hideMonsterSearching (startBattle / closeBattle).
@@ -83,35 +83,47 @@ function hideRestCamp() {
 //  КАРТОЧКА ПРИВАЛА
 // --------------------------------------------------------
 
-// Скорость восстановления (в секунду): по факту за привал, а первые секунды — по формуле.
+// v0.32: время до старта считаем ТОЧНО по тем же правилам, что и восстановление в gameLoop
+// (battle-loop.js): раз в секунду HP +(1 + бонус), MP +(реген + бонус), а пока действует
+// сытость — ещё +FOOD_HEAL_PER_SEC HP в секунду. Раньше скорость «подсматривали» по факту
+// за первые секунды и без учёта еды — таймер прыгал. Теперь он ровно убывает по секунде.
 function restRegenRates() {
   const p = state.player;
-  let hp = 1 + (p.hpRegenOutBonus || 0);
-  let mp = (p.mpRegenOut || 1) + (p.mpRegenOutBonus || 0);
-  const s = REST.sample;
-  if (s) {
-    const sec = (performance.now() - s.t) / 1000;
-    if (sec >= 5) {
-      if (p.hp > s.hp) hp = Math.max(hp, (p.hp - s.hp) / sec);
-      if (p.mp > s.mp) mp = Math.max(mp, (p.mp - s.mp) / sec);
-    }
+  return {
+    hp: 1 + (p.hpRegenOutBonus || 0),
+    mp: (p.mpRegenOut || 1) + (p.mpRegenOutBonus || 0),
+    food: (p.foodTimer > 0) ? FOOD_HEAL_PER_SEC : 0,
+  };
+}
+
+// Сколько секундных «тиков» нужно, чтобы набрать need, если первые foodTicks тиков дают rate + food.
+function restTicksFor(need, rate, food, foodTicks) {
+  if (need <= 0) return 0;
+  if (food > 0 && foodTicks > 0) {
+    const fast = rate + food;
+    if (need <= fast * foodTicks) return Math.ceil(need / fast - 1e-9);
+    need -= fast * foodTicks;
+    return foodTicks + Math.ceil(need / rate - 1e-9);
   }
-  return { hp, mp };
+  return Math.ceil(need / rate - 1e-9);
 }
 
 function restEtaSec() {
   const p = state.player;
-  const rates = restRegenRates();
+  const r = restRegenRates();
   let eta = 0;
   if (p.resumeHpPercent > 0 && p.maxHp > 0) {
     const need = p.maxHp * p.resumeHpPercent / 100 - p.hp;
-    if (need > 0) eta = Math.max(eta, need / rates.hp);
+    const ticks = restTicksFor(need, r.hp, r.food, Math.floor(p.foodTimer || 0));
+    // до ближайшего тика осталось (1 − накопленная доля секунды)
+    if (ticks > 0) eta = Math.max(eta, ticks - (state.regenAccumulator || 0));
   }
   if (p.resumeMpPercent > 0 && p.maxMp > 0) {
     const need = p.maxMp * p.resumeMpPercent / 100 - p.mp;
-    if (need > 0) eta = Math.max(eta, need / rates.mp);
+    const ticks = restTicksFor(need, r.mp, 0, 0);
+    if (ticks > 0) eta = Math.max(eta, ticks - (state.mpRegenAccumulator || 0));
   }
-  return eta;
+  return Math.max(0, eta);
 }
 
 function restTargetName() {

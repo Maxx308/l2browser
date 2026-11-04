@@ -322,10 +322,22 @@ const RECIPES = {
         stats: { pAtk: 34, atbSpeedMod: 0.03, critChance: 2 } },   // 28 → 34
       materials: [{ name: 'Слиток железа', qty: 16 }, { name: 'Слиток бронзы', qty: 6 }, { name: 'Каменные пластины', qty: 10 }, { name: 'Ядовитая железа', qty: 2 }] },
 
+    // v0.32: в тире 3 у мечей, топоров, дубин и копий — пара «одноручное / двуручное».
+    // Двуручное ≈ одноручное × 1.35 по атаке, медленнее; рецепт ~×1.3 и +1 редкая железа.
+    { id: 'swordRune', name: 'Рунный меч Глубин', category: 'swords', price: CRAFT_PRICE_GEAR_T3, tier: 3,
+      result: { name: 'Рунный меч Глубин', icon: 'img/weapons/T3/sword_rune.png', type: 'weapon', sellPrice: 160,
+        stats: { pAtk: 46, atbSpeedMod: -0.03, critChance: 2 }, twoHanded: true },
+      materials: [{ name: 'Слиток железа', qty: 20 }, { name: 'Слиток бронзы', qty: 10 }, { name: 'Каменные пластины', qty: 12 }, { name: 'Ядовитая железа', qty: 3 }] },
+
     { id: 'axeMiner', name: 'Секира Рудокопа', category: 'axes', price: CRAFT_PRICE_GEAR_T3, tier: 3,
       result: { name: 'Секира Рудокопа', icon: 'img/weapons/T3/axe_miner.png', type: 'weapon', sellPrice: 180,
         stats: { pAtk: 46, atbSpeedMod: -0.03 }, twoHanded: true },   // v0.27: 39 → 46/45 (двуручное ×1.35)
       materials: [{ name: 'Слиток железа', qty: 20 }, { name: 'Каменные пластины', qty: 12 }, { name: 'Ядовитая железа', qty: 2 }] },
+
+    { id: 'axeTunneler', name: 'Топор Проходчика', category: 'axes', price: CRAFT_PRICE_GEAR_T3, tier: 3,
+      result: { name: 'Топор Проходчика', icon: 'img/weapons/T3/axe_tunneler.png', type: 'weapon', sellPrice: 110,
+        stats: { pAtk: 34 } },   // v0.32: одноручный — можно со щитом или в пару
+      materials: [{ name: 'Слиток железа', qty: 14 }, { name: 'Слиток бронзы', qty: 4 }, { name: 'Каменные пластины', qty: 8 }, { name: 'Ядовитая железа', qty: 2 }] },
 
     { id: 'daggerVenom', name: 'Ядовитый клинок', category: 'daggers', price: CRAFT_PRICE_GEAR_T3, tier: 3,
       result: { name: 'Ядовитый клинок', icon: 'img/weapons/T3/dagger_venom.png', type: 'weapon', sellPrice: 100,
@@ -336,6 +348,11 @@ const RECIPES = {
       result: { name: 'Пика Глубин', icon: 'img/weapons/T3/pike_depths.png', type: 'weapon', sellPrice: 140,
         stats: { pAtk: 45, atbSpeedMod: -0.02 }, twoHanded: true },   // v0.27: 39 → 46/45 (двуручное ×1.35)
       materials: [{ name: 'Слиток железа', qty: 14 }, { name: 'Ветвь', qty: 50 }, { name: 'Хитин', qty: 16 }, { name: 'Ядовитая железа', qty: 5 }] },
+
+    { id: 'spearGuard', name: 'Копьё Стража', category: 'spears', price: CRAFT_PRICE_GEAR_T3, tier: 3,
+      result: { name: 'Копьё Стража', icon: 'img/weapons/T3/spear_guard.png', type: 'weapon', sellPrice: 100,
+        stats: { pAtk: 33, atbSpeedMod: 0.02 } },   // v0.32: одноручное копьё — «копьё и щит» (в пару копья не берутся)
+      materials: [{ name: 'Слиток железа', qty: 10 }, { name: 'Ветвь', qty: 30 }, { name: 'Хитин', qty: 10 }, { name: 'Ядовитая железа', qty: 3 }] },
 
     { id: 'bowSilk', name: 'Шёлковый лук', category: 'bows', price: CRAFT_PRICE_GEAR_T3, tier: 3,
       result: { name: 'Шёлковый лук', icon: 'img/weapons/T3/bow_silk.png', type: 'weapon', sellPrice: 90,
@@ -351,6 +368,11 @@ const RECIPES = {
       result: { name: 'Булава голема', icon: 'img/weapons/T3/mace_golem.png', type: 'weapon', sellPrice: 110,
         stats: { pAtk: 33, atbSpeedMod: -0.02 } },   // 26 → 33
       materials: [{ name: 'Слиток железа', qty: 14 }, { name: 'Каменные пластины', qty: 16 }, { name: 'Ядовитая железа', qty: 3 }] },
+
+    { id: 'maulGolem', name: 'Палица голема', category: 'maces', price: CRAFT_PRICE_GEAR_T3, tier: 3,
+      result: { name: 'Палица голема', icon: 'img/weapons/T3/maul_golem.png', type: 'weapon', sellPrice: 170,
+        stats: { pAtk: 45, atbSpeedMod: -0.04 }, twoHanded: true },   // v0.32: двуручная пара Булавы голема
+      materials: [{ name: 'Слиток железа', qty: 18 }, { name: 'Каменные пластины', qty: 22 }, { name: 'Ядро голема', qty: 2 }, { name: 'Ядовитая железа', qty: 3 }] },
 
     { id: 'staffDepths', name: 'Посох Глубин', category: 'staves', price: CRAFT_PRICE_GEAR_T3, tier: 3,
       result: { name: 'Посох Глубин', icon: 'img/weapons/T3/staff_depths.png', type: 'weapon', sellPrice: 80,

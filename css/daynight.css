@@ -1,0 +1,125 @@
+/* ========================================================
+   DAYNIGHT.CSS — смена дня и ночи (v0.32, js/systems/daynight.js)
+   --night: 0 днём … 1 ночью; --dusk: 0 … 1 — тёплый свет рассвета и заката.
+   Переходы плавные: переменные меняются раз в несколько секунд.
+   В Копях фон охоты не меняется — под землёй всегда темно.
+   ======================================================== */
+
+:root { --night: 0; --dusk: 0; }
+
+/* ---------- Значок времени в верхней строке ---------- */
+.tod-chip { cursor: help; white-space: nowrap; }
+.tod-chip.tod-preview b { border-bottom: 1px dashed var(--gold); }
+
+/* ---------- ОХОТА: фон ---------- */
+.bx-bg::before,
+.bx-bg::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  transition: opacity 3s linear;
+}
+/* закат и рассвет — не заливка, а свет: soft-light красит только светлое и тёмное на картинке.
+   Сверху и у низкого солнца — золото, снизу — длинные прохладные тени. Без красного. */
+.bx-bg::before {
+  background:
+    radial-gradient(ellipse 55% 45% at 78% 40%, rgb(255,200,120), rgba(255,170,90,0) 70%),
+    linear-gradient(180deg, rgb(255,186,98) 0%, rgb(242,156,84) 45%, rgb(100,90,110) 100%);
+  mix-blend-mode: soft-light;
+  opacity: var(--dusk);
+}
+/* ночь — синяя темнота и звёзды в верхней части неба */
+.bx-bg::after {
+  background:
+    radial-gradient(2px 2px at 8% 9%,   rgba(255,255,255,.95), transparent 3px),
+    radial-gradient(1.5px 1.5px at 17% 22%, rgba(255,255,255,.8), transparent 3px),
+    radial-gradient(2px 2px at 29% 6%,  rgba(255,255,255,.9), transparent 3px),
+    radial-gradient(1.5px 1.5px at 41% 17%, rgba(255,255,255,.7), transparent 3px),
+    radial-gradient(3px 3px at 54% 8%,  rgba(220,230,255,1), transparent 4px),
+    radial-gradient(1.5px 1.5px at 63% 24%, rgba(255,255,255,.7), transparent 3px),
+    radial-gradient(2px 2px at 72% 12%, rgba(255,255,255,.9), transparent 3px),
+    radial-gradient(1.5px 1.5px at 83% 5%,  rgba(255,255,255,.8), transparent 3px),
+    radial-gradient(2px 2px at 91% 19%, rgba(255,255,255,.9), transparent 3px),
+    radial-gradient(1.5px 1.5px at 36% 28%, rgba(255,255,255,.6), transparent 3px),
+    radial-gradient(ellipse 60% 40% at 50% 0%, rgba(80,110,200,.25), transparent 70%),
+    linear-gradient(180deg, rgba(8,14,46,.86) 0%, rgba(6,12,38,.8) 50%, rgba(3,5,18,.86) 100%);
+  opacity: var(--night);
+}
+.bx-stage[data-loc="mine"] .bx-bg::before,
+.bx-stage[data-loc="mine"] .bx-bg::after { display: none; }
+
+/* ---------- ПРИВАЛ: ночью костёр ярче и светит вокруг ---------- */
+.bx-rest-fire::before {
+  inset: calc(-20% - 70% * var(--night));
+  background: radial-gradient(circle,
+    rgba(255,150,60,calc(.35 + .3 * var(--night))),
+    rgba(255,110,40,calc(.18 * var(--night))) 40%,
+    transparent 68%);
+}
+.bx-rest-fire img {
+  filter: drop-shadow(0 4px 10px rgba(0,0,0,.7))
+          drop-shadow(0 0 calc(22 * var(--night) * var(--u)) rgba(255,140,40,calc(.95 * var(--night))))
+          brightness(calc(1 + .25 * var(--night)));
+}
+.bx-stage:not([data-loc="mine"]) .bx-rest {
+  box-shadow:
+    0 8px 24px rgba(0,0,0,.6),
+    0 0 calc(120 * var(--u)) calc(30 * var(--u)) rgba(255,120,40,calc(.04 + .4 * var(--night))),
+    inset 0 0 calc(40 * var(--u)) rgba(255,140,50,calc(.07 + .25 * var(--night)));
+  border-color: color-mix(in srgb, #5a4424, #c07a30 calc(var(--night) * 100%));
+}
+/* тёплое пятно света от костра на земле вокруг карточки привала */
+.bx-stage.bx-resting:not([data-loc="mine"])::after {
+  inset: 0; left: 0; right: 0; bottom: 0; height: auto;
+  background: radial-gradient(ellipse 42% 60% at 74% 55%, rgba(255,130,50,calc(.06 + .32 * var(--night))), transparent 72%);
+}
+@media (max-width: 700px) and (orientation: portrait) {
+  .bx-stage.bx-resting:not([data-loc="mine"])::after {
+    background: radial-gradient(ellipse 70% 40% at 50% 62%, rgba(255,130,50,calc(.06 + .32 * var(--night))), transparent 72%);
+  }
+}
+
+/* ---------- ГОРОД: карточки мест ---------- */
+.city-icon-img { position: relative; }
+.city-icon-img::before,
+.city-icon-img::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none; border-radius: inherit;
+  transition: opacity 3s linear;
+}
+/* закат и рассвет — золотистый свет сверху, тени снизу (soft-light, без заливки) */
+.city-icon-img::before {
+  background: linear-gradient(170deg, rgb(255,186,98) 0%, rgb(242,156,84) 42%, rgb(100,90,110) 100%);
+  mix-blend-mode: soft-light;
+  opacity: var(--dusk);
+}
+/* ночь — синие сумерки (multiply: темнеет, но не становится серой пеленой) */
+.city-icon-img::after {
+  background: linear-gradient(180deg, rgb(78,98,158), rgb(52,66,116));
+  mix-blend-mode: multiply;
+  opacity: calc(.85 * var(--night));
+}
+
+/* ---------- КАРТА: фоны локаций ----------
+   Верхний слой — закат (soft-light, через background-blend-mode), под ним — ночь, затенение и картинка.
+   Копи не трогаем: на картинке подземелье с факелами — там время суток не видно. */
+.map-card[data-loc] {
+  --map-tod:
+    linear-gradient(170deg, rgba(255,186,98,var(--dusk)) 0%, rgba(242,156,84,calc(.85 * var(--dusk))) 45%, rgba(100,90,110,calc(.75 * var(--dusk))) 100%),
+    linear-gradient(180deg, rgba(10,18,52,calc(.5 * var(--night))), rgba(4,8,26,calc(.45 * var(--night))));
+  background-blend-mode: soft-light, normal, normal, normal;
+}
+.map-card[data-loc="field"] { background-image: var(--map-tod), var(--map-shade), url('../img/locations/map/field.jpg'); }
+.map-card[data-loc="town"]  { background-image: var(--map-tod), var(--map-shade), url('../img/locations/map/town.jpg'); }
+
+/* ---------- НОЧНЫЕ МОНСТРЫ: значок 🌙 (ночью светится) ---------- */
+.monster-night {
+  position: absolute; right: calc(4 * var(--u)); top: calc(4 * var(--u));
+  display: flex; align-items: center; justify-content: center;
+  width: calc(22 * var(--u)); height: calc(22 * var(--u));
+  font-size: calc(12 * var(--u)); line-height: 1;
+  background: rgba(8, 12, 30, 0.8);
+  border: 1px solid rgba(140, 170, 230, 0.55);
+  border-radius: 50%;
+  cursor: help;
+  opacity: calc(.6 + .4 * var(--night));
+  box-shadow: 0 0 calc(10 * var(--night) * var(--u)) rgba(150, 180, 255, calc(.8 * var(--night)));
+  transition: opacity 3s, box-shadow 3s;
+}

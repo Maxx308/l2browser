@@ -299,6 +299,101 @@ function getRecipeIconHtml(recipe) {
   return SVG.gold;
 }
 
+// ========================================================
+//  v0.32: КАРТОЧКА СНАРЯЖЕНИЯ — понятнее для новичка
+//  Тир — бейджем в углу, «(двуруч.)» — в названии, главный стат — крупно
+//  со стрелкой сравнения с надетым, мелкие статы — одной строкой,
+//  хват / стойка / подгонка / фишки тира — в «ⓘ подробнее».
+// ========================================================
+const FORGE_GEAR_TYPES = ['weapon', 'shield', 'helmet', 'armorTop', 'armorBottom', 'gloves', 'boots', 'ring', 'earring', 'necklace'];
+const FORGE_JEWELRY_TYPES = ['ring', 'earring', 'necklace'];
+
+// Главный стат вещи: оружие — атака (у посохов — маг.), щит — блок, доспех — защита, бижутерия — маг. защита.
+function getForgeMainStat(res) {
+  const st = res.stats || {};
+  if (res.type === 'weapon') return (st.mAtk && !st.pAtk) ? { key: 'mAtk', label: 'маг. атака' } : { key: 'pAtk', label: 'атака' };
+  if (res.type === 'shield') return { key: 'blockChance', label: 'блок', unit: '%' };
+  if (FORGE_JEWELRY_TYPES.includes(res.type)) return { key: 'mDef', label: 'маг. защита' };
+  return { key: 'pDef', label: 'защита' };
+}
+
+// С чем сравнивать: оружие — с основной рукой (туда оно и наденется, вторая рука не в счёт),
+// кольца и серьги — со слабейшей из двух (её и заменишь; свободный слот — не с чем сравнивать).
+function getForgeCompareItem(res, key) {
+  const eq = state.player.equipment;
+  if (res.type === 'weapon') return eq.weapon || null;
+  if (res.type === 'shield') return getEquippedShield();
+  if (res.type === 'ring' || res.type === 'earring') {
+    const a = eq[res.type + '1'], b = eq[res.type + '2'];
+    if (!a || !b) return null;
+    return getItemStat(a, key) <= getItemStat(b, key) ? a : b;
+  }
+  return eq[res.type] || null;
+}
+
+// Мелкие статы одной строкой (без главного).
+function getForgeMinorStats(res, mainKey) {
+  const st = res.stats || {};
+  const out = [];
+  if (st.pAtk && mainKey !== 'pAtk') out.push(`атака +${st.pAtk}`);
+  if (st.mAtk && mainKey !== 'mAtk') out.push(`маг. атака +${st.mAtk}`);
+  if (st.pDef && mainKey !== 'pDef') out.push(`защита +${st.pDef}`);
+  if (st.mDef && mainKey !== 'mDef') out.push(`маг. защита +${st.mDef}`);
+  if (st.hpBonus) out.push(`HP +${st.hpBonus}`);
+  if (st.mpBonus) out.push(`мана +${st.mpBonus}`);
+  if (st.mpRegenIn) out.push(`+${st.mpRegenIn} MP/сек в бою`);
+  if (st.flatDamageReduce) out.push(`поглощение ${st.flatDamageReduce}`);
+  if (st.critChance) out.push(`крит +${st.critChance}%`);
+  if (st.atbSpeedMod) { const pct = Math.round(st.atbSpeedMod * 100); out.push(`скорость ${pct > 0 ? '+' : '−'}${Math.abs(pct)}%`); }
+  return out;
+}
+
+function buildGearRecipeCard(r, category, matsHtml, actionHtml) {
+  const res = r.result;
+  const main = getForgeMainStat(res);
+  const value = (res.stats || {})[main.key] || 0;
+  const unit = main.unit || '';
+
+  // Стрелка сравнения: только если надетая вещь тоже даёт этот стат
+  let cmpHtml = '';
+  const cmpItem = getForgeCompareItem(res, main.key);
+  const cur = cmpItem ? Math.round(getItemStat(cmpItem, main.key) * 10) / 10 : 0;
+  if (cmpItem && cur > 0) {
+    const diff = Math.round((value - cur) * 10) / 10;
+    cmpHtml = diff > 0 ? `<span class="recipe-cmp up" title="Надето: ${escForge(cmpItem.name)} — ${cur}${unit}">▲ +${diff}${unit}</span>`
+      : diff < 0 ? `<span class="recipe-cmp down" title="Надето: ${escForge(cmpItem.name)} — ${cur}${unit}">▼ −${Math.abs(diff)}${unit}</span>`
+      : `<span class="recipe-cmp same" title="Надето: ${escForge(cmpItem.name)} — ${cur}${unit}">= как надетое</span>`;
+  }
+
+  // Подробности — по «ⓘ»
+  const details = [];
+  if (isTwoHandGripWeapon(res)) details.push(`Хват: +${TWO_HAND_GRIP_SKILL_BONUS}% к урону навыков, уворот −${TWO_HAND_EVASION_PENALTY}. Щит не надеть.`);
+  else if (res.type === 'weapon' && res.twoHanded) details.push('Двуручное: щит не надеть.');
+  if (res.type === 'shield') details.push(`Стойка: −${SHIELD_STANCE_DAMAGE_CUT}% входящего урона, уворот −${SHIELD_EVASION_PENALTY}.`);
+  if (res.type === 'weapon' && !res.twoHanded && canDualWield(res)) details.push('Одноручное: можно со щитом или вторым оружием.');
+  else if (res.type === 'weapon' && !res.twoHanded) details.push('Одноручное: можно со щитом.');
+  if (r.tier) details.push(`Подгонка до +${getMaxRefine(r.tier)}.`);
+  if (r.tier >= 3 && res.type === 'weapon') {
+    const t3Text = getTierTraitBonusText({ name: res.name, tier: r.tier });
+    if (t3Text) details.push(`★ Тир ${r.tier}: ${t3Text}.`);
+  }
+
+  const hand = (res.type === 'weapon' && res.twoHanded && !/двуруч/i.test(r.name)) ? ' <span class="recipe-hand">(двуруч.)</span>' : '';
+  const tier = r.tier ? `<span class="recipe-tier t${r.tier}" title="Тир ${r.tier}">Т${r.tier}</span>` : '';
+  const minor = getForgeMinorStats(res, main.key);
+  const infoBtn = details.length ? `<span class="recipe-info" onclick="this.closest('.recipe-card').classList.toggle('open')">ⓘ подробнее</span>` : '';
+
+  return `<div class="recipe-result">${getRecipeIconHtml(r)}</div><div class="recipe-body">
+    <div class="recipe-head"><div class="recipe-name">${r.name}${hand}</div>${tier}</div>
+    <div class="recipe-main"><b>${value}${unit}</b><span>${main.label}</span>${cmpHtml}${infoBtn}</div>
+    ${minor.length ? `<div class="recipe-minor">${minor.join(' · ')}</div>` : ''}
+    ${details.length ? `<div class="recipe-details">${details.map(d => `<div>${d}</div>`).join('')}</div>` : ''}
+    <div class="recipe-materials">${matsHtml}</div>
+    <div class="recipe-action">${actionHtml}</div></div>`;
+}
+
+function escForge(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;'); }
+
 function buildRecipeCard(r, category) {
   const can = canCraft(r);
   const price = r.price || 0;
@@ -369,6 +464,12 @@ function buildRecipeCard(r, category) {
     btnHtml = `<button class="btn success" onclick="craftItem('${category}', '${r.id}')">⚒ Создать</button>`;
   }
 
+  // v0.32: снаряжение — новая карточка; ресурсы и еда — как было
+  if (FORGE_GEAR_TYPES.includes(r.result.type)) {
+    card.classList.add('gear');
+    card.innerHTML = buildGearRecipeCard(r, category, matsHtml, priceHtml + btnHtml);
+    return card;
+  }
   card.innerHTML = `<div class="recipe-result">${getRecipeIconHtml(r)}</div><div class="recipe-body"><div class="recipe-name">${r.name}</div><div class="recipe-materials">${matsHtml}</div>${lines.join('')}<div class="recipe-action">${priceHtml}${btnHtml}</div></div>`;
   return card;
 }
@@ -484,6 +585,7 @@ function craftItem(category, recipeId) {
   }
 
   if (typeof markDeed === 'function') markDeed('forge.crafted');   // v0.31: тема у кузнеца
+  if (typeof rapportService === 'function') rapportService('smith');   // v0.32: отношения
   saveCurrentSlot();
 }
 
@@ -593,6 +695,7 @@ function craftItemBatch(category, recipeId, count) {
   renderInventory(); renderForgeAll(); updateInventoryFooter(); updateForgeGold();
   if (typeof updateTopStatus === 'function') updateTopStatus();
   if (typeof markDeed === 'function') markDeed('forge.crafted');   // v0.31: тема у кузнеца
+  if (typeof rapportService === 'function') rapportService('smith');   // v0.32: отношения
   saveCurrentSlot();
 }
 

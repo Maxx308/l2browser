@@ -48,12 +48,22 @@ function openSettings() {
   syncFilterSliders();
   syncAutoStopSettingsUI();
   syncStackCapSlider();
+  if (typeof renderChatFilterSettings === 'function') renderChatFilterSettings();   // v0.32: вкладка «Чат»
+  if (typeof renderTodButtons === 'function') renderTodButtons();   // v0.32: время суток
   overlay.classList.add('active');
 }
 
 function closeSettings() {
   const overlay = document.getElementById('settings-overlay');
   if (overlay) overlay.classList.remove('active');
+}
+
+// v0.32: вкладки настроек — Экран · Игра · Чат · Аккаунт (последняя открытая запоминается до перезагрузки)
+function switchSettingsTab(id) {
+  document.querySelectorAll('.settings-tab').forEach(t => t.classList.toggle('active', t.dataset.stab === id));
+  document.querySelectorAll('.settings-pane').forEach(p => p.classList.toggle('active', p.dataset.spane === id));
+  const box = document.querySelector('.settings-box');
+  if (box) box.scrollTop = 0;
 }
 
 function renderSettingsButtons() {

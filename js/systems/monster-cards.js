@@ -159,7 +159,7 @@ function buildMonsterCard(template, variantId, fromMine = false) {
   }
 
   card.innerHTML = `
-    <div class="monster-portrait-img" style="background-image:url('${monster.art}')">${packBadgeHtml(template)}</div>
+    <div class="monster-portrait-img" style="background-image:url('${monster.art}')">${packBadgeHtml(template)}${typeof nightBadgeHtml === 'function' ? nightBadgeHtml(template) : ''}</div>
     <div class="monster-name">${monster.name}</div>
     <div class="monster-level">Ур. ${monster.level}${monster.attackType === 'magic' ? ' · Магия' : ''}</div>
     <div class="monster-kills">💀 Убито: ${kills}</div>

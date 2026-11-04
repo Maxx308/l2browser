@@ -141,6 +141,7 @@ const MONSTERS = [
   {
     id: 'bandit', name: 'Бандит', level: 3,
     pack: 'pack',   // v0.29: банда
+    night: true,    // v0.32: ночной (js/systems/daynight.js) — пока только значок
     hp: 95, atk: 13, xpReward: 1, attackType: 'physical',
     pDef: 33, mDef: 10,
     goldMin: 25, goldMax: 45, goldChance: 80,
@@ -168,6 +169,7 @@ const MONSTERS = [
   },
   {
     id: 'frog', name: 'Жаба', level: 4,
+    night: true,    // v0.32: ночной — пока только значок
     hp: 130, atk: 17, xpReward: 1, attackType: 'magic',
     pDef: 27, mDef: 18,
     goldMin: 30, goldMax: 50, goldChance: 80,
@@ -188,6 +190,7 @@ const MONSTERS = [
   {
     id: 'wolf', name: 'Волк', level: 5,
     pack: 'pack',   // v0.29: стайный
+    night: true,    // v0.32: ночной — пока только значок
     hp: 170, atk: 18, xpReward: 1, attackType: 'physical',
     pDef: 35, mDef: 12,
     goldMin: 32, goldMax: 53, goldChance: 80,

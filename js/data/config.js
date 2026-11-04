@@ -93,6 +93,17 @@ const LOCATION_NAMES = {
   mine:  'Копи',
 };
 
+// ==== v0.32: СУТКИ МИРА (js/systems/daynight.js) ====
+// Сутки — WORLD_DAY_MIN минут по общим часам (UTC): у всех игроков одно и то же время.
+// Фазы — по порядку, минуты от начала суток. Утро — первая, ночь — последняя (рассвет и закат плавные).
+const WORLD_DAY_MIN = 120;
+const WORLD_PHASES = [
+  { id: 'morning', name: 'Утро',  icon: '🌅', from: 0,  to: 15 },
+  { id: 'day',     name: 'День',  icon: '☀',  from: 15, to: 75 },
+  { id: 'evening', name: 'Вечер', icon: '🌇', from: 75, to: 90 },
+  { id: 'night',   name: 'Ночь',  icon: '🌙', from: 90, to: 120 },
+];
+
 // ==== МНОЖИТЕЛЬ СКОРОСТИ ATB ИГРОКА ПО ЛОКАЦИЯМ ====
 const LOCATION_PLAYER_ATB_MULT = {
   town:  1.0,
@@ -452,22 +463,10 @@ function getItemStat(item, stat) {
   return base + getRarityStatBonus(item, stat);
 }
 
-// v0.29.2: «своя» группа статов — по самой вещи, а не по герою, который её нашёл
-// (склад общий: мантия, выбитая воином, приходила магу с СИЛ/ЛОВ/ВЫН).
-// Посохи, жезлы, мантии → маг; остальное оружие, щиты, доспехи → воин;
-// бижутерия и всё неясное → по классу героя (без класса — все шесть статов).
-const RARITY_MAGIC_SETS   = ['robe', 'silk'];
-const RARITY_WARRIOR_SETS = ['gambeson', 'chain', 'patched'];
-
+// v0.32: «своя» группа статов — по КЛАССУ ГЕРОЯ, который выбил / выковал / перебросил вещь,
+// а не по самой вещи (решение: воин получает в основном СИЛ/ЛОВ/ВЫН на любой вещи, маг — ИНТ/ДУХ/МДР).
+// Без класса — все шесть статов поровну. item оставлен в подписи для совместимости вызовов.
 function getRarityStatProfile(item) {
-  const t = item && item.type;
-  if (t !== 'ring' && t !== 'earring' && t !== 'necklace') {
-    if (RARITY_MAGIC_SETS.includes(item && item.setId)) return 'magic';
-    if (RARITY_WARRIOR_SETS.includes(item && item.setId)) return 'warrior';
-    if (t === 'shield') return 'warrior';
-    const own = getItemStatProfile(item);
-    if (own !== 'neutral') return own;
-  }
   const cls = state.player && state.player.classId;
   if (cls === 'mage') return 'magic';
   if (cls) return 'warrior';
@@ -478,8 +477,9 @@ const RARITY_ORDER = ['white', 'green', 'blue', 'purple', 'yellow', 'red'];
 const RARITY_STAT_POOL = ['STR', 'DEX', 'CON', 'INT', 'WIT', 'MEN'];
 const RARITY_STATS_WARRIOR = ['STR', 'DEX', 'CON'];
 const RARITY_STATS_MAGIC   = ['INT', 'WIT', 'MEN'];
-// v0.29.2: шанс, что очко уйдёт в статы другой группы (в v0.26 убирали 30% — вещи вышли слишком сильными).
-const RARITY_OFFCLASS_CHANCE = 25;
+// Шанс, что очко уйдёт в статы другой группы. Бросается отдельно на каждое очко:
+// воину 70% — СИЛ/ЛОВ/ВЫН, 30% — ИНТ/ДУХ/МДР; магу наоборот. (v0.29.2 было 25%, v0.32 — 30%.)
+const RARITY_OFFCLASS_CHANCE = 30;
 
 // ========================================================
 //  МИКСТУРЫ — КОНСТАНТЫ ЭФФЕКТОВ
@@ -586,7 +586,8 @@ function rollRarityStats(points, profile = 'neutral') {
   const bonus = {};
   if (!points || points <= 0) return bonus;
 
-  // v0.29.2: каждое очко с шансом RARITY_OFFCLASS_CHANCE уходит в чужую группу.
+  // Каждое очко — свой бросок: с шансом RARITY_OFFCLASS_CHANCE уходит в чужую группу,
+  // потом внутри группы — случайный из трёх статов.
   for (let i = 0; i < points; i++) {
     let group;
     const off = Math.random() * 100 < RARITY_OFFCLASS_CHANCE;

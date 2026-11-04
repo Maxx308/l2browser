@@ -233,6 +233,8 @@ function onMonsterDeath(deadMonster) {
   const oldTitle = getMonsterTitle(m.id, m.variantId);
   incrementMonsterKills(m.id, m.variantId);
   const newTitle = getMonsterTitle(m.id, m.variantId);
+  if (typeof annalsFirst === 'function') annalsFirst('kill', { monster: m.name });   // v0.32: летопись
+  if (typeof questFindRoll === 'function') questFindRoll(m);   // v0.32: находки для поручений жителей
 
   if (newTitle !== oldTitle) {
     const loc = getMonsterLocation(m.id);
@@ -425,6 +427,7 @@ function onPlayerDeath() {
   p.xp = Math.max(0, p.xp - lostXp);
   logCombat(`☠ ${p.name} погиб. Потеряно ${lostXp} опыта (10%).`, 'log-entry loss');
   if (typeof bumpChronicleCounter === 'function') bumpChronicleCounter('deaths');   // v0.30: скрытый счётчик
+  if (typeof annalsFirst === 'function') annalsFirst('death', null, { loc: 'town' });   // v0.32: очнулся в Андервуде
 
   p.foodTimer = 0;
   p.foodTickAccum = 0;

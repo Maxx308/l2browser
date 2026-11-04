@@ -197,5 +197,6 @@ function upgradeSkill(skillId) {
 
   logCombat(`✦ ${skill.name} → Ур. ${p.learnedSkills[skillId]}`, 'log-entry levelup');
   if (typeof markDeed === 'function') markDeed('mentor.learned');   // v0.31: тема у наставника
+  if (typeof rapportService === 'function') rapportService('mentor');   // v0.32: отношения
   saveCurrentSlot();
 }

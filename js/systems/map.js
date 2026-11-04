@@ -42,6 +42,7 @@ function useMagicPath(destination) {
 
   p.gold -= price;
   p.currentLocation = destination;
+  if (typeof annalsFirst === 'function') annalsFirst('loc.' + destination);   // v0.32: летопись
 
   updateTopStatus();
   updateMapUI();
@@ -97,6 +98,7 @@ function tryTravel(loc) {
 function finishTravel() {
   state.travel.active = false;
   state.player.currentLocation = state.travel.destination;
+  if (typeof annalsFirst === 'function') annalsFirst('loc.' + state.travel.destination);   // v0.32: летопись
 
   document.getElementById('travel-overlay').classList.remove('active');
   updateMapUI();

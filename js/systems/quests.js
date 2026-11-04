@@ -90,6 +90,104 @@ function isQuestAvailable(questId) {
 function isQuestStarted(questId) {
   return !!state.player.quests[questId];
 }
+function isQuestDone(questId) {
+  const pr = state.player.quests && state.player.quests[questId];
+  return !!(pr && pr.stage === 'done');
+}
+// v0.32: стадия поручения (или null, если не взято).
+function questStage(questId) {
+  const pr = state.player.quests && state.player.quests[questId];
+  return pr ? pr.stage : null;
+}
+function setQuestStage(questId, stage) {
+  const pr = getQuestProgress(questId);
+  if (!pr) return;
+  pr.stage = stage;
+  saveCurrentSlot();
+  questJournalChanged();
+  if (typeof updateTalkButtons === 'function') updateTalkButtons();
+}
+
+// ========================================================
+//  v0.32: ПОРУЧЕНИЯ ЖИТЕЛЕЙ — «принеси» (needs). Считаем по сумке и складу (countMaterial, forge.js).
+// ========================================================
+function questNeedMet(questId, i) {
+  const n = QUESTS[questId].needs[i];
+  return countMaterial(n.name) >= n.qty;
+}
+function questNeedText(questId, i) {
+  const n = QUESTS[questId].needs[i];
+  return `${n.name}: ${Math.min(n.qty, countMaterial(n.name))} из ${n.qty} — ${n.where}`;
+}
+// Можно сдавать: поручение на стадии сбора (needsStage, по умолчанию первая) и всё собрано.
+function questNeedsReady(questId) {
+  const q = QUESTS[questId];
+  return questStage(questId) === (q.needsStage || q.stages[0]) && q.needs.every((n, i) => questNeedMet(questId, i));
+}
+function takeQuestNeeds(questId) {
+  QUESTS[questId].needs.forEach(n => takeMaterial(n.name, n.qty));
+  if (typeof renderInventory === 'function') renderInventory();
+}
+
+// v0.32: «НАЙДИ» — находка в бою (find в QUESTS): пока поручение на стадии find.stage,
+// убитый монстр из find.monsters (или из локации find.loc) с шансом find.chance% даёт находку.
+// Предмета в сумке нет — находка живёт в стадии поручения (её не продать и не потерять).
+function questFindRoll(m) {
+  Object.values(QUESTS).forEach(q => {
+    const f = q.find;
+    if (!f || questStage(q.id) !== f.stage) return;
+    const fits = f.monsters ? f.monsters.includes(m.id) : (typeof getMonsterLocation === 'function' && getMonsterLocation(m.id) === f.loc);
+    if (!fits || Math.random() * 100 >= f.chance) return;
+    logLoot(heroText(f.log), 'log-loot');
+    if (typeof showToast === 'function') showToast(f.icon, f.toast);
+    setQuestStage(q.id, f.next);
+  });
+}
+
+// Поручение жителя выполнено: отношения (q.rapport { npc: очки } или свои — по выбору), запись в летописи, лог.
+function finishOwnerQuest(questId, annalsKey, rapport) {
+  const q = QUESTS[questId];
+  const r = rapport || q.rapport || {};
+  completeQuest(questId);
+  Object.keys(r).forEach(npc => addRapport(npc, r[npc]));
+  if (typeof annalsFirst === 'function') annalsFirst(annalsKey || 'quest.' + questId);
+  logCombat(`✔ Поручение выполнено: «${q.name}».`, 'log-entry levelup');
+  if (typeof updateTalkButtons === 'function') updateTalkButtons();
+  saveCurrentSlot();
+}
+
+// «Принеси» — сдача в разговоре: забрать собранное и закрыть поручение.
+function finishNeedsQuest(questId) {
+  if (!questNeedsReady(questId)) return;
+  takeQuestNeeds(questId);
+  finishOwnerQuest(questId);
+}
+
+// «Ящик без надписи»: заглянул — меньше доверия и Оболов, зато знаешь, что внутри.
+function finishTraderBox(peeked) {
+  if (questStage('traderBox') !== 'return') return;
+  const p = state.player;
+  p.gold += peeked ? 100 : 150;
+  getQuestProgress('traderBox').peeked = !!peeked;
+  finishOwnerQuest('traderBox', peeked ? 'quest.traderBox.peek' : 'quest.traderBox.give', { trader: peeked ? 6 : 10 });
+  if (typeof updateTopStatus === 'function') updateTopStatus();
+  if (typeof updateTraderGold === 'function') updateTraderGold();
+}
+function questPeeked(questId) {
+  const pr = getQuestProgress(questId);
+  return !!(pr && pr.peeked);
+}
+
+// «Угасающий камень»: Урдах → Лиэль (посмотрит) → сапфиры Лиэль → камень обратно Урдаху.
+function mentorStoneShown() {
+  if (questStage('mentorStone') === 'to_liel') setQuestStage('mentorStone', 'need_items');
+}
+function mentorStoneCharged() {
+  if (!questNeedsReady('mentorStone')) return;
+  takeQuestNeeds('mentorStone');
+  addRapport('guildmage', 3);
+  setQuestStage('mentorStone', 'to_urdah');
+}
 
 // ========================================================
 //  ЖУРНАЛ ПОРУЧЕНИЙ (v0.30)
@@ -106,7 +204,10 @@ function questJournalChanged() {
 }
 
 // Можно взять: не взято, ещё доступно, с дающим уже знакомы.
+// v0.32: у поручений жителей — своё условие offered (житель уже попросил).
 function isQuestOffered(questId) {
+  const q = QUESTS[questId];
+  if (q.offered) return !isQuestStarted(questId) && q.offered();
   return !isQuestStarted(questId) && isQuestAvailable(questId)
     && typeof knowsChronicleFact === 'function' && knowsChronicleFact('start_place');
 }
@@ -157,9 +258,11 @@ function renderQuestJournal(box) {
       html += `<div class="quest-card">${head(q)}<div class="quest-text">${esc(q.journal)}</div><div class="quest-steps">`;
       q.steps.forEach(s => {
         const i = q.stages.indexOf(s.stage);
-        const cls = i < cur ? 'done' : i === cur ? 'now' : 'later';
-        const mark = i < cur ? '✓' : i === cur ? '▸' : '·';
-        html += `<div class="quest-step ${cls}"><span class="quest-mark">${mark}</span>${esc(s.text)}</div>`;
+        const fin = i < cur || (s.done ? s.done() : false);   // v0.32: шаг «принеси» готов, когда собрано
+        const cls = fin ? 'done' : i === cur ? 'now' : 'later';
+        const mark = fin ? '✓' : i === cur ? '▸' : '·';
+        const text = typeof s.text === 'function' ? s.text() : s.text;
+        html += `<div class="quest-step ${cls}"><span class="quest-mark">${mark}</span>${esc(text)}</div>`;
       });
       html += `</div><div class="quest-reward"><span>Награда</span>${esc(q.reward)}</div></div>`;
     });
@@ -172,7 +275,8 @@ function renderQuestJournal(box) {
 
   if (done.length) {
     html += `<div class="quest-group">Выполненные</div>`;
-    done.forEach(q => { html += `<div class="quest-card done">${head(q)}<div class="quest-text">✓ ${esc(q.steps.map(s => s.text).join(' · '))}</div></div>`; });
+    // v0.32: у поручений жителей шаги со счётчиками — для выполненного пишем то, что было в журнале
+    done.forEach(q => { html += `<div class="quest-card done">${head(q)}<div class="quest-text">✓ ${esc(q.needs ? q.journal : q.steps.map(s => s.text).join(' · '))}</div></div>`; });
   }
 
   box.innerHTML = html;

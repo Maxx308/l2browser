@@ -66,6 +66,7 @@ function tryRefineItem(item) {
 
   // Списываем Оболы (в любом случае).
   p.gold -= price;
+  if (typeof rapportService === 'function') rapportService('refiner');   // v0.32: отношения
 
   const chance = getRefineChance(currentLevel);
   const roll = Math.random() * 100;
@@ -106,6 +107,7 @@ function tryRefineItem(item) {
   if (!item.refineBonuses[key]) item.refineBonuses[key] = 0;
   item.refineBonuses[key] = Math.round((item.refineBonuses[key] + bonus.value) * 100) / 100;   // 0.5% и 0.15/сек не копят хвосты
   item.refineFlatV = REFINE_FLAT_VERSION;   // v0.25: HP/MP/реген уже по таблице тиров — миграция не тронет
+  if (typeof annalsFirst === 'function') annalsFirst('refine');   // v0.32: летопись — первая подгонка
   if (isMilestone && typeof markDeed === 'function') markDeed('refine.milestone');   // v0.31: тема у мастерицы
 
   if (typeof recalcStats === 'function') recalcStats();
@@ -205,8 +207,8 @@ function openRefine() {
   document.getElementById('refine-overlay').classList.add('active');
   renderRefineWindow();
 
-  // v0.31: Энциклопедия — мастерица; точка на «Поговорить»
-  if (typeof unlockLore === 'function') unlockLore('refiner');
+  // v0.31: Энциклопедия — мастерица; точка на «Поговорить». v0.32: и статья «Подгонка» (правила, вехи)
+  if (typeof unlockLore === 'function') { unlockLore('refiner'); unlockLoreArticle('refine'); }
   if (typeof updateTalkButtons === 'function') updateTalkButtons();
 }
 
@@ -230,7 +232,16 @@ function updateRefineGold() {
   if (el) el.textContent = state.player.gold;
 }
 
+// v0.31: подпись слота в списке подгонки
+const REFINE_SLOT_NAMES = {
+  weapon: 'Оружие', helmet: 'Шлем', armorTop: 'Доспех', armorBottom: 'Поножи',
+  gloves: 'Перчатки', boots: 'Сапоги', ring1: 'Кольцо', ring2: 'Кольцо',
+  earring1: 'Серьга', earring2: 'Серьга', necklace: 'Ожерелье',
+};
+
 // Слева — список экипировки.
+// v0.31: сначала самые редкие; имя и рамка иконки — цветом редкости;
+// под именем — редкость, слот, тир; полоска подгонки «+5 из 10».
 function renderRefineList() {
   const cont = document.getElementById('refine-list');
   if (!cont) return;
@@ -238,10 +249,14 @@ function renderRefineList() {
 
   const p = state.player;
   const slots = ['weapon', 'shield', 'helmet', 'armorTop', 'armorBottom', 'gloves', 'boots', 'ring1', 'ring2', 'earring1', 'earring2', 'necklace'];
+  const rank = item => (RARITIES[item.rarity] || RARITIES.white).points;
+  const isMaxed = item => (item.refineLevel || 0) >= getMaxRefine(getItemTier(item));
 
+  // Подогнанные до конца — вниз списка (их уже нечего подгонять)
   const items = slots
-    .map(slot => ({ slot, item: p.equipment[slot] }))
-    .filter(x => x.item);
+    .map((slot, order) => ({ slot, order, item: p.equipment[slot] }))
+    .filter(x => x.item)
+    .sort((a, b) => (isMaxed(a.item) - isMaxed(b.item)) || (rank(b.item) - rank(a.item)) || (a.order - b.order));
 
   if (items.length === 0) {
     cont.innerHTML = `<div class="refine-empty">Наденьте снаряжение,<br>чтобы его подогнать.</div>`;
@@ -251,17 +266,29 @@ function renderRefineList() {
   items.forEach(({ slot, item }) => {
     const el = document.createElement('div');
     const selected = (__refineSelectedSlot === slot) ? ' selected' : '';
-    el.className = 'refine-list-item' + selected;
+    const rarity = RARITIES[item.rarity] || RARITIES.white;
 
     const tier = getItemTier(item);
     const maxRef = getMaxRefine(tier);
     const lvl = item.refineLevel || 0;
+    const maxed = lvl >= maxRef;
+    el.className = `refine-list-item ${rarity.cssClass}${selected}${maxed ? ' maxed' : ''}`;
+    el.style.setProperty('--rar', rarity.color);
+    el.style.setProperty('--rar-glow', rarity.colorGlow);
+
+    const slotName = slot === 'shield' ? (item.type === 'weapon' ? 'Вторая рука' : 'Щит') : (REFINE_SLOT_NAMES[slot] || '');
+    // Про вехи здесь не пишем («веха +10» читалось как бонус +10) — подробно в Энциклопедии, статья «Подгонка»
+    const status = maxed ? '✓ подогнана до конца' : `подгонка +${lvl} из ${maxRef}`;
 
     el.innerHTML = `
       <div class="refine-list-icon">${item.icon}</div>
       <div class="refine-list-info">
-        <div class="refine-list-name">${item.name}${lvl > 0 ? ' +' + lvl : ''}</div>
-        <div class="refine-list-sub">Тир ${tier} · Макс +${maxRef}</div>
+        <div class="refine-list-name">${item.name}${lvl > 0 ? ' <b>+' + lvl + '</b>' : ''}</div>
+        <div class="refine-list-sub"><span class="refine-list-rar">${rarity.name}</span> · ${slotName} · Тир ${tier}</div>
+        <div class="refine-list-progress">
+          <div class="refine-list-bar"><div style="width:${Math.round(lvl / maxRef * 100)}%"></div></div>
+          <span>${status}</span>
+        </div>
       </div>
     `;
 
@@ -274,6 +301,22 @@ function renderRefineList() {
 
     cont.appendChild(el);
   });
+
+  // v0.32: правила подгонки и вехи — в Энциклопедии
+  const help = document.createElement('div');
+  help.className = 'refine-help-link';
+  help.textContent = '📖 Как устроена подгонка и вехи';
+  help.onclick = openRefineHelp;
+  cont.appendChild(help);
+}
+
+// v0.32: открыть статью «Подгонка» в Хрониках
+function openRefineHelp() {
+  if (__refineBatch) { showToast('⏩', 'Идёт подгонка — сначала «Стоп»'); return; }
+  closeRefine();
+  switchTab('chronicle');
+  if (typeof switchChronicleSection === 'function') switchChronicleSection('lore');
+  if (typeof openLoreArticle === 'function') openLoreArticle('refine');
 }
 
 // Справа — превью + кнопки + список бонусов.
@@ -374,8 +417,8 @@ function renderRefinePreview() {
   // 7. [🔧 Подогнать] [🗑 Сбросить]      ← КНОПКИ
   // 8. БОНУСЫ ПОДГОНКИ:                  ← растёт вниз
   cont.innerHTML = `
-    <div class="refine-preview-name">${item.name}</div>
-    <div class="refine-preview-tier">Тир ${tier} · Максимум +${maxRef}</div>
+    <div class="refine-preview-name" style="color:${(RARITIES[item.rarity] || RARITIES.white).color}">${item.name}</div>
+    <div class="refine-preview-tier">${(RARITIES[item.rarity] || RARITIES.white).name} · Тир ${tier} · Максимум +${maxRef}</div>
 
     <div class="refine-preview-levels">
       <span>+${lvl}</span>

@@ -1,0 +1,111 @@
+// ========================================================
+//  СИСТЕМЫ: СМЕНА ДНЯ И НОЧИ (v0.32)
+//  Время мира — по общим часам (UTC): сутки WORLD_DAY_MIN минут (config.js),
+//  у всех игроков одинаково. В сохранении ничего нет — время просто вычисляется.
+//  Пока это только ВИД:
+//  + на <body> класс tod-<фаза>, на :root переменные --night (0 день … 1 ночь)
+//    и --dusk (0 … 1 — тёплый свет рассвета и заката); их читает css/daynight.css;
+//  + значок фазы в верхней строке (подсказка — сколько до следующей);
+//  + смена фазы — строчка в журнале; первая ночь — запись в летописи и статья «Сутки»;
+//  + монстры с night: true — значок 🌙 на карточке (на бой пока не влияет).
+//  Настройки → Экран → «Время суток» — посмотреть любую фазу (только вид, в мире время идёт своё).
+// ========================================================
+
+const TOD_PREVIEW_KEY = 'l2browser_tod_preview';
+const TOD_TICK_MS = 5000;
+
+const WORLD_PHASE_LOG = {
+  morning: '🌅 Светает. Туман уползает обратно в лес.',
+  day:     '☀ Наступил день.',
+  evening: '🌇 Солнце садится. Тени становятся длиннее.',
+  night:   '🌙 Опустилась ночь. За частоколом кто-то воет.',
+};
+
+let __todPhase = null;   // фаза мира на прошлом тике — чтобы заметить смену
+
+function todPreview() {
+  try { return localStorage.getItem(TOD_PREVIEW_KEY) || ''; } catch (e) { return ''; }
+}
+
+// Время мира: { phase, minute, left, preview }. left — минут до следующей фазы.
+// real = true — настоящее время мира, без просмотра из настроек.
+function worldTime(real) {
+  const pv = real ? '' : todPreview();
+  const fixed = pv && WORLD_PHASES.find(f => f.id === pv);
+  const m = fixed ? (fixed.from + fixed.to) / 2 : (Date.now() / 60000) % WORLD_DAY_MIN;
+  const phase = WORLD_PHASES.find(f => m >= f.from && m < f.to) || WORLD_PHASES[0];
+  return { phase, minute: m, left: phase.to - m, preview: !!fixed };
+}
+
+// Свет по минуте суток: утром ночь уходит, вечером приходит; на середине рассвета и заката — тёплый свет.
+// Темнота идёт по квадрату: первую половину заката ещё светло и золотисто, синеет только к концу
+// (иначе тёплый свет и синие сумерки смешивались в грязно-лиловое).
+function todLight(m) {
+  const mo = WORLD_PHASES.find(f => f.id === 'morning');
+  const ev = WORLD_PHASES.find(f => f.id === 'evening');
+  if (m < mo.to) { const t = (m - mo.from) / (mo.to - mo.from); return { night: (1 - t) * (1 - t), dusk: Math.sin(Math.PI * t) }; }
+  if (m >= ev.from && m < ev.to) { const t = (m - ev.from) / (ev.to - ev.from); return { night: t * t, dusk: Math.sin(Math.PI * t) }; }
+  return { night: m >= ev.to ? 1 : 0, dusk: 0 };
+}
+
+function applyDayNight() {
+  const t = worldTime();
+  const light = todLight(t.minute);
+  const root = document.documentElement;
+  root.style.setProperty('--night', light.night.toFixed(3));
+  root.style.setProperty('--dusk', light.dusk.toFixed(3));
+  WORLD_PHASES.forEach(f => document.body.classList.toggle('tod-' + f.id, f.id === t.phase.id));
+
+  const chip = document.getElementById('top-tod');
+  if (chip) {
+    const next = WORLD_PHASES[(WORLD_PHASES.indexOf(t.phase) + 1) % WORLD_PHASES.length];
+    chip.innerHTML = `${t.phase.icon} <b>${t.phase.name}</b>`;
+    chip.classList.toggle('tod-preview', t.preview);
+    chip.title = t.preview
+      ? 'Просмотр из настроек — в мире время идёт своё'
+      : `${next.name} — примерно через ${Math.max(1, Math.ceil(t.left))} мин`;
+  }
+
+  // Смена фазы в мире (не просмотр) — строчка в журнале. Первая ночь — летопись и Энциклопедия.
+  const p = state.player;
+  const real = worldTime(true).phase.id;
+  if (__todPhase && __todPhase !== real && p && p.classId && typeof logCombat === 'function') {
+    logCombat(WORLD_PHASE_LOG[real], 'log-entry', null, 'sys');
+  }
+  __todPhase = real;
+  if (real === 'night' && p && p.classId && p.chronicle) {
+    if (typeof annalsFirst === 'function') annalsFirst('night');
+    if (typeof unlockLore === 'function') unlockLore('day');
+  }
+}
+
+// ---- Значок ночного монстра (карточки на «Охоте») ----
+function nightBadgeHtml(template) {
+  return template.night
+    ? `<div class="monster-night" title="Ночной: выходит на охоту в темноте. Пока — только значок.">🌙</div>`
+    : '';
+}
+
+// ---- Настройки → Экран → «Время суток» ----
+function renderTodButtons() {
+  const box = document.getElementById('tod-buttons');
+  if (!box) return;
+  const cur = todPreview();
+  const opts = [{ id: '', name: 'Как в мире', icon: '' }].concat(WORLD_PHASES);
+  box.innerHTML = opts.map(o =>
+    `<button class="settings-btn${cur === o.id ? ' active' : ''}" onclick="setTodPreview('${o.id}')">${o.icon ? o.icon + ' ' : ''}${o.name}</button>`).join('');
+  const now = document.getElementById('tod-current-value');
+  if (now) { const w = worldTime(true); now.textContent = `${w.phase.icon} ${w.phase.name}`; }
+}
+
+function setTodPreview(id) {
+  try {
+    if (id) localStorage.setItem(TOD_PREVIEW_KEY, id);
+    else localStorage.removeItem(TOD_PREVIEW_KEY);
+  } catch (e) {}
+  applyDayNight();
+  renderTodButtons();
+}
+
+applyDayNight();
+setInterval(applyDayNight, TOD_TICK_MS);

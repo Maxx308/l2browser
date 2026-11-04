@@ -438,6 +438,8 @@ function useFood(item) {
   item.qty--;
   if (item.qty <= 0) p.inventory.splice(idx, 1);
   logCombat(`🍖 Съедено: ${item.name}. Сытность продлена.`, 'log-entry food');
+  if (typeof unlockLoreMany === 'function') unlockLoreMany([loreFoodKey(item), 'satiety']);   // v0.32
+  if (typeof annalsFirst === 'function') annalsFirst(loreFoodKey(item));
   renderInventory(); renderEffectsPanel();
 
   showToast('🍖', `Сытность +${buffShopDur(duration)}`);
@@ -471,6 +473,8 @@ function eatDish(item) {
   if (typeof updateCharacterPanel === 'function') updateCharacterPanel();
   logCombat(`${dish.icon} Съедено: ${dish.name} — ${dish.text}${replaced ? ` (вместо «${replaced.name}»)` : ''}.`, 'log-entry food');
   showToast(dish.icon, `${dish.text} · ${Math.floor(p.dish.timer / 60)} мин`);
+  if (typeof unlockLoreMany === 'function') unlockLoreMany(['food.' + id, 'satiety']);   // v0.32
+  if (typeof annalsFirst === 'function') annalsFirst('food.' + id);
   renderInventory(); renderEffectsPanel();
   saveCurrentSlot();
 }

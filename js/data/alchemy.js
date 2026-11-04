@@ -106,7 +106,7 @@ function getRarityPointsForReroll(rarityId) {
 // Возвращает НОВЫЙ объект bonusStats для предмета.
 // Все старые значения сбрасываются.
 // v0.26: очки = statPoints редкости (1/2/3/5/7).
-// v0.29.2: группа статов — по вещи (getRarityStatProfile), 25% очков уходит в чужую группу.
+// v0.32: группа статов — по классу героя (getRarityStatProfile), 30% очков уходит в чужую группу.
 function rollNewBonusStats(item) {
   if (!item || !item.rarity || item.rarity === 'white') return {};
   const points = getRarityPointsForReroll(item.rarity);

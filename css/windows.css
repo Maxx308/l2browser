@@ -363,6 +363,32 @@
 .recipe-bonus.food-duration { color: #c0f0a0; font-style: italic; }
 .recipe-bonus.crit { color: #ffb060; font-weight: 600; }
 
+/* v0.32: карточка снаряжения — тир бейджем, главный стат крупно, сравнение, подробности по «ⓘ» */
+.recipe-head { display: flex; align-items: flex-start; justify-content: space-between; gap: calc(8 * var(--u)); }
+.recipe-card.gear .recipe-name { margin-bottom: calc(2 * var(--u)); }
+.recipe-hand { color: #e0a070; font-size: var(--fs-small); white-space: nowrap; }
+.recipe-tier {
+  flex: none; font-family: 'Cinzel', serif; font-size: var(--fs-small); line-height: 1;
+  padding: calc(3 * var(--u)) calc(7 * var(--u)); border-radius: calc(9 * var(--u));
+  border: 1px solid #6a6a70; color: #c8c8d0; background: rgba(255,255,255,0.04);
+}
+.recipe-tier.t3 { border-color: #8a6a24; color: #ffd77a; background: rgba(255,200,90,0.1); }
+.recipe-tier.t4 { border-color: #7a3a8a; color: #e0a0ff; background: rgba(200,120,255,0.1); }
+.recipe-tier.t5 { border-color: #8a2a2a; color: #ff9a8a; background: rgba(255,90,80,0.1); }
+.recipe-main { display: flex; align-items: baseline; gap: calc(6 * var(--u)); margin: calc(4 * var(--u)) 0 calc(2 * var(--u)); flex-wrap: wrap; }
+.recipe-main b { font-family: 'Cinzel', serif; font-size: calc(22 * var(--u)); font-weight: 700; color: #f3e3b8; line-height: 1.1; }
+.recipe-main > span { font-size: var(--fs-small); color: var(--text-dim); }
+.recipe-cmp { font-size: var(--fs-small); font-weight: 700; margin-left: calc(4 * var(--u)); }
+.recipe-cmp.up { color: #8fcf7a; }
+.recipe-cmp.down { color: #e07a6a; }
+.recipe-cmp.same { color: var(--text-dim); font-weight: 400; }
+.recipe-info { margin-left: auto; font-size: var(--fs-small); color: var(--gold); cursor: pointer; white-space: nowrap; }
+.recipe-info:hover { color: var(--gold-bright); }
+.recipe-minor { font-size: var(--fs-small); color: #b0a690; margin-bottom: calc(8 * var(--u)); }
+.recipe-details { display: none; font-size: var(--fs-small); color: #c8b890; border-left: 2px solid #5a4a30; padding: calc(2 * var(--u)) 0 calc(2 * var(--u)) calc(8 * var(--u)); margin-bottom: calc(8 * var(--u)); line-height: 1.5; }
+.recipe-card.open .recipe-details { display: block; }
+.recipe-card.gear .recipe-materials { margin-top: calc(2 * var(--u)); }
+
 /* ---------- НАСТАВНИК ---------- */
 .mentor-info {
   text-align: center;
@@ -981,6 +1007,22 @@
     letter-spacing: 0;
     min-width: calc(60 * var(--u));
   }
+  /* v0.32: у кузницы 6 вкладок — на телефоне в два ряда по три, названия целиком.
+     Столбцы парами: Ресурсы/Расходники · Оружие/Доспехи · Ювелирка/Щиты. */
+  .forge-window .window-tabs {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+  }
+  .forge-window .window-tab { min-width: 0; }
+  .forge-window .window-tab[data-forge="resources"]   { grid-area: 1 / 1; }
+  .forge-window .window-tab[data-forge="consumables"] { grid-area: 2 / 1; }
+  .forge-window .window-tab[data-forge="weapons"]     { grid-area: 1 / 2; }
+  .forge-window .window-tab[data-forge="armor"]       { grid-area: 2 / 2; }
+  .forge-window .window-tab[data-forge="jewelry"]     { grid-area: 1 / 3; border-right: none; }
+  .forge-window .window-tab[data-forge="shields"]     { grid-area: 2 / 3; border-right: none; }
+  .forge-window .window-tab[data-forge="resources"],
+  .forge-window .window-tab[data-forge="weapons"],
+  .forge-window .window-tab[data-forge="jewelry"]     { border-bottom: 1px solid var(--border); }
   .window-subtabs {
     padding: 0 calc(6 * var(--u));
     gap: calc(2 * var(--u));

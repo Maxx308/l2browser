@@ -54,15 +54,21 @@ function spawnFloatDamage(elementId, dmg, type) {
 
 // Запись в лог боя (левая колонка)
 // v0.31: note — приписка тусклым шрифтом в той же строке (Цикл мастера, метка, поджог…).
-function logCombat(text, cls = 'log-entry', note) {
+// v0.32: у строки и у каждой части приписки — группа (data-cat) для настроек чата
+//        (js/systems/chat-filter.js); cat — явно, иначе угадывается по тексту и классу.
+function logCombat(text, cls = 'log-entry', note, cat) {
   const log = document.getElementById('battle-log-combat');
   const div = document.createElement('div');
   div.className = cls; div.textContent = text;
+  div.dataset.cat = cat || (typeof guessCombatCat === 'function' ? guessCombatCat(text, cls) : 'sys');
   if (note) {
-    const span = document.createElement('span');
-    span.className = 'log-note';
-    span.textContent = ' · ' + note;
-    div.appendChild(span);
+    String(note).split(' · ').forEach(part => {
+      const span = document.createElement('span');
+      span.className = 'log-note';
+      span.dataset.cat = typeof guessNoteCat === 'function' ? guessNoteCat(part) : 'notes';
+      span.textContent = ' · ' + part;
+      div.appendChild(span);
+    });
   }
   log.appendChild(div);
   log.scrollTop = log.scrollHeight;
@@ -71,10 +77,12 @@ function logCombat(text, cls = 'log-entry', note) {
 
 // Запись в лог добычи (правая колонка)
 // v0.31: note — приписка тусклым шрифтом в той же строке («· 🐾 стая ×5: +20%»), чтобы не занимать отдельную строку.
+// v0.32: группа строки (data-cat) — для настроек чата.
 function logLoot(text, cls = 'log-loot', note) {
   const log = document.getElementById('battle-log-loot');
   const div = document.createElement('div');
   div.className = cls; div.textContent = text;
+  div.dataset.cat = typeof guessLootCat === 'function' ? guessLootCat(cls) : 'sys';
   if (note) {
     const span = document.createElement('span');
     span.className = 'log-note';

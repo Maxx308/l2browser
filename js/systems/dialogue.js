@@ -125,6 +125,7 @@ function closeDialogue() {
     learnChronicleFact('start_place');
     unlockLore('underwood');
     unlockLore('elder');
+    if (typeof annalsFirst === 'function') annalsFirst('elder');   // v0.32: летопись
   }
 }
 

@@ -1,9 +1,11 @@
 // ========================================================
 //  СИСТЕМЫ: ХРОНИКИ (v0.30)
 //  Вкладка «Хроники»: Летопись · Поручения · Энциклопедия.
-//  + Летопись — записи героя и реплики сумки, новые сверху.
-//    Запись может задавать вопрос (ask) — ответ пишется в неё же,
-//    неотвеченное можно наверстать позже.
+//  + Летопись — дневник героя от первого лица, новые сверху.
+//    v0.32: короткая запись, когда герой что-то делает впервые (annalsFirst, тексты — js/data/annals.js).
+//    Разговоры с сумкой в летопись больше не пишутся — только запись героя о знакомстве;
+//    сама сумка — статья в Энциклопедии. Записи с вопросом (ask) и реплики сумки (speaker 'bag')
+//    летопись по-прежнему умеет показывать — на будущее.
 //  + state.player.chronicle — живёт в сохранении героя (и в облаке).
 //    counters — скрытые счётчики на будущее (концовки), игроку не показываются.
 //  + state.player.bag — «Видавшая виды сумка» (уровень).
@@ -31,7 +33,7 @@ const CHRONICLE_FACTS = {
 
 // Свежие летопись и сумка (новый герой).
 function makeFreshChronicle() {
-  return { entries: [], nextId: 1, seen: 0, known: {}, lore: {}, loreSeen: {}, questsSeen: {}, counters: { trust: 0, deaths: 0, disenchanted: 0 } };
+  return { entries: [], nextId: 1, seen: 0, known: {}, lore: {}, loreSeen: {}, questsSeen: {}, firsts: {}, counters: { trust: 0, deaths: 0, disenchanted: 0 } };
 }
 function makeFreshBag() {
   return { level: 1 };
@@ -56,6 +58,7 @@ function ensureChronicle() {
   if (!p.bag) p.bag = makeFreshBag();
   if (!p.chronicle || !Array.isArray(p.chronicle.entries)) {
     p.chronicle = makeFreshChronicle();
+    delete p.chronicle.firsts;   // v0.32: старому герою «впервые» угадываем ниже (annalsGuessFirsts)
     if (p.classId) {
       addArrivalEntry();
       const metElder = p.level > 1 || (typeof isQuestStarted === 'function' && isQuestStarted('firstSteps'));
@@ -78,6 +81,7 @@ function ensureChronicle() {
     if (p.level > 1) { unlockLore('trader', true); unlockLore('underwood.trade', true); unlockLoreArticle('obol', true); }
     (p.inventory || []).forEach(i => { if (i && i.shopId) unlockLore('item.' + i.shopId, true); });
   }
+  if (typeof unlockLoreActiveBuffs === 'function') unlockLoreActiveBuffs();   // v0.32: действующие бафы и еда
   if (!c.counters) c.counters = {};
   ['trust', 'deaths', 'disenchanted'].forEach(k => { if (typeof c.counters[k] !== 'number') c.counters[k] = 0; });
   // v0.31: дела героя (js/systems/townsfolk.js). Старый герой у Торговца уже и покупал, и продавал.
@@ -85,6 +89,56 @@ function ensureChronicle() {
     c.deeds = {};
     if (p.level > 1) { c.deeds['trader.bought'] = Date.now(); c.deeds['trader.sold'] = Date.now(); }
   }
+  // v0.32: старый герой многое уже делал — «впервые» про это задним числом не пишем.
+  if (!c.firsts) c.firsts = annalsGuessFirsts(p, c);
+  migrateBagEntries(c);
+  // v0.32: отношения с жителями — старому герою за уже заданные темы и сделанные дела
+  if (!c.rapport && typeof rapportGuess === 'function') c.rapport = rapportGuess(c);
+}
+
+// v0.32: что старый герой наверняка уже делал (по уровню, делам, убийствам, снаряжению, бафам).
+function annalsGuessFirsts(p, c) {
+  const f = {};
+  const now = Date.now();
+  if (p.level > 1) ['elder', 'kill', 'loc.field'].forEach(k => { f[k] = now; });
+  Object.keys(c.deeds || {}).forEach(k => { f[k] = c.deeds[k]; });
+  if (c.counters && c.counters.deaths > 0) f.death = now;
+  const kills = Object.keys(p.monsterKills || {});
+  if (typeof MINE_MONSTERS !== 'undefined' && kills.some(k => MINE_MONSTERS.some(m => k.startsWith(m.id + '_')))) f['loc.mine'] = now;
+  if (Object.values(p.equipment || {}).some(it => it && it.refineLevel > 0)) f.refine = now;
+  Object.keys(p.guildBuffs || {}).forEach(id => { if (p.guildBuffs[id] && p.guildBuffs[id].timer > 0) f['buff.' + id] = now; });
+  Object.keys(p.tavernBuffs || {}).forEach(id => { if (p.tavernBuffs[id] && p.tavernBuffs[id].timer > 0) f['buff.' + id] = now; });
+  if (p.dish && p.dish.timer > 0) f['food.' + p.dish.id] = now;
+  return f;
+}
+
+// v0.32: в старой летописи знакомство с сумкой записано репликами сумки (три записи) —
+// меняем их на одну запись героя на том же месте; выборы переезжают в chronicle.bagMeet.
+function migrateBagEntries(c) {
+  const i = c.entries.findIndex(e => e.speaker === 'bag');
+  if (i >= 0) {
+    const old = c.entries[i];
+    const naming = c.entries.find((e, j) => j > i && e.speaker === 'bag' && e.ask);
+    const first = old.ask && typeof old.ask.answer === 'number' ? old.ask.answer : 1;
+    if (!c.bagMeet) c.bagMeet = { first, name: naming && typeof naming.ask.answer === 'number' ? naming.ask.answer : 1 };
+    c.entries[i] = { id: old.id, at: old.at, lvl: old.lvl, loc: old.loc, speaker: 'hero', text: ANNALS_BAG_MEET[first] || ANNALS_BAG_MEET[1] };
+    c.entries = c.entries.filter(e => e.speaker !== 'bag');
+    c.firsts.bag = old.at;
+  }
+  if (bagMet()) unlockBagLore(c.bagMeet ? c.bagMeet.first : null, true);
+}
+
+// ---- v0.32: Летопись — дневник героя ----
+// Запись «впервые …» по ключу из ANNALS_FIRSTS. Один раз на ключ; vars — подстановки «%имя%».
+function annalsFirst(key, vars, opts) {
+  const p = state.player;
+  const c = p.chronicle;
+  if (!c || !p.classId || !ANNALS_FIRSTS[key]) return;
+  if (!c.firsts) c.firsts = {};
+  if (c.firsts[key]) return;
+  c.firsts[key] = Date.now();
+  const text = ANNALS_FIRSTS[key].replace(/%(\w+)%/g, (m, k) => (vars && vars[k] != null ? vars[k] : ''));
+  addChronicleEntry(text, opts);
 }
 
 // ---- Факты: что герой уже узнал ----
@@ -315,17 +369,30 @@ function bagMeetChoose(step, idx) {
   if (step === 'name') finishBagMeeting();
 }
 
-// Знакомство состоялось: доверие, весь разговор — в летопись, сумка представилась.
+// Знакомство состоялось: доверие, выборы — в chronicle.bagMeet (на будущее: реплики, концовки),
+// в летопись — одна запись героя (зависит от первого выбора), сумка — в Энциклопедию.
 function finishBagMeeting() {
   const m = __bagMeet;
   __bagMeet = null;
+  const c = state.player.chronicle;
   bumpChronicleCounter('trust', BAG_MEET.first[m.first].trust + BAG_MEET.name[m.name].trust);
-  addChronicleEntry(BAG_MEET.greet, { speaker: 'bag', ask: { options: BAG_MEET.first, answer: m.first } });
-  addChronicleEntry(BAG_MEET.naming, { speaker: 'bag', ask: { options: BAG_MEET.name, answer: m.name } });
-  addChronicleEntry(BAG_MEET.final, { speaker: 'bag' });
+  c.bagMeet = { first: m.first, name: m.name };
+  if (!c.firsts) c.firsts = {};
+  if (!c.firsts.bag) {
+    c.firsts.bag = Date.now();
+    addChronicleEntry(ANNALS_BAG_MEET[m.first] || ANNALS_BAG_MEET[1]);
+  }
   learnChronicleFact('bag_name');   // сохраняет
+  unlockBagLore(m.first);
   const slot = document.querySelector('.equip-slot[data-slot="bag"]');
   if (slot) slot.classList.remove('bag-calls');
+}
+
+// Статья о сумке в Энциклопедии. «Не бросишь» — только тем, кто пробовал её сбросить (первый выбор 0).
+function unlockBagLore(first, silent) {
+  if (typeof unlockLoreArticle !== 'function') return;
+  unlockLoreArticle('bag', silent);
+  if (first === 0) unlockLore('bag.return', true);
 }
 
 function showBagTooltip(e) {

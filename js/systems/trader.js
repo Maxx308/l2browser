@@ -240,6 +240,7 @@ function sellItemByKey(groupKey, count) {
   updateInventoryFooter();
 
   if (typeof markDeed === 'function') markDeed('trader.sold');   // v0.31: тема «Почему скупаешь так дёшево?»
+  if (typeof rapportService === 'function') rapportService('trader');   // v0.32: отношения
   saveCurrentSlot();
 }
 
@@ -295,6 +296,7 @@ function buyItem(shopId, count) {
   const fs = getQuestProgress('firstSteps');
   if (fs && fs.stage !== 'done') updateQuestProgress('firstSteps');
   if (typeof markDeed === 'function') markDeed('trader.bought');   // v0.31: тема «Откуда у тебя товар?»
+  if (typeof rapportService === 'function') rapportService('trader');   // v0.32: отношения
 
   saveCurrentSlot();
 }
