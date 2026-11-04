@@ -3,8 +3,9 @@
 //  Время мира — по общим часам (UTC): сутки WORLD_DAY_MIN минут (config.js),
 //  у всех игроков одинаково. В сохранении ничего нет — время просто вычисляется.
 //  Пока это только ВИД:
-//  + на <body> класс tod-<фаза>, на :root переменные --night (0 день … 1 ночь)
-//    и --dusk (0 … 1 — тёплый свет рассвета и заката); их читает css/daynight.css;
+//  + на <body> класс tod-<фаза>, на :root переменные --night (0 день … 1 ночь),
+//    --dusk (0 … 1 — тёплый вечерний свет) и --dawn (0 … 1 — холодное утро с туманом);
+//    их читает css/daynight.css;
 //  + значок фазы в верхней строке (подсказка — сколько до следующей);
 //  + смена фазы — строчка в журнале; первая ночь — запись в летописи и статья «Сутки»;
 //  + монстры с night: true — значок 🌙 на карточке (на бой пока не влияет).
@@ -37,15 +38,16 @@ function worldTime(real) {
   return { phase, minute: m, left: phase.to - m, preview: !!fixed };
 }
 
-// Свет по минуте суток: утром ночь уходит, вечером приходит; на середине рассвета и заката — тёплый свет.
-// Темнота идёт по квадрату: первую половину заката ещё светло и золотисто, синеет только к концу
-// (иначе тёплый свет и синие сумерки смешивались в грязно-лиловое).
+// Свет по минуте суток: утром ночь уходит, вечером приходит.
+// Утро и вечер — разные: утром холодный бледный свет и туман (--dawn), вечером тёплое золото (--dusk).
+// Темнота идёт по квадрату: первую половину заката ещё светло, синеет только к концу,
+// а утром ночь уходит быстро (иначе тёплый свет и синие сумерки смешивались в грязно-лиловое).
 function todLight(m) {
   const mo = WORLD_PHASES.find(f => f.id === 'morning');
   const ev = WORLD_PHASES.find(f => f.id === 'evening');
-  if (m < mo.to) { const t = (m - mo.from) / (mo.to - mo.from); return { night: (1 - t) * (1 - t), dusk: Math.sin(Math.PI * t) }; }
-  if (m >= ev.from && m < ev.to) { const t = (m - ev.from) / (ev.to - ev.from); return { night: t * t, dusk: Math.sin(Math.PI * t) }; }
-  return { night: m >= ev.to ? 1 : 0, dusk: 0 };
+  if (m < mo.to) { const t = (m - mo.from) / (mo.to - mo.from); return { night: (1 - t) * (1 - t), dusk: 0, dawn: Math.sin(Math.PI * t) }; }
+  if (m >= ev.from && m < ev.to) { const t = (m - ev.from) / (ev.to - ev.from); return { night: t * t, dusk: Math.sin(Math.PI * t), dawn: 0 }; }
+  return { night: m >= ev.to ? 1 : 0, dusk: 0, dawn: 0 };
 }
 
 function applyDayNight() {
@@ -54,6 +56,7 @@ function applyDayNight() {
   const root = document.documentElement;
   root.style.setProperty('--night', light.night.toFixed(3));
   root.style.setProperty('--dusk', light.dusk.toFixed(3));
+  root.style.setProperty('--dawn', light.dawn.toFixed(3));
   WORLD_PHASES.forEach(f => document.body.classList.toggle('tod-' + f.id, f.id === t.phase.id));
 
   const chip = document.getElementById('top-tod');
