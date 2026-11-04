@@ -217,7 +217,15 @@ const MONSTERS = [
 
 // ========================================================
 //  МОНСТРЫ КОПИ
-//  Уровни: Гоблин 6, Кобольд 7, Арахнид 8, Каменный голем 10.
+//  v0.33: Уровни: Гоблин 7, Кобольд 9, Арахнид 11, Пещерный крылан 13, Каменный голем 15
+//  (было 6 / 7 / 8 / — / 10). С подтипами («Кровавый» +2) — до 17: к 20 ур. герой уходит
+//  в новую локацию, а не перерастает Копи на 10 уровней.
+//  Уровень монстра — это опыт за убийство (×3) и его точность / уворот. Атака и защита прежние,
+//  Оболы — по формуле 0.15 + 0.01 × уровень за 1 HP, Голему +25% HP (иначе 15–20 ур. шли на треть быстрее).
+//  Проверено симулятором (Claude outputs/Симулятор, results_v0.33_*).
+//  Пещерный крылан (v0.33) — вместо шахт-заглушек: второй источник хитина и ядовитой железы
+//  (их до этого давал только Арахнид, а железа нужна каждому оружию тира 3) и клыков
+//  (раньше — только Волк на Поляне, 1%).
 //  HP +10% и pDef +30% — уже вписаны в поля.
 //  Дроп-предметы: tier 1.
 //  v0.12: фишки НЕ добавляли — Копи не трогали.
@@ -236,7 +244,7 @@ const MONSTERS = [
 // ========================================================
 const MINE_MONSTERS = [
   {
-    id: 'goblin', name: 'Гоблин', level: 6,
+    id: 'goblin', name: 'Гоблин', level: 7,   // v0.33: было 6
     hp: 176, atk: 26, xpReward: 2, attackType: 'physical',
     pDef: 28, mDef: 12,   // v0.20: было 46 — воины тоже могут фармить Копи
     goldMin: 40, goldMax: 60, goldChance: 80,   // v0.25: 0.21 Обола на 1 HP (было 30–60)
@@ -250,11 +258,11 @@ const MINE_MONSTERS = [
     ],
   },
   {
-    id: 'kobold', name: 'Кобольд', level: 7,
+    id: 'kobold', name: 'Кобольд', level: 9,   // v0.33: было 7
     pack: 'pack',   // v0.29: стайный
-    hp: 242, atk: 22, xpReward: 2, attackType: 'physical',
+    hp: 270, atk: 22, xpReward: 2, attackType: 'physical',   // v0.33: HP 242 → 270 (стая на 9 ур. давала слишком много опыта)
     pDef: 31, mDef: 14,   // v0.20: было 52
-    goldMin: 50, goldMax: 80, goldChance: 80,   // v0.25: 0.22 Обола на 1 HP (было 30–50)
+    goldMin: 65, goldMax: 95, goldChance: 80,   // v0.33: 0.24 Обола на 1 HP — по новому уровню (было 50–80)
     art: 'img/monsters/kobold.jpg',
     drops: [
       { name: 'Олово', icon: 'img/materials/tin.png', chance: 5, type: 'material', sellPrice: 7 },
@@ -264,10 +272,10 @@ const MINE_MONSTERS = [
     ],
   },
   {
-    id: 'arachnid', name: 'Арахнид', level: 8,
+    id: 'arachnid', name: 'Арахнид', level: 11,   // v0.33: было 8
     hp: 286, atk: 28, xpReward: 2, attackType: 'magic',
     pDef: 32, mDef: 25,   // v0.20: было 43
-    goldMin: 70, goldMax: 100, goldChance: 80,   // v0.25: 0.23 Обола на 1 HP (было 40–60)
+    goldMin: 80, goldMax: 110, goldChance: 80,   // v0.33: 0.26 Обола на 1 HP — по новому уровню (было 70–100)
     art: 'img/monsters/arachnid.jpg',
     poison: true,
     drops: [
@@ -277,42 +285,37 @@ const MINE_MONSTERS = [
       { name: 'Ядовитая железа', icon: 'img/materials/venom_gland.png', chance: 1, type: 'material', sellPrice: 20, rare: true },
     ],
   },
+  // v0.33: крылатая тварь с хитиновым панцирем — живёт под сводами штолен, нападает стаей сверху.
   {
-    id: 'golem', name: 'Каменный голем', level: 10,
+    id: 'caveBat', name: 'Пещерный крылан', level: 13,
+    pack: 'pack',   // стая
+    hp: 400, atk: 28, xpReward: 2, attackType: 'physical',
+    pDef: 35, mDef: 20,
+    goldMin: 120, goldMax: 160, goldChance: 80,   // 0.28 Обола на 1 HP (формула: 0.15 + 0.01 × уровень)
+    art: 'img/monsters/cave_bat.jpg',
+    traits: {
+      bleedChance: 8,          // клыки-жвала: кровотечение, как у Волка
+      bleedTurns: 3,
+      bleedDamageDivisor: 6,
+    },
+    drops: [
+      { name: 'Хитин', icon: 'img/materials/chitin.png', chance: 4, type: 'material', sellPrice: 6 },
+      { name: 'Клык', icon: 'img/materials/fang.png', chance: 2, type: 'material', sellPrice: 8 },
+      { name: 'Ядовитая железа', icon: 'img/materials/venom_gland.png', chance: 1, type: 'material', sellPrice: 20, rare: true },
+    ],
+  },
+  {
+    id: 'golem', name: 'Каменный голем', level: 15,   // v0.33: было 10
     pack: 'solo',   // v0.29: одиночка
-    hp: 462, atk: 32, xpReward: 2, attackType: 'physical',
+    hp: 580, atk: 32, xpReward: 2, attackType: 'physical',   // v0.33: HP 462 → 580 — 15 уровень даёт в 1.5 раза больше опыта
     pDef: 39, mDef: 18,   // v0.20: было 65
-    goldMin: 110, goldMax: 160, goldChance: 85,   // v0.25: 0.25 Обола на 1 HP (было 50–90)
+    goldMin: 170, goldMax: 240, goldChance: 85,   // v0.33: 0.30 Обола на 1 HP — по новому уровню (было 110–160)
     art: 'img/monsters/golem.jpg',
     drops: [
       { name: 'Каменные пластины', icon: 'img/materials/stone_plates.png', chance: 5, type: 'material', sellPrice: 8 },
       { name: 'Руда железа', icon: 'img/materials/iron_ore.png', chance: 6, type: 'material', sellPrice: 3 },
       { name: 'Ядро голема', icon: 'img/materials/golem_core.png', chance: 0.5, type: 'material', sellPrice: 60, rare: true },
     ],
-  },
-];
-
-// ========================================================
-//  «ШАХТЫ» — три карточки-заглушки в Копи.
-// ========================================================
-const MINE_SHAFTS = [
-  {
-    id: 'mine_1',
-    name: 'Шахта (снаружи)',
-    desc: 'Верхние штольни. Тут пока пусто — скоро можно будет добывать руду.',
-    art: 'img/monsters/ore.jpg',
-  },
-  {
-    id: 'mine_2',
-    name: 'Шахта (внутри)',
-    desc: 'Средние штольни. Тут пока пусто — скоро можно будет добывать руду.',
-    art: 'img/monsters/ore.jpg',
-  },
-  {
-    id: 'mine_3',
-    name: 'Шахта (в глубине)',
-    desc: 'Глубокие штольни. Тут пока пусто — скоро можно будет добывать руду.',
-    art: 'img/monsters/ore.jpg',
   },
 ];
 

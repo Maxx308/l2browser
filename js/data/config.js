@@ -199,6 +199,20 @@ function getItemTier(item) {
   return item.tier || DEFAULT_ITEM_TIER;
 }
 
+// ==== v0.33: ТРЕБОВАНИЕ УРОВНЯ (оружие, щиты, доспехи, бижутерия) ====
+// С какого уровня героя можно надеть вещь этого тира. Нет строки — без требования.
+// Новый тир — новая строка (например, 5: 30).
+const REQ_LEVEL_BY_TIER = { 3: 10, 4: 20 };
+const REQ_LEVEL_TYPES = ['weapon', 'shield', 'helmet', 'armorTop', 'armorBottom', 'gloves', 'boots', 'necklace', 'earring', 'ring'];
+
+function getItemReqLevel(item) {
+  if (!item || !REQ_LEVEL_TYPES.includes(item.type)) return 0;
+  return REQ_LEVEL_BY_TIER[getItemTier(item)] || 0;
+}
+function canWearByLevel(item) {
+  return ((state.player && state.player.level) || 1) >= getItemReqLevel(item);
+}
+
 // ========================================================
 //  ПОДГОНКА (REFINE)
 // ========================================================

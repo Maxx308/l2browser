@@ -332,8 +332,12 @@ function renderInventory() {
       // ---- НОВОЕ: суффикс +N в имени ----
       const refineSuffix = getInvRefineSuffix(item);
 
-      slot.className = 'inv-slot' + (isConsumable ? ' consumable' : '') + (isFood ? ' food' : '') + rarityClass;
-      slot.innerHTML = `${item.icon}<div class="item-name">${item.name}${refineSuffix}</div>${item.qty > 1 ? `<div class="qty">${item.qty}</div>` : ''}`;
+      // v0.33: вещь не по уровню — замок с нужным уровнем в углу
+      const reqLevel = getItemReqLevel(item);
+      const reqLocked = reqLevel && !canWearByLevel(item);
+      slot.className = 'inv-slot' + (isConsumable ? ' consumable' : '') + (isFood ? ' food' : '') + rarityClass + (reqLocked ? ' req-locked' : '');
+      slot.innerHTML = `${item.icon}<div class="item-name">${item.name}${refineSuffix}</div>${item.qty > 1 ? `<div class="qty">${item.qty}</div>` : ''}` +
+        (reqLocked ? `<div class="inv-req" title="Надеть можно с ${reqLevel} уровня">🔒${reqLevel}</div>` : '');
 
       // ---- Левый клик: использовать / надеть ----
       slot.onclick = () => {

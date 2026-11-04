@@ -298,6 +298,9 @@ function loadSlotAndStart(slotIndex, opts) {
     if (typeof checkLevelUp === 'function') checkLevelUp();
   }
 
+  // v0.33: требование уровня у брони и оружия — снятое не по уровню уходит в сумку
+  if (state.player.classId && typeof unequipUnderLevel === 'function') unequipUnderLevel();
+
   if (!state.player.classId) {
     openCreateScreen(slotIndex);
     return;

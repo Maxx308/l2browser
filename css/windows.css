@@ -375,6 +375,10 @@
 .recipe-tier.t3 { border-color: #8a6a24; color: #ffd77a; background: rgba(255,200,90,0.1); }
 .recipe-tier.t4 { border-color: #7a3a8a; color: #e0a0ff; background: rgba(200,120,255,0.1); }
 .recipe-tier.t5 { border-color: #8a2a2a; color: #ff9a8a; background: rgba(255,90,80,0.1); }
+/* v0.33: требование уровня рядом с тиром; красное — пока герой не дорос */
+.recipe-req { flex: none; font-size: var(--fs-tiny); color: var(--text-dim); white-space: nowrap; margin-left: auto; }
+.recipe-req.locked { color: #e07060; font-weight: 600; }
+.recipe-req + .recipe-tier { margin-left: calc(6 * var(--u)); }
 .recipe-main { display: flex; align-items: baseline; gap: calc(6 * var(--u)); margin: calc(4 * var(--u)) 0 calc(2 * var(--u)); flex-wrap: wrap; }
 .recipe-main b { font-family: 'Cinzel', serif; font-size: calc(22 * var(--u)); font-weight: 700; color: #f3e3b8; line-height: 1.1; }
 .recipe-main > span { font-size: var(--fs-small); color: var(--text-dim); }

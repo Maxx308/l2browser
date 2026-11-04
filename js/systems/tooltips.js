@@ -120,6 +120,12 @@ function showItemTooltip(e, item) {
     const maxRef = (typeof getMaxRefine === 'function') ? getMaxRefine(itemTier) : (itemTier * 5);
     lines.push(`<div class="tt-line tier" style="color: #a0d080;">Тир ${itemTier} · Точится до +${maxRef}</div>`);
   }
+  // v0.33: требование уровня — красным, если герой ещё не дорос
+  const reqLevel = getItemReqLevel(item);
+  if (reqLevel) {
+    const ok = canWearByLevel(item);
+    lines.push(`<div class="tt-line" style="color:${ok ? '#a0d080' : '#e07060'};${ok ? '' : ' font-weight:600;'}">${ok ? '' : '🔒 '}Требуется уровень: ${reqLevel}</div>`);
+  }
 
   // ---- ОСНОВНЫЕ СТАТЫ ПРЕДМЕТА ----
   if (item.stats) {

@@ -380,11 +380,16 @@ function buildGearRecipeCard(r, category, matsHtml, actionHtml) {
 
   const hand = (res.type === 'weapon' && res.twoHanded && !/двуруч/i.test(r.name)) ? ' <span class="recipe-hand">(двуруч.)</span>' : '';
   const tier = r.tier ? `<span class="recipe-tier t${r.tier}" title="Тир ${r.tier}">Т${r.tier}</span>` : '';
+  // v0.33: требование уровня — рядом с тиром; красным, пока герой не дорос (сковать можно заранее)
+  const reqLevel = getItemReqLevel({ type: res.type, tier: r.tier });
+  const req = reqLevel
+    ? `<span class="recipe-req${state.player.level >= reqLevel ? '' : ' locked'}" title="Надеть можно с ${reqLevel} уровня">${state.player.level >= reqLevel ? '' : '🔒 '}с ${reqLevel} ур.</span>`
+    : '';
   const minor = getForgeMinorStats(res, main.key);
   const infoBtn = details.length ? `<span class="recipe-info" onclick="this.closest('.recipe-card').classList.toggle('open')">ⓘ подробнее</span>` : '';
 
   return `<div class="recipe-result">${getRecipeIconHtml(r)}</div><div class="recipe-body">
-    <div class="recipe-head"><div class="recipe-name">${r.name}${hand}</div>${tier}</div>
+    <div class="recipe-head"><div class="recipe-name">${r.name}${hand}</div>${req}${tier}</div>
     <div class="recipe-main"><b>${value}${unit}</b><span>${main.label}</span>${cmpHtml}${infoBtn}</div>
     ${minor.length ? `<div class="recipe-minor">${minor.join(' · ')}</div>` : ''}
     ${details.length ? `<div class="recipe-details">${details.map(d => `<div>${d}</div>`).join('')}</div>` : ''}

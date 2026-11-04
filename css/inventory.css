@@ -122,6 +122,14 @@
 .inv-slot { -webkit-touch-callout: none; user-select: none; -webkit-user-select: none; }
 .inv-slot.inv-held { border-color: var(--gold-bright); transform: scale(1.06); }
 .inv-slot.inv-dragging { opacity: 0.35; }
+/* v0.33: вещь не по уровню — замок с нужным уровнем слева сверху, иконка чуть приглушена */
+.inv-slot .inv-req {
+  position: absolute; top: calc(3 * var(--u)); left: calc(4 * var(--u));
+  font-family: 'Cinzel', serif; font-size: var(--fs-tiny); font-weight: 700; line-height: 1;
+  color: #ff9a8a; text-shadow: 0 0 4px #000, 0 0 2px #000;
+  pointer-events: none;
+}
+.inv-slot.req-locked > img, .inv-slot.req-locked > svg { filter: grayscale(.5) brightness(.7); }
 .inv-drag-ghost {
   position: fixed; z-index: 2000;
   pointer-events: none;

@@ -2,7 +2,7 @@
 //  СИСТЕМЫ: КАРТОЧКИ МОНСТРОВ
 //  Рендер сетки монстров для Поляны и Копи.
 //  + Открытие статов по счётчику убийств.
-//  + Шахты-заглушки в Копи.
+//  + v0.33: шахты-заглушки в Копях убраны — на их месте Пещерный крылан (5 монстров в ряд).
 //  + Титулы: 👑 Охотник / 👑 Прославленный / 🌟 Великолепный.
 //  + PNG-иконки в дроп-листе.
 //
@@ -51,7 +51,6 @@ function renderMineMonsters(grid) {
     MINE_MONSTERS.forEach(template => {
       grid.appendChild(buildMonsterCard(template, variantId, true));
     });
-    grid.appendChild(buildShaftCard(MINE_SHAFTS[rowIndex]));
   });
 }
 
@@ -167,21 +166,6 @@ function buildMonsterCard(template, variantId, fromMine = false) {
     <div class="drop-list">${dropRows}</div>
     ${titleHtml}
   `;
-  return card;
-}
-
-// ---------- КАРТОЧКА ШАХТЫ ----------
-function buildShaftCard(shaft) {
-  const card = document.createElement('div');
-  card.className = 'monster-card shaft-card';
-  card.dataset.shaft = shaft.id;
-  card.innerHTML = `
-    <div class="monster-portrait-img" style="background-image:url('${shaft.art}')"></div>
-    <div class="monster-name">${shaft.name}</div>
-    <div class="shaft-desc">${shaft.desc}</div>
-    <div class="shaft-badge">СКОРО</div>
-  `;
-  card.onclick = () => { showSoon(shaft.name, shaft.desc); };
   return card;
 }
 

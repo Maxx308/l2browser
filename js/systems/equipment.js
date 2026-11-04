@@ -46,6 +46,13 @@ function equipItem(item, toOffhand) {
   }
   const currentSlot = Object.keys(p.equipment).find(k => p.equipment[k] && p.equipment[k].id === item.id);
   if (currentSlot) { unequipSlot(currentSlot); return; }
+  // v0.33: требование уровня (тир 3 — с 10 ур., тир 4 — с 20; config.js)
+  if (!canWearByLevel(item)) {
+    const req = getItemReqLevel(item);
+    showToast('🔒', `${item.name}: нужен ${req} уровень`);
+    logLoot(`🔒 Нельзя надеть «${item.name}»: нужен ${req} уровень.`, 'log-info');
+    return;
+  }
   const oldMaxMp = p.maxMp;
   let targetSlot = toOffhand ? 'shield' : (slots.find(s => p.equipment[s] === null) || slots[0]);
   if (p.equipment[targetSlot]) unequipSlot(targetSlot);
@@ -149,6 +156,25 @@ function unequipSlot(slotKey) {
   logLoot(`Снято: ${item.name}`, 'log-info');
 
   saveCurrentSlot();
+}
+
+// v0.33: при входе — вещь выше уровня героя (надета до введения требований) уходит в сумку,
+// даже если сумка полна (снять «по-честному» тогда нельзя, а носить — тоже).
+function unequipUnderLevel() {
+  const p = state.player;
+  const off = [];
+  Object.keys(p.equipment || {}).forEach(slot => {
+    const it = p.equipment[slot];
+    if (!it || canWearByLevel(it)) return;
+    p.equipment[slot] = null;
+    p.inventory.push({ ...it, qty: 1 });
+    off.push(`${it.name} (с ${getItemReqLevel(it)} ур.)`);
+  });
+  if (off.length) setTimeout(() => {
+    showToast('🔒', `Снято не по уровню: ${off.length}`);
+    logLoot(`🔒 Снято — не по уровню: ${off.join(', ')}. Вещи в сумке, наденете, когда дорастёте.`, 'log-info');
+  }, 1800);
+  return off.length > 0;
 }
 
 function findShopItemInInventory(shopId) {
