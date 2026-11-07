@@ -1106,3 +1106,14 @@
   .slot-portrait { width: calc(84 * var(--u)); height: calc(84 * var(--u)); }
   .slot-name { font-size: calc(14 * var(--u)); }
 }
+
+/* ---------- v0.34: АВТОРСТВО ВНИЗУ СТАРТОВОГО ЭКРАНА (подробно — файл LICENSE) ---------- */
+.start-copyright {
+  margin-top: calc(24 * var(--u));
+  font-size: calc(11 * var(--u));
+  color: var(--text-dim);
+  letter-spacing: calc(1 * var(--u));
+  text-align: center;
+  text-shadow: 0 0 calc(6 * var(--u)) #000, 0 1px 2px #000;
+  opacity: .85;
+}
