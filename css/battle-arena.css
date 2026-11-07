@@ -467,6 +467,8 @@
 .bx-num.poison{ color: #a0ffa0; font-size: calc(22 * var(--u)); text-shadow: 0 2px 0 #0b3a17, 0 0 10px rgba(80,220,80,.6); }
 .bx-num.heal, .bx-num.food { color: var(--bx-heal); text-shadow: 0 2px 0 #0b3a17, 0 0 10px rgba(80,220,120,.6); }
 .bx-num.food { font-size: calc(18 * var(--u)); }
+/* v0.34.1: регенерация маны — синие «+N», чуть ниже зелёных, чтобы не налезали */
+.bx-num.mana { color: #8fc0ff; font-size: calc(18 * var(--u)); margin-top: calc(22 * var(--u)); text-shadow: 0 2px 0 #0b1a3a, 0 0 10px rgba(90,150,255,.75); }
 .bx-num.miss, .bx-num.dodge, .bx-num.block { font-size: calc(20 * var(--u)); color: #c8c0b0; font-style: italic; letter-spacing: .1em; }
 .bx-num.block { color: #d8e4ff; }
 .bx-num.gold { color: var(--gold-bright); font-size: calc(20 * var(--u)); }

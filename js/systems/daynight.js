@@ -8,7 +8,8 @@
 //    их читает css/daynight.css;
 //  + значок фазы в верхней строке (подсказка — сколько до следующей);
 //  + смена фазы — строчка в журнале; первая ночь — запись в летописи и статья «Сутки»;
-//  + монстры с night: true — значок 🌙 на карточке (на бой пока не влияет).
+//  + монстры с night: true — значок 🌙 на карточке, дневные монстры Поляны — ☀.
+//  + v0.34.1: «своё время» на Поляне — ночным ночь, дневным день: стаи больше (battle-pack.js).
 //  Настройки → Экран → «Время суток» — посмотреть любую фазу (только вид, в мире время идёт своё).
 // ========================================================
 
@@ -17,9 +18,9 @@ const TOD_TICK_MS = 5000;
 
 const WORLD_PHASE_LOG = {
   morning: '🌅 Светает. Туман уползает обратно в лес.',
-  day:     '☀ Наступил день.',
+  day:     '☀ Наступил день. Дневные твари Поляны сбиваются в стаи побольше.',
   evening: '🌇 Солнце садится. Тени становятся длиннее.',
-  night:   '🌙 Опустилась ночь. За частоколом кто-то воет.',
+  night:   '🌙 Опустилась ночь. За частоколом кто-то воет — ночные звери сбиваются в большие стаи.',
 };
 
 let __todPhase = null;   // фаза мира на прошлом тике — чтобы заметить смену
@@ -74,6 +75,8 @@ function applyDayNight() {
   const real = worldTime(true).phase.id;
   if (__todPhase && __todPhase !== real && p && p.classId && typeof logCombat === 'function') {
     logCombat(WORLD_PHASE_LOG[real], 'log-entry', null, 'sys');
+    // v0.34.1: на Поляне сменилось «своё время» монстров — перерисовать карточки (строка «их время»)
+    if (p.currentLocation === 'field' && typeof renderMonsters === 'function') renderMonsters();
   }
   __todPhase = real;
   if (real === 'night' && p && p.classId && p.chronicle) {
@@ -82,11 +85,24 @@ function applyDayNight() {
   }
 }
 
-// ---- Значок ночного монстра (карточки на «Охоте») ----
+// ---- Значок времени суток у монстра (карточки на «Охоте») ----
+// v0.34.1: на Поляне у каждого монстра своё время — ночным 🌙 ночь, дневным ☀ день.
+// В своё время стаи больше (battle-pack.js — isPackPrimeTime). В Копях значка нет.
 function nightBadgeHtml(template) {
+  const onField = typeof MONSTERS !== 'undefined' && MONSTERS.some(mm => mm.id === template.id);
+  if (!template.night && !onField) return '';
+  const tail = onField ? ' В своё время стаи на 1 больше, а за бой приходит до 15.' : '';
   return template.night
-    ? `<div class="monster-night" title="Ночной: выходит на охоту в темноте. Пока — только значок.">🌙</div>`
-    : '';
+    ? `<div class="monster-night" title="Ночной: выходит на охоту в темноте.${tail}">🌙</div>`
+    : `<div class="monster-night monster-day" title="Дневной: активен днём.${tail}">☀</div>`;
+}
+
+// Строка на карточке, пока у монстра его время: «🌙 Их время — стаи больше».
+function primeTimeLineHtml(template) {
+  if (typeof isPackPrimeTime !== 'function' || !isPackPrimeTime(template)) return '';
+  return template.night
+    ? `<div class="monster-prime prime-night" title="Ночь: стаи на 1 больше, за бой — до 15">🌙 Ночь — их время: стаи больше</div>`
+    : `<div class="monster-prime prime-day" title="День: стаи на 1 больше, за бой — до 15">☀ День — их время: стаи больше</div>`;
 }
 
 // ---- Настройки → Экран → «Время суток» ----

@@ -9,6 +9,23 @@
 //    Теперь 4 хода — это ровно 4 хода.
 // ========================================================
 
+// v0.34.1: регенерация цифрами над героем — раз в секунду суммой:
+// синие «+N» маны в бою и на привале, зелёные «+N» здоровья на привале
+// (в бою здоровье от сытости и навыков показывается как раньше — сразу).
+// Дробные остатки не теряются: копятся до целого.
+const REGEN_SHOW = { hp: 0, mp: 0, t: 0 };
+
+function regenShowTick(dt) {
+  REGEN_SHOW.t += dt;
+  if (REGEN_SHOW.t < 1) return;
+  REGEN_SHOW.t -= 1;
+  const resting = typeof REST !== 'undefined' && REST.shown;
+  if (!state.battle.active && !resting) { REGEN_SHOW.hp = 0; REGEN_SHOW.mp = 0; return; }
+  const hp = Math.floor(REGEN_SHOW.hp), mp = Math.floor(REGEN_SHOW.mp);
+  if (hp >= 1) { spawnFloatDamage('fighter-player', hp, 'food'); REGEN_SHOW.hp -= hp; }
+  if (mp >= 1) { spawnFloatDamage('fighter-player', mp, 'mana'); REGEN_SHOW.mp -= mp; }
+}
+
 function gameLoop() {
   const now = performance.now();
   const dt = Math.min(0.1, (now - state.lastTick) / 1000);
@@ -31,6 +48,7 @@ function gameLoop() {
         const heal = Math.min(FOOD_HEAL_PER_SEC, state.player.maxHp - state.player.hp);
         state.player.hp += heal;
         if (state.battle.active) spawnFloatDamage('fighter-player', Math.floor(heal), 'food');
+        else REGEN_SHOW.hp += heal;   // v0.34.1: на привале — вместе с обычной регенерацией
       }
     }
   }
@@ -90,7 +108,9 @@ function gameLoop() {
       state.regenAccumulator -= 1;
       if (state.player.hp < state.player.maxHp && state.player.classId) {
         const regenHp = 1 + (state.player.hpRegenOutBonus || 0);
+        const before = state.player.hp;
         state.player.hp = Math.min(state.player.maxHp, state.player.hp + regenHp);
+        REGEN_SHOW.hp += state.player.hp - before;
       }
     }
     state.mpRegenAccumulator += dt;
@@ -98,7 +118,9 @@ function gameLoop() {
       state.mpRegenAccumulator -= 1;
       if (state.player.mp < state.player.maxMp && state.player.classId) {
         const regenMp = (state.player.mpRegenOut || 1) + (state.player.mpRegenOutBonus || 0);
+        const before = state.player.mp;
         state.player.mp = Math.min(state.player.maxMp, state.player.mp + regenMp);
+        REGEN_SHOW.mp += state.player.mp - before;
       }
     }
     updateTopStatus();
@@ -109,7 +131,9 @@ function gameLoop() {
       while (state.battle.mpRegenAccum >= 1) {
         state.battle.mpRegenAccum -= 1;
         if (state.player.mp < state.player.maxMp) {
+          const before = state.player.mp;
           state.player.mp = Math.min(state.player.maxMp, state.player.mp + 1);
+          REGEN_SHOW.mp += state.player.mp - before;   // v0.34.1: синие «+N» раз в секунду
         }
       }
     }
@@ -128,6 +152,7 @@ function gameLoop() {
 
     renderEffectsPanel();
   }
+  regenShowTick(dt);   // v0.34.1: цифры регенерации
 
   // ---- АВТОСТАРТ ПОСЛЕ ОЖИДАНИЯ ----
   if (state.battle.waitingForResume && !state.battle.active) {

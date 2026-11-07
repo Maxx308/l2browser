@@ -60,7 +60,7 @@ function closeAlchemist() {
 //  ПЕРЕКЛЮЧЕНИЕ ВКЛАДОК
 // --------------------------------------------------------
 function switchAlchemistTab(tab) {
-  if (tab !== 'disenchant' && tab !== 'reroll' && tab !== 'ascend') return;
+  if (tab !== 'disenchant' && tab !== 'reroll' && tab !== 'ascend' && tab !== 'smelt') return;
   __alchemistTab = tab;
   renderAlchemistWindow();
 }
@@ -74,7 +74,7 @@ function renderAlchemistWindow() {
     t.classList.toggle('active', t.dataset.tab === __alchemistTab);
   });
 
-  ['disenchant', 'reroll', 'ascend'].forEach(tab => {
+  ['disenchant', 'reroll', 'ascend', 'smelt'].forEach(tab => {
     const pane = document.getElementById('alchemist-pane-' + tab);
     if (pane) pane.classList.toggle('active', __alchemistTab === tab);
   });
@@ -85,7 +85,63 @@ function renderAlchemistWindow() {
     renderAlchemistReroll();
   } else if (__alchemistTab === 'ascend') {
     renderAlchemistAscend();
+  } else if (__alchemistTab === 'smelt') {
+    renderAlchemistSmelt();
   }
+}
+
+// ========================================================
+//  ВКЛАДКА «ПЕРЕПЛАВКА» (v0.34.1): 4 пыли → 1 следующего цвета (data/alchemy.js)
+// ========================================================
+function renderAlchemistSmelt() {
+  const pane = document.getElementById('alchemist-pane-smelt');
+  if (!pane) return;
+  const rate = ALCHEMY_SMELT_RATE;
+  const dustIcon = c => `<span class="alchemist-smelt-ico">${(ALCHEMY_DUST[c] && SVG[ALCHEMY_DUST[c].icon]) || ''}</span>`;
+  const dustName = c => ALCHEMY_DUST[c] ? ALCHEMY_DUST[c].name.toLowerCase() : c;
+  const fmt = n => Number(n).toLocaleString('ru-RU');
+
+  const rows = ALCHEMY_SMELT_STEPS.map(([from, to]) => {
+    const max = getSmeltMax(from, to);
+    const btn = (n, label) => {
+      const ok = n > 0 && n <= max;
+      return `<button class="alchemist-bulk-btn rarity-${to}"${ok ? ` onclick="smeltDust('${from}','${to}',${n})"` : ' disabled'}>${label}</button>`;
+    };
+    return `<div class="alchemist-smelt-row">
+      <div class="alchemist-smelt-rate">
+        <span class="alchemist-smelt-dust" style="color:${ALCHEMY_DUST[from].color}">${dustIcon(from)} ${rate}</span>
+        <span class="alchemist-smelt-arrow">→</span>
+        <span class="alchemist-smelt-dust" style="color:${ALCHEMY_DUST[to].color}">${dustIcon(to)} 1</span>
+      </div>
+      <div class="alchemist-smelt-have">У вас: <b style="color:${ALCHEMY_DUST[from].color}">${fmt(getDustCount(from))}</b> ${dustName(from)} · <b style="color:${ALCHEMY_DUST[to].color}">${fmt(getDustCount(to))}</b> ${dustName(to)}</div>
+      <div class="alchemist-bulk-buttons">
+        ${btn(1, '+1')}${btn(10, '+10')}${btn(100, '+100')}${btn(1000, '+1 000')}${btn(max, max > 0 ? `Всё: +${fmt(max)}` : 'Всё')}
+      </div>
+    </div>`;
+  }).join('');
+
+  pane.innerHTML = `
+    <div class="alchemist-smelt-note">Алхимик переплавляет пыль: из ${rate} пыли выходит 1 пыль следующего цвета. Выше жёлтой не переплавляет — «красная пыль сама приходит, когда ей вздумается».</div>
+    ${rows}`;
+}
+
+// Переплавить: получить n пыли цвета to за n × 4 пыли цвета from.
+function smeltDust(from, to, n) {
+  n = Math.floor(n || 0);
+  const max = getSmeltMax(from, to);
+  if (n <= 0 || n > max) { showToast('⚠', 'Не хватает пыли'); return; }
+  // новой стопке нужна ячейка (если исходная пыль не уйдёт целиком)
+  const needSlot = getDustCount(to) === 0 && getDustCount(from) > n * ALCHEMY_SMELT_RATE;
+  if (needSlot && state.player.inventory.length >= INVENTORY_MAX_SLOTS) { showToast('📦', 'Освободите ячейку в сумке'); return; }
+  if (!spendDust(from, n * ALCHEMY_SMELT_RATE)) { showToast('⚠', 'Не хватает пыли'); return; }
+  addDustToInventory(to, n);
+  const nameTo = ALCHEMY_DUST[to].name.toLowerCase();
+  if (typeof logLoot === 'function') logLoot(`⚗ Переплавлено: ${n * ALCHEMY_SMELT_RATE} ${ALCHEMY_DUST[from].name.toLowerCase()} → +${n} ${nameTo}`, 'log-craft rarity-' + to);
+  showToast('⚗', `+${n.toLocaleString('ru-RU')} ${nameTo}`);
+  renderInventory();
+  updateInventoryFooter();
+  renderAlchemistSmelt();
+  saveCurrentSlot();
 }
 
 // --------------------------------------------------------

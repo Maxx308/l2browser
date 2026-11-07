@@ -403,3 +403,15 @@
     height: calc(30 * var(--u));
   }
 }
+/* ---------- v0.34.1: ВКЛАДКА «ПЕРЕПЛАВКА» (4 пыли → 1 следующего цвета) ---------- */
+.alchemist-smelt-note { font-size: 13px; color: var(--text-dim); font-style: italic; margin: 4px 0 12px; line-height: 1.45; }
+.alchemist-smelt-row {
+  padding: 10px 12px; margin-bottom: 8px;
+  background: rgba(10, 8, 5, 0.55); border: 1px solid var(--border); border-radius: 4px;
+}
+.alchemist-smelt-rate { display: flex; align-items: center; gap: 10px; font-family: 'Cinzel', serif; font-size: 16px; }
+.alchemist-smelt-dust { display: inline-flex; align-items: center; gap: 4px; }
+.alchemist-smelt-ico { display: inline-flex; width: 30px; height: 30px; flex: none; }
+.alchemist-smelt-ico > * { width: 100% !important; height: 100% !important; object-fit: contain; }
+.alchemist-smelt-arrow { color: var(--gold); }
+.alchemist-smelt-have { font-size: 12px; color: var(--text-dim); margin: 4px 0 8px; }

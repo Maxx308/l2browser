@@ -512,7 +512,7 @@ function bxImpact(cardEl, look, isFirst) {
 function bxEventNumber(cardEl, ev, isHeroSide) {
   const t = ev.type, n = ev.dmg;
   if (ev.text) return bxNum(cardEl, ev.text, (t === 'poison' ? 'poison' : t === 'block' ? 'block' : 'magic') + ' label');
-  if (t === 'heal' || t === 'food') return bxNum(cardEl, `+${n}`, t);
+  if (t === 'heal' || t === 'food' || t === 'mana') return bxNum(cardEl, `+${n}`, t);   // v0.34.1: mana — синие «+N»
   if (t === 'block') return bxNum(cardEl, 'БЛОК', 'block');
   if (t === 'miss')  return bxNum(cardEl, 'ПРОМАХ', 'miss');
   if (t === 'dodge') return bxNum(cardEl, 'УВОРОТ', 'dodge');
@@ -549,7 +549,7 @@ function bxPlayEvents(events, delay, look, attackerCard) {
       const t = ev.type;
       if (ev.fx) bxEventFx(cardEl, ev.fx, t !== 'miss');
       if (ev.text) { if (t === 'block') bxRetrig(cardEl, 'bx-block'); bxEventNumber(cardEl, ev, isHero); return; }
-      if (t === 'heal' || t === 'food') {
+      if (t === 'heal' || t === 'food' || t === 'mana') {   // mana — без вспышки и тряски
         if (t === 'heal') {
           bxRetrig(cardEl, 'bx-heal');
           const c = bxCenter(cardEl);

@@ -10,7 +10,8 @@
 //    Удача → в ряду врагов появляется силуэт «?» (предупреждение),
 //    на СЛЕДУЮЩИЙ ход стаи он становится монстром (1 или 2).
 //    Живых одновременно — не больше maxAlive (5, у одиночек 3),
-//    всего за бой — не больше PACK_MAX_TOTAL (10).
+//    всего за бой — не больше PACK_MAX_TOTAL (10), в «своё время» суток — 15.
+//  + v0.34.1: время суток (Поляна) — ночным ночь, дневным день: стая +1 на старте, до 15 за бой.
 //  + Стайный бонус: чем больше стая в бою, тем больше дропа и Оболов
 //    с каждого убитого (см. getPackRewardBonus).
 //  + Бафы Гильдии магов «Тихий шаг» и «Провокатор» (GUILD_BUFFS.packMode).
@@ -54,6 +55,25 @@ const PACK_MAX_TOTAL = 10;           // всего мобов за бой, вм�
 const PACK_DROP_PER_MOB = 8, PACK_DROP_MAX = 32;   // % к шансу предметов
 const PACK_GOLD_PER_MOB = 5, PACK_GOLD_MAX = 20;   // % к Оболам
 
+// v0.34.1: «своё время» монстра Поляны — ночным ночь, дневным день (утро и вечер — ничьи).
+// В своё время стая на старте +1 (живых по-прежнему не больше maxAlive), а за бой — до 15.
+// Копи не трогаем: под землёй времени суток нет.
+const PACK_PRIME_START_BONUS = 1;
+const PACK_PRIME_MAX_TOTAL = 15;
+
+// Сейчас «своё время» у этого монстра? Только Поляна, только настоящее время мира (не просмотр из настроек).
+function isPackPrimeTime(template) {
+  if (!template || typeof worldTime !== 'function') return false;
+  if (!MONSTERS.some(mm => mm.id === template.id)) return false;
+  const phase = worldTime(true).phase.id;
+  return template.night ? phase === 'night' : phase === 'day';
+}
+
+// Сколько мобов может быть за бой (вместе с подмогой). Своё время запоминается в начале боя.
+function getPackMaxTotal() {
+  return state.battle.packPrime ? PACK_PRIME_MAX_TOTAL : PACK_MAX_TOTAL;
+}
+
 // Бафы Гильдии магов.
 const PACK_BUFF_MODS = {
   quiet:   { reinforceMult: 0.2, startRoll: 'min' },   // Тихий шаг: бросаем 2 раза, берём меньшее
@@ -96,6 +116,7 @@ function rollPackSize(template) {
     const n2 = rollPackWeights(nature.weights);
     n = mod.startRoll === 'min' ? Math.min(n, n2) : Math.max(n, n2);
   }
+  if (isPackPrimeTime(template)) n += PACK_PRIME_START_BONUS;   // v0.34.1: своё время суток
   return Math.min(n, nature.maxAlive);
 }
 
@@ -112,7 +133,7 @@ function getPackReinforceChance() {
   const nature = getPackNature(template);
   const alive = getAliveMonstersCount();
   if (alive <= 0 || alive >= nature.maxAlive) return 0;
-  if ((b.monsters || []).length >= PACK_MAX_TOTAL) return 0;
+  if ((b.monsters || []).length >= getPackMaxTotal()) return 0;
   const mod = PACK_BUFF_MODS[getPackBuffMode()];
   const base = PACK_REINFORCE_CHANCE[alive] || 0;
   return base * nature.reinforceMult * (mod ? mod.reinforceMult : 1);
@@ -124,6 +145,7 @@ function getPackReinforceChance() {
 function packOnBattleStart(template, variantId) {
   state.battle.packTemplate = { id: template.id, variantId };
   state.battle.packIncoming = 0;     // сколько мобов «шуршит в кустах» (силуэт на арене)
+  state.battle.packPrime = isPackPrimeTime(template);   // v0.34.1: своё время суток — до 15 за бой
 }
 
 // --------------------------------------------------------
@@ -156,7 +178,7 @@ function packSpawnReinforcements(n) {
   const template = getPackTemplate();
   if (!template) return;
   const nature = getPackNature(template);
-  const room = Math.min(nature.maxAlive - getAliveMonstersCount(), PACK_MAX_TOTAL - b.monsters.length);
+  const room = Math.min(nature.maxAlive - getAliveMonstersCount(), getPackMaxTotal() - b.monsters.length);
   n = Math.min(n, room);
   if (n <= 0) {
     logCombat('🌿 Шорох стих — подмога не пришла.', 'log-entry separator');

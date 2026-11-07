@@ -97,9 +97,13 @@ const SKILLS = {
     iconKey: 'skillWeaponMasterM',
     iconPng: 'img/skills/mage/weaponMasterM.png',
     maxLevel: 5,
-    levels: [ { mAtkFlat: 3 }, { mAtkFlat: 4 }, { mAtkFlat: 5 }, { mAtkFlat: 6 }, { mAtkFlat: 8 } ],
-    getDesc: (lvl) => { const d = SKILLS.weaponMasterM.levels[lvl-1]; return `Пассивно: <span class="val">+${d.mAtkFlat}</span> магической атаки.`; },
-    getNextDesc: (lvl) => { if (lvl >= 5) return ''; const n = SKILLS.weaponMasterM.levels[lvl]; return `Следующий уровень: +${n.mAtkFlat} маг. атаки`; }
+    // v0.35: + процент маг. атаки (раньше только плоская прибавка, которая не росла с экипировкой)
+    levels: [
+      { mAtkPercent: 1, mAtkFlat: 3 }, { mAtkPercent: 2, mAtkFlat: 4 }, { mAtkPercent: 3, mAtkFlat: 5 },
+      { mAtkPercent: 4, mAtkFlat: 6 }, { mAtkPercent: 5, mAtkFlat: 8 },
+    ],
+    getDesc: (lvl) => { const d = SKILLS.weaponMasterM.levels[lvl-1]; return `Пассивно: <span class="val">+${d.mAtkPercent}%</span> магической атаки и <span class="val">+${d.mAtkFlat}</span> сверху.`; },
+    getNextDesc: (lvl) => { if (lvl >= 5) return ''; const n = SKILLS.weaponMasterM.levels[lvl]; return `Следующий уровень: +${n.mAtkPercent}% и +${n.mAtkFlat} маг. атаки`; }
   },
 
   // ========================================================
@@ -110,11 +114,13 @@ const SKILLS = {
     iconKey: 'skillForestBlessing',
     iconPng: 'img/skills/elf/forest_blessing.png',
     maxLevel: 5,
+    // v0.35: ×2 (было 10…50%) и бонус наконец работает: дробная часть — шансом на +1 опыт,
+    //        действует и на Терновый вихрь / Похищение жизни
     levels: [
-      { lifeXpBonusPercent: 10 }, { lifeXpBonusPercent: 20 }, { lifeXpBonusPercent: 30 },
-      { lifeXpBonusPercent: 40 }, { lifeXpBonusPercent: 50 },
+      { lifeXpBonusPercent: 20 }, { lifeXpBonusPercent: 40 }, { lifeXpBonusPercent: 60 },
+      { lifeXpBonusPercent: 80 }, { lifeXpBonusPercent: 100 },
     ],
-    getDesc: (lvl) => { const d = SKILLS.forestBlessing.levels[lvl-1]; return `Пассивно: <span class="val">+${d.lifeXpBonusPercent}%</span> к опыту магии Жизни.`; },
+    getDesc: (lvl) => { const d = SKILLS.forestBlessing.levels[lvl-1]; return `Пассивно: <span class="val">+${d.lifeXpBonusPercent}%</span> к опыту магии Жизни (лечение, Терновый вихрь, Похищение жизни).`; },
     getNextDesc: (lvl) => { if (lvl >= 5) return ''; const n = SKILLS.forestBlessing.levels[lvl]; return `Следующий уровень: +${n.lifeXpBonusPercent}% опыта Жизни`; }
   },
   heal: {
@@ -299,12 +305,14 @@ const SKILLS = {
     iconKey: 'skillShamanWisdom',
     iconPng: 'img/skills/orc/shamanWisdom.png',
     maxLevel: 5,
+    // v0.35: + маг. атака (как у «Рунного знания» гнома) — орк-маг качался медленнее всех
     levels: [
-      { maxMpPercent: 3 }, { maxMpPercent: 6 }, { maxMpPercent: 9 },
-      { maxMpPercent: 12 }, { maxMpPercent: 15 },
+      { maxMpPercent: 3, mAtkFlat: 2 }, { maxMpPercent: 6, mAtkFlat: 4 },
+      { maxMpPercent: 9, mAtkFlat: 6 }, { maxMpPercent: 12, mAtkFlat: 8 },
+      { maxMpPercent: 15, mAtkFlat: 10 },
     ],
-    getDesc: (lvl) => { const d = SKILLS.shamanWisdom.levels[lvl-1]; return `Пассивно: <span class="val">+${d.maxMpPercent}%</span> к максимуму маны.`; },
-    getNextDesc: (lvl) => { if (lvl >= 5) return ''; const n = SKILLS.shamanWisdom.levels[lvl]; return `Следующий уровень: +${n.maxMpPercent}% макс. MP`; }
+    getDesc: (lvl) => { const d = SKILLS.shamanWisdom.levels[lvl-1]; return `Пассивно: <span class="val">+${d.maxMpPercent}%</span> к максимуму маны и <span class="val">+${d.mAtkFlat}</span> маг. атаки.`; },
+    getNextDesc: (lvl) => { if (lvl >= 5) return ''; const n = SKILLS.shamanWisdom.levels[lvl]; return `Следующий уровень: +${n.maxMpPercent}% макс. MP, +${n.mAtkFlat} маг. атаки`; }
   },
 
   // ========================================================
@@ -416,12 +424,14 @@ const SKILLS = {
     iconKey: 'skillExperience',
     iconPng: 'img/skills/human/experience.png',
     maxLevel: 5,
+    // v0.35: ×2 (было 1…5%) и тот же процент к шансу бонусного опыта владения —
+    //        чтобы навык не умирал на капе уровня
     levels: [
-      { xpBonusPercent: 1 }, { xpBonusPercent: 2 }, { xpBonusPercent: 3 },
-      { xpBonusPercent: 4 }, { xpBonusPercent: 5 },
+      { xpBonusPercent: 2 }, { xpBonusPercent: 4 }, { xpBonusPercent: 6 },
+      { xpBonusPercent: 8 }, { xpBonusPercent: 10 },
     ],
-    getDesc: (lvl) => { const d = SKILLS.experience.levels[lvl-1]; return `Пассивно: <span class="val">+${d.xpBonusPercent}%</span> к получаемому опыту.`; },
-    getNextDesc: (lvl) => { if (lvl >= 5) return ''; const n = SKILLS.experience.levels[lvl]; return `Следующий уровень: +${n.xpBonusPercent}% опыта`; }
+    getDesc: (lvl) => { const d = SKILLS.experience.levels[lvl-1]; return `Пассивно: <span class="val">+${d.xpBonusPercent}%</span> к получаемому опыту и <span class="val">+${d.xpBonusPercent}%</span> к шансу бонусного опыта владения (оружие и стихии).`; },
+    getNextDesc: (lvl) => { if (lvl >= 5) return ''; const n = SKILLS.experience.levels[lvl]; return `Следующий уровень: +${n.xpBonusPercent}% опыта и шанса опыта владения`; }
   },
 
   // ========================================================

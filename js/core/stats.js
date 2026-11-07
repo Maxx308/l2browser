@@ -185,11 +185,12 @@ function recalcStats() {
   p.mpRegenInBonus = 0;
   p.hpRegenIn = 0;
   p.xpBonus = 0;
+  p.profBonusFromSkill = 0;   // v0.35: «Опыт» человека
   p.hpRegenOutBonus = 0;
   p.mpRegenOutBonus = 0;
   p.evasionBonus = 0;   // «Грация» + подгонка (раньше подгонка затирала «Грацию»)
 
-  let passivePAtkPercent = 0, passivePAtkFlat = 0, passiveMAtkFlat = 0;
+  let passivePAtkPercent = 0, passivePAtkFlat = 0, passiveMAtkFlat = 0, passiveMAtkPercent = 0;
   let passivePDefPercent = 0, passiveMaxHpPercent = 0;
   let passiveMDefPercent = 0;   // v0.25: «Крепкая стойка» гнома
   let passiveMaxMpPercent = 0;
@@ -213,8 +214,9 @@ function recalcStats() {
       p.mpRegenInBonus += data.mpRegenInBattle;
       p.skillBonuses.push(`${skill.name} (ур.${lvl}): +${data.mpRegenInBattle} MP/сек в бою`);
     } else if (skill.id === 'weaponMasterM') {
+      passiveMAtkPercent += data.mAtkPercent || 0;   // v0.35
       passiveMAtkFlat += data.mAtkFlat;
-      p.skillBonuses.push(`${skill.name} (ур.${lvl}): +${data.mAtkFlat} маг. атаки`);
+      p.skillBonuses.push(`${skill.name} (ур.${lvl}): +${data.mAtkPercent || 0}% и +${data.mAtkFlat} маг. атаки`);
     }
     else if (skill.id === 'orcBlood') {
       p.hpRegenIn += data.hpRegenInBattle;
@@ -224,11 +226,13 @@ function recalcStats() {
       p.skillBonuses.push(`${skill.name} (ур.${lvl}): поглощение урона +${data.flatDamageReduce}`);
     } else if (skill.id === 'shamanWisdom') {
       passiveMaxMpPercent += data.maxMpPercent;
-      p.skillBonuses.push(`${skill.name} (ур.${lvl}): +${data.maxMpPercent}% макс. MP`);
+      passiveMAtkFlat += data.mAtkFlat || 0;   // v0.35
+      p.skillBonuses.push(`${skill.name} (ур.${lvl}): +${data.maxMpPercent}% макс. MP, +${data.mAtkFlat || 0} маг. атаки`);
     }
     else if (skill.id === 'experience') {
       p.xpBonus += data.xpBonusPercent;
-      p.skillBonuses.push(`${skill.name} (ур.${lvl}): +${data.xpBonusPercent}% опыта`);
+      p.profBonusFromSkill += data.xpBonusPercent;   // v0.35: и шанс бонусного опыта владения
+      p.skillBonuses.push(`${skill.name} (ур.${lvl}): +${data.xpBonusPercent}% опыта и шанса опыта владения`);
     } else if (skill.id === 'rest') {
       p.hpRegenOutBonus += data.hpRegenOutBonus;
       p.skillBonuses.push(`${skill.name} (ур.${lvl}): +${data.hpRegenOutBonus} HP/сек вне боя`);
@@ -272,7 +276,9 @@ function recalcStats() {
   if (passivePAtkPercent > 0) finalPAtk = Math.floor(finalPAtk * (1 + passivePAtkPercent / 100));
   finalPAtk += passivePAtkFlat;
   p.pAtk = finalPAtk;
-  p.mAtk = baseMAtk + bonusMAtk + passiveMAtkFlat;
+  let finalMAtk = baseMAtk + bonusMAtk;
+  if (passiveMAtkPercent > 0) finalMAtk = Math.floor(finalMAtk * (1 + passiveMAtkPercent / 100));   // v0.35
+  p.mAtk = finalMAtk + passiveMAtkFlat;
 
   // ---- Сеты ----
   p.setBonuses = [];

@@ -379,11 +379,6 @@
     margin-bottom: calc(10 * var(--u));
   }
 
-  /* Копи: 2 колонки с шахтой */
-  .monsters-grid.mine-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-
   .monster-card {
     padding: calc(6 * var(--u));
     border-radius: calc(3 * var(--u));
@@ -486,12 +481,10 @@
 
 /* ---------- ГОРИЗОНТАЛЬНЫЙ ТЕЛЕФОН / НИЗКИЙ ЭКРАН ---------- */
 @media (max-height: 600px) and (orientation: landscape) {
+  /* v0.34.1: и Поляна, и Копи — по 5 в ряд (ряд = один подтип), раньше Поляна была по 4 */
   .monsters-grid {
-    grid-template-columns: repeat(4, 1fr);
-    gap: calc(6 * var(--u));
-  }
-  .monsters-grid.mine-grid {
     grid-template-columns: repeat(5, 1fr);
+    gap: calc(6 * var(--u));
   }
 
   .monster-card {
@@ -554,4 +547,150 @@
 .soul-hunt-hint { flex: 1 1 calc(200 * var(--u)); font-size: var(--fs-tiny); color: var(--text-dim); font-style: italic; }
 @media (max-width: 600px) {
   .soul-gem { width: calc(30 * var(--u)); height: calc(30 * var(--u)); }
+}
+
+/* ========================================================
+   v0.34.1: СТОПКИ КАРТОЧЕК (monster-cards.js — buildMonsterStack)
+   У монстра три подтипа одной колодой: спереди выбранный, за ним — края остальных.
+   Все три карточки лежат в одной ячейке сетки (стопка по высоте самой длинной)
+   и сдвинуты вправо-вниз на --pos шагов.
+   ======================================================== */
+.monsters-grid.stack-grid {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  --stack-dx: calc(26 * var(--u));   /* ширина видимого края задней карточки (было 20) */
+  --stack-dy: calc(11 * var(--u));
+}
+@media (max-width: 1100px) { .monsters-grid.stack-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (max-width: 900px)  { .monsters-grid.stack-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 600px)  {
+  .monsters-grid.stack-grid {
+    grid-template-columns: minmax(0, 1fr);
+    --stack-dx: calc(38 * var(--u));   /* телефон: край под палец (было 30) */
+    --stack-dy: calc(14 * var(--u));
+    gap: calc(12 * var(--u));
+  }
+}
+@media (max-height: 600px) and (orientation: landscape) {
+  .monsters-grid.stack-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+.monster-stack {
+  display: grid;
+  padding-right: calc(var(--stack-dx) * 2);
+  padding-bottom: calc(var(--stack-dy) * 2);
+  min-width: 0;
+}
+.monster-stack > .monster-card {
+  grid-area: 1 / 1;
+  min-width: 0;
+  transform: translate(calc(var(--stack-dx) * var(--pos, 0)), calc(var(--stack-dy) * var(--pos, 0)));
+  transition: transform .35s ease, box-shadow .25s, border-color .25s, filter .25s;
+}
+.monster-stack > .monster-card.stack-front { box-shadow: 0 calc(6 * var(--u)) calc(16 * var(--u)) rgba(0, 0, 0, .55); }
+.monster-stack > .monster-card.stack-back { filter: brightness(.7); cursor: pointer; }
+.monster-stack > .monster-card.stack-back:hover { filter: brightness(.9); }
+/* у задних карточек содержимое не нужно — видно только край */
+.monster-stack > .monster-card.stack-back > :not(.stack-tab) { visibility: hidden; }
+
+/* Край с надписью — правая полоса карточки шириной в один сдвиг */
+.stack-tab {
+  position: absolute; top: 0; right: 0; bottom: 0;
+  width: var(--stack-dx);
+  display: none;
+  flex-direction: column; align-items: center; justify-content: center; gap: calc(4 * var(--u));
+  writing-mode: vertical-rl;
+  font-family: 'Cinzel', serif; font-size: var(--fs-tiny); letter-spacing: .12em; text-transform: uppercase;
+  color: var(--gold-bright);
+  pointer-events: none;
+}
+.stack-tab i { font-style: normal; writing-mode: horizontal-tb; font-size: calc(11 * var(--u)); }
+.monster-card.stack-back .stack-tab { display: flex; }
+.monster-card.variant-normal .stack-tab  { background: linear-gradient(90deg, transparent, rgba(184, 148, 90, .18)); }
+.monster-card.variant-ancient .stack-tab { color: #a9c6ff; background: linear-gradient(90deg, transparent, rgba(74, 106, 176, .35)); }
+.monster-card.variant-bloody .stack-tab  { color: #ff8f7d; background: linear-gradient(90deg, transparent, rgba(176, 48, 40, .35)); }
+
+@media (prefers-reduced-motion: reduce) {
+  .monster-stack > .monster-card { transition: none; }
+}
+
+/* v0.34.1: при смене подтипа в стопке — разница статов (HP, атака, защиты) всплывает над графой:
+   «+176» зелёным (монстр стал крепче), «−176» красным (слабее). Временная, гаснет сама. */
+.monster-stat { position: relative; }
+.stat-delta {
+  position: absolute; left: 50%; bottom: 100%;
+  transform: translateX(-50%);
+  font-weight: 700; font-size: calc(13 * var(--u)); white-space: nowrap;
+  pointer-events: none;
+  animation: statDelta 1.8s ease-out forwards;
+}
+.stat-delta.up   { color: #6dff7a; text-shadow: 0 0 calc(6 * var(--u)) rgba(80, 255, 110, .8), 0 1px 2px #000; }
+.stat-delta.down { color: #ff6a5a; text-shadow: 0 0 calc(6 * var(--u)) rgba(255, 90, 70, .8), 0 1px 2px #000; }
+@keyframes statDelta {
+  0%   { opacity: 0; transform: translate(-50%, 40%) scale(.7); }
+  15%  { opacity: 1; transform: translate(-50%, 0) scale(1.15); }
+  70%  { opacity: 1; transform: translate(-50%, -30%) scale(1); }
+  100% { opacity: 0; transform: translate(-50%, -80%) scale(1); }
+}
+.monster-stat.stat-flash { animation: statFlash 1.2s ease-out; }
+@keyframes statFlash { 0%, 30% { color: #fff; text-shadow: 0 0 calc(8 * var(--u)) rgba(255, 255, 255, .7); } }
+
+/* ========================================================
+   v0.34.1: СОЧНЫЕ КАРТОЧКИ
+   Картинка — во всю ширину карточки и почти квадратная (раньше полоска 100px),
+   низ плавно тает в фон карточки, имя монстра лежит поверх этого низа.
+   Значок стаи переехал в левый верхний угол (рядом с 🌙 справа).
+   Размеры по экранам — в медиа-запросах ниже, они перебивают старые высоты.
+   ======================================================== */
+.monster-card .monster-portrait-img {
+  --bleed: calc(8 * var(--u));   /* = padding карточки */
+  height: auto;
+  aspect-ratio: 6 / 5;
+  margin: calc(-1 * var(--bleed)) calc(-1 * var(--bleed)) 0;
+  border: none;
+  border-radius: calc(4 * var(--u)) calc(4 * var(--u)) 0 0;
+  background-position: center 30%;
+  transition: filter .25s;
+}
+.monster-card .monster-portrait-img::after {
+  content: '';
+  position: absolute; inset: 0;
+  pointer-events: none;
+  border-radius: inherit;
+  background: linear-gradient(180deg, rgba(0, 0, 0, .3) 0%, transparent 20%, transparent 55%, var(--bg-2) 100%);
+  box-shadow: inset 0 0 calc(24 * var(--u)) rgba(0, 0, 0, .5);
+}
+.monster-card:hover .monster-portrait-img,
+.monster-card.selected .monster-portrait-img { filter: brightness(1.12) saturate(1.12); }
+
+.monster-card .monster-pack { top: calc(5 * var(--u)); bottom: auto; left: calc(5 * var(--u)); z-index: 2; }
+.monster-card .monster-night { top: calc(5 * var(--u)); right: calc(5 * var(--u)); z-index: 2; }
+
+.monster-card .monster-name {
+  position: relative; z-index: 1;
+  margin-top: calc(-22 * var(--u));
+  font-size: calc(15 * var(--u));
+  letter-spacing: .02em;
+  text-shadow: 0 1px 3px #000, 0 0 calc(10 * var(--u)) rgba(0, 0, 0, .9);
+}
+.monster-card.variant-ancient .monster-name {
+  text-shadow: 0 1px 3px #000, 0 0 calc(10 * var(--u)) rgba(160, 200, 255, .55);
+}
+.monster-card.variant-bloody .monster-name {
+  text-shadow: 0 1px 3px #000, 0 0 calc(12 * var(--u)) rgba(255, 112, 112, .65);
+}
+
+@media (max-width: 1100px) {
+  .monster-card .monster-portrait-img { height: auto; aspect-ratio: 5 / 4; }
+}
+@media (max-width: 900px) {
+  .monster-card .monster-portrait-img { --bleed: calc(6 * var(--u)); height: auto; aspect-ratio: 4 / 3; margin-bottom: 0; }
+  .monster-card .monster-name { font-size: calc(14 * var(--u)); margin-top: calc(-20 * var(--u)); }
+}
+@media (max-width: 600px) {
+  /* телефон: одна стопка в ряд — карточка широкая, картинку делаем пониже */
+  .monster-card .monster-portrait-img { aspect-ratio: 16 / 10; }
+}
+@media (max-height: 600px) and (orientation: landscape) {
+  .monster-card .monster-portrait-img { --bleed: calc(5 * var(--u)); height: auto; aspect-ratio: 16 / 9; margin-bottom: 0; }
+  .monster-card .monster-name { font-size: calc(12 * var(--u)); margin-top: calc(-17 * var(--u)); }
 }

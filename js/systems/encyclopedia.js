@@ -141,7 +141,36 @@ function unlockLore(key, silent) {
 function unlockLoreArticle(id, silent) {
   const a = getLoreArticle(id);
   if (!a) return;
-  a.parts.forEach((p, i) => { if (!p.byTalk) unlockLore(p.key, silent || i > 0); });
+  // v0.34.1: куски с when() открываются только своим делом (убийствами и т.п.)
+  a.parts.forEach((p, i) => { if (!p.byTalk && typeof p.when !== 'function') unlockLore(p.key, silent || i > 0); });
+}
+
+// ---- v0.34.1: куски, которые открываются делом (when() в данных): Бестиарий, Зелёная поляна ----
+// silent — без всплывашки (вход героем: открыть то, что он уже «заслужил» раньше).
+function loreSyncBeasts(silent) {
+  if (!state.player || !state.player.chronicle) return;
+  const keys = [];
+  Object.keys(LORE_ARTICLES).forEach(id => {
+    (LORE_ARTICLES[id].parts || []).forEach(p => {
+      if (typeof p.when !== 'function' || knowsLore(p.key)) return;
+      let ok = false;
+      try { ok = !!p.when(); } catch (e) { ok = false; }
+      if (ok) keys.push(p.key);
+    });
+  });
+  if (keys.length) unlockLoreMany(keys, silent);
+}
+
+// Из onMonsterDeath (battle-rewards.js) — после счётчика убийств.
+function loreOnKill(m) {
+  const c = state.player && state.player.chronicle;
+  if (!c || !m) return;
+  // ночная охота на локации — для куска «Ночью»
+  if (typeof worldTime === 'function' && worldTime(true).phase.id === 'night' && typeof getMonsterLocation === 'function') {
+    const loc = getMonsterLocation(m.id);
+    if (loc) { if (!c.nightKills) c.nightKills = {}; c.nightKills[loc] = true; }
+  }
+  loreSyncBeasts(false);
 }
 
 function loreHasNews() {

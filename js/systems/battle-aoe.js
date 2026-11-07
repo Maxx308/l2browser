@@ -128,7 +128,8 @@ function aoeGiveXp(skill, extraElems) {
   }
   const elems = extraElems || (skill.element ? [skill.element] : []);
   elems.forEach(e => {
-    addElementXP(e);
+    // v0.35: Жизнь — с «Благословением Леса» (Терновый вихрь, Похищение жизни)
+    if (e === 'life') addLifeXP(); else addElementXP(e);
     if (tryBonusProficiencyXP()) { addElementXP(e); logCombat(`🍺 Бонусный опыт стихии!`, 'log-entry levelup'); }
   });
 }
@@ -513,7 +514,7 @@ function triggerNatureBreath(kills) {
   let amount = rollHealAmount(d.multiplier);
   if (kills >= 2) amount = Math.floor(amount * 1.5);
   const healed = aoeHeal(amount);
-  for (let i = 0; i < Math.floor(getLifeXpMultiplier()); i++) addElementXP('life');
+  addLifeXP();
   const extra = kills >= 2 ? ' (×1.5 за двоих)' : '';
   if (healed > 0) logCombat(`🌿 Природа благодарит: Дыхание природы +${healed} HP${extra}.`, 'log-entry potion');
   else logCombat(`🌿 Природа благодарит, но HP уже полное.`, 'log-entry');

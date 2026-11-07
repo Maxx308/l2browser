@@ -513,3 +513,5 @@ h3 { font-size: var(--fs-h1); }
     padding: calc(6 * var(--u)) calc(4 * var(--u));
   }
 }
+/* v0.34.1: регенерация маны цифрой (запасной вид без арены) */
+.float-dmg.mana { color: var(--magic-bright); text-shadow: 0 0 calc(10 * var(--u)) var(--mp-glow); }

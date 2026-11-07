@@ -142,3 +142,20 @@
   box-shadow: 0 0 calc(10 * var(--night) * var(--u)) rgba(150, 180, 255, calc(.8 * var(--night)));
   transition: opacity 3s, box-shadow 3s;
 }
+/* v0.34.1: дневные монстры Поляны — ☀ (днём светится) */
+.monster-night.monster-day {
+  background: rgba(40, 26, 6, 0.8);
+  border-color: rgba(240, 200, 110, 0.6);
+  opacity: calc(1 - .4 * var(--night));
+  box-shadow: 0 0 calc(10 * (1 - var(--night)) * var(--u)) rgba(255, 210, 110, calc(.7 * (1 - var(--night))));
+}
+/* v0.34.1: строка «их время — стаи больше» под уровнем монстра */
+.monster-prime {
+  font-size: var(--fs-tiny);
+  text-align: center;
+  margin: calc(-3 * var(--u)) 0 calc(5 * var(--u));
+  letter-spacing: .02em;
+  cursor: help;
+}
+.monster-prime.prime-night { color: #a9c3ff; text-shadow: 0 0 calc(6 * var(--u)) rgba(130, 170, 255, .6); }
+.monster-prime.prime-day   { color: #ffd27a; text-shadow: 0 0 calc(6 * var(--u)) rgba(255, 200, 100, .5); }

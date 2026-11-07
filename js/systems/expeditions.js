@@ -439,6 +439,7 @@ async function expResolve(early) {
     if (!Array.isArray(p.expeditionLoot)) p.expeditionLoot = [];
     loot.items.forEach(e => expPoolAdd(p.expeditionLoot, e.drop, e.qty));
     checkLevelUp();
+    if (typeof loreSyncBeasts === 'function') loreSyncBeasts(false);   // v0.34.1: убийства в экспедиции тоже открывают Бестиарий
 
     const rep = {
       loc: exp.loc, name: exp.name, hours: exp.hours, elapsed, full,

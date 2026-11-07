@@ -260,6 +260,7 @@ function loadSlotAndStart(slotIndex, opts) {
   state.player.expedition = (saved.player && saved.player.expedition) || null;
   state.player.expeditionLoot = (saved.player && Array.isArray(saved.player.expeditionLoot)) ? saved.player.expeditionLoot : [];
   state.player.huntPace = (saved.player && saved.player.huntPace) || {};
+  state.player.huntVariant = (saved.player && saved.player.huntVariant) || {};   // v0.34.1: стопки карточек
   // v0.26: метка чита — только своя (у старого сейва поля нет, прошлый герой не должен «передать» её)
   state.player.usedCheat = !!(saved.player && saved.player.usedCheat);
   // v0.29.2: дробные цены продажи оставляли хвост в Оболах (34500.199999997) — убираем у старых героев
@@ -335,6 +336,8 @@ function loadSlotAndStart(slotIndex, opts) {
 
   // v0.33: зашли героем из экспедиции — он вернулся (раньше или как раз к концу), окно с добычей
   if (typeof expOnEnterGame === 'function') expOnEnterGame();
+  // v0.34.1: Бестиарий и Поляна — открыть то, что герой уже заслужил убийствами (без всплывашек)
+  if (typeof loreSyncBeasts === 'function') loreSyncBeasts(true);
 
   if (opts && opts.resume) {
     showToast('🔄', 'Вы снова в игре');

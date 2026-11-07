@@ -96,6 +96,21 @@ function applyWoundTick() {
 }
 
 // --------------------------------------------------------
+//  v0.34.1: МАНА-ЩИТ (Шёлковая мантия, все части +10) — забирает долю ЛЮБОГО урона по герою в MP:
+//  удар монстра, его крит и стихию, тики яда и кровотечения. Пока есть мана.
+//  dmg — урон по герою до щита. Возвращает { hp: урон по HP, mp: сколько ушло в MP } и сразу списывает MP.
+// --------------------------------------------------------
+function manaShieldAbsorb(dmg) {
+  const p = state.player;
+  const pct = Math.min(90, p.manaShield || 0);
+  if (pct <= 0 || dmg <= 0 || p.mp < 1) return { hp: dmg, mp: 0 };
+  const mp = Math.min(Math.floor(p.mp), Math.round(dmg * pct / 100));
+  if (mp <= 0) return { hp: dmg, mp: 0 };
+  p.mp -= mp;
+  return { hp: Math.max(1, dmg - mp), mp };
+}
+
+// --------------------------------------------------------
 //  ЯД (АРАХНИД) — на игрока
 // --------------------------------------------------------
 
@@ -106,12 +121,14 @@ function applyPoisonTick() {
 
   // v0.27: стойка щита режет и яд
   const stance = typeof getShieldStanceMult === 'function' ? getShieldStanceMult() : 1;
-  const dmg = stance < 1 ? Math.max(1, Math.floor((poison.damage || 0) * stance)) : (poison.damage || 0);
+  const raw = stance < 1 ? Math.max(1, Math.floor((poison.damage || 0) * stance)) : (poison.damage || 0);
+  const sh = manaShieldAbsorb(raw);   // v0.34.1: мана-щит и на яде
+  const dmg = sh.hp;
   p.hp -= dmg;
   poison.turnsLeft = (poison.turnsLeft || 0) - 1;
 
   spawnFloatDamage('fighter-player', dmg, 'poison');
-  logCombat(`☠ Яд: ${dmg} урона (ур.${poison.level}, осталось ${poison.turnsLeft} хода)`, 'log-entry poison');
+  logCombat(`☠ Яд: ${dmg} урона (ур.${poison.level}, осталось ${poison.turnsLeft} хода)${sh.mp ? ` · 🔷 мана-щит −${sh.mp} MP` : ''}`, 'log-entry poison');
 
   if (poison.turnsLeft <= 0) {
     removeDebuff('player', 'poison');
@@ -246,12 +263,13 @@ function applyBleedTickOnPlayer() {
   const p = state.player;
   if (!b || p.hp <= 0) return;
 
-  const dmg = Math.max(1, b.damage || 0);
+  const sh = manaShieldAbsorb(Math.max(1, b.damage || 0));   // v0.34.1: мана-щит и на кровотечении
+  const dmg = sh.hp;
   p.hp -= dmg;
   b.turnsLeft = (b.turnsLeft || 0) - 1;
 
   spawnFloatDamage('fighter-player', dmg, 'dmg');
-  logCombat(`🩸 Кровотечение: ${dmg} урона (осталось ${b.turnsLeft} ход.)`, 'log-entry loss');
+  logCombat(`🩸 Кровотечение: ${dmg} урона (осталось ${b.turnsLeft} ход.)${sh.mp ? ` · 🔷 мана-щит −${sh.mp} MP` : ''}`, 'log-entry loss');
 
   if (b.turnsLeft <= 0) {
     removeDebuff('player', 'bleed');

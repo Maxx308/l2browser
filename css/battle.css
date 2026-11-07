@@ -577,9 +577,9 @@ body.chat-hide-lootnotes #battle-log-loot .log-note { display: none; }
   border-top: 1px solid var(--border);
 }
 
-.monsters-grid.mine-grid {
-  grid-template-columns: repeat(5, 1fr);
-}
+/* v0.34.1: правило «Копи — всегда 5 в ряд» убрано. Этот файл подключается позже monsters.css
+   и перебивал телефонную раскладку: на телефоне Копи сжимались в 5 колонок, а Поляна шла по 2.
+   Теперь колонки у Копей и Поляны одинаковые — их задаёт monsters.css. */
 
 /* ========================================================
    АДАПТАЦИЯ

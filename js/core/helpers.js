@@ -40,7 +40,7 @@ function spawnFloatDamage(elementId, dmg, type) {
   const float = document.createElement('div');
   float.className = 'float-dmg ' + type;
   if (type === 'heal') float.textContent = `+${dmg}`;
-  else if (type === 'food') float.textContent = `+${dmg}`;
+  else if (type === 'food' || type === 'mana') float.textContent = `+${dmg}`;
   else if (type === 'crit') float.textContent = `КРИТ ${dmg}!`;
   else if (type === 'block') float.textContent = `БЛОК`;
   else if (type === 'miss') float.textContent = `ПРОМАХ`;
@@ -122,7 +122,7 @@ function mult() {
 //    chance = 70 + 2 × (acc − eva), зажат в [25, 95]
 //
 //  Монстры:
-//    acc_monster = уровень × 2.5 + 33
+//    acc_monster = уровень × 2.5 + 33 + 1.3 × (уровень − 5)  (v0.34.1: надбавка с 6-го уровня)
 //    eva_monster = уровень × 2.5 + 30
 //
 //  Итог: при равных уровнях шанс ~70-80%, шанс
@@ -206,11 +206,20 @@ function getPlayerEvasion(attacker) {
   return Math.round(eva);
 }
 
+// v0.34.1: точность монстров с 6-го уровня растёт быстрее — догоняет уворот, который герой
+// набирает подгонкой (+1 Уворот в случайных бонусах) и ловкостью с редкости.
+// По симулятору к 20 ур. уворот героя ~92, и Каменный голем (15 ур.) попадал лишь в ~38%.
+// Теперь средний герой своего уровня получает ~65%, уворотчик («Свободная рука») — ~40%.
+// Поляна (ур. 1–5) — как было: там подгонки почти нет.
+const MONSTER_ACC_EXTRA_FROM_LEVEL = 5;     // с какого уровня монстра начинается надбавка
+const MONSTER_ACC_EXTRA_PER_LEVEL = 1.3;    // сколько точности сверху за каждый уровень выше
+
 // Точность монстра.
 function getMonsterAccuracy(monster) {
   const lvl = (monster && monster.level) || 1;
+  const extra = Math.max(0, lvl - MONSTER_ACC_EXTRA_FROM_LEVEL) * MONSTER_ACC_EXTRA_PER_LEVEL;
   // v0.33: монстр с душой самоцвета метче (accMult ×1.2…×1.6, battle-souls.js)
-  return Math.round((lvl * 2.5 + 33) * ((monster && monster.accMult) || 1));
+  return Math.round((lvl * 2.5 + 33 + extra) * ((monster && monster.accMult) || 1));
 }
 
 // Уворот монстра.

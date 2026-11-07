@@ -81,16 +81,17 @@ function monsterAttack(attacker) {
   const guardInfo = guardMult < 1 ? ` (защита −${GUARD_DAMAGE_CUT}%)` : '';
   // v0.27: стойка щита — −8% ко всему входящему урону
   const stanceMult = getShieldStanceMult();
-  // ---- v0.21: Мана-щит (Шёлковая мантия +10): часть урона идёт в MP, пока MP есть ----
-  const hpBeforeHit = p.hp;
-  const msPct = (p.manaShield || 0) > 0 && p.mp >= 1 ? Math.min(90, p.manaShield) : 0;
-  const msMult = 1 - msPct / 100;
+  // ---- Мана-щит (Шёлковая мантия +10): v0.34.1 — режет и основной удар, и крит, и стихию
+  //      (manaShieldAbsorb в battle-effects.js сразу списывает MP). rawHit — удар до щита: от него считается крит.
+  let msAbsorbed = 0;
+  let rawHit = 0;
 
   if (m.attackType === 'magic') {
     dmg = Math.max(1, raw - Math.floor(p.mDef * 0.5));
     if (stanceMult < 1) dmg = Math.max(1, Math.floor(dmg * stanceMult));
     if (guardMult < 1) dmg = Math.max(1, Math.floor(dmg * guardMult));
-    if (msMult < 1) dmg = Math.max(1, Math.floor(dmg * msMult));
+    rawHit = dmg;
+    { const sh = manaShieldAbsorb(dmg); dmg = sh.hp; msAbsorbed += sh.mp; }
     p.hp -= dmg;
     spawnFloatDamage('fighter-player', dmg, 'magic');
     logCombat(`✦ ${m.name} бьёт магией на ${dmg} урона.${guardInfo}`, 'log-entry magic');
@@ -100,7 +101,8 @@ function monsterAttack(attacker) {
     if (mixtureDefMult < 1.0) dmg = Math.max(1, Math.floor(dmg * mixtureDefMult));
     if (stanceMult < 1) dmg = Math.max(1, Math.floor(dmg * stanceMult));
     if (guardMult < 1) dmg = Math.max(1, Math.floor(dmg * guardMult));
-    if (msMult < 1) dmg = Math.max(1, Math.floor(dmg * msMult));
+    rawHit = dmg;
+    { const sh = manaShieldAbsorb(dmg); dmg = sh.hp; msAbsorbed += sh.mp; }
     p.hp -= dmg;
     spawnFloatDamage('fighter-player', dmg, 'dmg');
     const reduceInfo = (flatReduce > 0 ? ` (щит/шкура -${flatReduce})` : '') + (stanceMult < 1 ? ` (стойка −${SHIELD_STANCE_DAMAGE_CUT}%)` : '');
@@ -123,7 +125,8 @@ function monsterAttack(attacker) {
     const critChance = traits.critChance * chanceMult;
     if (Math.random() * 100 < critChance) {
       const critMult = traits.critMult || 2.0;
-      const bonus = Math.floor(dmg * (critMult - 1));
+      const sh = manaShieldAbsorb(Math.floor(rawHit * (critMult - 1)));   // v0.34.1: крит — от удара до щита, щит режет и его
+      const bonus = sh.hp; msAbsorbed += sh.mp;
       p.hp -= bonus; hitDamageForBleed += bonus;
       spawnFloatDamage('fighter-player', bonus, 'crit');
       logCombat(`⚔ КРИТ! ${m.name} наносит дополнительно ${bonus} урона!`, 'log-entry monster');
@@ -137,7 +140,8 @@ function monsterAttack(attacker) {
       const elements = ['fire', 'ice', 'lightning'];
       const elemId = elements[Math.floor(Math.random() * elements.length)];
       const bonusPercent = traits.elementBonusPercent || 30;
-      const elemDmg = Math.max(1, Math.floor(m.atk * (bonusPercent / 100) * guardMult * msMult * stanceMult));
+      const sh = manaShieldAbsorb(Math.max(1, Math.floor(m.atk * (bonusPercent / 100) * guardMult * stanceMult)));   // v0.34.1: щит режет и стихию
+      const elemDmg = sh.hp; msAbsorbed += sh.mp;
       p.hp -= elemDmg; hitDamageForBleed += elemDmg;
       const icon = elemId === 'fire' ? '🔥' : elemId === 'ice' ? '❄' : '⚡';
       const elemName = (typeof ELEMENTS !== 'undefined' && ELEMENTS[elemId]) ? ELEMENTS[elemId].name : elemId;
@@ -192,15 +196,8 @@ function monsterAttack(attacker) {
   }
 
   // ---- Яд (Арахнид) ----
-  // v0.21: Мана-щит — списываем с MP ту часть урона, которую он забрал на себя
-  if (msPct > 0) {
-    const lost = Math.max(0, hpBeforeHit - p.hp);
-    const absorbed = Math.min(Math.floor(p.mp), Math.round(lost * msPct / (100 - msPct)));
-    if (absorbed > 0) {
-      p.mp -= absorbed;
-      logCombat(`🔷 Мана-щит: ${absorbed} урона ушло в MP.`, 'log-entry magic');
-    }
-  }
+  // Мана-щит: MP уже списана в manaShieldAbsorb — здесь только строка в журнал (v0.34.1)
+  if (msAbsorbed > 0) logCombat(`🔷 Мана-щит: ${msAbsorbed} урона ушло в MP.`, 'log-entry magic');
 
   if (m.poison && p.hp > 0) {
     tryApplyPoison();

@@ -238,6 +238,7 @@ function onMonsterDeath(deadMonster) {
   const newTitle = getMonsterTitle(m.id, m.variantId);
   if (typeof annalsFirst === 'function') annalsFirst('kill', { monster: m.name });   // v0.32: летопись
   if (typeof questFindRoll === 'function') questFindRoll(m);   // v0.32: находки для поручений жителей
+  if (typeof loreOnKill === 'function') loreOnKill(m);         // v0.34.1: Бестиарий и Поляна — куски за убийства
 
   if (newTitle !== oldTitle) {
     const loc = getMonsterLocation(m.id);

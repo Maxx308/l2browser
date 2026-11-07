@@ -43,6 +43,7 @@ function useMagicPath(destination) {
   p.gold -= price;
   p.currentLocation = destination;
   if (typeof annalsFirst === 'function') annalsFirst('loc.' + destination);   // v0.32: летопись
+  if (typeof loreSyncBeasts === 'function') loreSyncBeasts(false);   // v0.34.1: статья о месте
 
   updateTopStatus();
   updateMapUI();
@@ -99,6 +100,7 @@ function finishTravel() {
   state.travel.active = false;
   state.player.currentLocation = state.travel.destination;
   if (typeof annalsFirst === 'function') annalsFirst('loc.' + state.travel.destination);   // v0.32: летопись
+  if (typeof loreSyncBeasts === 'function') loreSyncBeasts(false);   // v0.34.1: пришёл на Поляну — статья о ней
 
   document.getElementById('travel-overlay').classList.remove('active');
   updateMapUI();

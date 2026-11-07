@@ -150,6 +150,23 @@ function getAscendPrice(item) {
   return ALCHEMY_ASCEND_ITEMS * base * mult * 2;
 }
 
+// ========================================================
+//  ПЕРЕПЛАВКА ПЫЛИ (v0.34.1): 4 пыли → 1 пыль следующего цвета.
+//  🟢→🔵, 🔵→🟣, 🟣→🟡. В красную не переплавляется: жёлтая — самая дефицитная
+//  (на возвышение 🟡→🔴), а красная нужна только на переролл красных вещей.
+//  По симулятору без переплавки зелёной/синей/фиолетовой копилось по 99 999, а жёлтой не хватало.
+// ========================================================
+const ALCHEMY_SMELT_RATE = 4;
+const ALCHEMY_SMELT_STEPS = [['green', 'blue'], ['blue', 'purple'], ['purple', 'yellow']];
+
+// Сколько пыли следующего цвета можно получить сейчас (с учётом лимита стопки).
+function getSmeltMax(from, to) {
+  if (typeof getDustCount !== 'function') return 0;
+  const byHave = Math.floor(getDustCount(from) / ALCHEMY_SMELT_RATE);
+  const room = Math.max(0, ALCHEMY_DUST_STACK_MAX - getDustCount(to));
+  return Math.min(byHave, room);
+}
+
 // Сколько очков статов добавит возвышение (разница statPoints).
 function getAscendExtraPoints(item) {
   const to = getAscendTarget(item);

@@ -67,6 +67,7 @@ const state = {
     expedition: null,      // герой в пути: { type, loc, monsterId, variantId, kph, hours, startedAt, ... }
     expeditionLoot: [],    // добыча экспедиции, которую ещё не забрали: [{ drop, qty }]
     huntPace: {},          // темп охоты по монстрам: { 'goblin_normal': { k, s } }
+    huntVariant: {},       // v0.34.1: какой подтип спереди в стопке карточек: { goblin: 'ancient' }
 
     // ---- КВЕСТЫ ----
     // id → { stage: 'string' }

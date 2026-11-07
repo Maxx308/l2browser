@@ -104,6 +104,7 @@ function tryBonusProficiencyXP() {
   let chance = 0;
   if (hasRelaxBuff()) chance += TAVERN_PROF_BONUS_PERCENT;
   chance += (p.profBonusFromRefine || 0);
+  chance += (p.profBonusFromSkill || 0);   // v0.35: «Опыт» человека
 
   if (chance <= 0) return false;
   return Math.random() * 100 < chance;

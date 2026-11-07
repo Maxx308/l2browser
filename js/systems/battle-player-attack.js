@@ -20,6 +20,15 @@ function getLifeXpMultiplier() {
   return 1 + (bonus / 100);
 }
 
+// v0.35: опыт Жизни с «Благословением Леса». Дробная часть — шансом на +1
+// (раньше Math.floor(1 × 1.5) = 1, и бонус меньше 100% не давал ничего).
+function addLifeXP() {
+  const mult = getLifeXpMultiplier();
+  let n = Math.floor(mult);
+  if (Math.random() < mult - n) n++;
+  for (let i = 0; i < n; i++) addElementXP('life');
+}
+
 // v0.19.1: сила лечения (Исцеление эльфа-мага, Дыхание природы эльфа-воина).
 // От маг. атаки × множитель навыка, усиливается магией Жизни и микстурой атаки.
 function rollHealAmount(multiplier) {
@@ -191,9 +200,7 @@ function playerAttack() {
         p.hp += heal; spawnFloatDamage('fighter-player', heal, 'heal');
         logCombat(`🌿 ${skill.name}: +${heal} HP`, 'log-entry potion');
       }
-      const lifeBonus = getLifeXpMultiplier();
-      const lifeXp = Math.floor(1 * lifeBonus);
-      for (let i = 0; i < lifeXp; i++) addElementXP('life');
+      addLifeXP();
       const mixtureData = getActiveMixtureData();
       if (mixtureData && mixtureData.chargeType === 'playerAttacks') tickMixtureCharge();
       updateTopStatus(); updateBattleUI(); checkHealPotion(); return;

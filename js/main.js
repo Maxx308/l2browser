@@ -458,7 +458,7 @@ function updateCharacterPanel() {
   const pctTxt = (x) => { const v = Math.round(x * 10) / 10; return v > 0 ? `+${v}%` : '0%'; };
   const tavernXp = typeof getXpMultiplierFromTavern === 'function' ? (getXpMultiplierFromTavern() - 1) * 100 : 0;
   const xpTotal = (p.xpBonus || 0) + (p.xpBonusFromRefine || 0) + tavernXp;
-  const profTotal = (p.profBonusFromRefine || 0) + (typeof hasRelaxBuff === 'function' && hasRelaxBuff() ? TAVERN_PROF_BONUS_PERCENT : 0);
+  const profTotal = (p.profBonusFromRefine || 0) + (p.profBonusFromSkill || 0) + (typeof hasRelaxBuff === 'function' && hasRelaxBuff() ? TAVERN_PROF_BONUS_PERCENT : 0);
   const goldTotal = p.goldBonusFromRefine || 0;
   const luck = typeof getMixtureLuckMult === 'function' ? (getMixtureLuckMult() - 1) * 100 : 0;
   const dropTotal = (p.dropBonusFromRefine || 0) + luck;
