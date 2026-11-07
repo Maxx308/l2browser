@@ -26,6 +26,7 @@ function renderMonsters() {
   grid.classList.remove('mine-grid');
 
   const loc = state.player.currentLocation;
+  if (typeof renderSoulHuntBar === 'function') renderSoulHuntBar();   // v0.33: какие души искать
 
   if (loc === 'field') {
     renderFieldMonsters(grid);

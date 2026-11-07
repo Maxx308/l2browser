@@ -159,6 +159,15 @@ function renderSlots() {
         ? `<button class="slot-delete" title="Удалить персонажа" data-slot="${i}">×</button>`
         : '';
 
+      // v0.33: герой в экспедиции — подпись с таймером (expeditions.js)
+      let expBadge = '';
+      if (typeof expSlotBadgeHtml === 'function') {
+        try {
+          const full = hasLocal ? readSlot(i) : (cloudSlot && cloudSlot.data);
+          expBadge = expSlotBadgeHtml(full && full.player);
+        } catch (e) { expBadge = ''; }
+      }
+
       card.innerHTML = `
         ${deleteBtn}
         ${sourceBadge}
@@ -167,6 +176,7 @@ function renderSlots() {
           <div class="slot-name">${displayMeta.name}</div>
           <div class="slot-race">${race.name}</div>
           <div class="slot-class">${cls ? cls.name : '—'} · Ур. ${displayMeta.level}</div>
+          ${expBadge}
         </div>
         <div class="slot-number">${i + 1}</div>
       `;
@@ -237,7 +247,19 @@ function loadSlotAndStart(slotIndex, opts) {
   const saved = readSlot(slotIndex);
   if (!saved) { alert('Сохранение не найдено'); return; }
 
+  // v0.33: страница обновилась сама (телефон свернул вкладку), а герой в экспедиции —
+  // не входим автоматически, иначе экспедиция оборвётся. Остаётся экран выбора героя.
+  if (opts && opts.resume && typeof expBlocksAutoResume === 'function' && expBlocksAutoResume(saved.player)) {
+    try { sessionStorage.removeItem(RESUME_SESSION_KEY); } catch (e) {}
+    renderSlots();
+    return;
+  }
+
   Object.assign(state.player, saved.player);
+  // v0.33: экспедиция и темп охоты — только свои (у старого сейва полей нет)
+  state.player.expedition = (saved.player && saved.player.expedition) || null;
+  state.player.expeditionLoot = (saved.player && Array.isArray(saved.player.expeditionLoot)) ? saved.player.expeditionLoot : [];
+  state.player.huntPace = (saved.player && saved.player.huntPace) || {};
   // v0.26: метка чита — только своя (у старого сейва поля нет, прошлый герой не должен «передать» её)
   state.player.usedCheat = !!(saved.player && saved.player.usedCheat);
   // v0.29.2: дробные цены продажи оставляли хвост в Оболах (34500.199999997) — убираем у старых героев
@@ -267,6 +289,8 @@ function loadSlotAndStart(slotIndex, opts) {
     const store = loadStorage();
     if (migrateJewelryList(store) | migrateWeaponList(store) | migrateRefineFlatList(store)) writeStorageLocal(store, getStorageLocalUpdatedAt() || undefined);
   }
+  // v0.33: рубины и сапфиры из обычного дропа изъяты — теперь это камни душ
+  if (typeof retireOldGemsOnLoad === 'function') retireOldGemsOnLoad();
   if (weaponsChanged) setTimeout(() => logLoot('⚔ Статы оружия обновлены под новый баланс.', 'log-info'), 1600);
   if (refineFlatChanged) setTimeout(() => logLoot('🔧 Бонусы подгонки HP, MP и реген пересчитаны: на вещах тира 2 и выше они теперь больше.', 'log-info'), 1700);
   if (jewelryChanged) setTimeout(() => {
@@ -308,6 +332,9 @@ function loadSlotAndStart(slotIndex, opts) {
 
   hideStartScreen();
   initGame();
+
+  // v0.33: зашли героем из экспедиции — он вернулся (раньше или как раз к концу), окно с добычей
+  if (typeof expOnEnterGame === 'function') expOnEnterGame();
 
   if (opts && opts.resume) {
     showToast('🔄', 'Вы снова в игре');

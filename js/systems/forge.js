@@ -177,7 +177,12 @@ function getMatIcon(name) {
     'Пещерный гриб':     'img/materials/cave_mushroom.png',
     'Сырой рубин':       'img/materials/raw_ruby.png',
     'Сырой сапфир':      'img/materials/raw_sapphire.png',
-    'Паучий шёлк':       'img/materials/spider_silk.png',
+    // ---- v0.33: камни душ и гранат ----
+    'Сырой изумруд':     'img/materials/raw_emerald.png',
+    'Сырой аметист':     'img/materials/raw_amethyst.png',
+    'Сырой топаз':       'img/materials/raw_topaz.png',
+    'Сырой гранат':      'img/materials/raw_garnet.png',
+    'Паучий шёлк':     'img/materials/spider_silk.png',
     'Ядовитая железа':   'img/materials/venom_gland.png',
     'Ядро голема':       'img/materials/golem_core.png',
     'Жаркое с грибами':      'img/materials/dish_mushroom_roast.png',

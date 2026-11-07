@@ -262,7 +262,8 @@ function bxSyncPack(group) {
 // Карточка одного врага. Ставится перед колодой (если она уже в ряду).
 function bxAddEnemyCard(row, m, delaySec) {
   const unit = document.createElement('div');
-  unit.className = `bx-unit bx-enemy variant-${m.variantId || 'normal'} bx-spawn` + (m.reinforcement ? ' bx-reinforce' : '');
+  unit.className = `bx-unit bx-enemy variant-${m.variantId || 'normal'} bx-spawn` + (m.reinforcement ? ' bx-reinforce' : '') +
+    (m.soul ? ` bx-has-soul soul-${m.soul}` : '');   // v0.33: душа самоцвета
   unit.style.animationDelay = delaySec + 's';
   const crop = BX_ART_CROP[m.templateId || m.id];
   const picStyle = `background-image:url('${m.art || ''}');` + (crop ? `background-size:${crop.size};background-position:${crop.pos};` : '');
@@ -270,6 +271,7 @@ function bxAddEnemyCard(row, m, delaySec) {
     <div class="bx-card">
       <div class="bx-pic" style="${picStyle}"></div>
       <div class="bx-flash"></div>
+      ${typeof soulBadgeHtml === 'function' ? soulBadgeHtml(m) : ''}
       <div class="bx-atb bx-atb-mob" data-icon="☠"></div>
       <div class="debuff-bar bx-status"></div>
     </div>

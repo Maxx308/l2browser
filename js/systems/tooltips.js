@@ -89,7 +89,14 @@ function showItemTooltip(e, item) {
   const refineSuffix = getRefineSuffix(item);
   lines.push(`<div class="tt-name" style="color:${nameColor};">${item.name}${refineSuffix}</div>`);
 
-  if (rarity && rarityId !== 'white') {
+  // v0.33: камень души — вместо редкости пишем, сколько пыли даст
+  const soulGem = (typeof getSoulGemDef === 'function') ? getSoulGemDef(item) : null;
+  if (soulGem) {
+    const y = getDisenchantYield(item);
+    const dust = y && ALCHEMY_DUST[y.color];
+    lines.push(`<div class="tt-line" style="color:${nameColor}; font-weight:600;">💎 Камень души</div>`);
+    if (y && dust) lines.push(`<div class="tt-line" style="color:${dust.color};">У Алхимика: ${y.min}–${y.max} ${dust.name.toLowerCase()} за штуку</div>`);
+  } else if (rarity && rarityId !== 'white') {
     const bonusText = formatRarityBonus(item.bonusStats);
     let rarityLine = `Редкость: ${rarity.name}`;
     if (rarity.statPercent && getEquipSlotForType(item.type)) rarityLine += ` · +${rarity.statPercent}% к статам`;

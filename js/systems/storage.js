@@ -45,7 +45,9 @@ function loadStorage() {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return [];
     const arr = JSON.parse(raw);
-    return Array.isArray(arr) ? arr : [];
+    if (!Array.isArray(arr)) return [];
+    // v0.33: старые рубины и сапфиры (обычный дроп) изъяты — со склада тоже
+    return typeof isRetiredGem === 'function' ? arr.filter(i => !isRetiredGem(i)) : arr;
   } catch (e) {
     console.error('Склад: не удалось прочитать', e);
     return [];

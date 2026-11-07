@@ -209,7 +209,8 @@ function getPlayerEvasion(attacker) {
 // Точность монстра.
 function getMonsterAccuracy(monster) {
   const lvl = (monster && monster.level) || 1;
-  return Math.round(lvl * 2.5 + 33);
+  // v0.33: монстр с душой самоцвета метче (accMult ×1.2…×1.6, battle-souls.js)
+  return Math.round((lvl * 2.5 + 33) * ((monster && monster.accMult) || 1));
 }
 
 // Уворот монстра.

@@ -59,6 +59,7 @@ function startBattle(template, variantId) {
   // ---- Создаём стаю ----
   const count = rollPackSize(template);
   const monsters = createMonsterGroup(template, variantId, count);
+  if (typeof soulsOnBattleStart === 'function') soulsOnBattleStart(monsters);   // v0.33: душа самоцвета
   const firstMonster = monsters[0];
 
   state.battle.active = true;
@@ -149,6 +150,7 @@ function startBattle(template, variantId) {
 
   updateBattleKillsCounter(firstMonster);
   logCombat(`— ${firstMonster.name}${countSuffix} —`, 'log-entry separator');
+  if (typeof soulsLogBattleStart === 'function') soulsLogBattleStart();
 
   activateMixtureFromSlot();
 

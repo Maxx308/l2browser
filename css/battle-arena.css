@@ -799,3 +799,64 @@
   .bxm-btn { justify-content: center; min-height: calc(42 * var(--u)); padding: calc(4 * var(--u)) calc(6 * var(--u)); font-size: calc(12.5 * var(--u)); }
   .bxm-btn .bxm-nm { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 }
+
+/* ---------- v0.33: ДУШИ САМОЦВЕТОВ — как выглядит монстр с душой ----------
+   1) полоска HP — цвета души и с бегущим бликом (здоровье ×N видно сразу);
+   2) карточка дышит сиянием цвета души;
+   3) сам камень — крупно, без подложки, мерцает в правом нижнем углу картинки.
+   (battle-souls.js) */
+.bx-enemy.soul-green  { --soul: #80e080; --soul-hi: #d2ffd2; --soul-lo: #1f6a1f; }
+.bx-enemy.soul-blue   { --soul: #6a9ae0; --soul-hi: #cfe3ff; --soul-lo: #1c3f7a; }
+.bx-enemy.soul-purple { --soul: #c080ff; --soul-hi: #eed8ff; --soul-lo: #4f1f86; }
+.bx-enemy.soul-yellow { --soul: #ffd040; --soul-hi: #fff4b8; --soul-lo: #8a6400; }
+.bx-enemy.soul-red    { --soul: #ff2d55; --soul-hi: #ffc2d0; --soul-lo: #6a0018; }
+
+/* 1) Полоска HP */
+.bx-enemy.bx-has-soul .bx-bar.hp { box-shadow: 0 0 0 1px rgba(0,0,0,.8), 0 0 calc(8 * var(--u)) var(--soul); }
+.bx-enemy.bx-has-soul .bx-bar .bar-fill.hp {
+  background: linear-gradient(180deg, var(--soul-hi), var(--soul) 45%, var(--soul-lo));
+  box-shadow: 0 0 calc(10 * var(--u)) var(--soul) inset;
+  overflow: hidden;
+}
+.bx-enemy.bx-has-soul .bx-bar .bar-fill.hp::before {
+  content: ""; position: absolute; inset: 0;
+  background: linear-gradient(100deg, transparent 35%, rgba(255,255,255,.65) 50%, transparent 65%);
+  background-size: 250% 100%;
+  animation: bxSoulShine 2.2s linear infinite;
+}
+@keyframes bxSoulShine { from { background-position: 150% 0; } to { background-position: -100% 0; } }
+.bx-enemy.bx-has-soul .bx-bar .bar-text { text-shadow: 0 0 3px #000, 0 0 3px #000; }
+
+/* 2) Сияние карточки — отдельный слой, чтобы не мешать рывкам и тряске самой карточки */
+.bx-soul-aura {
+  position: absolute; inset: 0; z-index: 1;
+  border-radius: inherit; pointer-events: none;
+  animation: bxSoulAura 1.8s ease-in-out infinite;
+}
+@keyframes bxSoulAura {
+  0%, 100% { box-shadow: 0 0 0 1px rgba(0,0,0,.6), 0 0 calc(10 * var(--u)) var(--soul); }
+  50%      { box-shadow: 0 0 0 2px var(--soul), 0 0 calc(30 * var(--u)) var(--soul), inset 0 0 calc(14 * var(--u)) var(--soul); }
+}
+
+/* 3) Камень — маленькая SVG-иконка в правом нижнем углу картинки */
+.bx-soul {
+  position: absolute; z-index: 3;
+  right: calc(var(--w) * .05); bottom: calc(var(--w) * .05);
+  width: max(calc(12 * var(--u)), calc(var(--w) * .12));
+  height: max(calc(12 * var(--u)), calc(var(--w) * .12));
+  pointer-events: auto; cursor: help;
+  animation: bxSoulGem 1.8s ease-in-out infinite;
+}
+.bx-soul svg { display: block; width: 100%; height: 100%; overflow: visible; }
+.bx-soul .bx-soul-spark { transform-origin: 7px 5.2px; animation: bxSoulSpark 1.8s ease-in-out infinite; }
+@keyframes bxSoulGem {
+  0%, 100% { filter: drop-shadow(0 0 1px #000) drop-shadow(0 0 calc(2 * var(--u)) var(--soul)); }
+  50%      { filter: drop-shadow(0 0 1px #000) drop-shadow(0 0 calc(6 * var(--u)) var(--soul)) brightness(1.25); }
+}
+@keyframes bxSoulSpark { 0%, 60%, 100% { opacity: 0; transform: scale(.4); } 75% { opacity: 1; transform: scale(1.2); } }
+.bx-enemy.bx-dying .bx-soul, .bx-enemy.bx-dead .bx-soul, .bx-deck .bx-soul,
+.bx-enemy.bx-dying .bx-soul-aura, .bx-enemy.bx-dead .bx-soul-aura, .bx-deck .bx-soul-aura { display: none; }
+.log-entry.soul-log { color: #e8d8ff; font-weight: 600; }
+@media (prefers-reduced-motion: reduce) {
+  .bx-soul, .bx-soul .bx-soul-spark, .bx-soul-aura, .bx-enemy.bx-has-soul .bx-bar .bar-fill.hp::before { animation: none; }
+}

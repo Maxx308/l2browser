@@ -63,6 +63,11 @@ const state = {
     elements: {},
     monsterKills: {},
 
+    // ---- v0.33: ЭКСПЕДИЦИИ (js/systems/expeditions.js) ----
+    expedition: null,      // герой в пути: { type, loc, monsterId, variantId, kph, hours, startedAt, ... }
+    expeditionLoot: [],    // добыча экспедиции, которую ещё не забрали: [{ drop, qty }]
+    huntPace: {},          // темп охоты по монстрам: { 'goblin_normal': { k, s } }
+
     // ---- КВЕСТЫ ----
     // id → { stage: 'string' }
     quests: {},

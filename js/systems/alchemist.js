@@ -100,6 +100,12 @@ function getAlchemistItems() {
   });
 }
 
+// v0.33: распылять можно ещё и камни душ (перероллить и возвышать — нет). Камни — первыми.
+function getDisenchantItems() {
+  const gems = state.player.inventory.filter(item => typeof getSoulGemDef === 'function' && getSoulGemDef(item));
+  return [...gems, ...getAlchemistItems()];
+}
+
 // ========================================================
 //  ВКЛАДКА «РАСПЫЛИТЬ» (Этап 3)
 // ========================================================
@@ -108,10 +114,10 @@ function renderAlchemistDisenchant() {
   const pane = document.getElementById('alchemist-pane-disenchant');
   if (!pane) return;
 
-  const items = getAlchemistItems();
+  const items = getDisenchantItems();
 
   if (items.length === 0) {
-    pane.innerHTML = `<div class="alchemist-empty">Нет предметов для распыления.<br><span class="alchemist-empty-sub">Нужны зелёные и выше (не надетые).</span></div>`;
+    pane.innerHTML = `<div class="alchemist-empty">Нет предметов для распыления.<br><span class="alchemist-empty-sub">Нужны зелёные и выше (не надетые) или камни душ.</span></div>`;
     return;
   }
 
@@ -129,10 +135,11 @@ function renderAlchemistDisenchant() {
 
 function buildAlchemistDisenchantCard(item) {
   const card = document.createElement('div');
-  const rarity = item.rarity || 'white';
+  const yieldData = getDisenchantYield(item);
+  const isGem = typeof getSoulGemDef === 'function' && !!getSoulGemDef(item);
+  const rarity = isGem && yieldData ? yieldData.color : (item.rarity || 'white');
   card.className = 'alchemist-card rarity-' + rarity;
 
-  const yieldData = getDisenchantYield(item);
   if (!yieldData) return card;
 
   const qty = item.qty || 1;
@@ -155,7 +162,7 @@ function buildAlchemistDisenchantCard(item) {
     <div class="alchemist-card-icon">${item.icon || ''}</div>
     <div class="alchemist-card-body">
       <div class="alchemist-card-name rarity-text-${rarity}">${item.name}${refineSuffix}${qtySuffix}</div>
-      <div class="alchemist-card-rarity">${rarityData ? rarityData.name : rarity}</div>
+      <div class="alchemist-card-rarity">${isGem ? '💎 Камень души' : (rarityData ? rarityData.name : rarity)}</div>
       <div class="alchemist-card-yield">
         <span class="alchemist-card-yield-icon">${dustIcon}</span>
         <span class="alchemist-card-yield-text" style="color: ${dustColor};">
@@ -187,13 +194,11 @@ function disenchantItem(item) {
   const idx = p.inventory.indexOf(item);
   if (idx < 0) return;
 
-  if (!item.rarity || item.rarity === 'white') {
+  const yieldData = getDisenchantYield(item);   // v0.33: у камней души своя пыль
+  if (!yieldData) {
     showToast('⚠', 'Белые предметы не распыляются');
     return;
   }
-
-  const yieldData = getDisenchantYield(item);
-  if (!yieldData) return;
 
   const qty = item.qty || 1;
   const dust = ALCHEMY_DUST[yieldData.color];
@@ -640,10 +645,11 @@ const ALCHEMY_BULK_LABELS = {
 // Предметы для распыления пачкой: нужная редкость, без подгонки.
 // rarity — 'green' | 'blue' | ... | 'all'
 function getBulkDisenchantItems(rarity) {
-  return getAlchemistItems().filter(item => {
+  return getDisenchantItems().filter(item => {
     if ((item.refineLevel || 0) > 0) return false;
-    if (rarity !== 'all' && item.rarity !== rarity) return false;
-    return !!getDisenchantYield(item);
+    const y = getDisenchantYield(item);   // v0.33: камни душ — по цвету своей пыли
+    if (!y) return false;
+    return rarity === 'all' || y.color === rarity;
   });
 }
 

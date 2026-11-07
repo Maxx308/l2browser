@@ -209,6 +209,9 @@ function cheatGrantResources(amount) {
     }
   });
 
+  // v0.33: камни душ — отдельно, с меткой soulGem (иначе их заберут как старые рубины)
+  if (typeof addSoulGems === 'function') Object.keys(SOUL_GEM_ITEMS).forEach(name => addSoulGems(name, amount));
+
   markCheatUsed();
   logLoot(`🎁 ЧИТ: +${amount} каждого ресурса`, 'log-craft');
   updateTopStatus();

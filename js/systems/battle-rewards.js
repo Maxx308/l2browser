@@ -226,6 +226,9 @@ function onMonsterDeath(deadMonster) {
     dropNote = '';
   });
 
+  // ---- v0.33: КАМЕНЬ ДУШИ ----
+  if (m.soul && typeof soulsOnMonsterDeath === 'function') soulsOnMonsterDeath(m);
+
   // ---- ЛЕВЕЛАП ----
   checkLevelUp();
 

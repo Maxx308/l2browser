@@ -73,6 +73,18 @@ function bsessPerHour(value) {
   return value / sec * 3600;
 }
 
+// Записать добычу в сессию (только то, что выпало при убийстве).
+// v0.33: камни душ кладутся в сумку мимо addToInventory (addSoulGems) — зовут это напрямую.
+function bsessNoteLoot(drop, n, ok) {
+  if (!BSESS.collecting || !drop) return;
+  n = Math.max(1, n || 1);
+  if (!ok) { BSESS.lost += n; return; }
+  const key = drop.name + '|' + (drop.rarity || '');
+  const it = BSESS.items.get(key);
+  if (it) it.count += n;
+  else BSESS.items.set(key, { name: drop.name, icon: drop.icon, rarity: drop.rarity || null, type: drop.type, count: n });
+}
+
 function bsessItemCount() {
   let n = 0;
   BSESS.items.forEach(it => { n += it.count; });
@@ -393,16 +405,7 @@ function updatePeekBar() {
   const origAdd = addToInventory;
   addToInventory = function (drop) {
     const ok = origAdd.apply(this, arguments);
-    if (BSESS.collecting && drop) {
-      if (ok) {
-        const key = drop.name + '|' + (drop.rarity || '');
-        const it = BSESS.items.get(key);
-        if (it) it.count++;
-        else BSESS.items.set(key, { name: drop.name, icon: drop.icon, rarity: drop.rarity || null, type: drop.type, count: 1 });
-      } else {
-        BSESS.lost++;
-      }
-    }
+    bsessNoteLoot(drop, 1, ok);
     return ok;
   };
 

@@ -177,6 +177,7 @@ function updateMapMeta() {
     el.innerHTML = parts.join('');
     updateMapTitles(loc);
   });
+  if (typeof expRenderMapButtons === 'function') expRenderMapButtons();   // v0.33: ⛺ Экспедиция
 }
 
 // ========================================================

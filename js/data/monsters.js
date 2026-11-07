@@ -254,7 +254,8 @@ const MINE_MONSTERS = [
       // v0.20: Копи стали богаче (rare — редкие; подтипы и так дают дроп ×3 / ×10)
       { name: 'Уголь', icon: 'img/materials/coal.png', chance: 4, type: 'material', sellPrice: 3 },
       { name: 'Пещерный гриб', icon: 'img/materials/cave_mushroom.png', chance: 5, type: 'material', sellPrice: 4 },
-      { name: 'Сырой рубин', icon: 'img/materials/raw_ruby.png', chance: 1, type: 'material', sellPrice: 25, rare: true },
+      // v0.33: рубин теперь только из душ (souls.js); вместо него — гранат для поручения Хильды
+      { name: 'Сырой гранат', icon: 'img/materials/raw_garnet.png', chance: 1, type: 'material', sellPrice: 25, rare: true },
     ],
   },
   {
@@ -268,7 +269,7 @@ const MINE_MONSTERS = [
       { name: 'Олово', icon: 'img/materials/tin.png', chance: 5, type: 'material', sellPrice: 7 },
       { name: 'Руда железа', icon: 'img/materials/iron_ore.png', chance: 4, type: 'material', sellPrice: 3 },
       { name: 'Пещерный гриб', icon: 'img/materials/cave_mushroom.png', chance: 5, type: 'material', sellPrice: 4 },
-      { name: 'Сырой сапфир', icon: 'img/materials/raw_sapphire.png', chance: 1, type: 'material', sellPrice: 25, rare: true },
+      // v0.33: Сырой сапфир убран — теперь только из душ самоцветов (souls.js)
     ],
   },
   {

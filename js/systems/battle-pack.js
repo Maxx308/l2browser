@@ -170,12 +170,14 @@ function packSpawnReinforcements(n) {
     m.templateId = template.id;
     m.atb = 0;                     // только пришёл — сразу не бьёт
     m.reinforcement = true;
+    if (typeof soulsTryMonster === 'function') soulsTryMonster(m);   // v0.33: у подмоги тоже бывает душа
     b.monsters.push(m);
     added.push(m);
   }
 
   const name = added[0].name;
   logCombat(`🐾 Подмога: ${name}${n > 1 ? ' ×' + n : ''} вступает в бой! (стая ×${b.monsters.length})`, 'log-entry kill');
+  if (typeof soulsFlushLog === 'function') soulsFlushLog();
   packUpdateTitle();
 }
 

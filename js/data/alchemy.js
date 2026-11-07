@@ -33,8 +33,9 @@ const ALCHEMY_DUST_STACK_MAX = 99999;
 //
 //  Итог (min-max):
 //    Тир 1: green 1-3,   blue 2-6,   purple 3-9,   yellow 5-15, red 10-30
-//    Тир 2: green 30-50, blue 60-100, purple 90-150, yellow 150-250, red 300-500
-//    Тир 3: green 100-200, blue 200-400, purple 300-600, yellow 500-1000, red 1000-2000
+//    Тир 2: green 30-90, blue 60-180, purple 90-270, yellow 150-450, red 300-900
+//    Тир 3: green 100-300, blue 200-600, purple 300-900, yellow 500-1500, red 1000-3000
+//    (v0.33: строки тиров 2–3 поправлены под формулу — раньше тут были старые цифры)
 // ========================================================
 
 const ALCHEMY_TIER_BASE = {
@@ -56,11 +57,14 @@ const ALCHEMY_RARITY_MULT = {
 // sample — уже случайное число (можно использовать сразу).
 function getDisenchantYield(item) {
   if (!item) return null;
-  if (!item.rarity || item.rarity === 'white') return null;
+  // v0.33: камень души — пыль своего цвета, как с вещи своего тира (Сырые — тир 3)
+  const gem = (typeof getSoulGemDef === 'function') ? getSoulGemDef(item) : null;
+  const rarity = gem ? gem.color : item.rarity;
+  if (!rarity || rarity === 'white') return null;
 
-  const tier = item.tier || 1;
+  const tier = gem ? gem.tier : (item.tier || 1);
   const base = ALCHEMY_TIER_BASE[tier] || ALCHEMY_TIER_BASE[1];
-  const mult = ALCHEMY_RARITY_MULT[item.rarity] || 1;
+  const mult = ALCHEMY_RARITY_MULT[rarity] || 1;
 
   // Диапазон: 1-3 от базы × mult.
   const min = base * mult * 1;
@@ -68,7 +72,7 @@ function getDisenchantYield(item) {
   const sample = Math.floor(min + Math.random() * (max - min + 1));
 
   return {
-    color: item.rarity,     // green / blue / purple / yellow / red
+    color: rarity,          // green / blue / purple / yellow / red
     min, max, sample,
     tier,
     qtyMultiplier: item.qty || 1,
