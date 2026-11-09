@@ -107,7 +107,7 @@ function takeSavedBattle(resume) {
   const keepWaiting = resume && b.waitingForResume && !!b.waitingTemplate;
   let target = null;
 
-  if (resume && !keepWaiting && state.player.currentLocation !== 'town') {
+  if (resume && !keepWaiting && !isTownLoc(state.player.currentLocation)) {
     const m = (b.monsters || [])[0];
     const last = b.lastTarget || (m ? { id: m.templateId || m.id, variantId: m.variantId } : null);
     if (last && (b.active || wasRepeat)) {
@@ -137,9 +137,9 @@ function takeSavedBattle(resume) {
 function resumeBattleAfterReload(target) {
   const p = state.player;
   if (!target || state.battle.active || state.battle.waitingForResume) return;
-  if (p.currentLocation === 'town' || !p.classId || p.hp <= 0) return;
+  if (isTownLoc(p.currentLocation) || !p.classId || p.hp <= 0) return;
 
-  const template = [...MONSTERS, ...MINE_MONSTERS].find(mm => mm.id === target.id);
+  const template = ALL_HUNT_MONSTERS.find(mm => mm.id === target.id);
   if (!template) return;
 
   state.battle.repeatBattle = target.repeat;

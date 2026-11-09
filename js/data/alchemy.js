@@ -159,11 +159,13 @@ function getAscendPrice(item) {
 const ALCHEMY_SMELT_RATE = 4;
 const ALCHEMY_SMELT_STEPS = [['green', 'blue'], ['blue', 'purple'], ['purple', 'yellow']];
 
-// Сколько пыли следующего цвета можно получить сейчас (с учётом лимита стопки).
+// Сколько пыли следующего цвета можно получить сейчас.
+// v0.35.1: полная стопка начинает новую — упираемся только в ячейки сумки.
 function getSmeltMax(from, to) {
   if (typeof getDustCount !== 'function') return 0;
   const byHave = Math.floor(getDustCount(from) / ALCHEMY_SMELT_RATE);
-  const room = Math.max(0, ALCHEMY_DUST_STACK_MAX - getDustCount(to));
+  // если исходная пыль уйдёт целиком, её ячейки освободятся (худший случай — не уйдёт)
+  const room = typeof getDustRoom === 'function' ? getDustRoom(to) : Math.max(0, ALCHEMY_DUST_STACK_MAX - getDustCount(to));
   return Math.min(byHave, room);
 }
 

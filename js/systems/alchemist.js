@@ -36,7 +36,7 @@ const ALCHEMIST_EQUIP_TYPES = [
 //  ОТКРЫТИЕ / ЗАКРЫТИЕ
 // --------------------------------------------------------
 function openAlchemist() {
-  if (state.player.currentLocation !== 'town') return;
+  if (!isTownLoc(state.player.currentLocation)) return;   // v0.36: Андервуд или Ильград
 
   if (typeof cancelWaitingForResume === 'function') {
     cancelWaitingForResume('открыт алхимик');
@@ -49,6 +49,24 @@ function openAlchemist() {
 
   overlay.classList.add('active');
   renderAlchemistWindow();
+
+  // v0.35.1: Алхимик-ученик Ефим — статья в Энциклопедии и «Поговорить».
+  // Старый герой, который уже распылял, сразу получает тему «Что такое пыль?» (без записи в летописи).
+  const c = state.player.chronicle;
+  if (c && ((c.counters || {}).disenchanted || 0) > 0) {
+    if (!c.deeds) c.deeds = {};
+    if (!c.deeds['alchemy.disenchant']) c.deeds['alchemy.disenchant'] = Date.now();
+    if (!c.firsts) c.firsts = {};
+    if (!c.firsts['alchemy.disenchant']) c.firsts['alchemy.disenchant'] = Date.now();
+  }
+  if (typeof unlockLore === 'function') unlockLore('alchemist');
+  if (typeof updateTalkButtons === 'function') updateTalkButtons();
+}
+
+// v0.35.1: дело у Алхимика — тема в разговоре + отношения (+1 не чаще раза в день).
+function alchemistDeed(key) {
+  if (typeof markDeed === 'function') markDeed(key);
+  if (typeof rapportService === 'function') rapportService('alchemist');
 }
 
 function closeAlchemist() {
@@ -130,11 +148,9 @@ function smeltDust(from, to, n) {
   n = Math.floor(n || 0);
   const max = getSmeltMax(from, to);
   if (n <= 0 || n > max) { showToast('⚠', 'Не хватает пыли'); return; }
-  // новой стопке нужна ячейка (если исходная пыль не уйдёт целиком)
-  const needSlot = getDustCount(to) === 0 && getDustCount(from) > n * ALCHEMY_SMELT_RATE;
-  if (needSlot && state.player.inventory.length >= INVENTORY_MAX_SLOTS) { showToast('📦', 'Освободите ячейку в сумке'); return; }
   if (!spendDust(from, n * ALCHEMY_SMELT_RATE)) { showToast('⚠', 'Не хватает пыли'); return; }
   addDustToInventory(to, n);
+  alchemistDeed('alchemy.smelt');
   const nameTo = ALCHEMY_DUST[to].name.toLowerCase();
   if (typeof logLoot === 'function') logLoot(`⚗ Переплавлено: ${n * ALCHEMY_SMELT_RATE} ${ALCHEMY_DUST[from].name.toLowerCase()} → +${n} ${nameTo}`, 'log-craft rarity-' + to);
   showToast('⚗', `+${n.toLocaleString('ru-RU')} ${nameTo}`);
@@ -283,6 +299,7 @@ function disenchantItem(item) {
   p.inventory.splice(idx, 1);
   addDustToInventory(yieldData.color, totalDust);
   if (typeof bumpChronicleCounter === 'function') bumpChronicleCounter('disenchanted', qty);   // v0.30: скрытый счётчик
+  alchemistDeed('alchemy.disenchant');
 
   const colorTag = yieldData.color;
   const fullLine = `🗑 Распылено: ${item.name}${refineSuffix}${qtySuffix} → +${totalDust} ${dustName.toLowerCase()}`;
@@ -478,6 +495,7 @@ function rerollItem(item) {
   // Генерируем новые бонусы.
   const newBonus = rollNewBonusStats(item);
   item.bonusStats = newBonus;
+  alchemistDeed('alchemy.reroll');
 
   // Обновляем статы игрока (если предмет надет — но он не надет, потому что мы берём только из инвентаря).
   // На всякий случай пересчитаем — вдруг когда-то предмет окажется надет.
@@ -617,6 +635,7 @@ function ascendItem(item) {
   Object.keys(add).forEach(stat => { bonus[stat] = (bonus[stat] || 0) + add[stat]; });
   item.rarity = target;
   item.bonusStats = bonus;
+  alchemistDeed('alchemy.ascend');
 
   recalcStats();
 
@@ -643,30 +662,43 @@ function addDustToInventory(colorId, amount) {
   const dust = ALCHEMY_DUST[colorId];
   if (!dust) return;
 
-  const existing = p.inventory.find(i => i.name === dust.name);
-
-  if (existing) {
-    existing.qty = (existing.qty || 0) + amount;
-    if (existing.qty > ALCHEMY_DUST_STACK_MAX) existing.qty = ALCHEMY_DUST_STACK_MAX;
-    return;
-  }
-
-  if (p.inventory.length >= INVENTORY_MAX_SLOTS) {
-    showToast('📦', 'Инвентарь переполнен — пыль потеряна');
-    return;
+  // v0.35.1: полная стопка не теряет пыль — сверх лимита начинается новая стопка (если есть ячейка).
+  let left = amount;
+  for (const s of p.inventory) {
+    if (left <= 0) break;
+    if (s.name !== dust.name) continue;
+    const add = Math.min(left, ALCHEMY_DUST_STACK_MAX - (s.qty || 0));
+    if (add > 0) { s.qty = (s.qty || 0) + add; left -= add; }
   }
 
   const iconSvg = SVG[dust.icon] || '';
-  p.inventory.push({
-    id: 'item_' + Date.now() + '_' + Math.random(),
-    name: dust.name,
-    type: 'material',
-    icon: iconSvg,
-    qty: Math.min(ALCHEMY_DUST_STACK_MAX, amount),   // v0.17: тот же лимит, что и у существующей стопки
-    sellPrice: 0,
-    rarity: dust.rarity,
-    isDust: true,
-  });
+  while (left > 0 && p.inventory.length < invMaxSlots()) {
+    const qty = Math.min(ALCHEMY_DUST_STACK_MAX, left);
+    p.inventory.push({
+      id: 'item_' + Date.now() + '_' + Math.random(),
+      name: dust.name,
+      type: 'material',
+      icon: iconSvg,
+      qty,
+      sellPrice: 0,
+      rarity: dust.rarity,
+      isDust: true,
+    });
+    left -= qty;
+  }
+
+  if (left > 0) showToast('📦', 'Инвентарь переполнен — пыль потеряна');
+}
+
+// v0.35.1: сколько пыли этого цвета ещё влезет: место в её стопках + свободные ячейки (extraSlots — освободятся).
+function getDustRoom(colorId, extraSlots) {
+  const dust = ALCHEMY_DUST[colorId];
+  if (!dust) return 0;
+  const p = state.player;
+  const inStacks = p.inventory.filter(i => i.name === dust.name)
+    .reduce((sum, i) => sum + Math.max(0, ALCHEMY_DUST_STACK_MAX - (i.qty || 0)), 0);
+  const freeSlots = Math.max(0, invMaxSlots() - p.inventory.length + (extraSlots || 0));
+  return inStacks + freeSlots * ALCHEMY_DUST_STACK_MAX;
 }
 
 // --------------------------------------------------------
@@ -786,9 +818,10 @@ function disenchantBulk(rarity) {
     const dust = ALCHEMY_DUST[color];
     const dustName = dust ? dust.name.toLowerCase() : color;
     lines.push(`• ${ALCHEMY_BULK_LABELS[color] || color}: ${g.count} шт. → ${g.min}–${g.max} ${dustName}`);
-    const have = getDustCount(color);
-    if (have + g.max > ALCHEMY_DUST_STACK_MAX) {
-      capWarnings.push(`${dustName}: у вас ${have}, лимит ${ALCHEMY_DUST_STACK_MAX}`);
+    // v0.35.1: сверх лимита стопки начинается новая — пропадёт, только если нет ячеек
+    const room = getDustRoom(color, items.length);
+    if (g.max > room) {
+      capWarnings.push(`${dustName}: влезет ещё ${room} (нет свободных ячеек)`);
     }
   });
 
@@ -829,7 +862,7 @@ function disenchantBulk(rarity) {
     const dust = ALCHEMY_DUST[color];
     const dustName = dust ? dust.name.toLowerCase() : color;
     const lost = amount - real;
-    const lostStr = lost > 0 ? ` (сверх лимита пропало ${lost})` : '';
+    const lostStr = lost > 0 ? ` (не хватило ячеек — пропало ${lost})` : '';
     parts.push(`+${real} ${dustName}`);
     if (typeof logLoot === 'function') {
       logLoot(`🗑 Распылено пачкой: ${byColor[color] ? byColor[color].count : ''} шт. → +${real} ${dustName}${lostStr}`, 'log-craft rarity-' + color);
@@ -837,6 +870,9 @@ function disenchantBulk(rarity) {
   });
 
   showToast('🗑', parts.length ? parts.join(', ') : 'Распылено');
+  // v0.35.1: пачка тоже идёт в скрытый счётчик (раньше считалось только поштучное)
+  if (typeof bumpChronicleCounter === 'function') bumpChronicleCounter('disenchanted', totalQty);
+  alchemistDeed('alchemy.disenchant');
 
   renderInventory();
   updateInventoryFooter();

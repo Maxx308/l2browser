@@ -85,24 +85,22 @@ function applyDayNight() {
   }
 }
 
-// ---- Значок времени суток у монстра (карточки на «Охоте») ----
-// v0.34.1: на Поляне у каждого монстра своё время — ночным 🌙 ночь, дневным ☀ день.
-// В своё время стаи больше (battle-pack.js — isPackPrimeTime). В Копях значка нет.
-function nightBadgeHtml(template) {
-  const onField = typeof MONSTERS !== 'undefined' && MONSTERS.some(mm => mm.id === template.id);
-  if (!template.night && !onField) return '';
-  const tail = onField ? ' В своё время стаи на 1 больше, а за бой приходит до 15.' : '';
-  return template.night
-    ? `<div class="monster-night" title="Ночной: выходит на охоту в темноте.${tail}">🌙</div>`
-    : `<div class="monster-night monster-day" title="Дневной: активен днём.${tail}">☀</div>`;
+// ---- Время суток у монстра ----
+// v0.34.1: на Поляне у каждого монстра своё время — ночным ночь, дневным день.
+// В своё время стаи больше (battle-pack.js — isPackPrimeTime). В Копях времени нет.
+// v0.36: это тег (MONSTER_TAGS: nocturnal / diurnal), первый в столбике на портрете; рамка разгорается в своё время.
+function monsterTimeTag(template) {
+  if (template.night) return 'nocturnal';
+  if (MINE_MONSTERS.some(mm => mm.id === template.id)) return 'cave';   // в Копях вместо времени суток — «Подземный»
+  return MONSTERS.some(mm => mm.id === template.id) ? 'diurnal' : null;
 }
 
 // Строка на карточке, пока у монстра его время: «🌙 Их время — стаи больше».
 function primeTimeLineHtml(template) {
   if (typeof isPackPrimeTime !== 'function' || !isPackPrimeTime(template)) return '';
   return template.night
-    ? `<div class="monster-prime prime-night" title="Ночь: стаи на 1 больше, за бой — до 15">🌙 Ночь — их время: стаи больше</div>`
-    : `<div class="monster-prime prime-day" title="День: стаи на 1 больше, за бой — до 15">☀ День — их время: стаи больше</div>`;
+    ? `<div class="monster-prime prime-night" title="Ночь — их время: стаи на 1 больше, за бой — до 15">🌙 Их время</div>`
+    : `<div class="monster-prime prime-day" title="День — их время: стаи на 1 больше, за бой — до 15">☀ Их время</div>`;
 }
 
 // ---- Настройки → Экран → «Время суток» ----

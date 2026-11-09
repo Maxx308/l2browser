@@ -139,7 +139,7 @@ function unequipSlot(slotKey) {
   const item = p.equipment[slotKey];
   if (!item) return;
 
-  if (p.inventory.length >= INVENTORY_MAX_SLOTS) {
+  if (p.inventory.length >= invMaxSlots()) {
     showToast('📦', 'Инвентарь переполнен — нельзя снять');
     logLoot(`📦 Инвентарь переполнен — нельзя снять «${item.name}».`, 'log-info');
     return;

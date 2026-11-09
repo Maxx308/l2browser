@@ -357,7 +357,7 @@ function expShowAway() {
   const exp = state.player.expedition;
   if (!exp) return;
   const place = LOCATION_NAMES[exp.loc] || exp.loc;
-  const tpl = [...MONSTERS, ...MINE_MONSTERS].find(t => t.id === exp.monsterId);
+  const tpl = ALL_HUNT_MONSTERS.find(t => t.id === exp.monsterId);
   expOverlay(`
     <div class="exp-head"><span>⛺ ${state.player.name} в экспедиции</span></div>
     <div class="exp-away-pic" style="background-image:url('${tpl ? tpl.art : ''}')"></div>
@@ -422,7 +422,7 @@ async function expResolve(early) {
     const srv = await expServerNow();
     const elapsed = expElapsedMs(exp, srv);
     const full = elapsed >= expDurationMs(exp) - 1000;
-    const template = [...MONSTERS, ...MINE_MONSTERS].find(t => t.id === exp.monsterId);
+    const template = ALL_HUNT_MONSTERS.find(t => t.id === exp.monsterId);
 
     let killsRaw = (exp.kph || 0) * EXPEDITION_RATE * (elapsed / 3600000) * (full ? 1 + EXPEDITION_FULL_BONUS : 1);
     let kills = Math.floor(killsRaw) + (Math.random() < killsRaw % 1 ? 1 : 0);
@@ -493,11 +493,11 @@ function expShowReport(rep) {
   }).join('');
 
   const used = p.inventory.length;
-  const room = INVENTORY_MAX_SLOTS - used;
+  const room = invMaxSlots() - used;
   body += `<div class="exp-sub">Добыча${pool.length ? '' : ' — пусто'}</div>`;
   if (pool.length) {
     body += `<div class="exp-chips">${chips}</div>`;
-    body += `<div class="exp-rep-room${room <= 0 ? ' warn' : ''}">В сумке ${used}/${INVENTORY_MAX_SLOTS} — что не влезет, подождёт здесь (кнопка ⛺ на карте).</div>`;
+    body += `<div class="exp-rep-room${room <= 0 ? ' warn' : ''}">В сумке ${used}/${invMaxSlots()} — что не влезет, подождёт здесь (кнопка ⛺ на карте).</div>`;
   } else if (rep) {
     body += `<div class="exp-note">Вещей и материалов не выпало.</div>`;
   }
@@ -557,9 +557,9 @@ function expTakeToBag(silent) {
     if (EXP_STACKABLE.includes(e.drop.type)) {
       const ex = p.inventory.find(it => it.name === e.drop.name && EXP_STACKABLE.includes(it.type) && !it.soulGem);
       if (ex) { ex.qty = (ex.qty || 1) + e.qty; moved += e.qty; pool.splice(i, 1); continue; }
-      if (p.inventory.length < INVENTORY_MAX_SLOTS) { p.inventory.push(expMakeItem(e.drop, e.qty)); moved += e.qty; pool.splice(i, 1); }
+      if (p.inventory.length < invMaxSlots()) { p.inventory.push(expMakeItem(e.drop, e.qty)); moved += e.qty; pool.splice(i, 1); }
     } else {
-      while (e.qty > 0 && p.inventory.length < INVENTORY_MAX_SLOTS) { p.inventory.push(expMakeItem(e.drop, 1)); e.qty--; moved++; }
+      while (e.qty > 0 && p.inventory.length < invMaxSlots()) { p.inventory.push(expMakeItem(e.drop, 1)); e.qty--; moved++; }
       if (e.qty <= 0) pool.splice(i, 1);
     }
   }

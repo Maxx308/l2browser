@@ -76,6 +76,13 @@
 }
 .inv-slot:hover { border-color: var(--gold); }
 .inv-slot.empty { opacity: 0.3; cursor: default; }
+/* v0.35.1: ячейка ещё не открыта — откроет Заплечник, когда подрастёт */
+.inv-slot.locked {
+  opacity: 0.35; cursor: help;
+  font-size: calc(14 * var(--u)); filter: grayscale(1);
+  background: repeating-linear-gradient(135deg, var(--bg-1) 0 calc(6 * var(--u)), var(--bg-2) calc(6 * var(--u)) calc(12 * var(--u)));
+}
+.inv-slot.locked:hover { border-color: var(--border); }
 .inv-slot svg {
   width: calc(30 * var(--u));
   height: calc(30 * var(--u));

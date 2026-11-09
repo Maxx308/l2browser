@@ -25,7 +25,7 @@
 
 // ---------- ОКНО ----------
 function openForge() {
-  if (state.player.currentLocation !== 'town') return;
+  if (!isTownLoc(state.player.currentLocation)) return;   // v0.36: Андервуд или Ильград
 
   if (typeof cancelWaitingForResume === 'function') {
     cancelWaitingForResume('открыта кузница');
@@ -446,9 +446,15 @@ function buildRecipeCard(r, category) {
   }
   if (r.result.food) {
     const dish = r.result.food.dish && DISHES[r.result.food.dish];
-    if (dish) lines.push(`<div class="recipe-bonus food-effect">${dish.icon} ${dish.text} на ${buffShopDur(DISH_DURATION)}</div>`);
-    lines.push(`<div class="recipe-bonus food-effect">+${r.result.food.healPerSec} HP/сек</div>`);
-    lines.push(`<div class="recipe-bonus food-duration">Длительность: ${buffShopDur(getFoodDuration(r.result))} (складывается)</div>`);
+    // v0.35.1: блюдо — только бонус; еда — сытость своего вида (FOOD_KINDS)
+    if (dish) {
+      lines.push(`<div class="recipe-bonus food-effect">${dish.icon} ${dish.text} на ${buffShopDur(DISH_DURATION)}</div>`);
+      lines.push(`<div class="recipe-bonus food-duration">Не насыщает · то же блюдо продлевает, другое заменяет</div>`);
+    } else {
+      const k = FOOD_KINDS[getFoodKindId(r.result)];
+      lines.push(`<div class="recipe-bonus food-effect">${k.icon} Сытость: ${foodKindText(k)}</div>`);
+      lines.push(`<div class="recipe-bonus food-duration">${buffShopDur(getFoodDuration(r.result))} · та же еда складывается, другая заменяет</div>`);
+    }
   }
 
   // Цена крафта.
@@ -495,7 +501,7 @@ function canAddItemToInventory(resType, resName) {
     if (existing) return true;
   }
 
-  return p.inventory.length < INVENTORY_MAX_SLOTS;
+  return p.inventory.length < invMaxSlots();
 }
 
 // ---------- СОЗДАНИЕ ПРЕДМЕТА ----------

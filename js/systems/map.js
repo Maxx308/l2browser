@@ -66,13 +66,21 @@ function tryTravel(loc) {
 
   if (state.travel.active) return;
   if (loc === p.currentLocation) return;
+
+  // v0.36: закрытое место — слух вместо дороги; Ильград с 20 ур. — прорыв.
+  const lock = mapLockInfo(loc);
+  if (lock) {
+    if (lock.ready) startIlgradBreakthrough();
+    else showToast('🗣', lock.rumor);
+    return;
+  }
+
   if (state.battle.active) {
     logCombat('Нельзя уйти во время боя.', 'log-entry');
     return;
   }
 
-  const key = `${p.currentLocation}->${loc}`;
-  const time = TRAVEL_TIMES[key];
+  const time = travelTime(p.currentLocation, loc);   // v0.36: закрытый Ильград — пути нет
 
   if (time === undefined) {
     logCombat('Туда нельзя пройти напрямую.', 'log-entry');
@@ -132,8 +140,7 @@ function formatTravelTime(seconds) {
 function getTravelTimeFromCurrent(targetLoc) {
   const p = state.player;
   if (targetLoc === p.currentLocation) return null;    // уже тут
-  const key = `${p.currentLocation}->${targetLoc}`;
-  const time = TRAVEL_TIMES[key];
+  const time = travelTime(p.currentLocation, targetLoc);
   return (time !== undefined) ? time : null;
 }
 
@@ -145,6 +152,7 @@ function getMonsterLevelRange(loc) {
   let arr;
   if (loc === 'field') arr = MONSTERS;
   else if (loc === 'mine') arr = MINE_MONSTERS;
+  else if (loc === 'outskirts') arr = OUTSKIRTS_MONSTERS;
   else return null;
 
   if (!arr || arr.length === 0) return null;
@@ -162,7 +170,7 @@ function getMonsterLevelRange(loc) {
 // Обновляет блоки .map-meta на всех карточках.
 // v0.31: время пешком переехало на кнопку «🚶 Пешком» (updateMapTravelButton в tabs.js).
 function updateMapMeta() {
-  ['field', 'town', 'mine'].forEach(loc => {
+  ['field', 'town', 'mine', 'ilgrad', 'outskirts'].forEach(loc => {
     const el = document.getElementById('map-meta-' + loc);
     if (!el) return;
 
@@ -172,7 +180,7 @@ function updateMapMeta() {
     const range = getMonsterLevelRange(loc);
     if (range) {
       parts.push(`<span class="map-meta-line">⚔ Мобы: ур. ${range.min}–${range.max}</span>`);
-    } else if (loc === 'town') {
+    } else if (isTownLoc(loc)) {
       parts.push(`<span class="map-meta-line map-meta-safe">🛡 Безопасная зона</span>`);
     }
 
@@ -180,6 +188,7 @@ function updateMapMeta() {
     updateMapTitles(loc);
   });
   if (typeof expRenderMapButtons === 'function') expRenderMapButtons();   // v0.33: ⛺ Экспедиция
+  renderMapLocks();   // v0.36: серые карточки закрытых мест (ilgrad.js)
 }
 
 // ========================================================

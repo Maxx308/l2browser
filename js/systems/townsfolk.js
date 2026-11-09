@@ -144,19 +144,27 @@ function updateTalkButtons() {
   });
 }
 
+// v0.35.1: РАСА ГЕРОЯ. У темы может быть race: { dwarf: { q, a }, … } — свой вопрос и/или ответ
+// для героя этой расы; у жителя — race: { orc: { hello } } — своё первое приветствие.
+// Чего в варианте нет — берётся общее.
+function raceVariant(obj, field) {
+  const r = obj.race && obj.race[heroRace()];
+  return (r && r[field] != null) ? r[field] : obj[field];
+}
+
 // Узлы: hello (первое приветствие / снова) → t_<тема> (ответ) → more («что ещё?»).
 function buildOwnerChatNodes(npcId) {
   const chat = OWNER_CHATS[npcId];
-  const ask = t => ({ text: (ownerTopicAsked(npcId, t.id) ? '✓ ' : '') + t.q, next: 't_' + t.id });
+  const ask = t => ({ text: (ownerTopicAsked(npcId, t.id) ? '✓ ' : '') + raceVariant(t, 'q'), next: 't_' + t.id });
   const menu = () => ownerTopics(npcId).map(ask).concat([{ text: chat.bye, action: 'close' }]);
 
   // hello может быть функцией (реплика по обстоятельствам); «%name%» — имя героя (v0.32)
   const val = v => String(typeof v === 'function' ? v() : v).replace(/%name%/g, state.player.name || '');
   // Приветствие «снова»: по ступени отношений (helloStages), иначе helloAgain.
-  const helloAgain = () => (chat.helloStages ? chat.helloStages[rapportStage(npcId)] : chat.helloAgain);
+  const helloAgain = () => { const st = raceVariant(chat, 'helloStages'); return st ? st[rapportStage(npcId)] : chat.helloAgain; };
   const nodes = {
     hello: {
-      text: () => val((helloAgain() && chat.topics.some(t => ownerTopicAsked(npcId, t.id))) ? helloAgain() : chat.hello),
+      text: () => val((helloAgain() && chat.topics.some(t => ownerTopicAsked(npcId, t.id))) ? helloAgain() : raceVariant(chat, 'hello')),
       options: menu,
     },
     more: { text: chat.more, options: menu },
@@ -164,7 +172,7 @@ function buildOwnerChatNodes(npcId) {
   chat.topics.forEach(t => {
     nodes['t_' + t.id] = {
       // v0.32: до нужной ступени отношений — отказ (тема не засчитывается)
-      text: () => val(topicOpen(npcId, t) ? t.a : t.refuse),
+      text: () => val(topicOpen(npcId, t) ? raceVariant(t, 'a') : t.refuse),
       onEnter: () => {
         if (!topicOpen(npcId, t)) return;
         markOwnerTopic(npcId, t.id);

@@ -35,8 +35,9 @@ const CHRONICLE_FACTS = {
 function makeFreshChronicle() {
   return { entries: [], nextId: 1, seen: 0, known: {}, lore: {}, loreSeen: {}, questsSeen: {}, firsts: {}, counters: { trust: 0, deaths: 0, disenchanted: 0 } };
 }
+// v0.35.1: level — сколько поручений Заплечника выполнено (+1 ячейка за каждое); v: 2 — новый счёт уровней.
 function makeFreshBag() {
-  return { level: 1 };
+  return { level: 0, v: 2 };
 }
 
 // Первая запись героя — появление в мире.
@@ -56,6 +57,8 @@ function startChronicleForNewHero() {
 function ensureChronicle() {
   const p = state.player;
   if (!p.bag) p.bag = makeFreshBag();
+  // v0.35.1: раньше у всех был «уровень 1», который ничего не давал. Теперь уровень = выполненные поручения.
+  if (!p.bag.v) p.bag = makeFreshBag();
   if (!p.chronicle || !Array.isArray(p.chronicle.entries)) {
     p.chronicle = makeFreshChronicle();
     delete p.chronicle.firsts;   // v0.32: старому герою «впервые» угадываем ниже (annalsGuessFirsts)
@@ -66,6 +69,14 @@ function ensureChronicle() {
     }
   }
   const c = p.chronicle;
+  // v0.35.1: старые записи «Впервые …» переписываем один раз (ANNALS_REWRITES_351 в js/data/annals.js)
+  if (!c.rewrite351 && typeof ANNALS_REWRITES_351 !== 'undefined') {
+    c.entries.forEach(e => {
+      if (!e || typeof e.text !== 'string') return;
+      ANNALS_REWRITES_351.forEach(([from, to]) => { if (e.text.includes(from)) e.text = e.text.split(from).join(to); });
+    });
+    c.rewrite351 = true;
+  }
   if (!c.known) c.known = {};
   if (!c.lore) c.lore = {};
   if (!c.loreSeen) c.loreSeen = {};
@@ -223,6 +234,7 @@ function updateChronicleDot() {
   if (loreSub) loreSub.classList.toggle('has-news', typeof loreHasNews === 'function' && loreHasNews());
   const questSub = document.querySelector('.chron-sub[data-sec="quests"]');
   if (questSub) questSub.classList.toggle('has-news', typeof questNews === 'function' && questNews());
+  if (typeof updateBagDot === 'function') updateBagDot();   // v0.35.1: Заплечник чего-то хочет
 }
 function isChronicleOpen() {
   const panel = document.getElementById('panel-chronicle');
@@ -320,14 +332,17 @@ function openChroniclePanel() {
 }
 
 // ---- Слот сумки в снаряжении ----
-// Картинки сумок — img/bags/bag01_worn.png … bag10_arcane.png. Наша «Видавшая виды» — потёртая (bag01).
+// Картинки сумок — img/bags/bag01_worn.png … bag10_arcane.png. Наша «Видавшая виды» — потёртая (bag01),
+// v0.35.1: с ростом Заплечника вид меняется (BAG_LOOKS в js/data/bag-quests.js).
 const BAG_SLOT_IMG = 'img/bags/bag01_worn.png';
 
 function renderBagSlot(el) {
   el.classList.add('filled', 'bag-slot');
   el.classList.toggle('bag-calls', !bagMet());   // пока не знакомы — слот еле мерцает
-  el.innerHTML = `<img src="${BAG_SLOT_IMG}" alt="">`;
-  el.onclick = (e) => { e.stopPropagation(); if (bagMet()) showBagTooltip(e); else startBagMeeting(); };
+  el.innerHTML = `<img src="${typeof bagLookImg === 'function' ? bagLookImg() : BAG_SLOT_IMG}" alt="">`;
+  // v0.35.1: нажатие — разговор с Заплечником (поручения), наведение — подсказка
+  el.onclick = (e) => { e.stopPropagation(); if (!bagMet()) startBagMeeting(); else if (typeof openBagTalk === 'function') openBagTalk(); else showBagTooltip(e); };
+  if (typeof bagHasNews === 'function') el.classList.toggle('has-news', bagHasNews());
 }
 
 // ---- Заплечник: первое знакомство (тексты и узлы — js/data/dialogues.js, BAG_MEET) ----
@@ -399,10 +414,13 @@ function showBagTooltip(e) {
   const tt = document.getElementById('item-tooltip');
   if (!tt) return;
   const bag = state.player.bag || makeFreshBag();
+  const look = typeof bagLook === 'function' ? bagLook() : {};
   let lines = `<div class="tt-name">${BAG_NAME}</div>`;
-  lines += `<div class="tt-line type">${BAG_DESC}</div>`;
-  lines += `<div class="tt-line stat">Уровень: ${bag.level}</div>`;
-  lines += `<div class="tt-line stat">Мест в инвентаре: ${INVENTORY_MAX_SLOTS}</div>`;
+  lines += `<div class="tt-line type">${look.desc || BAG_DESC}</div>`;
+  lines += `<div class="tt-line stat">Уровень Заплечника: ${bag.level || 0}</div>`;
+  lines += `<div class="tt-line stat">Мест в инвентаре: ${invMaxSlots()}</div>`;
+  if (typeof bagHasNews === 'function' && bagHasNews()) lines += `<div class="tt-line next">🎒 Заплечник чего-то хочет — нажми на сумку</div>`;
+  else lines += `<div class="tt-line next">Нажми — поговорить. Его поручения: +1 ячейка</div>`;
   lines += `<div class="tt-line next">Нельзя снять, продать или распылить</div>`;
   tt.innerHTML = lines;
   tt.style.display = 'block';

@@ -127,25 +127,17 @@
 }
 .map-card[data-loc="field"] { background-image: var(--map-tod), var(--map-shade), url('../img/locations/map/field.jpg'); }
 .map-card[data-loc="town"]  { background-image: var(--map-tod), var(--map-shade), url('../img/locations/map/town.jpg'); }
+.map-card[data-loc="ilgrad"] { background-image: var(--map-tod), var(--map-shade), url('../img/city/ilgrad/watchtower.jpg'); }
 
-/* ---------- НОЧНЫЕ МОНСТРЫ: значок 🌙 (ночью светится) ---------- */
-.monster-night {
-  position: absolute; right: calc(4 * var(--u)); top: calc(4 * var(--u));
-  display: flex; align-items: center; justify-content: center;
-  width: calc(22 * var(--u)); height: calc(22 * var(--u));
-  font-size: calc(12 * var(--u)); line-height: 1;
-  background: rgba(8, 12, 30, 0.8);
-  border: 1px solid rgba(140, 170, 230, 0.55);
-  border-radius: 50%;
-  cursor: help;
+/* ---------- v0.36: ТЕГИ «НОЧНОЙ» И «ДНЕВНОЙ»: рамка разгорается в своё время суток ---------- */
+.monster-tag.tag-nocturnal, .monster-tag.tag-diurnal { transition: opacity 3s, box-shadow 3s; }
+.monster-tag.tag-nocturnal {
+  border-color: rgba(140, 170, 230, 0.75);
   opacity: calc(.6 + .4 * var(--night));
   box-shadow: 0 0 calc(10 * var(--night) * var(--u)) rgba(150, 180, 255, calc(.8 * var(--night)));
-  transition: opacity 3s, box-shadow 3s;
 }
-/* v0.34.1: дневные монстры Поляны — ☀ (днём светится) */
-.monster-night.monster-day {
-  background: rgba(40, 26, 6, 0.8);
-  border-color: rgba(240, 200, 110, 0.6);
+.monster-tag.tag-diurnal {
+  border-color: rgba(240, 200, 110, 0.75);
   opacity: calc(1 - .4 * var(--night));
   box-shadow: 0 0 calc(10 * (1 - var(--night)) * var(--u)) rgba(255, 210, 110, calc(.7 * (1 - var(--night))));
 }

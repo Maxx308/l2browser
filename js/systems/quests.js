@@ -255,14 +255,14 @@ function renderQuestJournal(box) {
     html += `<div class="quest-group">Текущие</div>`;
     active.forEach(q => {
       const cur = q.stages.indexOf(getQuestProgress(q.id).stage);
-      html += `<div class="quest-card">${head(q)}<div class="quest-text">${esc(q.journal)}</div><div class="quest-steps">`;
+      html += `<div class="quest-card">${head(q)}<div class="quest-text">${esc(heroText(q.journal))}</div><div class="quest-steps">`;
       q.steps.forEach(s => {
         const i = q.stages.indexOf(s.stage);
         const fin = i < cur || (s.done ? s.done() : false);   // v0.32: шаг «принеси» готов, когда собрано
         const cls = fin ? 'done' : i === cur ? 'now' : 'later';
         const mark = fin ? '✓' : i === cur ? '▸' : '·';
         const text = typeof s.text === 'function' ? s.text() : s.text;
-        html += `<div class="quest-step ${cls}"><span class="quest-mark">${mark}</span>${esc(text)}</div>`;
+        html += `<div class="quest-step ${cls}"><span class="quest-mark">${mark}</span>${esc(heroText(text))}</div>`;
       });
       html += `</div><div class="quest-reward"><span>Награда</span>${esc(q.reward)}</div></div>`;
     });
@@ -270,13 +270,14 @@ function renderQuestJournal(box) {
 
   if (offered.length) {
     html += `<div class="quest-group">Можно взять</div>`;
-    offered.forEach(q => { html += `<div class="quest-card offered">${head(q)}<div class="quest-text">${esc(q.offer)}</div></div>`; });
+    offered.forEach(q => { html += `<div class="quest-card offered">${head(q)}<div class="quest-text">${esc(heroText(q.offer))}</div></div>`; });
   }
 
   if (done.length) {
     html += `<div class="quest-group">Выполненные</div>`;
     // v0.32: у поручений жителей шаги со счётчиками — для выполненного пишем то, что было в журнале
-    done.forEach(q => { html += `<div class="quest-card done">${head(q)}<div class="quest-text">✓ ${esc(q.needs ? q.journal : q.steps.map(s => s.text).join(' · '))}</div></div>`; });
+    // v0.35.1: у поручений Заплечника «убей» шаги — функции; пишем журнал
+    done.forEach(q => { html += `<div class="quest-card done">${head(q)}<div class="quest-text">✓ ${esc(heroText((q.needs || q.bag) ? q.journal : q.steps.map(s => s.text).join(' · ')))}</div></div>`; });
   }
 
   box.innerHTML = html;

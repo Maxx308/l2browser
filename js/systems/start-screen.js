@@ -261,6 +261,8 @@ function loadSlotAndStart(slotIndex, opts) {
   state.player.expeditionLoot = (saved.player && Array.isArray(saved.player.expeditionLoot)) ? saved.player.expeditionLoot : [];
   state.player.huntPace = (saved.player && saved.player.huntPace) || {};
   state.player.huntVariant = (saved.player && saved.player.huntVariant) || {};   // v0.34.1: стопки карточек
+  state.player.foodKind = (saved.player && saved.player.foodKind) || null;       // v0.35.1: вид сытости — только свой
+  state.player.ilgradOpen = !!(saved.player && saved.player.ilgradOpen);          // v0.36: Ильград — только свой
   // v0.26: метка чита — только своя (у старого сейва поля нет, прошлый герой не должен «передать» её)
   state.player.usedCheat = !!(saved.player && saved.player.usedCheat);
   // v0.29.2: дробные цены продажи оставляли хвост в Оболах (34500.199999997) — убираем у старых героев
@@ -613,6 +615,8 @@ function resetStateToFresh() {
   state.player.currentLocation = 'town';
   state.player.foodTimer = 0;
   state.player.foodTickAccum = 0;
+  state.player.foodKind = null;   // v0.35.1
+  state.player.ilgradOpen = false;   // v0.36
   state.player.dish = null;
   state.player.guildBuffs = {};
   state.player.tavernBuffs = {};

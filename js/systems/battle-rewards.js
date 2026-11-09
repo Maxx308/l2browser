@@ -130,7 +130,7 @@ function onMonsterDeath(deadMonster) {
   const xpGain = Math.floor(xpRaw) + (Math.random() < xpRaw % 1 ? 1 : 0);
 
   // v0.31: постоянные бонусы (Отдых, Опыт от подгонки) не пишем — видны в «Эффектах»; жадность — припиской
-  logCombat(`💀 ${m.name} убит! +${xpGain} опыта`, 'log-entry kill', greedN > 0 ? `💰 жадность ×${greedN}: +${greedN * GREED_XP_PER_MARK}%` : '');
+  if (!m.fled) logCombat(`💀 ${m.name} убит! +${xpGain} опыта`, 'log-entry kill', greedN > 0 ? `💰 жадность ×${greedN}: +${greedN * GREED_XP_PER_MARK}%` : '');
   p.xp += xpGain;
 
   // ---- ЗОЛОТО ----
@@ -143,7 +143,7 @@ function onMonsterDeath(deadMonster) {
     const goldRaw = baseGold * mult_ * greedGoldMult * refineGoldMult * packGoldMult;
     let gold = Math.floor(goldRaw) + (Math.random() < goldRaw % 1 ? 1 : 0);
     // v0.25: в Копях суммы круглые — до десятков (+60, а не +57)
-    if (p.currentLocation === 'mine') gold = Math.max(10, Math.round(gold / 10) * 10);
+    if (p.currentLocation === 'mine' || p.currentLocation === 'outskirts') gold = Math.max(10, Math.round(gold / 10) * 10);
     p.gold += gold;
     totalGold += gold;
   }
@@ -238,6 +238,7 @@ function onMonsterDeath(deadMonster) {
   const newTitle = getMonsterTitle(m.id, m.variantId);
   if (typeof annalsFirst === 'function') annalsFirst('kill', { monster: m.name });   // v0.32: летопись
   if (typeof questFindRoll === 'function') questFindRoll(m);   // v0.32: находки для поручений жителей
+  if (typeof bagOnKill === 'function') bagOnKill(m);           // v0.35.1: поручения Заплечника «убей»
   if (typeof loreOnKill === 'function') loreOnKill(m);         // v0.34.1: Бестиарий и Поляна — куски за убийства
 
   if (newTitle !== oldTitle) {
@@ -271,6 +272,8 @@ function onMonsterDeath(deadMonster) {
     clearMonsterDebuffs(m.index);
   }
 
+  monsterTagsOnDeath(m);   // v0.36: Вор, Падальщик, Злопамятный
+
   saveCurrentSlot();
 
   // ========================================================
@@ -290,6 +293,8 @@ function onMonsterDeath(deadMonster) {
   // ========================================================
   //  ВСЕ МЕРТВЫ — КОНЕЦ БОЯ
   // ========================================================
+  if (state.battle.breakthrough && breakthroughOnClear()) return;   // v0.36: волны прорыва
+
   const deadMonsterId = m.id;
   const deadVariantId = m.variantId;
   const deadTemplateId = m.templateId || m.id;
@@ -329,7 +334,7 @@ function onMonsterDeath(deadMonster) {
 
   // ---- ПОВТОР ИЛИ ЗАКРЫТИЕ ----
   if (state.battle.repeatBattle) {
-    const nextTemplate = [...MONSTERS, ...MINE_MONSTERS].find(mm => mm.id === deadTemplateId);
+    const nextTemplate = ALL_HUNT_MONSTERS.find(mm => mm.id === deadTemplateId);
     const nextVariantId = deadVariantId;
 
     if (!nextTemplate) {
@@ -427,6 +432,7 @@ function switchMonsterUI(m) {
 // --------------------------------------------------------
 function onPlayerDeath() {
   const p = state.player;
+  if (state.battle.breakthrough) { breakthroughOnHeroDown(); return; }   // v0.36: в прорыве нельзя проиграть
   const lostXp = Math.floor(p.xp * 0.1);
   p.xp = Math.max(0, p.xp - lostXp);
   logCombat(`☠ ${p.name} погиб. Потеряно ${lostXp} опыта (10%).`, 'log-entry loss');
@@ -435,6 +441,7 @@ function onPlayerDeath() {
 
   p.foodTimer = 0;
   p.foodTickAccum = 0;
+  p.foodKind = null;   // v0.35.1
   p.dish = null;
   p.guildBuffs = {};
   p.tavernBuffs = {};
@@ -511,6 +518,7 @@ function checkLevelUp() {
     p.mp = p.maxMp;
     logCombat(`✦ УРОВЕНЬ ${p.level}! +${gain} очков навыков.`, 'log-entry levelup');
     updateSkillPointsBadge();
+    if (typeof questJournalChanged === 'function') questJournalChanged();   // v0.35.1: Заплечник мог захотеть поручение
 
     if (p.level >= MAX_PLAYER_LEVEL) {
       logCombat(`🏆 Достигнут максимальный уровень (${MAX_PLAYER_LEVEL}). Ждём новых земель!`, 'log-entry levelup');

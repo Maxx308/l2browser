@@ -87,12 +87,15 @@ function hideRestCamp() {
 // (battle-loop.js): раз в секунду HP +(1 + бонус), MP +(реген + бонус), а пока действует
 // сытость — ещё +FOOD_HEAL_PER_SEC HP в секунду. Раньше скорость «подсматривали» по факту
 // за первые секунды и без учёта еды — таймер прыгал. Теперь он ровно убывает по секунде.
+// v0.35.1: сытость — по виду еды (FOOD_KINDS): на привале hp + restHp, мана — mp.
 function restRegenRates() {
   const p = state.player;
+  const k = typeof currentFoodKind === 'function' ? currentFoodKind(p) : null;
   return {
     hp: 1 + (p.hpRegenOutBonus || 0),
     mp: (p.mpRegenOut || 1) + (p.mpRegenOutBonus || 0),
-    food: (p.foodTimer > 0) ? FOOD_HEAL_PER_SEC : 0,
+    food: k ? k.hp + (k.restHp || 0) : 0,
+    foodMp: k ? (k.mp || 0) : 0,
   };
 }
 
@@ -120,7 +123,7 @@ function restEtaSec() {
   }
   if (p.resumeMpPercent > 0 && p.maxMp > 0) {
     const need = p.maxMp * p.resumeMpPercent / 100 - p.mp;
-    const ticks = restTicksFor(need, r.mp, 0, 0);
+    const ticks = restTicksFor(need, r.mp, r.foodMp, Math.floor(p.foodTimer || 0));
     if (ticks > 0) eta = Math.max(eta, ticks - (state.mpRegenAccumulator || 0));
   }
   return Math.max(0, eta);
@@ -129,7 +132,7 @@ function restEtaSec() {
 function restTargetName() {
   const t = state.battle.waitingTemplate || state.battle.lastTarget;
   if (!t) return '';
-  const template = [...MONSTERS, ...MINE_MONSTERS].find(mm => mm.id === t.id);
+  const template = ALL_HUNT_MONSTERS.find(mm => mm.id === t.id);
   if (!template) return '';
   const variant = MONSTER_VARIANTS[t.variantId] || MONSTER_VARIANTS.normal;
   return (variant.prefix + template.name).trim();
@@ -199,7 +202,7 @@ function renderRestCamp() {
 // --------------------------------------------------------
 function restFightNow() {
   const t = state.battle.waitingTemplate || state.battle.lastTarget;
-  const template = t ? [...MONSTERS, ...MINE_MONSTERS].find(mm => mm.id === t.id) : null;
+  const template = t ? ALL_HUNT_MONSTERS.find(mm => mm.id === t.id) : null;
   if (!template) { restEndHunt(); return; }
   state.battle.waitingForResume = false;
   state.battle.waitingTemplate = null;

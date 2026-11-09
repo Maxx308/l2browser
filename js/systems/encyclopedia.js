@@ -80,9 +80,16 @@ function loreBuffRows(kind, b) {
 function loreFoodArticle(r) {
   const dish = r.result.food && r.result.food.dish && DISHES[r.result.food.dish];
   const rows = [];
-  if (dish) rows.push(['Бонус', `${dish.text} на ${buffShopDur(DISH_DURATION)}`]);
-  rows.push(['Сытость', `+${buffShopDur(getFoodDuration(r.result))}, лечит +${FOOD_HEAL_PER_SEC} HP в секунду`]);
-  if (dish) rows.push(['Одно за раз', 'другое блюдо заменяет бонус, то же — продлевает']);
+  // v0.35.1: блюдо — только бонус; еда — сытость своего вида (FOOD_KINDS)
+  if (dish) {
+    rows.push(['Бонус', `${dish.text} на ${buffShopDur(DISH_DURATION)}`]);
+    rows.push(['Сытость', 'не даёт — только бонус']);
+    rows.push(['Одно за раз', 'другое блюдо заменяет бонус, то же — продлевает']);
+  } else {
+    const k = FOOD_KINDS[getFoodKindId(r.result)];
+    rows.push(['Сытость', `${foodKindText(k)} на ${buffShopDur(getFoodDuration(r.result))}`]);
+    rows.push(['Одна за раз', 'та же еда продлевает, другая заменяет — остаток прежней пропадает']);
+  }
   rows.push(['Где взять', `Кузница, «Расходники»: ${r.materials.map(m => `${m.name} ×${m.qty}`).join(', ')} и ${buffShopNum(r.price)} Оболов`]);
   rows.push(['При гибели', dish ? 'сытость и бонус пропадают' : 'сытость пропадает']);
   return {
@@ -257,7 +264,7 @@ function renderLoreArticle(a) {
     const label = p.label ? `<span class="lore-label">${escChronicle(p.label)} · </span>` : '';
     html += `<p class="lore-text">${label}${chronicleTextHtml(p.text)}</p>`;
     // v0.32: таблица под куском (статья «Подгонка»)
-    if (p.rows) html += `<div class="lore-stats lore-rows">${p.rows.map(r => `<div><span>${escChronicle(r[0])}</span>${escChronicle(r[1])}</div>`).join('')}</div>`;
+    if (p.rows) html += `<div class="lore-stats lore-rows">${p.rows.map(r => `<div><span>${r[2] ? `<img class="lore-row-icon" src="${r[2]}" alt="">` : ''}${escChronicle(r[0])}</span>${escChronicle(r[1])}</div>`).join('')}</div>`;
   });
   return html;
 }

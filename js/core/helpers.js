@@ -102,6 +102,19 @@ function heroText(str) {
   return String(str).replace(/\{([^{}|]*)\|([^{}]*)\}/g, (_, m, f) => (female ? f : m));
 }
 
+// v0.36: города — безопасные локации с лавками. 'town' — Андервуд, 'ilgrad' — Ильград (js/systems/ilgrad.js).
+// «Герой в городе» проверять через isTownLoc, а не === 'town' (Старейшина — только в Андервуде).
+const TOWN_LOCS = ['town', 'ilgrad'];
+function isTownLoc(loc) {
+  return TOWN_LOCS.includes(loc === undefined ? (state.player && state.player.currentLocation) : loc);
+}
+
+// v0.35.1: раса героя — для реплик жителей ('human' | 'orc' | 'elf' | 'drow' | 'dwarf').
+function heroRace(...ids) {
+  const r = (state.player && state.player.raceId) || 'human';
+  return ids.length ? ids.includes(r) : r;
+}
+
 // Множитель рейтов (опыт, золото, дроп).
 // Берётся из state.player.cheatRate. Если там 0/undefined — считаем 1.
 function mult() {
@@ -203,6 +216,8 @@ function getPlayerEvasion(attacker) {
   // Бонусы подгонки (v0.10 — теперь учитываются).
   eva += (p.evasionBonus || 0);
 
+  if (attacker && attacker.heroEvaMult) eva *= attacker.heroEvaMult;   // v0.36: Чуткий
+
   return Math.round(eva);
 }
 
@@ -225,7 +240,7 @@ function getMonsterAccuracy(monster) {
 // Уворот монстра.
 function getMonsterEvasion(monster) {
   const lvl = (monster && monster.level) || 1;
-  return Math.round(lvl * 2.5 + 30);
+  return Math.round((lvl * 2.5 + 30) * ((monster && monster.evaMult) || 1));   // v0.36: Смрад, Непоколебимый
 }
 
 // Шанс попадания: 70 + 2 × (Точность − Уворот), зажат в [25, 95].

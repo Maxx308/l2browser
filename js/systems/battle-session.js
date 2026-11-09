@@ -321,7 +321,7 @@ function renderSessionPanel() {
 
   if (foot) {
     const used = state.player.inventory.length;
-    const max = (typeof INVENTORY_MAX_SLOTS !== 'undefined') ? INVENTORY_MAX_SLOTS : 0;
+    const max = (typeof invMaxSlots === 'function') ? invMaxSlots() : 0;
     const full = max && used >= max;
     const warn = full ? ' bxs-warn' : (max && used >= max - 5 ? ' bxs-soon' : '');
     foot.innerHTML =

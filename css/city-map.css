@@ -157,6 +157,39 @@
     transparent 56%, rgba(217,178,106,0.8) 57%, rgba(217,178,106,0.8) 70%, transparent) center / 100% 1px no-repeat;
 }
 
+/* v0.36: карточки Ильграда — каменная рамка (кладка) и железные заклёпки,
+   подпись — сталь вместо золота (город в осаде, золоту не время). Поверх .city-card-wood. */
+.city-card.city-card-wood.city-card-stone {
+  border-color: #0c0c0e;
+  background:
+    linear-gradient(90deg, rgba(0,0,0,0.35) 1px, transparent 1px) 0 0 / calc(var(--frame) * 3.2) calc(var(--frame) * 1.6),
+    linear-gradient(0deg, rgba(0,0,0,0.35) 1px, transparent 1px) 0 0 / calc(var(--frame) * 3.2) calc(var(--frame) * 1.6),
+    repeating-linear-gradient(135deg, rgba(255,255,255,0.03) 0 2px, transparent 2px 7px),
+    linear-gradient(180deg, #5d5a57, #3d3b3a 50%, #2a2928);
+}
+.city-card.city-card-wood.city-card-stone .city-icon-img {
+  box-shadow: inset 0 0 0 1px rgba(0,0,0,0.7), 0 0 0 1px #141414;
+}
+.city-card.city-card-wood.city-card-stone:hover {
+  border-color: #0c0c0e;
+  box-shadow: 0 0 calc(22 * var(--u)) rgba(255,120,60,0.28), 0 calc(3 * var(--u)) calc(10 * var(--u)) rgba(0,0,0,0.55);
+}
+.city-card.city-card-wood.city-card-stone:hover .city-icon-img {
+  box-shadow: inset 0 0 0 1px rgba(0,0,0,0.7), 0 0 0 1px #141414;
+}
+.city-card-stone .city-card-label {
+  background: linear-gradient(180deg, #ffffff 0%, #dfe3e8 38%, #a9b0b8 72%, #6c727a 100%) 0 0 / 100% 1.2em repeat-y;
+  -webkit-background-clip: text;
+  background-clip: text;
+}
+.city-card-stone .city-card-label::after {
+  color: #b9c0c8;
+  -webkit-text-fill-color: #b9c0c8;
+  background: linear-gradient(90deg,
+    transparent, rgba(185,192,200,0.8) 30%, rgba(185,192,200,0.8) 43%, transparent 44%,
+    transparent 56%, rgba(185,192,200,0.8) 57%, rgba(185,192,200,0.8) 70%, transparent) center / 100% 1px no-repeat;
+}
+
 /* Текстовые подписи внутри карточки.
    Сейчас в HTML их нет (текст внутри картинок),
    но CSS оставляем — на случай использования. */
@@ -307,10 +340,64 @@
 .map-card[data-loc="field"] { background-image: var(--map-shade), url('../img/locations/map/field.jpg'); }
 .map-card[data-loc="town"]  { background-image: var(--map-shade), url('../img/locations/map/town.jpg'); }
 .map-card[data-loc="mine"]  { background-image: var(--map-shade), url('../img/locations/map/mine.jpg'); }
+.map-card[data-loc="outskirts"] { background-image: var(--map-shade), url('../img/locations/map/outskirts.jpg'); }
+/* v0.36: своей картинки для карты пока нет — вышка на стене с горящим городом */
+.map-card[data-loc="ilgrad"] { background-image: var(--map-shade), url('../img/city/ilgrad/watchtower.jpg'); }
 .map-card[data-loc] .map-name,
 .map-card[data-loc] .map-desc,
 .map-card[data-loc] .map-meta { text-shadow: 0 1px 3px rgba(0,0,0,0.95), 0 0 calc(10 * var(--u)) rgba(0,0,0,0.8); }
 .map-card[data-loc] .map-desc { color: #d6ccb8; }
+
+/* v0.36: закрытое место на карте — ч/б картинка, холодный туман, штамп (renderMapLocks, ilgrad.js) */
+.map-card.map-locked { justify-content: flex-end; overflow: hidden; }
+.map-card.map-locked > *:not(.map-lock):not(.map-titles) { position: relative; z-index: 1; }
+.map-card.map-locked .map-meta-line { color: #c9c3ba; }
+.map-lock {
+  position: absolute; inset: 0;
+  overflow: hidden;
+  border-radius: inherit;
+  pointer-events: none;
+}
+.map-lock-bg {
+  position: absolute; inset: 0;
+  background-size: cover;
+  background-position: center;
+  filter: grayscale(1) brightness(0.8);
+}
+.map-card[data-loc="ilgrad"] .map-lock-bg { background-image: linear-gradient(180deg, rgba(10,10,14,0.35), rgba(10,10,14,0.82)), url('../img/city/ilgrad/watchtower.jpg'); }
+.map-card[data-loc="town"] .map-lock-bg { background-image: linear-gradient(180deg, rgba(10,10,14,0.35), rgba(10,10,14,0.82)), url('../img/locations/map/town.jpg'); }
+.map-lock-fog {
+  position: absolute; left: -60%; right: -60%; bottom: -10%; height: 75%;
+  background:
+    radial-gradient(ellipse 30% 55% at 18% 75%, rgba(176,196,212,0.34), transparent 70%),
+    radial-gradient(ellipse 34% 50% at 50% 85%, rgba(160,184,202,0.3), transparent 72%),
+    radial-gradient(ellipse 28% 60% at 82% 70%, rgba(176,196,212,0.32), transparent 70%);
+  animation: mapLockFog 24s ease-in-out infinite alternate;
+}
+@keyframes mapLockFog {
+  from { transform: translateX(-14%); }
+  to   { transform: translateX(14%); }
+}
+.map-lock-stamp {
+  position: absolute; top: 15%; left: 50%;
+  transform: translateX(-50%) rotate(-7deg);
+  padding: calc(3 * var(--u)) calc(16 * var(--u));
+  font-family: 'Cinzel', serif;
+  font-weight: 700;
+  font-size: calc(24 * var(--u));
+  letter-spacing: calc(3 * var(--u));
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: #b8473a;
+  border: calc(3 * var(--u)) double #b8473a;
+  border-radius: calc(3 * var(--u));
+  background: rgba(14,10,10,0.35);
+  text-shadow: 0 1px 2px rgba(0,0,0,0.9);
+  opacity: 0.92;
+}
+@media (prefers-reduced-motion: reduce) {
+  .map-lock-fog { animation: none; }
+}
 
 /* ---------- НОВОЕ (v0.12): ДОП. ИНФА НА КАРТОЧКАХ ---------- */
 .map-meta {

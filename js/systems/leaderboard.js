@@ -350,7 +350,7 @@ function openLeaderboard() {
     return;
   }
 
-  if (state.player.currentLocation !== 'town') return;
+  if (!isTownLoc(state.player.currentLocation)) return;   // v0.36: Андервуд или Ильград
 
   if (typeof cancelWaitingForResume === 'function') {
     cancelWaitingForResume('открыт рейтинг');

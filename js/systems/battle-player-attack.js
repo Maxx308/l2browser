@@ -75,7 +75,7 @@ function playerAttack() {
   if (confused && confused.evasionReduction) {
     monsterEva = monsterEva * (1 - confused.evasionReduction / 100);
   }
-  const playerHit = rollHit(playerAcc, monsterEva);
+  const playerHit = rollHit(playerAcc, monsterEva) && !monsterTrueDodge(m);   // v0.36: бесплотные
 
   const skill = tryUseActiveSkill();
   if (skill) {
@@ -142,7 +142,7 @@ function playerAttack() {
       let deathBonus = 0;
       if (skill.id === 'orcRage') deathBonus = getElementDamageBonus('death');
       const gripBonus = getTwoHandGripBonus();   // v0.27: двуручный хват
-      let totalDamage = 0;
+      let totalDamage = 0, thornsTaken = 0;
       const parts = [];
       for (let h = 0; h < hits; h++) {
         const variance = Math.floor(basePAtk * 0.2);
@@ -157,11 +157,14 @@ function playerAttack() {
         const isCrit = Math.random() * 100 < critChance;
         if (isCrit) dmg = Math.floor(dmg * critMult);
         dmg = withSkillFlat(Math.max(1, dmg));
+        dmg = monsterTagDmg(m, dmg, heroPhysKinds(weaponCategory).concat(skill.id === 'orcRage' ? ['death'] : []));   // v0.36: теги твари
         m.hp -= dmg; totalDamage += dmg;
+        thornsTaken += monsterThorns(m, weaponCategory);   // v0.36: шипы
         spawnFloatDamage('fighter-monster', dmg, isCrit ? 'crit' : 'dmg');
         parts.push(dmg + (isCrit ? ' (крит!)' : ''));
         if (m.hp <= 0) break;
       }
+      if (thornsTaken > 0) notes.push(`🌵 шипы −${thornsTaken} HP`);
       const dmgText = parts.length > 1 ? `${parts.join(' + ')} = ${totalDamage}` : parts[0];
       const mixtureData = getActiveMixtureData();
       if (mixtureData && mixtureData.chargeType === 'playerAttacks') tickMixtureCharge(parts.length);   // v0.31: заряд на каждый удар
@@ -189,6 +192,21 @@ function playerAttack() {
         logCombat(`⚔ Сильный удар: ${dmgText}`, 'log-entry player-skill', notes.filter(Boolean).join(' · '));
       }
       if (m.hp > 0) tryApplyWeaponTrait(weaponCategory, weapon);
+    }
+    // ---- v0.36: лечение ранит мёртвых (сила как у лечения, защита не режет, Жизнь и теги — да) ----
+    else if (skill.isHeal && healStrikeApplies(m)) {
+      if (!playerHit) {
+        spawnFloatDamage('fighter-monster', 0, 'miss');
+        logCombat(`🌿 ${skill.name} — промах.`, 'log-entry');
+      } else {
+        const dmg = monsterTagDmg(m, rollHealAmount(data.multiplier), ['magic', 'life']);
+        m.hp -= dmg;
+        spawnFloatDamage('fighter-monster', dmg, 'magic');
+        logCombat(`🌿 ${skill.name} обжигает мёртвого: ${dmg}`, 'log-entry player-magic');
+        addLifeXP();
+      }
+      const mixtureData = getActiveMixtureData();
+      if (mixtureData && mixtureData.chargeType === 'playerAttacks') tickMixtureCharge();
     }
     // ---- НОВОЕ (v0.16): ЛЕЧЕБНЫЕ СКИЛЛЫ ----
     else if (skill.isHeal) {
@@ -228,7 +246,7 @@ function playerAttack() {
       const gripB = getTwoHandGripBonus();   // v0.27: двуручный хват (у мага 0)
       if (gripB > 0) dmg = Math.floor(dmg * (1 + gripB / 100));
       if (mixtureAtkMult > 1.0) dmg = Math.floor(dmg * mixtureAtkMult);
-      dmg = withSkillFlat(Math.max(1, dmg));
+      dmg = monsterTagDmg(m, withSkillFlat(Math.max(1, dmg)), ['magic', 'lightning']);   // v0.36: теги твари
       m.hp -= dmg;
 
       const mixtureData = getActiveMixtureData();
@@ -283,6 +301,8 @@ function playerAttack() {
       if (elemBonus > 0) dmg = Math.floor(dmg * (1 + elemBonus / 100));
       if (mixtureAtkMult > 1.0) dmg = Math.floor(dmg * mixtureAtkMult);
       dmg = withSkillFlat(Math.max(1, dmg));
+      if (skill.id === 'spiritWrath') dmg += deathMagicMaxHpBonus(m, 1);   // v0.36: Гнев — % от макс. HP врага
+      dmg = monsterTagDmg(m, dmg, ['magic', elemId]);   // v0.36: теги твари
       m.hp -= dmg;
       const mixtureData = getActiveMixtureData();
       if (mixtureData && mixtureData.chargeType === 'playerAttacks') tickMixtureCharge();
@@ -343,6 +363,13 @@ function playerAttack() {
     updateBattleUI(); checkHealPotion(); return;
   }
 
+  // v0.36: тварь с «мечом» парирует обычный физический удар (навыки — нет)
+  if (!isMage() && tryMonsterParry(m)) {
+    const mixtureData = getActiveMixtureData();
+    if (mixtureData && mixtureData.chargeType === 'playerAttacks') tickMixtureCharge(swings);
+    updateBattleUI(); checkHealPotion(); return;
+  }
+
   // v0.31: одна строка на удар, особенности — припиской
   const notes = [];
   let dmg, logCls, logIcon, dmgType;
@@ -380,7 +407,10 @@ function playerAttack() {
   const cleave = (!isMage() && typeof planWeaponCleave === 'function') ? planWeaponCleave(weaponCategory, m) : null;
   const fullDmg = dmg;
   if (cleave && cleave.mainMult < 1) dmg = Math.max(1, Math.floor(dmg * cleave.mainMult));
+  dmg = monsterTagDmg(m, dmg, isMage() ? ['magic'] : heroPhysKinds(weaponCategory));   // v0.36: теги твари
   m.hp -= dmg;
+  const thorns = monsterThorns(m, weaponCategory);   // v0.36: шипы
+  if (thorns > 0) notes.push(`🌵 шипы −${thorns} HP`);
   spawnFloatDamage('fighter-monster', dmg, isCrit ? 'crit' : dmgType);
   // Парное: показываем вклад каждой руки (по доле атаки второй руки в общей)
   let dmgText = String(dmg);

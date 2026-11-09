@@ -35,9 +35,14 @@
 //    не отпуская — тянуть в корзину.
 // ========================================================
 
-const INVENTORY_MAX_SLOTS = 60;
+// v0.35.1: ячеек в сумке — 60 + уровень Заплечника (каждое его поручение — +1, js/systems/bag.js).
+// Страниц столько, сколько нужно; на последней неоткрытые ячейки видны с замочком.
+const INVENTORY_MAX_SLOTS = 60;   // базовое число ячеек
 const INVENTORY_PAGE_SIZE = 30;
-const INVENTORY_PAGES    = 2;
+function invMaxSlots() {
+  return INVENTORY_MAX_SLOTS + (typeof bagSlotBonus === 'function' ? bagSlotBonus() : 0);
+}
+function invPages() { return Math.ceil(invMaxSlots() / INVENTORY_PAGE_SIZE); }
 
 // ---------- ХЕЛПЕР: суффикс подгонки для имени ----------
 function getInvRefineSuffix(item) {
@@ -80,7 +85,7 @@ function addToInventory(drop) {
     return true;
   }
 
-  if (p.inventory.length >= INVENTORY_MAX_SLOTS) {
+  if (p.inventory.length >= invMaxSlots()) {
     showToast('📦', 'Инвентарь переполнен');
     logLoot(`📦 Инвентарь переполнен — «${drop.name}» потерян.`, 'log-info');
     renderInventory();
@@ -316,15 +321,22 @@ function renderInventory() {
   const p = state.player;
   refreshItemIcons(p.inventory);
 
-  const page = state.currentInventoryPage || 0;
+  const page = Math.min(state.currentInventoryPage || 0, invPages() - 1);
+  state.currentInventoryPage = page;
   const startIdx = page * INVENTORY_PAGE_SIZE;
+  const maxSlots = invMaxSlots();
 
   for (let i = 0; i < INVENTORY_PAGE_SIZE; i++) {
     const globalIdx = startIdx + i;
     const item = p.inventory[globalIdx];
     const slot = document.createElement('div');
 
-    if (item) {
+    if (!item && globalIdx >= maxSlots) {
+      // v0.35.1: ячейка ещё не открыта — откроет Заплечник, когда подрастёт
+      slot.className = 'inv-slot locked';
+      slot.title = 'Заплечник ещё не дорос. Его поручения — +1 ячейка';
+      slot.innerHTML = '🔒';
+    } else if (item) {
       const isConsumable = item.type === 'consumable';
       const isFood = item.type === 'food';
       const rarityClass = (item.rarity && item.rarity !== 'white') ? ' rarity-' + item.rarity : '';
@@ -373,7 +385,7 @@ function renderInventoryPagination() {
 
   // v0.18: переключатель страниц виден ВСЕГДА. Раньше он прятался, когда вещей
   // становилось ≤ 30, и игрок застревал на пустой второй странице.
-  for (let i = 0; i < INVENTORY_PAGES; i++) {
+  for (let i = 0; i < invPages(); i++) {
     const btn = document.createElement('button');
     btn.className = 'inventory-page-btn' + (state.currentInventoryPage === i ? ' active' : '');
     btn.textContent = (i + 1);
@@ -392,7 +404,7 @@ function renderInventoryPagination() {
 }
 
 function setInventoryPage(page) {
-  if (page < 0 || page >= INVENTORY_PAGES) return;
+  if (page < 0 || page >= invPages()) return;
   state.currentInventoryPage = page;
   renderInventory();
 }
@@ -401,7 +413,7 @@ function setInventoryPage(page) {
 function renderInventoryFullMessage() {
   const msg = document.getElementById('inventory-full-msg');
   if (!msg) return;
-  if (state.player.inventory.length >= INVENTORY_MAX_SLOTS) {
+  if (state.player.inventory.length >= invMaxSlots()) {
     msg.style.display = 'block';
   } else {
     msg.style.display = 'none';
@@ -421,38 +433,51 @@ function useFood(item) {
   if (item.food && item.food.dish && DISHES[item.food.dish]) { eatDish(item); return; }
 
   const duration = getFoodDuration(item);
-  const freeSpace = MAX_BUFF_DURATION - p.foodTimer;
+  // v0.35.1: сытость одна — та же еда продлевает, другая заменяет (остаток прежней пропадает)
+  const kindId = getFoodKindId(item);
+  const kind = FOOD_KINDS[kindId];
+  const had = p.foodTimer > 0 ? (p.foodKind && FOOD_KINDS[p.foodKind] ? p.foodKind : 'cookedMeat') : null;
+  const same = had === kindId;
 
-  if (freeSpace <= 0) {
-    showToast('🍖', 'Сытность уже на максимуме (12 часов)');
-    logLoot(`Сытность уже на максимуме (12 часов).`, 'log-info');
-    return;
-  }
-  if (freeSpace < duration) {
-    const freeMin = Math.ceil(freeSpace / 60);
-    const addMin = Math.floor(duration / 60);
-    showToast('🍖', `Не поместится: до потолка ${freeMin} мин, еда даёт ${addMin} мин`);
-    logLoot(`Не поместится: до потолка ${freeMin} мин, а еда даёт ${addMin} мин.`, 'log-info');
-    return;
+  if (same) {
+    const freeSpace = MAX_BUFF_DURATION - p.foodTimer;
+    if (freeSpace <= 0) {
+      showToast(kind.icon, 'Сытость уже на максимуме (12 часов)');
+      logLoot(`Сытость уже на максимуме (12 часов).`, 'log-info');
+      return;
+    }
+    if (freeSpace < duration) {
+      const freeMin = Math.ceil(freeSpace / 60);
+      const addMin = Math.floor(duration / 60);
+      showToast(kind.icon, `Не поместится: до потолка ${freeMin} мин, еда даёт ${addMin} мин`);
+      logLoot(`Не поместится: до потолка ${freeMin} мин, а еда даёт ${addMin} мин.`, 'log-info');
+      return;
+    }
   }
 
-  p.foodTimer = addBuffTime(p.foodTimer, duration);
+  const lostMin = (!same && had) ? Math.ceil(p.foodTimer / 60) : 0;
+  // случайно ткнул в другую еду — не терять часы сытости молча
+  if (lostMin >= 5 && !confirm(`Сейчас действует «${FOOD_KINDS[had].name}» — ещё ${buffShopDur(Math.floor(p.foodTimer))}.\n\n«${kind.name}» заменит её, остаток пропадёт. Съесть?`)) return;
+  p.foodTimer = same ? addBuffTime(p.foodTimer, duration) : duration;
+  p.foodKind = kindId;
 
   const idx = p.inventory.indexOf(item);
   item.qty--;
   if (item.qty <= 0) p.inventory.splice(idx, 1);
-  logCombat(`🍖 Съедено: ${item.name}. Сытность продлена.`, 'log-entry food');
+  logCombat(`${kind.icon} Съедено: ${item.name} — ${foodKindText(kind)}. ` +
+    (same ? 'Сытость продлена.' : had ? `Вместо «${FOOD_KINDS[had].name}» (пропало ${lostMin} мин).` : 'Сытость на ' + buffShopDur(duration) + '.'),
+    'log-entry food');
   if (typeof unlockLoreMany === 'function') unlockLoreMany([loreFoodKey(item), 'satiety']);   // v0.32
   if (typeof annalsFirst === 'function') annalsFirst(loreFoodKey(item));
   renderInventory(); renderEffectsPanel();
 
-  showToast('🍖', `Сытность +${buffShopDur(duration)}`);
+  showToast(kind.icon, same ? `Сытость +${buffShopDur(duration)}` : `${kind.name}: ${foodKindText(kind)}`);
 
   saveCurrentSlot();
 }
 
 // v0.20: съесть блюдо. То же блюдо продлевает бонус, другое — заменяет.
-// Сытность добавляется, сколько влезет (блюдо можно съесть и при полной сытности).
+// v0.35.1: блюдо больше не насыщает — только бонус (сытость — от еды, FOOD_KINDS).
 function eatDish(item) {
   const p = state.player;
   const id = item.food.dish;
@@ -467,7 +492,6 @@ function eatDish(item) {
   }
   const replaced = p.dish && p.dish.timer > 0 && !same ? DISHES[p.dish.id] : null;
   p.dish = { id, timer: same ? p.dish.timer + dur : dur };
-  p.foodTimer = Math.min(MAX_BUFF_DURATION, (p.foodTimer || 0) + dur);
 
   const idx = p.inventory.indexOf(item);
   item.qty--;
@@ -477,7 +501,7 @@ function eatDish(item) {
   if (typeof updateCharacterPanel === 'function') updateCharacterPanel();
   logCombat(`${dish.icon} Съедено: ${dish.name} — ${dish.text}${replaced ? ` (вместо «${replaced.name}»)` : ''}.`, 'log-entry food');
   showToast(dish.icon, `${dish.text} · ${Math.floor(p.dish.timer / 60)} мин`);
-  if (typeof unlockLoreMany === 'function') unlockLoreMany(['food.' + id, 'satiety']);   // v0.32
+  if (typeof unlockLoreMany === 'function') unlockLoreMany(['food.' + id]);   // v0.32 (v0.35.1: блюдо не насыщает)
   if (typeof annalsFirst === 'function') annalsFirst('food.' + id);
   renderInventory(); renderEffectsPanel();
   saveCurrentSlot();
@@ -495,6 +519,8 @@ function updateInventoryFooter() {
   const p = state.player;
   document.getElementById('inv-gold').textContent = p.gold;
   document.getElementById('inv-weight').textContent = p.inventory.length;
+  const maxEl = document.getElementById('inv-max');   // v0.35.1: ячеек — по уровню Заплечника
+  if (maxEl) maxEl.textContent = invMaxSlots();
 }
 
 // ========================================================

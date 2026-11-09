@@ -46,6 +46,36 @@ const DISH_DURATION = 60 * 60;
 function getFoodDuration(item) {
   return item && item.food && item.food.dish ? DISH_DURATION : FOOD_DURATION;
 }
+
+// ==== v0.35.1: СЫТОСТЬ ПО ВИДАМ ЕДЫ ====
+// Сытость одна за раз (p.foodKind + p.foodTimer): та же еда — время складывается (до 12 ч),
+// другая — заменяет, остаток прежней пропадает. hp — HP/сек всегда, restHp — ещё HP/сек вне боя
+// (на привале и в городе), mp — MP/сек всегда. Блюда (DISHES) больше не насыщают — только бонус.
+// Старая еда без kind в сумке — как Жареное мясо.
+const FOOD_KINDS = {
+  cookedMeat: { name: 'Жареное мясо',    icon: '🍖', hp: 1 },
+  hearty:     { name: 'Сытное рагу',     icon: '🥘', hp: 2 },
+  feast:      { name: 'Охотничий пир',   icon: '🍗', hp: 2, restHp: 3 },
+  ukha:       { name: 'Грибная уха',     icon: '🍜', hp: 2, mp: 1 },
+};
+function getFoodKindId(item) {
+  const k = item && item.food && item.food.kind;
+  return FOOD_KINDS[k] ? k : 'cookedMeat';
+}
+// Текущая сытость героя (или null).
+function currentFoodKind(p) {
+  p = p || state.player;
+  if (!p || !(p.foodTimer > 0)) return null;
+  return FOOD_KINDS[p.foodKind] || FOOD_KINDS.cookedMeat;
+}
+// «+2 HP/с · на отдыхе +5 · +1 MP/с»
+function foodKindText(k) {
+  if (!k) return '';
+  let s = `+${k.hp} HP/с`;
+  if (k.restHp) s += ` · вне боя +${k.hp + k.restHp} HP/с`;
+  if (k.mp) s += ` · +${k.mp} MP/с`;
+  return s;
+}
 const DISHES = {
   mushroomRoast: { name: 'Жаркое с грибами',      icon: '🍲', pAtkPercent: 5,     text: '+5% физ. атаки' },
   wolfStew:      { name: 'Похлёбка из волчатины', icon: '🥣', maxHpPercent: 5,    text: '+5% к макс. HP' },
@@ -69,12 +99,23 @@ const MAGIC_PATH_PRICE_PER_SECOND = 10;
 
 // Цена тропы from → to, или null, если пути нет.
 function getMagicPathPrice(from, to) {
-  const t = TRAVEL_TIMES[`${from}->${to}`];
+  const t = travelTime(from, to);
   return t === undefined ? null : t * MAGIC_PATH_PRICE_PER_SECOND;
+}
+
+// v0.36: время пути from → to (сек) или undefined. В закрытый город пути нет
+// (Ильград — пока p.ilgradOpen; уйти из него можно всегда).
+function travelTime(from, to) {
+  if ((to === 'ilgrad' || to === 'outskirts') && !(typeof ilgradOpen === 'function' && ilgradOpen())) return undefined;
+  if (to === 'town' && state.player && state.player.underwoodFallen) return undefined;
+  return TRAVEL_TIMES[`${from}->${to}`];
 }
 
 // v0.26: свиток телепортации убран. Цена нужна только для возврата Оболов за старые свитки.
 const TELEPORT_SCROLL_REFUND = 200;
+
+// v0.36: магия Смерти орка-мага: Гнев и каждый слой Гниения — ещё столько % от макс. HP врага.
+const DEATH_MAGIC_MAX_HP_PERCENT = 1;
 
 // ==== ВРЕМЯ ПЕРЕХОДОВ ====
 const TRAVEL_TIMES = {
@@ -84,6 +125,16 @@ const TRAVEL_TIMES = {
   'mine->field':  30,
   'town->mine':   60,
   'mine->town':   60,
+  // v0.36: Ильград (в разработке; открывается p.ilgradOpen). Связь с Андервудом уйдёт, когда тот падёт.
+  'town->ilgrad':  240,
+  'ilgrad->town':  240,
+  'field->ilgrad': 240,
+  'ilgrad->field': 240,
+  'mine->ilgrad':  240,
+  'ilgrad->mine':  240,
+  // v0.36: Окраины — прямо у стен, ходить только через Ильград.
+  'ilgrad->outskirts': 30,
+  'outskirts->ilgrad': 30,
 };
 
 // ==== НАЗВАНИЯ ЛОКАЦИЙ ====
@@ -91,6 +142,8 @@ const LOCATION_NAMES = {
   town:  'Город Андервуд',
   field: 'Зелёная поляна',
   mine:  'Копи',
+  ilgrad: 'Ильград',
+  outskirts: 'Окраины Ильграда',
 };
 
 // ==== v0.32: СУТКИ МИРА (js/systems/daynight.js) ====

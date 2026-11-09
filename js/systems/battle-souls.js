@@ -54,7 +54,7 @@ function renderSoulHuntBar() {
     const stones = Object.values(SOUL_STONES_BY_VARIANT);
     const tip = `Душа ${t.gemGen} (${gemName})\n` +
       `Шанс: ${String(t.chance).replace('.', ',')}% на каждого монстра — ${formatSoulFrequency(t.chance)}\n` +
-      `Монстр: здоровье ×${t.hpMult}, точность ×${String(t.accMult).replace('.', ',')}\n` +
+      `Монстр: здоровье и мана ×${t.hpMult}, точность ×${String(t.accMult).replace('.', ',')}\n` +
       `Камней: ${stones.join(' / ')} (обычный / Древний / Кровавый)\n` +
       (i === 0 ? 'Зелёные души встречаются всегда' : (on ? 'Нажмите, чтобы искать только до предыдущего камня' : 'Нажмите, чтобы искать и такие души'));
     const icon = def ? `<img src="${def.icon}" alt="" onerror="this.style.display='none'">` : '';
@@ -97,6 +97,8 @@ function applySoulToMonster(m, soulId) {
   m.soul = soulId;
   m.maxHp = Math.floor(m.maxHp * t.hpMult);
   m.hp = m.maxHp;
+  m.maxMp = Math.floor((m.maxMp || 0) * t.hpMult);   // v0.36: мана растёт вместе со здоровьем, иначе щит лопнет в самом начале долгого боя
+  m.mp = m.maxMp;
   m.accMult = t.accMult;
 }
 
@@ -109,7 +111,7 @@ function soulsTryMonster(m) {
   applySoulToMonster(m, soulId);
   const t = SOUL_TYPES[soulId];
   if (!Array.isArray(state.battle.soulLogQueue)) state.battle.soulLogQueue = [];
-  state.battle.soulLogQueue.push(`💎 ${m.name} несёт душу ${t.gemGen}! Здоровье ×${t.hpMult}, точность ×${String(t.accMult).replace('.', ',')}.`);
+  state.battle.soulLogQueue.push(`💎 ${m.name} несёт душу ${t.gemGen}! Здоровье${m.maxMp > 0 ? ' и мана' : ''} ×${t.hpMult}, точность ×${String(t.accMult).replace('.', ',')}.`);
   if (typeof annalsFirst === 'function') annalsFirst('soul.seen', { gem: t.gem });
   return soulId;
 }
@@ -142,7 +144,7 @@ function addSoulGems(name, count) {
     renderInventory();
     return count;
   }
-  if (p.inventory.length >= INVENTORY_MAX_SLOTS) {
+  if (p.inventory.length >= invMaxSlots()) {
     showToast('📦', `Сумка полна — «${name}» потерян`);
     logLoot(`📦 Инвентарь переполнен — «${name}» потерян.`, 'log-info');
     return 0;
@@ -200,7 +202,7 @@ function soulBadgeHtml(m) {
   if (!m || !m.soul) return '';
   const t = SOUL_TYPES[m.soul];
   const img = SOUL_GEM_SVG;
-  return `<div class="bx-soul-aura"></div><div class="bx-soul soul-${m.soul}" title="Душа ${t.gemGen}: здоровье ×${t.hpMult}, точность ×${String(t.accMult).replace('.', ',')}">${img}</div>`;
+  return `<div class="bx-soul-aura"></div><div class="bx-soul soul-${m.soul}" title="Душа ${t.gemGen}: здоровье${m.maxMp > 0 ? ' и мана' : ''} ×${t.hpMult}, точность ×${String(t.accMult).replace('.', ',')}">${img}</div>`;
 }
 
 // ---------- ИЗЪЯТИЕ СТАРЫХ КАМНЕЙ (при входе) ----------

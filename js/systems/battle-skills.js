@@ -84,7 +84,8 @@ function tryUseActiveSkill() {
     // ---- НОВОЕ (v0.16): Лечебные скиллы юзаются только при HP <= 50% ----
     if (skill.isHeal) {
       const hpPercent = (p.hp / p.maxHp) * 100;
-      if (hpPercent > 50) continue; // Пропускаем, если здоровья больше 50%
+      // Пропускаем, если здоровья больше 50% — кроме случая, когда лечением можно ударить мёртвого (v0.36)
+      if (hpPercent > 50 && !healStrikeApplies(getCurrentMonster())) continue;
     }
 
     return skill;
@@ -157,7 +158,7 @@ function tryApplyWeaponTrait(category, weapon, chanceMult = 1) {
   const idx = m.index;   // ← индекс текущего моба
 
   // ---- МЕЧИ: кровотечение ----
-  if (traits.bleedChance) {
+  if (traits.bleedChance && !monsterHasTagFlag(m, 'bleedImmune')) {   // v0.36: конструкты не кровоточат
     const chance = getTraitChance(traits.bleedChance, category) * chanceMult;
     if (Math.random() * 100 < chance) {
       const existing = getDebuff('monster', 'bleed', idx);
@@ -232,7 +233,7 @@ function tryApplyWeaponTrait(category, weapon, chanceMult = 1) {
 
       const elemLevel = getElementLevel(elemId);
       const baseDmg = traits.elementBaseDamage || 3;
-      const elementDamage = baseDmg + elemLevel;
+      const elementDamage = monsterTagDmg(m, baseDmg + elemLevel, ['magic', elemId]);   // v0.36: теги твари
 
       m.hp -= elementDamage;
       addElementXP(elemId);

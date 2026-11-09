@@ -122,7 +122,7 @@ function rollPackSize(template) {
 
 function getPackTemplate() {
   const t = state.battle.packTemplate;
-  return t ? [...MONSTERS, ...MINE_MONSTERS].find(mm => mm.id === t.id) : null;
+  return t ? ALL_HUNT_MONSTERS.find(mm => mm.id === t.id) : null;
 }
 
 // Шанс подмоги прямо сейчас (%), 0 — не придёт.
@@ -168,7 +168,8 @@ function packClockTick() {
   if (chance <= 0 || Math.random() * 100 >= chance) return;
 
   b.packIncoming = Math.random() * 100 < PACK_REINFORCE_TWO ? 2 : 1;
-  const where = state.player.currentLocation === 'mine' ? 'Из темноты штолен' : 'Из кустов';
+  const loc = state.player.currentLocation;
+  const where = loc === 'mine' ? 'Из темноты штолен' : loc === 'outskirts' ? 'Из тумана' : 'Из кустов';
   const what = b.packIncoming > 1 ? 'доносится топот — их несколько' : 'доносится рык';
   logCombat(`🌿 ${where} ${what}…`, 'log-entry separator');
 }

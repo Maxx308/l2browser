@@ -203,13 +203,15 @@ function showItemTooltip(e, item) {
 
   // ---- РАСХОДНИКИ / ЕДА / СВИТКИ ----
   if (item.effect) lines.push(`<div class="tt-line effect">${item.effect}</div>`);
+  // v0.35.1: блюдо — только бонус; еда — сытость своего вида (FOOD_KINDS)
   if (item.food && item.food.dish && DISHES[item.food.dish]) {
     const d = DISHES[item.food.dish];
     lines.push(`<div class="tt-line food-effect">${d.icon} ${d.text} · ${buffShopDur(getFoodDuration(item))}</div>`);
-  }
-  if (item.food) {
-    lines.push(`<div class="tt-line food-effect">+${item.food.healPerSec} HP/сек · ${buffShopDur(getFoodDuration(item))}</div>`);
-    lines.push(`<div class="tt-line type" style="color: #a0d080;">Клик чтобы съесть. Таймеры складываются (макс. 12 ч).</div>`);
+    lines.push(`<div class="tt-line type" style="color: #a0d080;">Клик чтобы съесть. Не насыщает. То же блюдо продлевает (макс. 12 ч), другое заменяет.</div>`);
+  } else if (item.food) {
+    const k = FOOD_KINDS[getFoodKindId(item)];
+    lines.push(`<div class="tt-line food-effect">${k.icon} Сытость: ${foodKindText(k)} · ${buffShopDur(getFoodDuration(item))}</div>`);
+    lines.push(`<div class="tt-line type" style="color: #a0d080;">Клик чтобы съесть. Та же еда складывается (макс. 12 ч), другая заменяет.</div>`);
   }
   if (item.shopId === 'teleportScroll') {   // v0.26: остался только на складе
     lines.push(`<div class="tt-line type" style="color: #c0a0ff;">Больше не используется — теперь магические тропы. Заберите со склада: +${(item.qty || 1) * TELEPORT_SCROLL_REFUND} Оболов.</div>`);

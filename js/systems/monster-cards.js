@@ -33,6 +33,9 @@ function renderMonsters() {
     renderFieldMonsters(grid);
   } else if (loc === 'mine') {
     renderMineMonsters(grid);
+  } else if (loc === 'outskirts') {   // v0.36: Окраины Ильграда — раскладка как в Копях (5 тварей)
+    grid.classList.add('mine-grid');
+    OUTSKIRTS_MONSTERS.forEach(t => grid.appendChild(buildMonsterStack(t, true)));
   }
 }
 
@@ -76,10 +79,9 @@ function buildMonsterStack(template, fromMine) {
   STACK_VARIANTS.forEach(v => {
     const card = buildMonsterCard(template, v, fromMine);
     const startFight = card.onclick;
-    const title = getMonsterTitle(template.id, v);
     const tab = document.createElement('div');
     tab.className = 'stack-tab';
-    tab.innerHTML = `<span>${STACK_TAB_NAMES[v]}</span>${title !== 'none' ? '<i>👑</i>' : ''}`;
+    tab.innerHTML = `<span>${STACK_TAB_NAMES[v]}</span>`;   // v0.36: титул — значком в левом нижнем углу карточки
     card.appendChild(tab);
     card.onclick = (e) => {
       if (stack._swiped) { stack._swiped = false; return; }
@@ -177,6 +179,23 @@ function getDropIconHtml(d) {
   return '';
 }
 
+// v0.36: значки карточки (img/tags). Новый шаблон: уровень в круге, череп со счётом, статы значками, титул в углу.
+const MONSTER_STAT_ICONS = {
+  hp:   { img: 'stat_hp',   name: 'Здоровье' },
+  hpShield: { img: 'stat_hp_shield', name: 'Здоровье под щитом маны: половина урона уходит в ману, пока она есть' },
+  atk:  { img: 'stat_atk',  name: 'Атака' },
+  pDef: { img: 'stat_pdef', name: 'Физическая защита' },
+  mDef: { img: 'stat_mdef', name: 'Магическая защита' },
+  eva:  { img: 'stat_eva',  name: 'Уворот' },
+};
+const MONSTER_TITLE_ICONS = {
+  hunter:      { img: 'hunter',      css: 'hunter',      name: 'Охотник' },
+  glorious:    { img: 'glorious',    css: 'glorious',    name: 'Прославленный охотник' },
+  magnificent: { img: 'magnificent', css: 'magnificent', name: 'Великолепный охотник' },
+};
+// Пороги, на которых о твари открывается новое (KILL_THRESHOLDS): атака, добыча, Оболы, титул.
+const KILL_REVEAL_STEPS = [KILL_THRESHOLDS.atk, KILL_THRESHOLDS.drop, KILL_THRESHOLDS.gold, KILL_THRESHOLDS.title];
+
 // ---------- КАРТОЧКА МОНСТРА ----------
 function buildMonsterCard(template, variantId, fromMine = false) {
   const monster = buildMonsterInstance(template, variantId);
@@ -211,67 +230,50 @@ function buildMonsterCard(template, variantId, fromMine = false) {
     dropRows += `<div class="row">${iconHtml}<span>${d.name}</span><span class="chance ${unlockedDrop ? '' : 'chance-hidden'}">${chanceStr}</span></div>`;
   });
 
-  // ---- СТАТЫ (одной строкой) ----
-  // ❤ HP  ⚔ Атака  🛡 Защита  ✨ Маг.защита  💨 Уворот
-  const statsParts = [];
-
-  // HP — v0.34.1: видно сразу (было — после 10 убийств), чтобы было понятно, кто крепче.
+  // ---- СТАТЫ: значок сверху, число снизу ----
   // data-stat / data-val — для подсказки «+N / −N» при смене подтипа в стопке (только у открытых статов).
-  statsParts.push(`<span class="monster-stat hp" data-stat="hp" data-val="${monster.maxHp}">❤ ${monster.maxHp}</span>`);
+  // HP видно сразу (v0.34.1). Пороги: атака и физ. защита 50, маг. защита 150, уворот 400.
+  const statHtml = (key, open, val, dataStat) => {
+    const def = MONSTER_STAT_ICONS[key];
+    const icon = `<img class="stat-ico" src="img/tags/${def.img}.jpg" alt="${def.name}" title="${def.name}">`;
+    const data = dataStat ? ` data-stat="${dataStat}"` : '';
+    return open
+      ? `<span class="monster-stat"${data}${dataStat ? ` data-val="${val}"` : ''}>${icon}<b>${val}</b></span>`
+      : `<span class="monster-stat stat-hidden"${data}>${icon}<b>???</b></span>`;
+  };
+  const evasionValue = (typeof getMonsterEvasion === 'function') ? getMonsterEvasion(monster) : 0;
+  const statsHtml = `<div class="monster-stats">${[
+    statHtml(monster.maxMp > 0 ? 'hpShield' : 'hp', true, monster.maxHp, 'hp'),
+    statHtml('atk', unlockedAtk, monster.atk, 'atk'),
+    statHtml('pDef', unlockedPDef, monster.pDef || 0, 'pDef'),
+    statHtml('mDef', unlockedMDef, monster.mDef || 0, 'mDef'),
+    statHtml('eva', unlockedEvasion, evasionValue, null),
+  ].join('')}</div>`;
 
-  // Атака — порог 50.
-  if (unlockedAtk) {
-    statsParts.push(`<span class="monster-stat" data-stat="atk" data-val="${monster.atk}">⚔ ${monster.atk}</span>`);
-  } else {
-    statsParts.push(`<span class="monster-stat stat-hidden" data-stat="atk">⚔ ???</span>`);
-  }
+  // ---- ТИТУЛ: значок в левом нижнем углу, виден и на задних карточках стопки ----
+  const titleDef = MONSTER_TITLE_ICONS[getMonsterTitle(template.id, variantId)];
+  const titleHtml = titleDef ? `<div class="monster-hunter ${titleDef.css}" title="${titleDef.name}"><img src="img/tags/${titleDef.img}.jpg" alt="${titleDef.name}"></div>` : '';
 
-  // Физ. защита — порог 50 (как атака).
-  if (unlockedPDef) {
-    statsParts.push(`<span class="monster-stat" data-stat="pDef" data-val="${monster.pDef || 0}">🛡 ${monster.pDef || 0}</span>`);
-  } else {
-    statsParts.push(`<span class="monster-stat stat-hidden" data-stat="pDef">🛡 ???</span>`);
-  }
-
-  // Маг. защита — порог 150 (как дроп).
-  if (unlockedMDef) {
-    statsParts.push(`<span class="monster-stat" data-stat="mDef" data-val="${monster.mDef || 0}">✨ ${monster.mDef || 0}</span>`);
-  } else {
-    statsParts.push(`<span class="monster-stat stat-hidden" data-stat="mDef">✨ ???</span>`);
-  }
-
-  // Уворот — порог 400 (как золото).
-  const evasionValue = (typeof getMonsterEvasion === 'function')
-    ? getMonsterEvasion(monster)
-    : 0;
-  if (unlockedEvasion) {
-    statsParts.push(`<span class="monster-stat">💨 ${evasionValue}</span>`);
-  } else {
-    statsParts.push(`<span class="monster-stat stat-hidden">💨 ???</span>`);
-  }
-
-  const statsHtml = `<div class="monster-stats">${statsParts.join('')}</div>`;
-
-  // ---- ТИТУЛ ----
-  const titleId = getMonsterTitle(template.id, variantId);
-  let titleHtml = '';
-  if (titleId === 'hunter') {
-    titleHtml = `<div class="monster-title hunter">👑 Охотник</div>`;
-  } else if (titleId === 'glorious') {
-    titleHtml = `<div class="monster-title glorious">👑 Прославленный охотник</div>`;
-  } else if (titleId === 'magnificent') {
-    titleHtml = `<div class="monster-title magnificent">🌟 Великолепный охотник</div>`;
-  }
+  // ---- Счётчик: череп и «убито / до следующего открытия» ----
+  const nextGoal = KILL_REVEAL_STEPS.find(n => kills < n);
+  const killsText = nextGoal ? `${kills}/${nextGoal}` : `${kills}`;
+  // Строка под именем — только если есть что показать: подтип и «их время».
+  const metaHtml = (variant.name ? `<span class="monster-variant-word">${variant.name}</span>` : '') +
+    (typeof primeTimeLineHtml === 'function' ? primeTimeLineHtml(template) : '');
+  const killsHtml = `<div class="monster-kills" title="Убито. Следующая цифра — сколько нужно, чтобы узнать о твари больше"><img class="kills-ico" src="img/tags/kills.jpg" alt=""><span>${killsText}</span></div>`;
 
   card.innerHTML = `
-    <div class="monster-portrait-img" style="background-image:url('${monster.art}')">${packBadgeHtml(template)}${typeof nightBadgeHtml === 'function' ? nightBadgeHtml(template) : ''}</div>
-    <div class="monster-name">${monster.name}</div>
-    <div class="monster-level">Ур. ${monster.level}${monster.attackType === 'magic' ? ' · Магия' : ''}</div>
-    ${typeof primeTimeLineHtml === 'function' ? primeTimeLineHtml(template) : ''}
-    <div class="monster-kills">💀 Убито: ${kills}</div>
+    <div class="monster-portrait-img" style="background-image:url('${monster.art}')">${packBadgeHtml(template)}${monsterTagsHtml(monster)}</div>
+    <div class="monster-head">
+      <span class="monster-lvl" title="Уровень ${monster.level}">${monster.level}</span>
+      <div class="monster-name">${template.name}</div>
+    </div>
+    ${metaHtml ? `<div class="monster-meta">${metaHtml}</div>` : ''}
+    ${monsterKitLineHtml(monster)}
     ${statsHtml}
     <div class="drop-list">${dropRows}</div>
     ${titleHtml}
+    ${killsHtml}
   `;
   return card;
 }

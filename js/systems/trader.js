@@ -23,7 +23,7 @@
 // ========================================================
 
 function openTrader() {
-  if (state.player.currentLocation !== 'town') return;
+  if (!isTownLoc(state.player.currentLocation)) return;   // v0.36: Андервуд или Ильград
 
   if (typeof cancelWaitingForResume === 'function') {
     cancelWaitingForResume('открыт торговец');
@@ -413,7 +413,7 @@ function buybackItem(index, count) {
     ? p.inventory.find(i => i.name === it.name && i.type === it.type && (i.shopId || null) === (it.shopId || null))
     : null;
 
-  if (!stack && p.inventory.length >= INVENTORY_MAX_SLOTS) {
+  if (!stack && p.inventory.length >= invMaxSlots()) {
     showToast('📦', 'Инвентарь переполнен');
     return;
   }
@@ -451,6 +451,6 @@ function buybackItem(index, count) {
 // (Переход, телепорт, магическая тропа, смерть с возвратом — всё ловится здесь.)
 setInterval(() => {
   if (!state.traderBuyback || state.traderBuyback.items.length === 0) return;
-  if (state.player && state.player.currentLocation !== 'town') clearTraderBuyback();
+  if (state.player && !isTownLoc(state.player.currentLocation)) clearTraderBuyback();
 }, 300);
 

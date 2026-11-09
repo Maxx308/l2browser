@@ -35,20 +35,32 @@ function gameLoop() {
   if (state.player.foodTimer > 0) {
     state.player.foodTimer -= dt;
     if (state.player.foodTimer <= 0) {
+      const k = FOOD_KINDS[state.player.foodKind] || FOOD_KINDS.cookedMeat;
       state.player.foodTimer = 0;
       state.player.foodTickAccum = 0;
-      logCombat(`🍖 Действие сытности закончилось.`, 'log-entry food');
+      state.player.foodKind = null;
+      logCombat(`${k.icon} Действие сытности («${k.name}») закончилось.`, 'log-entry food');
     }
   }
   if (state.player.foodTimer > 0 && state.player.classId) {
-    state.player.foodTickAccum = (state.player.foodTickAccum || 0) + dt;
-    while (state.player.foodTickAccum >= 1) {
-      state.player.foodTickAccum -= 1;
-      if (state.player.hp < state.player.maxHp) {
-        const heal = Math.min(FOOD_HEAL_PER_SEC, state.player.maxHp - state.player.hp);
-        state.player.hp += heal;
-        if (state.battle.active) spawnFloatDamage('fighter-player', Math.floor(heal), 'food');
+    // v0.35.1: скорость — от вида еды (FOOD_KINDS): в бою hp, вне боя hp + restHp, мана — mp
+    const p = state.player;
+    const k = currentFoodKind(p);
+    const inBattle = state.battle.active;
+    p.foodTickAccum = (p.foodTickAccum || 0) + dt;
+    while (p.foodTickAccum >= 1) {
+      p.foodTickAccum -= 1;
+      const rate = k.hp + (inBattle ? 0 : (k.restHp || 0));
+      if (p.hp < p.maxHp) {
+        const heal = Math.min(rate, p.maxHp - p.hp);
+        p.hp += heal;
+        if (inBattle) spawnFloatDamage('fighter-player', Math.floor(heal), 'food');
         else REGEN_SHOW.hp += heal;   // v0.34.1: на привале — вместе с обычной регенерацией
+      }
+      if (k.mp && p.mp < p.maxMp) {
+        const mp = Math.min(k.mp, p.maxMp - p.mp);
+        p.mp += mp;
+        REGEN_SHOW.mp += mp;   // синие «+N» — раз в секунду вместе с обычной регенерацией маны
       }
     }
   }
@@ -165,7 +177,7 @@ function gameLoop() {
         // Ждём возврата на «Охота».
       } else {
         const tpl = state.battle.waitingTemplate;
-        const template = [...MONSTERS, ...MINE_MONSTERS].find(mm => mm.id === tpl.id);
+        const template = ALL_HUNT_MONSTERS.find(mm => mm.id === tpl.id);
         if (template) {
           logCombat(`▶ Восстановление завершено. Возобновляем бой.`, 'log-entry levelup');
           showToast('▶', 'Бой возобновлён');
@@ -180,6 +192,10 @@ function gameLoop() {
   // ========================================================
   //  ATB-ЦИКЛ БОЯ
   // ========================================================
+  if (state.battle.breakthrough) breakthroughTick(dt);   // v0.36: обоз, таймер волны, упавший герой
+
+  if (state.battle.breakthrough && state.battle.breakthrough.paused) return;   // v0.36: спутник на арене, бой ждёт
+
   if (state.battle.active && state.battle.monsters && state.battle.monsters.length > 0 && state.player.hp > 0) {
     const aliveMonsters = state.battle.monsters.filter(m => m.hp > 0);
     if (aliveMonsters.length === 0) {
@@ -207,7 +223,7 @@ function gameLoop() {
       // monstersATB остался как «часы стаи» — по ним идут тики дебаффов (следующий шаг).
       state.battle.monstersATB += monsterSpeed * dt;
       for (const m of state.battle.monsters) {
-        if (m.hp > 0) m.atb = (m.atb || 0) + monsterSpeed * dt;
+        if (m.hp > 0) m.atb = (m.atb || 0) + monsterSpeed * dt * (m.atbMult || 1);   // v0.36: Стремительный, Неповоротливый
       }
       document.getElementById('battle-status').textContent = 'ATB заряжается...';
 
@@ -286,6 +302,8 @@ function gameLoop() {
         }
       }
 
+      if (state.battle.active) monsterTagsClock();   // v0.36: Корни
+
       // ---- v0.19: Гниение (Мор орка) — по всем мобам, на ком висит ----
       if (state.battle.active && typeof applyRotTicks === 'function') {
         applyRotTicks();
@@ -294,6 +312,7 @@ function gameLoop() {
       if (state.battle.active && state.player.hp > 0 && getDebuff('player', 'bleed')) {
         applyBleedTickOnPlayer();
       }
+      if (state.battle.active && getDebuff('player', 'wound')) applyWoundTickOnPlayer();   // v0.36: зарубка нежити
 
       // ---- v0.29: подкрепления стаи (battle-pack.js) ----
       if (state.battle.active && state.player.hp > 0) {

@@ -34,7 +34,7 @@ function aoePhysHit(m, mult, elemBonusPct) {
   let eva = getMonsterEvasion(m);
   const confused = getDebuff('monster', 'confused', m.index);
   if (confused && confused.evasionReduction) eva = eva * (1 - confused.evasionReduction / 100);
-  if (!rollHit(getPlayerAccuracy(), eva)) return { miss: true, dmg: 0, crit: false };
+  if (!rollHit(getPlayerAccuracy(), eva) || monsterTrueDodge(m)) return { miss: true, dmg: 0, crit: false };
 
   const pierce = checkCrossbowPierce(cat, m.pDef || 0);
   const base = p.pAtk;
@@ -56,7 +56,7 @@ function aoePhysHit(m, mult, elemBonusPct) {
 
   const crit = Math.random() * 100 < getCritChance(cat);
   if (crit) dmg = Math.floor(dmg * getCritMultiplier(cat));
-  return { miss: false, dmg: withSkillFlat(Math.max(1, dmg)), crit };
+  return { miss: false, dmg: monsterTagDmg(m, withSkillFlat(Math.max(1, dmg)), heroPhysKinds(cat)), crit };
 }
 
 // Магический удар по одному мобу. Возвращает { miss, dmg }.
@@ -65,7 +65,7 @@ function aoeMagHit(m, mult, elemId) {
   let eva = getMonsterEvasion(m);
   const confused = getDebuff('monster', 'confused', m.index);
   if (confused && confused.evasionReduction) eva = eva * (1 - confused.evasionReduction / 100);
-  if (!rollHit(getPlayerAccuracy(), eva)) return { miss: true, dmg: 0 };
+  if (!rollHit(getPlayerAccuracy(), eva) || monsterTrueDodge(m)) return { miss: true, dmg: 0 };
 
   const base = p.mAtk;
   const variance = Math.floor(base * 0.2);
@@ -75,7 +75,7 @@ function aoeMagHit(m, mult, elemId) {
   if (eb > 0) dmg = Math.floor(dmg * (1 + eb / 100));
   const mix = getMixtureAtkMult();
   if (mix > 1) dmg = Math.floor(dmg * mix);
-  return { miss: false, dmg: withSkillFlat(Math.max(1, dmg)) };
+  return { miss: false, dmg: monsterTagDmg(m, withSkillFlat(Math.max(1, dmg)), ['magic', elemId]) };
 }
 
 // ---------- ПРИМЕНЕНИЕ УРОНА ----------
@@ -448,6 +448,11 @@ function addRotWrathStack() {
   logCombat(`🌑 Гнев питает Гниение: +${state.battle.rotWrath * (s.wrathBonusPercent || 10)}% к его урону до конца боя.`, 'log-entry poison');
 }
 
+// v0.36: магия Смерти орка (Гнев, Гниение) — добавка от макс. HP врага; stacks — число ударов/слоёв.
+function deathMagicMaxHpBonus(m, stacks) {
+  return Math.max(1, Math.floor((m.maxHp || 0) * DEATH_MAGIC_MAX_HP_PERCENT / 100)) * (stacks || 1);
+}
+
 function applyRotTicks() {
   if (!state.battle.active) return;
   const hits = [];
@@ -456,7 +461,8 @@ function applyRotTicks() {
     const rot = getDebuff('monster', 'rot', m.index);
     if (!rot) return;
     const L = rotLayers(rot);
-    const dmg = withSkillFlat(Math.max(1, Math.floor(L.reduce((s, x) => s + x.damage, 0) * w)));
+    const base = withSkillFlat(Math.max(1, Math.floor(L.reduce((s, x) => s + x.damage, 0) * w)));
+    const dmg = monsterTagDmg(m, base + deathMagicMaxHpBonus(m, L.length), ['magic', 'death']);   // v0.36: % от макс. HP за каждый слой
     hits.push({ m, miss: false, dmg, type: 'poison', fx: 'toxic-small' });
     L.forEach(x => { x.turnsLeft -= 1; });
     rot.layers = L.filter(x => x.turnsLeft > 0);

@@ -61,6 +61,7 @@ function isStatUnlocked(monsterId, variantId, statName) {
 function getMonsterLocation(monsterId) {
   if (MONSTERS.some(m => m.id === monsterId)) return 'field';
   if (MINE_MONSTERS.some(m => m.id === monsterId)) return 'mine';
+  if (OUTSKIRTS_MONSTERS.some(m => m.id === monsterId)) return 'outskirts';
   return null;
 }
 
@@ -68,6 +69,7 @@ function getMonsterLocation(monsterId) {
 function getMonstersByLocation(loc) {
   if (loc === 'field') return MONSTERS;
   if (loc === 'mine')  return MINE_MONSTERS;
+  if (loc === 'outskirts') return OUTSKIRTS_MONSTERS;
   return [];
 }
 

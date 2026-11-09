@@ -134,7 +134,7 @@ const SKILLS = {
       { mpCost: 15, multiplier: 3.00 },
     ],
     cooldown: 4, isHeal: true,
-    getDesc: (lvl) => { const d = SKILLS.heal.levels[lvl-1]; return `Исцеление на <span class="val">×${d.multiplier.toFixed(2)}</span> от маг. атаки, усиливается Жизнью. <b>Комбо:</b> пока Исцеление на перезарядке, Похищение жизни бьёт на +50%. MP: <span class="val">${d.mpCost}</span>. КД: ${SKILLS.heal.cooldown} ATB.`; },
+    getDesc: (lvl) => { const d = SKILLS.heal.levels[lvl-1]; return `Исцеление на <span class="val">×${d.multiplier.toFixed(2)}</span> от маг. атаки, усиливается Жизнью. При здоровье от 70% — <b>ранит мёртвых</b> с той же силой. <b>Комбо:</b> пока Исцеление на перезарядке, Похищение жизни бьёт на +50%. MP: <span class="val">${d.mpCost}</span>. КД: ${SKILLS.heal.cooldown} ATB.`; },
     getNextDesc: (lvl) => { if (lvl >= 5) return ''; const n = SKILLS.heal.levels[lvl]; return `Следующий уровень: ×${n.multiplier.toFixed(2)}, MP: ${n.mpCost}`; }
   },
   fastPrayer: {
@@ -269,7 +269,7 @@ const SKILLS = {
     // v0.26: отдача 4% на всех уровнях (было 12% → 4%); не применяется ниже 50% HP;
     // если удар добил врага — отдачи нет.
     cooldown: 4, minHpPercent: 50, refundOnKill: true,
-    getDesc: (lvl) => { const d = SKILLS.spiritWrath.levels[lvl-1]; return `Гнев духов: магический удар на <span class="val">×${d.multiplier.toFixed(2)}</span> урона. Отдача: <span class="val">${d.recoilPercent}%</span> макс. HP (нет, если враг убит). Только при HP от 50%. КД: ${SKILLS.spiritWrath.cooldown} ATB.`; },
+    getDesc: (lvl) => { const d = SKILLS.spiritWrath.levels[lvl-1]; return `Гнев духов: магический удар на <span class="val">×${d.multiplier.toFixed(2)}</span> урона и ещё <span class="val">${DEATH_MAGIC_MAX_HP_PERCENT}%</span> от макс. HP врага. Отдача: <span class="val">${d.recoilPercent}%</span> макс. HP (нет, если враг убит). Только при HP от 50%. КД: ${SKILLS.spiritWrath.cooldown} ATB.`; },
     getNextDesc: (lvl) => { if (lvl >= 5) return ''; const n = SKILLS.spiritWrath.levels[lvl]; return `Следующий уровень: ×${n.multiplier.toFixed(2)}`; }
   },
 

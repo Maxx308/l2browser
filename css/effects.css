@@ -358,9 +358,7 @@
     flex-shrink: 0;
   }
   .toast-text {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    white-space: normal;   /* v0.36: длинный текст — в две строки, а не многоточие */
     min-width: 0;
   }
 }

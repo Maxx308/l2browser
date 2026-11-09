@@ -106,6 +106,9 @@ const CRAFT_PRICE_GEAR = 1000;      // снаряжение / ювелирка
 const CRAFT_PRICE_GEAR_T3 = 5000;   // v0.21: снаряжение тира 3
 const CRAFT_PRICE_FOOD = 100;
 const CRAFT_PRICE_DISH = 150;      // v0.20: блюда       // еда (v0.11)
+const CRAFT_PRICE_HEARTY = 200;    // v0.35.1: Сытное рагу
+const CRAFT_PRICE_FEAST = 1000;    // v0.35.1: Охотничий пир — дорого
+const CRAFT_PRICE_UKHA = 800;      // v0.35.1: Грибная уха — дорого
 
 // Рецепты кузницы.
 const RECIPES = {
@@ -433,8 +436,21 @@ const RECIPES = {
     // НОВОЕ (v0.11): цена снижена до 100.
     { id: 'cookedMeat', name: 'Жареное мясо', icon: 'img/materials/cooked_meat.png', price: CRAFT_PRICE_FOOD,
       result: { name: 'Жареное мясо', icon: 'img/materials/cooked_meat.png', type: 'food', sellPrice: 10,
-        food: { healPerSec: 1, duration: FOOD_DURATION } },
+        food: { healPerSec: 1, duration: FOOD_DURATION, kind: 'cookedMeat' } },
       materials: [{ name: 'Мясо', qty: 1 }, { name: 'Ветвь', qty: 1 }] },
+    // ---- v0.35.1: сытость сильнее — продукты уходят быстрее (FOOD_KINDS в config.js). Картинки — временно чужие. ----
+    { id: 'hearty', name: 'Сытное рагу', icon: 'img/materials/dish_wolf_stew.png', price: CRAFT_PRICE_HEARTY,
+      result: { name: 'Сытное рагу', icon: 'img/materials/dish_wolf_stew.png', type: 'food', sellPrice: 30,
+        food: { healPerSec: 2, duration: FOOD_DURATION, kind: 'hearty' } },
+      materials: [{ name: 'Мясо', qty: 4 }, { name: 'Кости', qty: 3 }, { name: 'Ветвь', qty: 2 }, { name: 'Уголь', qty: 1 }] },
+    { id: 'feast', name: 'Охотничий пир', icon: 'img/materials/dish_mushroom_roast.png', price: CRAFT_PRICE_FEAST,
+      result: { name: 'Охотничий пир', icon: 'img/materials/dish_mushroom_roast.png', type: 'food', sellPrice: 120,
+        food: { healPerSec: 2, duration: FOOD_DURATION, kind: 'feast' } },
+      materials: [{ name: 'Мясо', qty: 12 }, { name: 'Кости', qty: 8 }, { name: 'Пещерный гриб', qty: 6 }, { name: 'Уголь', qty: 4 }, { name: 'Клык', qty: 2 }] },
+    { id: 'ukha', name: 'Грибная уха', icon: 'img/materials/dish_mushroom_brew.png', price: CRAFT_PRICE_UKHA,
+      result: { name: 'Грибная уха', icon: 'img/materials/dish_mushroom_brew.png', type: 'food', sellPrice: 100,
+        food: { healPerSec: 2, duration: FOOD_DURATION, kind: 'ukha' } },
+      materials: [{ name: 'Мясо', qty: 6 }, { name: 'Пещерный гриб', qty: 12 }, { name: 'Жабья шкура', qty: 4 }, { name: 'Уголь', qty: 4 }] },
     // ---- v0.20: блюда — сытность + бонус на DISH_DURATION (одно блюдо за раз) ----
     { id: 'mushroomRoast', name: 'Жаркое с грибами', icon: 'img/materials/dish_mushroom_roast.png', price: CRAFT_PRICE_DISH,
       result: { name: 'Жаркое с грибами', icon: 'img/materials/dish_mushroom_roast.png', type: 'food', sellPrice: 15,

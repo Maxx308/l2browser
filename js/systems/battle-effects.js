@@ -23,7 +23,7 @@ function applyBurnTick() {
   const b = getDebuff('monster', 'burn', m.index);
   if (!b) return;
 
-  const dmg = withSkillFlat(Math.max(1, b.damage || 0));   // v0.25: + ступени Т3-брони
+  const dmg = monsterTagDmg(m, withSkillFlat(Math.max(1, b.damage || 0)), ['magic', 'fire']);   // v0.25: + ступени Т3-брони
   m.hp -= dmg;
   b.turnsLeft = (b.turnsLeft || 0) - 1;
 
@@ -54,7 +54,7 @@ function applyBleedTick() {
   const b = getDebuff('monster', 'bleed', m.index);
   if (!b) return;
 
-  const dmg = withSkillFlat(Math.max(1, b.damage || 0));   // v0.25: + ступени Т3-брони
+  const dmg = monsterTagDmg(m, withSkillFlat(Math.max(1, b.damage || 0)), ['physical', 'bleed']);   // v0.25: + ступени Т3-брони
   m.hp -= dmg;
   b.turnsLeft = (b.turnsLeft || 0) - 1;
 

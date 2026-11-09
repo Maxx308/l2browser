@@ -8,7 +8,7 @@
 // ========================================================
 
 function openGuild() {
-  if (state.player.currentLocation !== 'town') return;
+  if (!isTownLoc(state.player.currentLocation)) return;   // v0.36: Андервуд или Ильград
 
   // Отменяем автостарт (если он был).
   if (typeof cancelWaitingForResume === 'function') {

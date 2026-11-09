@@ -230,6 +230,12 @@ function addDebuff(target, id, index, data) {
   const idx = resolveMonsterIndex(index);
   if (idx === null) return;   // нет текущего моба — не накладываем
 
+  // v0.36: тег «Непоколебимый» — оглушение не держится
+  if (id === 'stun') {
+    const stunned = (state.battle.monsters || []).find(m => m.index === idx);
+    if (stunned && monsterHasTagFlag(stunned, 'stunImmune')) return;
+  }
+
   if (!state.battle.debuffs.monsters[idx]) state.battle.debuffs.monsters[idx] = {};
   state.battle.debuffs.monsters[idx][id] = { ...data };
 

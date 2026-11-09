@@ -196,7 +196,7 @@ function getRefineBonusLines(item) {
 //  UI: ОТКРЫТИЕ / ЗАКРЫТИЕ
 // --------------------------------------------------------
 function openRefine() {
-  if (state.player.currentLocation !== 'town') return;
+  if (!isTownLoc(state.player.currentLocation)) return;   // v0.36: Андервуд или Ильград
 
   if (typeof cancelWaitingForResume === 'function') {
     cancelWaitingForResume('открыта мастерская');

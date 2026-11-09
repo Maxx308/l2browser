@@ -111,6 +111,29 @@
   text-align: center;
   color: var(--text-dim);
 }
+/* v0.36: мини-значки тегов на портрете */
+.monster-tags {
+  position: absolute; right: calc(3 * var(--u)); top: calc(3 * var(--u));   /* слева вверху — следы лап, внизу — имя */
+  z-index: 2;
+  display: flex; flex-direction: column; gap: calc(2 * var(--u));   /* столбиком от угла вниз — меньше закрывают картинку */
+}
+.monster-tag {
+  display: flex; align-items: center; justify-content: center;
+  width: calc(22 * var(--u)); height: calc(22 * var(--u));
+  overflow: hidden;
+  background: #0e0c0a;
+  border: 1px solid rgba(168, 130, 74, 0.6);
+  border-radius: calc(4 * var(--u));
+  box-shadow: 0 0 calc(3 * var(--u)) rgba(0, 0, 0, 0.8);
+}
+.monster-tag img { display: block; width: 100%; height: 100%; object-fit: cover; filter: brightness(0.82) saturate(0.8); }
+/* v0.36: оружие и навык твари */
+.monster-card .monster-kit {
+  font-size: var(--fs-tiny);
+  margin: calc(-3 * var(--u)) 0 calc(5 * var(--u));
+  text-align: center;
+  color: #c98f7a;
+}
 
 /* ---------- ДРОП-ЛИСТ ---------- */
 .drop-list { line-height: 1.55; color: var(--text-dim); }
@@ -558,7 +581,7 @@
 .monsters-grid.stack-grid {
   grid-template-columns: repeat(5, minmax(0, 1fr));
   --stack-dx: calc(26 * var(--u));   /* ширина видимого края задней карточки (было 20) */
-  --stack-dy: calc(11 * var(--u));
+  --stack-dy: calc(22 * var(--u));   /* v0.36: снизу виден значок титула на задних карточках (было 11) */
 }
 @media (max-width: 1100px) { .monsters-grid.stack-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
 @media (max-width: 900px)  { .monsters-grid.stack-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
@@ -566,7 +589,7 @@
   .monsters-grid.stack-grid {
     grid-template-columns: minmax(0, 1fr);
     --stack-dx: calc(38 * var(--u));   /* телефон: край под палец (было 30) */
-    --stack-dy: calc(14 * var(--u));
+    --stack-dy: calc(22 * var(--u));   /* v0.36: под значок титула (было 14) */
     gap: calc(12 * var(--u));
   }
 }
@@ -590,7 +613,7 @@
 .monster-stack > .monster-card.stack-back { filter: brightness(.7); cursor: pointer; }
 .monster-stack > .monster-card.stack-back:hover { filter: brightness(.9); }
 /* у задних карточек содержимое не нужно — видно только край */
-.monster-stack > .monster-card.stack-back > :not(.stack-tab) { visibility: hidden; }
+.monster-stack > .monster-card.stack-back > :not(.stack-tab):not(.monster-hunter) { visibility: hidden; }
 
 /* Край с надписью — правая полоса карточки шириной в один сдвиг */
 .stack-tab {
@@ -598,12 +621,15 @@
   width: var(--stack-dx);
   display: none;
   flex-direction: column; align-items: center; justify-content: center; gap: calc(4 * var(--u));
-  writing-mode: vertical-rl;
+  /* v0.35.1: вертикально пишется только сама надпись. Раньше vertical-rl стоял на всём крае —
+     и корона 👑 (титул) вставала не под надписью, а рядом, утаскивая её вверх. */
+  writing-mode: horizontal-tb;
   font-family: 'Cinzel', serif; font-size: var(--fs-tiny); letter-spacing: .12em; text-transform: uppercase;
   color: var(--gold-bright);
   pointer-events: none;
 }
-.stack-tab i { font-style: normal; writing-mode: horizontal-tb; font-size: calc(11 * var(--u)); }
+.stack-tab span { writing-mode: vertical-rl; white-space: nowrap; }
+.stack-tab i { font-style: normal; font-size: calc(11 * var(--u)); line-height: 1; }
 .monster-card.stack-back .stack-tab { display: flex; }
 .monster-card.variant-normal .stack-tab  { background: linear-gradient(90deg, transparent, rgba(184, 148, 90, .18)); }
 .monster-card.variant-ancient .stack-tab { color: #a9c6ff; background: linear-gradient(90deg, transparent, rgba(74, 106, 176, .35)); }
@@ -663,7 +689,6 @@
 .monster-card.selected .monster-portrait-img { filter: brightness(1.12) saturate(1.12); }
 
 .monster-card .monster-pack { top: calc(5 * var(--u)); bottom: auto; left: calc(5 * var(--u)); z-index: 2; }
-.monster-card .monster-night { top: calc(5 * var(--u)); right: calc(5 * var(--u)); z-index: 2; }
 
 .monster-card .monster-name {
   position: relative; z-index: 1;
@@ -694,3 +719,82 @@
   .monster-card .monster-portrait-img { --bleed: calc(5 * var(--u)); height: auto; aspect-ratio: 16 / 9; margin-bottom: 0; }
   .monster-card .monster-name { font-size: calc(12 * var(--u)); margin-top: calc(-17 * var(--u)); }
 }
+
+/* ========================================================
+   v0.36: НОВЫЙ НИЗ КАРТОЧКИ
+   Уровень — кругом слева от имени, череп со счётом — справа под именем,
+   статы значками (значок сверху, число снизу), титул — значком в левом нижнем углу.
+   ======================================================== */
+.monster-card { padding-bottom: calc(26 * var(--u)); }
+.monster-head {
+  position: relative; z-index: 1;
+  display: flex; align-items: center; justify-content: center;
+  min-height: calc(28 * var(--u));
+  margin-top: calc(-24 * var(--u));
+  padding: 0 calc(30 * var(--u));
+}
+.monster-card .monster-head .monster-name { margin: 0; }
+.monster-lvl {
+  position: absolute; left: 0; top: 50%; transform: translateY(-50%);
+  display: flex; align-items: center; justify-content: center;
+  width: calc(27 * var(--u)); height: calc(27 * var(--u));
+  font-family: 'Cinzel', serif; font-weight: 700; font-size: calc(13 * var(--u));
+  color: var(--gold-bright);
+  background: radial-gradient(circle at 35% 30%, #2d261c, #120e0a);
+  border: calc(1.5 * var(--u)) solid #a8824a;
+  border-radius: 50%;
+  box-shadow: 0 0 calc(5 * var(--u)) rgba(0, 0, 0, .9);
+}
+.monster-card.variant-ancient .monster-lvl { border-color: #6a9ae0; color: #bcd4ff; }
+.monster-card.variant-bloody .monster-lvl  { border-color: #e04040; color: #ffb0a0; }
+.monster-meta {
+  display: flex; align-items: center; justify-content: center;
+  gap: calc(8 * var(--u));
+  margin: calc(2 * var(--u)) 0 calc(3 * var(--u));
+}
+.monster-meta .monster-prime { flex: none; margin: 0; text-align: left; line-height: 1.15; white-space: nowrap; }
+/* Счётчик убийств — в правом нижнем углу, напротив значка титула */
+.monster-card > .monster-kills {
+  position: absolute; right: calc(7 * var(--u)); bottom: calc(4 * var(--u));
+  display: flex; align-items: center; gap: calc(3 * var(--u));
+  margin: 0;
+  font-family: 'PT Serif', Georgia, serif; letter-spacing: 0;
+  cursor: help;
+}
+.kills-ico { width: calc(16 * var(--u)); height: calc(16 * var(--u)); border-radius: 50%; object-fit: cover; }
+.monster-card .monster-stats {
+  justify-content: space-between; gap: calc(2 * var(--u));
+  margin: calc(4 * var(--u)) 0 calc(7 * var(--u));
+}
+.monster-card .monster-stat {
+  flex: 1 1 0; min-width: 0;
+  display: flex; flex-direction: column; align-items: center; gap: calc(2 * var(--u));
+}
+.monster-stat b { font-family: 'PT Serif', Georgia, serif; font-weight: 700; line-height: 1; white-space: nowrap; }
+.monster-card .monster-head .monster-name { white-space: nowrap; }   /* имя — всегда одна строка */
+.monster-variant-word { flex: none; font-size: var(--fs-tiny); letter-spacing: .02em; }
+.monster-card.variant-ancient .monster-variant-word { color: #a9c6ff; }
+.monster-card.variant-bloody .monster-variant-word  { color: #ff8f7d; }
+.stat-ico {
+  display: block;
+  width: calc(21 * var(--u)); height: calc(21 * var(--u));
+  object-fit: cover;
+  border: 1px solid rgba(168, 130, 74, .35);
+  border-radius: calc(4 * var(--u));
+  filter: brightness(.82) saturate(.75);
+}
+.monster-stat.stat-hidden .stat-ico { filter: grayscale(.8) brightness(.62); }
+.monster-hunter {
+  position: absolute; left: calc(6 * var(--u)); bottom: calc(3 * var(--u));
+  width: calc(19 * var(--u)); height: calc(19 * var(--u));
+  overflow: hidden;
+  border: 1px solid #c08a3e;
+  border-radius: calc(4 * var(--u));
+  box-shadow: 0 0 calc(5 * var(--u)) rgba(255, 176, 96, .55);
+  cursor: help;
+}
+.monster-hunter img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.monster-hunter.glorious    { border-color: #ffd040; box-shadow: 0 0 calc(7 * var(--u)) rgba(255, 208, 64, .8); }
+.monster-hunter.magnificent { border-color: #e070e0; box-shadow: 0 0 calc(9 * var(--u)) rgba(224, 112, 224, .9); }
+@media (max-width: 900px) { .monster-head { margin-top: calc(-22 * var(--u)); } }
+@media (max-height: 600px) and (orientation: landscape) { .monster-head { margin-top: calc(-19 * var(--u)); } }

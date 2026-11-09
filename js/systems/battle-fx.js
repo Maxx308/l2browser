@@ -45,6 +45,7 @@ const BX_ART_CROP = {
 const BX_LOCATION_BG = {
   field: 'img/locations/field.jpg',   // v0.20: свой фон Поляны
   mine:  'img/monsters/ore.jpg',
+  outskirts: 'img/locations/outskirts.jpg',   // v0.36
   town:  'img/start-bg.jpg',
 };
 
@@ -176,7 +177,7 @@ function bxTotalXp() {
 function bxUpdateStageBg() {
   const st = bxStage();
   if (!st) return;
-  const loc = (state.player && state.player.currentLocation) || 'field';
+  const loc = state.battle.breakthrough ? 'outskirts' : ((state.player && state.player.currentLocation) || 'field');   // v0.36: своего фона у прорыва пока нет
   if (BX.bgLoc === loc) return;
   BX.bgLoc = loc;
   st.dataset.loc = loc;
@@ -282,6 +283,7 @@ function bxAddEnemyCard(row, m, delaySec) {
         <div class="bar-fill hp" style="width:100%"></div>
         <div class="bar-text"></div>
       </div>
+      ${m.maxMp > 0 ? `<div class="bar bx-bar mp"><div class="bar-fill mp bx-mob-mp" style="width:100%"></div><div class="bar-text bx-mob-mp-text"></div></div>` : ''}
     </div>`;
   // v0.20: в ручном режиме тап по врагу — выбор цели
   unit.addEventListener('click', () => { if (typeof manualSelectTarget === 'function') manualSelectTarget(m.index); });
@@ -295,6 +297,8 @@ function bxAddEnemyCard(row, m, delaySec) {
     fill: unit.querySelector('.bar-fill'),
     ghost: unit.querySelector('.bx-ghost'),
     text: unit.querySelector('.bar-text'),
+    mpFill: unit.querySelector('.bx-mob-mp'),   // v0.36: мана магических тварей
+    mpText: unit.querySelector('.bx-mob-mp-text'),
     status: unit.querySelector('.bx-status'),
     atb: unit.querySelector('.bx-atb-mob'),   // v0.23: своя шкала ATB
     atbP: -1,
@@ -406,6 +410,10 @@ function bxSync() {
     c.fill.style.width = pct + '%';
     c.ghost.style.width = pct + '%';
     c.text.textContent = `${Math.max(0, Math.floor(m.hp))} / ${m.maxHp}`;
+    if (c.mpFill) {
+      c.mpFill.style.width = Math.max(0, m.mp / m.maxMp * 100) + '%';
+      c.mpText.textContent = `${Math.max(0, Math.floor(m.mp))} / ${m.maxMp}`;
+    }
 
     if (m.hp <= 0) {
       c.unit.classList.remove('bx-target');
@@ -920,7 +928,7 @@ function bxPlayDefeat() {
   // ---- Смерть героя ----
   const origPlayerDeath = onPlayerDeath;
   onPlayerDeath = function () {
-    try { if (bxOn()) bxPlayDefeat(); } catch (e) { console.warn('[battle-fx]', e); }
+    try { if (bxOn() && !state.battle.breakthrough) bxPlayDefeat(); } catch (e) { console.warn('[battle-fx]', e); }
     return origPlayerDeath.apply(this, arguments);
   };
 

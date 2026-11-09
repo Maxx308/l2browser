@@ -37,7 +37,7 @@ function isOnHuntTab() {
 
 function selectMonster(template, variantId, fromMine = false) {
   if (state.travel.active) return;
-  if (state.player.currentLocation === 'town') return;
+  if (isTownLoc(state.player.currentLocation)) return;
   if (!state.player.classId) {
     logCombat('Сначала выберите класс у Наставника.', 'log-entry');
     return;
@@ -57,9 +57,9 @@ function selectMonster(template, variantId, fromMine = false) {
 // --------------------------------------------------------
 function startBattle(template, variantId) {
   // ---- Создаём стаю ----
-  const count = rollPackSize(template);
+  const count = state.battle.breakthrough ? 1 : rollPackSize(template);   // v0.36: волну прорыва собирает ilgrad-breakthrough.js
   const monsters = createMonsterGroup(template, variantId, count);
-  if (typeof soulsOnBattleStart === 'function') soulsOnBattleStart(monsters);   // v0.33: душа самоцвета
+  if (typeof soulsOnBattleStart === 'function' && !state.battle.breakthrough) soulsOnBattleStart(monsters);   // v0.33: душа самоцвета
   const firstMonster = monsters[0];
 
   state.battle.active = true;
@@ -187,6 +187,7 @@ function startBattle(template, variantId) {
 
 function closeBattle() {
   const p = state.player;
+  if (state.battle.breakthrough) breakthroughAbort();   // v0.36
 
   // ---- НОВОЕ: при закрытии боя — выключаем автобой-повтор ----
   if (state.battle.repeatBattle) {

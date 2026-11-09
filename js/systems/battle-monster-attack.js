@@ -7,7 +7,24 @@
 //  + Скорость молнии (lightningSpeed) — +100% ATB при увороте.
 // ========================================================
 
+// v0.36: ход твари — один удар или навык из нескольких (battle-monster-kit.js).
 function monsterAttack(attacker) {
+  if (!attacker) return;
+  if (monsterTagsOnTurn(attacker)) return;   // v0.36: Трус сбежал, Плач
+  monsterManaTurn(attacker);   // v0.36: заклинание стоит маны
+  const skill = monsterKitPickSkill(attacker);
+  const hits = (skill && skill.hits) || 1;
+  let landed = 0;
+  for (let i = 0; i < hits; i++) {
+    if (attacker.hp <= 0 || state.player.hp <= 0 || !state.battle.active) break;
+    attacker.kitLastHit = 0;
+    monsterStrike(attacker, skill);
+    landed += attacker.kitLastHit || 0;
+  }
+  if (skill) monsterKitAfterSkill(attacker, skill, landed);
+}
+
+function monsterStrike(attacker, skill) {
   const p = state.player;
   const m = attacker;
   if (!m || m.hp <= 0 || p.hp <= 0) return;
@@ -62,17 +79,24 @@ function monsterAttack(attacker) {
     return;
   }
 
+  // v0.36: полумагический монстр — каждый удар либо магия, либо физика.
+  // Без маны магическая тварь бьёт телом (monsterManaTurn).
+  const hitIsMagic = !m.mpDry && (m.attackType === 'magic' || (m.attackType === 'hybrid' && Math.random() < 0.5));
+
   // ---- v0.19: меч — парирование физического удара ----
-  if (typeof tryWeaponParry === 'function' && tryWeaponParry(m)) {
+  if (!hitIsMagic && typeof tryWeaponParry === 'function' && tryWeaponParry(m)) {
     updateTopStatus();
     updateBattleUI();
     return;
   }
 
   // ---- Урон ----
-  const base = m.atk;
+  const base = m.mpDry ? Math.floor(m.atk * MONSTER_DRY_ATK_MULT) : m.atk;
   const variance = Math.floor(base * 0.3);
   let raw = base + Math.floor(Math.random() * variance * 2) - variance;
+  raw = monsterKitRaw(m, skill, raw);   // v0.36: навык, зарубки на герое, добивание
+  raw = monsterTagRaw(m, raw);          // v0.36: Стайный, Свирепый, Злопамятный, Осадный
+  const armorLeft = 1 - (m.armorIgnore || 0);   // v0.36: Острый
   let dmg;
 
   const mixtureDefMult = getMixtureDefMult();
@@ -86,8 +110,8 @@ function monsterAttack(attacker) {
   let msAbsorbed = 0;
   let rawHit = 0;
 
-  if (m.attackType === 'magic') {
-    dmg = Math.max(1, raw - Math.floor(p.mDef * 0.5));
+  if (hitIsMagic) {
+    dmg = Math.max(1, raw - Math.floor(p.mDef * 0.5 * armorLeft));
     if (stanceMult < 1) dmg = Math.max(1, Math.floor(dmg * stanceMult));
     if (guardMult < 1) dmg = Math.max(1, Math.floor(dmg * guardMult));
     rawHit = dmg;
@@ -97,7 +121,7 @@ function monsterAttack(attacker) {
     logCombat(`✦ ${m.name} бьёт магией на ${dmg} урона.${guardInfo}`, 'log-entry magic');
   } else {
     const flatReduce = Math.ceil(p.flatDamageReduce || 0);
-    dmg = Math.max(1, raw - Math.floor(p.pDef * 0.3) - flatReduce);
+    dmg = Math.max(1, raw - Math.floor(p.pDef * 0.3 * armorLeft) - flatReduce);
     if (mixtureDefMult < 1.0) dmg = Math.max(1, Math.floor(dmg * mixtureDefMult));
     if (stanceMult < 1) dmg = Math.max(1, Math.floor(dmg * stanceMult));
     if (guardMult < 1) dmg = Math.max(1, Math.floor(dmg * guardMult));
@@ -119,6 +143,8 @@ function monsterAttack(attacker) {
   const traits = m.traits;
   const chanceMult = m.traitChanceMult || 1.0;
   let hitDamageForBleed = dmg;
+  monsterKitOnHit(m, skill, dmg, chanceMult);   // v0.36: зарубка, вторые цели
+  monsterTagOnHit(m);                           // v0.36: Вор
 
   // ---- 1. КРИТ (Бандит) ----
   if (traits && traits.critChance) {
@@ -134,7 +160,7 @@ function monsterAttack(attacker) {
   }
 
   // ---- 2. СТИХИЯ (Жаба) ----
-  if (traits && traits.elementChance) {
+  if (traits && traits.elementChance && !m.mpDry) {
     const elementChance = traits.elementChance * chanceMult;
     if (Math.random() * 100 < elementChance) {
       const elements = ['fire', 'ice', 'lightning'];
@@ -220,7 +246,7 @@ function monsterAttack(attacker) {
           
           // Урон = 5 + уровень Молнии
           const lightningLvl = getElementLevel('lightning');
-          const stormDmg = 5 + lightningLvl;
+          const stormDmg = monsterTagDmg(m, 5 + lightningLvl, ['magic', 'lightning']);   // v0.36: теги твари
           
           m.hp -= stormDmg;
           spawnFloatDamage('fighter-monster', stormDmg, 'magic');

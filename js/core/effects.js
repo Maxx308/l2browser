@@ -16,7 +16,11 @@ function renderEffectsPanel() {
 
   // Сытность (еда)
   if (p.foodTimer > 0) {
-    chips.push(`<div class="effect-chip food"><span class="ec-icon">🍖</span><span class="ec-name">Сытность</span><span class="ec-value">${formatTime(p.foodTimer)}</span></div>`);
+    // v0.35.1: сытость своего вида — значок и скорость от еды
+    const k = typeof currentFoodKind === 'function' ? currentFoodKind(p) : null;
+    const icon = k ? k.icon : '🍖';
+    const title = k ? `${k.name}: ${foodKindText(k)}` : 'Сытность';
+    chips.push(`<div class="effect-chip food" title="${title}"><span class="ec-icon">${icon}</span><span class="ec-name">Сытность${k && k.hp > 1 ? ' +' + k.hp : ''}${k && k.mp ? ' · мана' : ''}</span><span class="ec-value">${formatTime(p.foodTimer)}</span></div>`);
   }
   // v0.20: блюдо
   if (p.dish && p.dish.timer > 0 && DISHES[p.dish.id]) {

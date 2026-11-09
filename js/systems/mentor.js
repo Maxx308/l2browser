@@ -27,7 +27,7 @@ function isSkillAvailableForPlayer(skill, player) {
 }
 
 function openMentor() {
-  if (state.player.currentLocation !== 'town') return;
+  if (!isTownLoc(state.player.currentLocation)) return;   // v0.36: Андервуд или Ильград
 
   if (typeof cancelWaitingForResume === 'function') {
     cancelWaitingForResume('открыт наставник');

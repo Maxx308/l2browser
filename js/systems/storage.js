@@ -215,7 +215,7 @@ function getStorageGroupKey(item) {
 //  ОКНО
 // --------------------------------------------------------
 function openStorage() {
-  if (state.player.currentLocation !== 'town') return;
+  if (!isTownLoc(state.player.currentLocation)) return;   // v0.36: Андервуд или Ильград
 
   if (typeof cancelWaitingForResume === 'function') {
     cancelWaitingForResume('открыт склад');
@@ -224,6 +224,48 @@ function openStorage() {
   document.getElementById('storage-overlay').classList.add('active');
   renderStorageWindow();
   refreshStorageFromCloud();   // v0.25: свежая версия из облака (если изменилась — перерисуем)
+
+  // v0.35.1: кладовщица Вирна — статья в Энциклопедии и «Поговорить».
+  // Старый герой, у которого на складе уже что-то лежит, сразу получает тему «Тебе не интересно…» (без записи в летописи).
+  const c = state.player.chronicle;
+  if (c && loadStorage().length > 0) {
+    if (!c.deeds) c.deeds = {};
+    if (!c.deeds['storage.deposit']) c.deeds['storage.deposit'] = Date.now();
+    if (!c.firsts) c.firsts = {};
+    if (!c.firsts['storage.deposit']) c.firsts['storage.deposit'] = Date.now();
+  }
+  if (typeof unlockLore === 'function') unlockLore('keeper');
+  if (typeof updateTalkButtons === 'function') updateTalkButtons();
+}
+
+// v0.35.1: дело на Складе — тема в разговоре + отношения с кладовщицей (+1 не чаще раза в день).
+function keeperDeed(key) {
+  if (typeof markDeed === 'function') markDeed(key);
+  if (typeof rapportService === 'function') rapportService('keeper');
+}
+
+// v0.35.1: что лежит на складе — для реплики Вирны («помню каждую»).
+function keeperStoreSummary() {
+  const arr = loadStorage();
+  const dustNames = Object.values(ALCHEMY_DUST || {}).map(d => d.name);
+  const dust = arr.filter(i => dustNames.includes(i.name)).reduce((s, i) => s + (i.qty || 0), 0);
+  const n = arr.length, n10 = n % 10, n100 = n % 100;
+  const cellsWord = (n10 === 1 && n100 !== 11) ? 'ячейка' : (n10 >= 2 && n10 <= 4 && (n100 < 12 || n100 > 14)) ? 'ячейки' : 'ячеек';
+  return { cells: n, cellsWord, dust };
+}
+
+// v0.35.1: другие герои аккаунта (склад у них общий) — имена, кроме текущего.
+function keeperOtherHeroes() {
+  const names = [];
+  for (let i = 0; i < SLOT_COUNT; i++) {
+    if (i === state.activeSlotIndex) continue;
+    let name = null;
+    const cloud = typeof cloudGetCachedSlot === 'function' ? cloudGetCachedSlot(i) : null;
+    if (cloud && cloud.data && cloud.data.player) name = cloud.data.player.name;
+    if (!name) { const m = readSlotMeta(i); if (m.used) name = m.name; }
+    if (name && name !== state.player.name && !names.includes(name)) names.push(name);
+  }
+  return names;
 }
 
 function closeStorage() {
@@ -243,7 +285,7 @@ function renderStorageWindow() {
 
 function updateStorageCounters() {
   const invEl = document.getElementById('storage-inv-count');
-  if (invEl) invEl.textContent = state.player.inventory.length + ' / ' + INVENTORY_MAX_SLOTS;
+  if (invEl) invEl.textContent = state.player.inventory.length + ' / ' + invMaxSlots();
 
   const storeEl = document.getElementById('storage-store-count');
   if (storeEl) {
@@ -391,6 +433,7 @@ function storageDepositItem(item) {
   if (movedQty > 0) {
     const qtyStr = movedQty > 1 ? ` ×${movedQty}` : '';
     logLoot(`🏦 На склад: ${item.name}${qtyStr}`, 'log-info');
+    keeperDeed('storage.deposit');
   }
 }
 
@@ -457,7 +500,7 @@ function storageWithdrawItem(storageIdx) {
   }
 
   // Нет стака — нужна новая ячейка в инвентаре.
-  if (p.inventory.length >= INVENTORY_MAX_SLOTS) {
+  if (p.inventory.length >= invMaxSlots()) {
     showToast('📦', 'Инвентарь переполнен');
     logLoot(`📦 Инвентарь переполнен — «${item.name}» остался на складе.`, 'log-info');
     return;

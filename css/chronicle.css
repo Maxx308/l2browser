@@ -145,6 +145,8 @@
 /* v0.32: длинное значение переносится в своей колонке, а не под подпись */
 .lore-rows div { display: flex; gap: calc(6 * var(--u)); }
 .lore-rows span { flex: none; width: calc(120 * var(--u)); }
+/* v0.36: значок в строке таблицы (Приметы тварей) */
+.lore-row-icon { width: calc(20 * var(--u)); height: calc(20 * var(--u)); border-radius: calc(3 * var(--u)); border: 1px solid #a8824a; vertical-align: middle; margin-right: calc(6 * var(--u)); }
 
 /* ---- Владение в листе персонажа ---- */
 .cs-prof { margin-top: calc(18 * var(--u)); }
@@ -160,6 +162,16 @@
 .equip-slot.bag-slot svg { opacity: .9; }
 /* Пока не познакомились с Заплечником — слот еле мерцает (приглашение, не навязчиво) */
 .equip-slot.bag-slot.bag-calls { animation: bagCalls 2.6s ease-in-out infinite; }
+/* v0.35.1: Заплечник чего-то хочет (поручение) — красная точка, как на «Хрониках» */
+.equip-slot.bag-slot { position: relative; }
+.equip-slot.bag-slot.has-news::after {
+  content: ''; position: absolute; z-index: 2;
+  top: calc(-4 * var(--u)); right: calc(-4 * var(--u));
+  width: calc(10 * var(--u)); height: calc(10 * var(--u));
+  border-radius: 50%;
+  background: var(--hp-glow);
+  box-shadow: 0 0 calc(6 * var(--u)) var(--hp-glow);
+}
 @keyframes bagCalls {
   0%, 100% { box-shadow: 0 0 0 rgba(224,190,122,0); }
   50%      { box-shadow: 0 0 calc(10 * var(--u)) rgba(224,190,122,.55); }

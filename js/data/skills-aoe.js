@@ -90,7 +90,7 @@ const SKILLS_AOE = {
     ],
     // v0.19.1: до 2 слоёв; некуда перескочить → +1 ход всем (макс 6); Гнев: +10% урона Гниения до конца боя (макс +30%)
     rotMaxLayers: 2, rotMaxTurns: 6, wrathBonusPercent: 10, wrathBonusMax: 3,
-    getDesc: (lvl) => { const d = SKILLS.pestilence.levels[lvl-1]; return `Насылает Гниение на ${aoeV(d.targets)} врагов: ${aoeV(d.dotPercent + '%')} маг. атаки урона каждый ход, ${aoeV(d.turns)} хода. Повторный Мор вешает <b>второй слой</b> (урон ×2). Враг умер — Гниение <b>перескакивает</b> на соседа, а если некуда — остальные гниют на 1 ход дольше. <b>Комбо:</b> каждый Гнев +10% к урону Гниения до конца боя (макс. +30%). Качает Смерть. MP: ${aoeV(d.mpCost)}. КД: ${SKILLS.pestilence.cooldown}. С 10 уровня.`; },
+    getDesc: (lvl) => { const d = SKILLS.pestilence.levels[lvl-1]; return `Насылает Гниение на ${aoeV(d.targets)} врагов: ${aoeV(d.dotPercent + '%')} маг. атаки и ${aoeV(DEATH_MAGIC_MAX_HP_PERCENT + '%')} от макс. HP врага каждый ход, ${aoeV(d.turns)} хода. Повторный Мор вешает <b>второй слой</b> (урон ×2). Враг умер — Гниение <b>перескакивает</b> на соседа, а если некуда — остальные гниют на 1 ход дольше. <b>Комбо:</b> каждый Гнев +10% к урону Гниения до конца боя (макс. +30%). Качает Смерть. MP: ${aoeV(d.mpCost)}. КД: ${SKILLS.pestilence.cooldown}. С 10 уровня.`; },
     getNextDesc: (lvl) => { if (lvl >= 5) return ''; const n = SKILLS.pestilence.levels[lvl]; return `Следующий уровень: ${n.targets} цели, ${n.dotPercent}% за ход, ${n.turns} хода`; },
   },
 

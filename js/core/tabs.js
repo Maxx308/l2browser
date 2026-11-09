@@ -57,10 +57,11 @@ function switchTab(tab) {
 //   - копи (mine)   → hunt-view (своя сетка внутри renderMonsters)
 function updateHuntView() {
   const loc = state.player.currentLocation;
-  const isTown = loc === 'town';
+  const isTown = isTownLoc(loc);   // v0.36: Андервуд или Ильград
 
   document.getElementById('city-view').style.display = isTown ? 'block' : 'none';
   document.getElementById('hunt-view').style.display = isTown ? 'none' : 'block';
+  if (typeof renderCityView === 'function') renderCityView();   // v0.36: какой город — шапка, карточки, окна
 
   document.getElementById('tab-hunt-label').textContent = isTown ? 'ГОРОД' : 'ОХОТА';
 
@@ -70,8 +71,7 @@ function updateHuntView() {
 }
 
 function updateMapUI() {
-  document.querySelectorAll('.map-card').forEach(c => c.classList.toggle('current', c.dataset.loc === state.player.currentLocation));
-  updateMapTravelButton();
+  document.querySelectorAll('.map-card').forEach(c => c.classList.toggle('current', c.dataset.loc === state.player.currentLocation));  updateMapTravelButton();
 
   // ---- НОВОЕ (v0.12): доп. инфа на карточках ----
   if (typeof updateMapMeta === 'function') {
@@ -82,7 +82,7 @@ function updateMapUI() {
 
 // v0.26: тропа на каждой локации, куда из текущей есть путь (цена — getMagicPathPrice).
 // v0.31: рядом — «🚶 Пешком · время» (раньше пешком было только кликом по карточке; клик тоже остался).
-const MAP_TRAVEL_SLOTS = { field: 'map-travel-slot', town: 'map-travel-slot-town', mine: 'map-travel-slot-mine' };
+const MAP_TRAVEL_SLOTS = { field: 'map-travel-slot', town: 'map-travel-slot-town', mine: 'map-travel-slot-mine', ilgrad: 'map-travel-slot-ilgrad', outskirts: 'map-travel-slot-outskirts' };
 
 function updateMapTravelButton() {
   const p = state.player;
