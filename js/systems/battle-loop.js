@@ -115,11 +115,12 @@ function gameLoop() {
 
   // ---- Регены (вне боя и в бою) ----
   if (!state.battle.active) {
+    const camp = typeof restCampBonus === 'function' ? restCampBonus() : { hp: 0, mp: 0 };   // у костра (сет «Новичок»)
     state.regenAccumulator += dt;
     while (state.regenAccumulator >= 1) {
       state.regenAccumulator -= 1;
       if (state.player.hp < state.player.maxHp && state.player.classId) {
-        const regenHp = 1 + (state.player.hpRegenOutBonus || 0);
+        const regenHp = 1 + (state.player.hpRegenOutBonus || 0) + camp.hp;
         const before = state.player.hp;
         state.player.hp = Math.min(state.player.maxHp, state.player.hp + regenHp);
         REGEN_SHOW.hp += state.player.hp - before;
@@ -129,7 +130,7 @@ function gameLoop() {
     while (state.mpRegenAccumulator >= 1) {
       state.mpRegenAccumulator -= 1;
       if (state.player.mp < state.player.maxMp && state.player.classId) {
-        const regenMp = (state.player.mpRegenOut || 1) + (state.player.mpRegenOutBonus || 0);
+        const regenMp = (state.player.mpRegenOut || 1) + (state.player.mpRegenOutBonus || 0) + camp.mp;
         const before = state.player.mp;
         state.player.mp = Math.min(state.player.maxMp, state.player.mp + regenMp);
         REGEN_SHOW.mp += state.player.mp - before;

@@ -572,73 +572,6 @@
   .soul-gem { width: calc(30 * var(--u)); height: calc(30 * var(--u)); }
 }
 
-/* ========================================================
-   v0.34.1: СТОПКИ КАРТОЧЕК (monster-cards.js — buildMonsterStack)
-   У монстра три подтипа одной колодой: спереди выбранный, за ним — края остальных.
-   Все три карточки лежат в одной ячейке сетки (стопка по высоте самой длинной)
-   и сдвинуты вправо-вниз на --pos шагов.
-   ======================================================== */
-.monsters-grid.stack-grid {
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  --stack-dx: calc(26 * var(--u));   /* ширина видимого края задней карточки (было 20) */
-  --stack-dy: calc(22 * var(--u));   /* v0.36: снизу виден значок титула на задних карточках (было 11) */
-}
-@media (max-width: 1100px) { .monsters-grid.stack-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
-@media (max-width: 900px)  { .monsters-grid.stack-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-@media (max-width: 600px)  {
-  .monsters-grid.stack-grid {
-    grid-template-columns: minmax(0, 1fr);
-    --stack-dx: calc(38 * var(--u));   /* телефон: край под палец (было 30) */
-    --stack-dy: calc(22 * var(--u));   /* v0.36: под значок титула (было 14) */
-    gap: calc(12 * var(--u));
-  }
-}
-@media (max-height: 600px) and (orientation: landscape) {
-  .monsters-grid.stack-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-}
-
-.monster-stack {
-  display: grid;
-  padding-right: calc(var(--stack-dx) * 2);
-  padding-bottom: calc(var(--stack-dy) * 2);
-  min-width: 0;
-}
-.monster-stack > .monster-card {
-  grid-area: 1 / 1;
-  min-width: 0;
-  transform: translate(calc(var(--stack-dx) * var(--pos, 0)), calc(var(--stack-dy) * var(--pos, 0)));
-  transition: transform .35s ease, box-shadow .25s, border-color .25s, filter .25s;
-}
-.monster-stack > .monster-card.stack-front { box-shadow: 0 calc(6 * var(--u)) calc(16 * var(--u)) rgba(0, 0, 0, .55); }
-.monster-stack > .monster-card.stack-back { filter: brightness(.7); cursor: pointer; }
-.monster-stack > .monster-card.stack-back:hover { filter: brightness(.9); }
-/* у задних карточек содержимое не нужно — видно только край */
-.monster-stack > .monster-card.stack-back > :not(.stack-tab):not(.monster-hunter) { visibility: hidden; }
-
-/* Край с надписью — правая полоса карточки шириной в один сдвиг */
-.stack-tab {
-  position: absolute; top: 0; right: 0; bottom: 0;
-  width: var(--stack-dx);
-  display: none;
-  flex-direction: column; align-items: center; justify-content: center; gap: calc(4 * var(--u));
-  /* v0.35.1: вертикально пишется только сама надпись. Раньше vertical-rl стоял на всём крае —
-     и корона 👑 (титул) вставала не под надписью, а рядом, утаскивая её вверх. */
-  writing-mode: horizontal-tb;
-  font-family: 'Cinzel', serif; font-size: var(--fs-tiny); letter-spacing: .12em; text-transform: uppercase;
-  color: var(--gold-bright);
-  pointer-events: none;
-}
-.stack-tab span { writing-mode: vertical-rl; white-space: nowrap; }
-.stack-tab i { font-style: normal; font-size: calc(11 * var(--u)); line-height: 1; }
-.monster-card.stack-back .stack-tab { display: flex; }
-.monster-card.variant-normal .stack-tab  { background: linear-gradient(90deg, transparent, rgba(184, 148, 90, .18)); }
-.monster-card.variant-ancient .stack-tab { color: #a9c6ff; background: linear-gradient(90deg, transparent, rgba(74, 106, 176, .35)); }
-.monster-card.variant-bloody .stack-tab  { color: #ff8f7d; background: linear-gradient(90deg, transparent, rgba(176, 48, 40, .35)); }
-
-@media (prefers-reduced-motion: reduce) {
-  .monster-stack > .monster-card { transition: none; }
-}
-
 /* v0.34.1: при смене подтипа в стопке — разница статов (HP, атака, защиты) всплывает над графой:
    «+176» зелёным (монстр стал крепче), «−176» красным (слабее). Временная, гаснет сама. */
 .monster-stat { position: relative; }
@@ -798,3 +731,394 @@
 .monster-hunter.magnificent { border-color: #e070e0; box-shadow: 0 0 calc(9 * var(--u)) rgba(224, 112, 224, .9); }
 @media (max-width: 900px) { .monster-head { margin-top: calc(-22 * var(--u)); } }
 @media (max-height: 600px) and (orientation: landscape) { .monster-head { margin-top: calc(-19 * var(--u)); } }
+
+/* ========================================================
+   РЯД КАРТОЧЕК С ЗАКЛАДКАМИ (monster-cards.js — renderHuntRow, buildMonsterSlot)
+   Вместо стопок v0.34.1. У монстра одна карточка, под ней три закладки подтипов
+   в постоянном порядке: Обычный · Древний · Кровавый.
+   Компьютер (от 1000px) — все карточки в один ровный ряд.
+   Телефон и планшет — карточки листаются вбок, по центру одна; над ними лента миниатюр,
+   под ними кнопка «В бой».
+   ======================================================== */
+.monsters-grid.slot-grid {
+  grid-template-columns: repeat(6, minmax(0, 1fr));   /* 5 тварей + заглушка 6-й */
+  gap: calc(12 * var(--u));
+  align-items: stretch;
+}
+.monster-slot { display: flex; flex-direction: column; min-width: 0; }
+
+/* Три карточки подтипов лежат в одной ячейке (высота — по самой длинной), видна одна. */
+.slot-cards { display: grid; flex: 1 1 auto; min-width: 0; }
+.slot-cards > .monster-card {
+  grid-area: 1 / 1; min-width: 0; z-index: 0;
+  border-bottom-left-radius: 0; border-bottom-right-radius: 0;   /* снизу примыкают закладки */
+  visibility: hidden; pointer-events: none;
+  transition: visibility 0s .22s, box-shadow .25s, border-color .25s;   /* старая карточка гаснет под новой */
+}
+.slot-cards > .monster-card.slot-front {
+  z-index: 1; visibility: visible; pointer-events: auto;
+  transition: box-shadow .25s, border-color .25s;
+}
+.slot-cards > .monster-card.slot-flip { animation: slotFlip .22s ease-out; }
+@keyframes slotFlip { from { opacity: 0; } to { opacity: 1; } }
+
+/* ---------- Закладки подтипов ---------- */
+.slot-tabs {
+  display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: calc(3 * var(--u));
+  padding-bottom: calc(7 * var(--u));   /* место под значок титула, висящий на закладке */
+}
+.slot-tab {
+  --tab: #e0be7a; --tab-rgb: 184, 148, 90;
+  position: relative;
+  display: flex; align-items: center; justify-content: center;
+  min-width: 0; height: calc(27 * var(--u)); margin: 0; padding: 0 calc(2 * var(--u));
+  font-family: 'Cinzel', serif; font-size: calc(10 * var(--u)); line-height: 1;
+  letter-spacing: .03em; text-transform: uppercase; white-space: nowrap;
+  color: var(--tab);
+  background: #0f0c0a;
+  border: 1px solid rgba(var(--tab-rgb), .35); border-top: none;
+  border-radius: 0 0 calc(5 * var(--u)) calc(5 * var(--u));
+  cursor: pointer; opacity: .55;
+  -webkit-tap-highlight-color: transparent;
+  transition: opacity .2s, background .2s, border-color .2s, box-shadow .2s;
+}
+.slot-tab.tab-ancient { --tab: #a9c6ff; --tab-rgb: 90, 130, 210; }
+.slot-tab.tab-bloody  { --tab: #ff8f7d; --tab-rgb: 200, 56, 48; }
+.slot-tab:hover { opacity: .95; }
+.slot-tab.active {
+  opacity: 1; cursor: default;
+  border-color: rgba(var(--tab-rgb), .95);
+  background: linear-gradient(180deg, rgba(var(--tab-rgb), .38), rgba(var(--tab-rgb), .1)), #0f0c0a;
+  box-shadow: 0 calc(4 * var(--u)) calc(12 * var(--u)) rgba(var(--tab-rgb), .22);
+}
+/* Титул на подтипе — значок-печать, висит на нижнем крае закладки (надписи не мешает) */
+.slot-tab img {
+  position: absolute; left: 50%; bottom: calc(-7 * var(--u)); transform: translateX(-50%);
+  width: calc(14 * var(--u)); height: calc(14 * var(--u));
+  object-fit: cover;
+  border: 1px solid rgba(var(--tab-rgb), .9); border-radius: calc(4 * var(--u));
+  box-shadow: 0 0 calc(4 * var(--u)) rgba(0, 0, 0, .85);
+}
+.slot-tab span { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+
+/* Лента миниатюр и кнопка «В бой» — только там, где ряд листается. */
+.hunt-strip, .hunt-go { display: none; }
+
+/* Большой монитор: картинка квадратная — карточки занимают экран, а не верхнюю треть. */
+@media (min-width: 1400px) and (min-height: 860px) {
+  .slot-grid .monster-card .monster-portrait-img { aspect-ratio: 1 / 1; }
+}
+/* Высокий экран: ряд не жмётся к шапке, а опускается к середине. 830 — высота всего экрана охоты
+   с запасом (шапка, полоса душ, ряд, подсказка, вкладки): пока окно ниже, отступа нет и прокрутка не появляется. */
+@media (min-width: 1000px) {
+  #hunt-view { padding-top: max(0px, calc((100vh - 830 * var(--u)) * 0.7)); }
+}
+/* Узкий ноутбук, планшет лёжа: пять карточек в ряд — имя и закладки чуть мельче. */
+@media (min-width: 1000px) and (max-width: 1250px) {
+  .monsters-grid.slot-grid { gap: calc(8 * var(--u)); }
+  .slot-grid .monster-card .monster-head .monster-name { font-size: calc(13 * var(--u)); }
+  .slot-tab { font-size: calc(9 * var(--u)); letter-spacing: 0; }
+}
+
+/* ---------- Телефон и планшет: лента ---------- */
+@media (max-width: 999px) {
+  .monsters-grid.slot-grid {
+    --slot-w: min(calc(300 * var(--u)), 80vw);
+    display: flex; gap: calc(10 * var(--u));
+    /* во всю ширину экрана, чтобы соседние карточки уходили за край, а текущая стояла по центру */
+    width: 100vw; margin: calc(-10 * var(--u)) 0 0 calc(50% - 50vw);
+    padding: calc(10 * var(--u)) calc(50vw - var(--slot-w) / 2) calc(14 * var(--u));
+    overflow-x: auto; overflow-y: hidden;
+    scroll-snap-type: x mandatory; overscroll-behavior-x: contain;
+    scrollbar-width: none;
+  }
+  .monsters-grid.slot-grid::-webkit-scrollbar { display: none; }
+  .slot-grid .monster-slot { flex: 0 0 var(--slot-w); scroll-snap-align: center; transition: opacity .25s; }
+  .slot-grid .monster-slot:not(.slot-current) { opacity: .5; }
+  .slot-grid .monster-card .monster-portrait-img { aspect-ratio: 16 / 10; }
+  .slot-tab { height: calc(38 * var(--u)); font-size: calc(11.5 * var(--u)); letter-spacing: .06em; }
+  .slot-tab img { width: calc(16 * var(--u)); height: calc(16 * var(--u)); bottom: calc(-8 * var(--u)); }
+  .slot-tabs { padding-bottom: calc(8 * var(--u)); }
+
+  .hunt-strip {
+    display: flex; justify-content: center; gap: calc(9 * var(--u));
+    margin: calc(2 * var(--u)) 0 calc(10 * var(--u)); padding: 0 calc(6 * var(--u));
+  }
+  .hunt-thumb {
+    position: relative; flex: 0 1 calc(58 * var(--u)); min-width: 0; aspect-ratio: 1; margin: 0; padding: 0;
+    background: #0e0c0a center 22% / cover no-repeat;
+    border: 1px solid var(--border); border-radius: calc(8 * var(--u));
+    filter: brightness(.55) saturate(.75);
+    cursor: pointer; -webkit-tap-highlight-color: transparent;
+    transition: filter .2s, transform .2s, border-color .2s, box-shadow .2s;
+  }
+  .hunt-thumb.variant-ancient { border-color: #4a6ab0; }
+  .hunt-thumb.variant-bloody  { border-color: #a03030; }
+  .hunt-thumb.active {
+    filter: none; transform: scale(1.1);
+    border-color: var(--gold-bright); box-shadow: 0 0 calc(12 * var(--u)) rgba(224, 190, 122, .5);
+  }
+  .hunt-thumb.active.variant-ancient { border-color: #6a9ae0; box-shadow: 0 0 calc(12 * var(--u)) rgba(106, 154, 224, .6); }
+  .hunt-thumb.active.variant-bloody  { border-color: #e04040; box-shadow: 0 0 calc(12 * var(--u)) rgba(224, 64, 64, .6); }
+  /* уровень выбранного подтипа — тем же кругом, что на карточке */
+  .hunt-thumb span {
+    position: absolute; left: calc(-5 * var(--u)); bottom: calc(-5 * var(--u));
+    display: flex; align-items: center; justify-content: center;
+    width: calc(21 * var(--u)); height: calc(21 * var(--u));
+    font-family: 'Cinzel', serif; font-weight: 700; font-size: calc(11 * var(--u)); line-height: 1;
+    color: var(--gold-bright);
+    background: radial-gradient(circle at 35% 30%, #2d261c, #120e0a);
+    border: 1px solid #a8824a; border-radius: 50%;
+  }
+  .hunt-thumb.variant-ancient span { border-color: #6a9ae0; color: #bcd4ff; }
+  .hunt-thumb.variant-bloody span  { border-color: #e04040; color: #ffb0a0; }
+
+  .hunt-go {
+    display: flex; align-items: center; justify-content: center; gap: calc(8 * var(--u));
+    width: 100%; max-width: calc(440 * var(--u)); min-height: calc(48 * var(--u));
+    margin: 0 auto; padding: calc(6 * var(--u)) calc(12 * var(--u));
+    font-family: 'Cinzel', serif; font-size: calc(15 * var(--u)); letter-spacing: .05em;
+    color: var(--gold-bright);
+    background: linear-gradient(180deg, #33261a, #1a120c);
+    border: 1px solid var(--gold); border-radius: calc(5 * var(--u));
+    box-shadow: 0 0 calc(16 * var(--u)) rgba(184, 148, 90, .28), inset 0 1px 0 rgba(224, 190, 122, .18);
+    cursor: pointer; -webkit-tap-highlight-color: transparent;
+    transition: filter .15s, transform .1s;
+  }
+  .hunt-go:active { transform: translateY(1px); filter: brightness(1.25); }
+  .hunt-go-ico { font-size: calc(17 * var(--u)); line-height: 1; }
+
+  #hunt-hint { display: none !important; }   /* вместо подсказки — кнопка «В бой» */
+}
+/* высокий экран — картинка повыше, низкий — пониже, чтобы всё помещалось без прокрутки */
+@media (max-width: 999px) and (min-height: 780px) {
+  .slot-grid .monster-card .monster-portrait-img { aspect-ratio: 4 / 3; }
+}
+@media (max-width: 999px) and (max-height: 700px) {
+  .slot-grid .monster-card .monster-portrait-img { aspect-ratio: 16 / 9; }
+  .hunt-thumb { flex-basis: calc(50 * var(--u)); }
+  .hunt-strip { margin-bottom: calc(8 * var(--u)); }
+}
+/* телефон лёжа: соседние карточки и так видны — лента миниатюр не нужна */
+@media (max-width: 999px) and (max-height: 500px) and (orientation: landscape) {
+  .monsters-grid.slot-grid { --slot-w: calc(250 * var(--u)); }
+  .hunt-strip { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .slot-cards > .monster-card { transition: none; }
+  .slot-cards > .monster-card.slot-flip { animation: none; }
+  .monster-slot { transition: none; }
+}
+
+/* ========================================================
+   «ВИТРИНА» И «ПЛИТКИ» (monster-cards.js — renderHuntLayout; выбор в Настройках)
+   Внутри #monsters-grid: .hunt-pick — список / плитки для выбора, .hunt-stage — карточки.
+   Компьютер: «Витрина» — список слева, выбранная карточка справа (горизонтальная, крупная);
+              «Плитки» — все карточки горизонтально, сеткой 3×2, список не нужен.
+   Телефон:   список строк («Витрина») или плитки 2×3 («Плитки»), карточка — шторкой снизу.
+   ======================================================== */
+.monsters-grid.hunt-showcase, .monsters-grid.hunt-tiles { display: block; }   /* сетку строит .hunt-stage */
+#hunt-view:has(.hunt-showcase) #hunt-hint, #hunt-view:has(.hunt-tiles) #hunt-hint { display: none !important; }   /* подсказка не нужна — экран и так помещается */
+.hunt-pick, .hunt-stage-go, .hunt-sheet-handle, .hunt-sheet-bg { display: none; }
+
+/* Кнопка «В бой» в витрине и в шторке — как кнопка под лентой */
+.hunt-stage-go {
+  align-items: center; justify-content: center; gap: calc(8 * var(--u));
+  width: 100%; min-height: calc(46 * var(--u)); margin: calc(10 * var(--u)) 0 0; padding: calc(6 * var(--u)) calc(12 * var(--u));
+  font-family: 'Cinzel', serif; font-size: calc(15 * var(--u)); letter-spacing: .05em;
+  color: var(--gold-bright);
+  background: linear-gradient(180deg, #33261a, #1a120c);
+  border: 1px solid var(--gold); border-radius: calc(5 * var(--u));
+  box-shadow: 0 0 calc(16 * var(--u)) rgba(184, 148, 90, .28), inset 0 1px 0 rgba(224, 190, 122, .18);
+  cursor: pointer; -webkit-tap-highlight-color: transparent;
+}
+.hunt-stage-go:hover { filter: brightness(1.15); }
+.hunt-stage-go:disabled, .hunt-go:disabled { opacity: .45; cursor: default; filter: none; font-size: calc(12.5 * var(--u)); }
+
+/* Точки подтипов: выбранный закрашен, ни разу не убитый — тусклый */
+.hunt-pips { display: flex; gap: calc(4 * var(--u)); flex: none; }
+.hunt-pips i {
+  --pip: #b8945a;
+  width: calc(10 * var(--u)); height: calc(10 * var(--u)); border-radius: 50%;
+  border: 1px solid var(--pip); background: rgba(10, 8, 5, .85); opacity: .35;
+}
+.hunt-pips i.pip-ancient { --pip: #6a9ae0; }
+.hunt-pips i.pip-bloody  { --pip: #e04040; }
+.hunt-pips i.seen { opacity: 1; }
+.hunt-pips i.on { background: var(--pip); opacity: 1; box-shadow: 0 0 calc(5 * var(--u)) var(--pip); }
+
+/* Строка списка «Витрины» */
+.hunt-prow {
+  display: flex; align-items: center; gap: calc(9 * var(--u));
+  width: 100%; margin: 0; padding: calc(6 * var(--u)) calc(9 * var(--u)) calc(6 * var(--u)) calc(6 * var(--u));
+  text-align: left; color: var(--text);
+  background: linear-gradient(180deg, var(--bg-2), var(--bg-1));
+  border: 1px solid var(--border); border-radius: calc(6 * var(--u));
+  cursor: pointer; -webkit-tap-highlight-color: transparent;
+  transition: border-color .2s, box-shadow .2s, background .2s;
+}
+.hunt-prow:hover { border-color: var(--gold); }
+.hunt-prow.active { border-color: var(--gold-bright); background: linear-gradient(180deg, #2a2116, #17120c); box-shadow: 0 0 calc(12 * var(--u)) rgba(224, 190, 122, .22); }
+.hunt-prow.active.variant-ancient { border-color: #6a9ae0; box-shadow: 0 0 calc(12 * var(--u)) rgba(106, 154, 224, .3); }
+.hunt-prow.active.variant-bloody  { border-color: #e04040; box-shadow: 0 0 calc(12 * var(--u)) rgba(224, 64, 64, .3); }
+.prow-art {
+  flex: none; width: calc(46 * var(--u)); height: calc(46 * var(--u));
+  background: #0e0c0a center 22% / cover no-repeat;
+  border: 1px solid var(--border); border-radius: calc(6 * var(--u));
+}
+.prow-lvl, .tile-lvl {
+  flex: none; display: flex; align-items: center; justify-content: center;
+  width: calc(24 * var(--u)); height: calc(24 * var(--u));
+  font-family: 'Cinzel', serif; font-weight: 700; font-size: calc(12 * var(--u)); line-height: 1;
+  color: var(--gold-bright);
+  background: radial-gradient(circle at 35% 30%, #2d261c, #120e0a);
+  border: 1px solid #a8824a; border-radius: 50%;
+}
+.variant-ancient .prow-lvl, .variant-ancient .tile-lvl { border-color: #6a9ae0; color: #bcd4ff; }
+.variant-bloody .prow-lvl, .variant-bloody .tile-lvl   { border-color: #e04040; color: #ffb0a0; }
+.prow-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: calc(2 * var(--u)); }
+.prow-text b { font-family: 'Cinzel', serif; font-weight: 400; font-size: var(--fs-base); color: var(--gold-bright); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.prow-text small { font-size: var(--fs-tiny); color: var(--text-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.variant-ancient .prow-text small { color: #a9c6ff; }
+.variant-bloody .prow-text small  { color: #ff8f7d; }
+
+/* Плитка (телефон, «Плитки») */
+.hunt-tile {
+  position: relative; display: block; width: 100%; aspect-ratio: 1; margin: 0; padding: 0; overflow: hidden;
+  background: #0e0c0a center 22% / cover no-repeat;
+  border: 1px solid var(--border); border-radius: calc(8 * var(--u));
+  cursor: pointer; -webkit-tap-highlight-color: transparent;
+  transition: border-color .2s, box-shadow .2s;
+}
+.hunt-tile::after {
+  content: ''; position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(180deg, rgba(0,0,0,.25) 0%, transparent 25%, transparent 50%, rgba(10, 9, 8, .95) 100%);
+}
+.hunt-tile.variant-ancient { border-color: #4a6ab0; }
+.hunt-tile.variant-bloody  { border-color: #a03030; }
+.hunt-tile.active { border-color: var(--gold-bright); box-shadow: 0 0 calc(12 * var(--u)) rgba(224, 190, 122, .4); }
+.hunt-tile .hunt-pips { position: absolute; top: calc(7 * var(--u)); right: calc(7 * var(--u)); z-index: 1; }
+.tile-label {
+  position: absolute; left: calc(7 * var(--u)); right: calc(7 * var(--u)); bottom: calc(7 * var(--u)); z-index: 1;
+  display: flex; align-items: center; gap: calc(6 * var(--u));
+}
+.tile-name {
+  flex: 1; min-width: 0; text-align: left;
+  font-family: 'Cinzel', serif; font-size: var(--fs-small); color: var(--gold-bright);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  text-shadow: 0 1px 3px #000;
+}
+
+/* ---------- Заглушка 6-й твари ---------- */
+.stub-art, .pick-stub .prow-art, .hunt-tile.pick-stub, .hunt-thumb.pick-stub {
+  background: repeating-linear-gradient(45deg, #1c1913, #1c1913 calc(7 * var(--u)), #14120e calc(7 * var(--u)), #14120e calc(14 * var(--u))) !important;
+}
+.monster-card .monster-portrait-img.stub-art { display: flex; align-items: center; justify-content: center; }
+.stub-art span { position: relative; z-index: 1; font: 700 calc(42 * var(--u)) Georgia, serif; color: #5d5134; }
+.monster-card.monster-stub { cursor: default; opacity: .75; }
+.monster-card.monster-stub:hover { border-color: var(--border); box-shadow: none; }
+.stub-text { padding: calc(14 * var(--u)) calc(6 * var(--u)) 0; text-align: center; font-size: var(--fs-tiny); font-style: italic; color: var(--text-dim); }
+.slot-tab:disabled { opacity: .22; cursor: default; }
+.pick-stub { opacity: .6; }
+.hunt-tile.pick-stub::after { background: linear-gradient(180deg, transparent 50%, rgba(10, 9, 8, .9)); }
+
+/* ---------- Компьютер ---------- */
+@media (min-width: 1000px) {
+  /* Горизонтальная карточка: картинка слева на всю высоту, статы справа. Та же карточка, другая расстановка. */
+  .hunt-tiles .monster-card,
+  .hunt-showcase .monster-card {
+    --pic: 44%;
+    padding-left: calc(var(--pic) + 10 * var(--u));
+  }
+  .hunt-tiles .monster-card .monster-portrait-img,
+  .hunt-showcase .monster-card .monster-portrait-img {
+    position: absolute; left: 0; top: 0; bottom: 0; width: var(--pic);
+    height: auto; aspect-ratio: auto; margin: 0;
+    border-radius: calc(4 * var(--u)) 0 0 calc(4 * var(--u));
+  }
+  .hunt-tiles .monster-card .monster-portrait-img::after,
+  .hunt-showcase .monster-card .monster-portrait-img::after {
+    background: linear-gradient(90deg, rgba(0,0,0,.15) 0%, transparent 30%, transparent 70%, var(--bg-2) 100%);
+  }
+  .hunt-tiles .monster-card .monster-head,
+  .hunt-showcase .monster-card .monster-head { margin-top: calc(2 * var(--u)); }
+  .hunt-tiles .monster-card .monster-hunter,
+  .hunt-showcase .monster-card .monster-hunter { left: calc(var(--pic) + 6 * var(--u)); }
+
+  /* «Витрина»: список + выбранная карточка */
+  .monsters-grid.hunt-showcase {
+    display: grid; grid-template-columns: minmax(calc(230 * var(--u)), calc(300 * var(--u))) minmax(0, 1fr);
+    gap: calc(16 * var(--u)); align-items: start;
+    max-width: calc(1060 * var(--u)); margin: 0 auto calc(16 * var(--u));
+  }
+  .hunt-showcase .hunt-pick { display: flex; flex-direction: column; gap: calc(6 * var(--u)); }
+  .hunt-showcase .monster-slot:not(.slot-current) { display: none; }
+  .hunt-showcase .monster-card { --pic: 48%; min-height: calc(330 * var(--u)); }
+  .hunt-showcase .monster-card .monster-head .monster-name { font-size: calc(18 * var(--u)); }
+  .hunt-showcase .monster-card .drop-list { font-size: var(--fs-small); line-height: 1.55; }
+  .hunt-showcase .hunt-stage-go { display: flex; }
+
+  /* «Плитки»: 3×2 горизонтальных карточек */
+  .hunt-tiles .hunt-stage {
+    display: grid; grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: calc(12 * var(--u)); align-items: stretch;
+  }
+  .hunt-tiles .monster-card { min-height: calc(200 * var(--u)); }
+}
+
+/* ---------- Телефон и планшет: список / плитки + шторка ---------- */
+@media (max-width: 999px) {
+  .hunt-showcase .hunt-pick { display: flex; flex-direction: column; gap: calc(7 * var(--u)); }
+  .hunt-showcase .hunt-prow { min-height: calc(60 * var(--u)); }
+  .hunt-tiles .hunt-pick { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: calc(8 * var(--u)); }
+
+  .hunt-showcase .hunt-stage,
+  .hunt-tiles .hunt-stage {
+    position: fixed; left: 0; right: 0; bottom: var(--hunt-tabs-h, 0px); z-index: 120;
+    max-height: calc(92vh - var(--hunt-tabs-h, 0px)); overflow-y: auto; overscroll-behavior: contain;
+    padding: 0 calc(12 * var(--u)) calc(14 * var(--u));
+    background: linear-gradient(180deg, #1c1912, #0f0d0a);
+    border-top: 1px solid var(--gold); border-radius: calc(16 * var(--u)) calc(16 * var(--u)) 0 0;
+    box-shadow: 0 calc(-12 * var(--u)) calc(36 * var(--u)) rgba(0, 0, 0, .85);
+    transform: translateY(105%); visibility: hidden;
+    transition: transform .25s ease, visibility 0s .25s;
+  }
+  .sheet-open.hunt-showcase .hunt-stage,
+  .sheet-open.hunt-tiles .hunt-stage { transform: none; visibility: visible; transition: transform .25s ease; }
+  .hunt-showcase .hunt-stage .monster-slot:not(.slot-current),
+  .hunt-tiles .hunt-stage .monster-slot:not(.slot-current) { display: none; }
+  .hunt-stage .monster-slot { max-width: calc(420 * var(--u)); margin: 0 auto; }
+  .hunt-stage .monster-card .monster-portrait-img { aspect-ratio: 16 / 9; }
+  .hunt-stage .slot-tab { height: calc(38 * var(--u)); font-size: calc(11.5 * var(--u)); letter-spacing: .06em; }
+  .hunt-stage .slot-tab img { width: calc(16 * var(--u)); height: calc(16 * var(--u)); bottom: calc(-8 * var(--u)); }
+  .hunt-stage .slot-tabs { padding-bottom: calc(8 * var(--u)); }
+  .hunt-stage .hunt-stage-go { display: flex; max-width: calc(420 * var(--u)); margin-left: auto; margin-right: auto; }
+  .hunt-sheet-handle {
+    display: block; position: sticky; top: 0; z-index: 3;
+    width: 100%; height: calc(22 * var(--u)); margin: 0; padding: 0;
+    background: transparent; border: none; cursor: pointer;
+  }
+  .hunt-sheet-handle::before {
+    content: ''; display: block; width: calc(44 * var(--u)); height: calc(5 * var(--u)); margin: 0 auto;
+    border-radius: calc(3 * var(--u)); background: #6b5a35;
+  }
+  .sheet-open .hunt-sheet-bg { display: block; position: fixed; inset: 0; z-index: 110; background: rgba(0, 0, 0, .62); }
+  body.hunt-sheet-lock { overflow: hidden; }
+
+  .hunt-thumb.pick-stub span { color: #8a7a55; }
+}
+/* низкий телефон: плитки поменьше, чтобы все шесть влезли без прокрутки */
+@media (max-width: 999px) and (max-height: 700px) {
+  .hunt-tiles .hunt-pick { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: calc(6 * var(--u)); }
+  .hunt-showcase .hunt-prow { min-height: calc(52 * var(--u)); }
+  .hunt-showcase .prow-art { width: calc(40 * var(--u)); height: calc(40 * var(--u)); }
+}
+/* телефон лёжа: плитки в один ряд по шесть */
+@media (max-width: 999px) and (max-height: 500px) and (orientation: landscape) {
+  .hunt-tiles .hunt-pick { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+  .hunt-showcase .hunt-pick { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hunt-stage { transition: none !important; }
+}

@@ -37,7 +37,8 @@ const SETS = {
     pieces: ['Гамбезон (верх)', 'Гамбезон (низ)', 'Гамбезон (шлем)', 'Гамбезон (ботинки)', 'Гамбезон (перчатки)'] },
   robe: { name: 'Мантия ученика', bonus: { mAtkPercent: 5 }, bonusText: 'Магическая атака +5%',
     pieces: ['Мантия ученика (верх)', 'Мантия ученика (низ)', 'Мантия ученика (шлем)', 'Мантия ученика (ботинки)', 'Мантия ученика (перчатки)'] },
-  novice: { name: 'Новичок', bonus: { maxHpFlat: 30, maxMpFlat: 30 }, bonusText: '+30 HP и +30 MP',
+  // campHpRegen / campMpRegen — только на привале у костра (battle-rest.js — restCampBonus)
+  novice: { name: 'Новичок', bonus: { maxHpFlat: 30, maxMpFlat: 30, campHpRegen: 1, campMpRegen: 1 }, bonusText: '+30 HP и +30 MP; у костра +1 HP/сек и +1 MP/сек',
     pieces: ['Кольцо Новичка', 'Серьга Новичка', 'Ожерелье Новичка'],
     isFullSetEquipped: function() {
       const p = state.player;
@@ -72,8 +73,8 @@ const SETS = {
   },
   patched: {
     name: 'Потрёпанный',
-    bonus: { hpRegenOutBonus: 0.5, mpRegenOutBonus: 0.5 },
-    bonusText: '+0.5 HP/сек и +0.5 MP/сек вне боя',
+    bonus: { hpRegenOutBonus: 1, mpRegenOutBonus: 1 },   // было по 0.5
+    bonusText: '+1 HP/сек и +1 MP/сек вне боя',
     pieces: [
       'Потрёпанная куртка',
       'Потрёпанные штаны',

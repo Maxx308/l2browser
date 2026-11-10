@@ -188,6 +188,8 @@ function recalcStats() {
   p.profBonusFromSkill = 0;   // v0.35: «Опыт» человека
   p.hpRegenOutBonus = 0;
   p.mpRegenOutBonus = 0;
+  p.campHpRegen = 0;   // только на привале у костра (сет «Новичок»)
+  p.campMpRegen = 0;
   p.evasionBonus = 0;   // «Грация» + подгонка (раньше подгонка затирала «Грацию»)
 
   let passivePAtkPercent = 0, passivePAtkFlat = 0, passiveMAtkFlat = 0, passiveMAtkPercent = 0;
@@ -303,6 +305,8 @@ function recalcStats() {
 
       if (set.bonus.hpRegenOutBonus) p.hpRegenOutBonus += set.bonus.hpRegenOutBonus;
       if (set.bonus.mpRegenOutBonus) p.mpRegenOutBonus += set.bonus.mpRegenOutBonus;
+      if (set.bonus.campHpRegen) p.campHpRegen += set.bonus.campHpRegen;
+      if (set.bonus.campMpRegen) p.campMpRegen += set.bonus.campMpRegen;
       // v0.21: тир 3
       if (set.bonus.flatDamageReduce) p.flatDamageReduce += set.bonus.flatDamageReduce;
       if (set.bonus.manaShield) p.manaShield += set.bonus.manaShield;

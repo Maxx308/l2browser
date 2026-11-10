@@ -1,6 +1,6 @@
 // ========================================================
 //  СИСТЕМЫ: КАРТОЧКИ МОНСТРОВ
-//  Рендер сетки монстров для Поляны и Копи.
+//  Рендер карточек монстров для Поляны, Копей и Окраин — в одной из трёх раскладок (Ряд / Витрина / Плитки).
 //  + Открытие статов по счётчику убийств.
 //  + v0.33: шахты-заглушки в Копях убраны — на их месте Пещерный крылан (5 монстров в ряд).
 //  + Титулы: 👑 Охотник / 👑 Прославленный / 🌟 Великолепный.
@@ -22,109 +22,427 @@
 function renderMonsters() {
   const grid = document.getElementById('monsters-grid');
   if (!grid) return;
+  closeHuntSheet();
   grid.innerHTML = '';
-  grid.classList.remove('mine-grid');
-  grid.classList.add('stack-grid');   // v0.34.1: стопки карточек вместо 15 отдельных
+  grid.scrollLeft = 0;
 
   const loc = state.player.currentLocation;
   if (typeof renderSoulHuntBar === 'function') renderSoulHuntBar();   // v0.33: какие души искать
 
-  if (loc === 'field') {
-    renderFieldMonsters(grid);
-  } else if (loc === 'mine') {
-    renderMineMonsters(grid);
-  } else if (loc === 'outskirts') {   // v0.36: Окраины Ильграда — раскладка как в Копях (5 тварей)
-    grid.classList.add('mine-grid');
-    OUTSKIRTS_MONSTERS.forEach(t => grid.appendChild(buildMonsterStack(t, true)));
-  }
-}
+  let list = [];
+  if (loc === 'field') list = MONSTERS;
+  else if (loc === 'mine') list = MINE_MONSTERS;
+  else if (loc === 'outskirts') list = OUTSKIRTS_MONSTERS;   // v0.36: Окраины Ильграда
 
-// ---------- ПОЛЯНА ----------
-function renderFieldMonsters(grid) {
-  MONSTERS.forEach(m => grid.appendChild(buildMonsterStack(m, false)));
-}
-
-// ---------- КОПИ ----------
-function renderMineMonsters(grid) {
-  grid.classList.add('mine-grid');
-  MINE_MONSTERS.forEach(template => grid.appendChild(buildMonsterStack(template, true)));
+  const layout = getHuntLayout();
+  grid.className = 'monsters-grid ' + HUNT_LAYOUT_CLASS[layout] + (loc !== 'field' ? ' mine-grid' : '');
+  renderHuntLayout(grid, list, loc !== 'field', layout);
 }
 
 // ========================================================
-//  v0.34.1: СТОПКА КАРТОЧЕК — у каждого монстра три подтипа одной колодой
-//  Спереди выбранный подтип, за ним выглядывают остальные (цветной край с надписью).
-//  Нажал на край (или смахнул карточку вбок) — подтип выдвигается вперёд.
-//  Нажал на переднюю карточку — бой, как раньше.
-//  Выбор запоминается у героя: state.player.huntVariant[id монстра].
+//  ТРИ РАСКЛАДКИ КАРТОЧЕК (выбор — Настройки → Экран → «Раскладка монстров»)
+//  Сама карточка везде одна и та же (buildMonsterCard), меняется только расстановка.
+//  У монстра три карточки подтипов и три закладки: Обычный · Древний · Кровавый
+//  (порядок всегда один). Нажал закладку — карточка сменилась на месте, бой не начинается.
+//  Нажал на карточку — бой. Выбор подтипа запоминается у героя: state.player.huntVariant.
+//
+//  row      «Ряд»     — компьютер: все карточки ровным рядом; телефон: лента миниатюр сверху,
+//                       одна карточка по центру листается вбок, снизу кнопка «В бой».
+//  showcase «Витрина» — компьютер: список тварей слева, выбранная крупно справа;
+//                       телефон: список, нажал строку — карточка шторкой снизу.
+//  tiles    «Плитки»  — компьютер: сетка 3×2 горизонтальных карточек;
+//                       телефон: плитки-картинки 2×3, нажал — та же шторка.
+//
+//  Пока в локациях по 5 тварей, шестое место — заглушка «Скоро» (HUNT_SLOTS_PER_LOC):
+//  сетки 6 → 3+3 → 2+2+2 получаются ровными. Заглушка — только картинка: в списки
+//  монстров она не попадает, бой с ней не начать. Появится 6-я тварь — заглушка уйдёт сама.
+//  Что листается и что шторка, решает monsters.css; здесь это читается из стилей.
 // ========================================================
-const STACK_VARIANTS = ['normal', 'ancient', 'bloody'];
-const STACK_TAB_NAMES = { normal: 'Обычный', ancient: 'Древний', bloody: 'Кровавый' };
+const HUNT_VARIANTS = ['normal', 'ancient', 'bloody'];
+const HUNT_TAB_NAMES = { normal: 'Обычный', ancient: 'Древний', bloody: 'Кровавый' };
+const HUNT_LAYOUTS = ['row', 'showcase', 'tiles'];
+const HUNT_LAYOUT_NAMES = { row: 'Ряд', showcase: 'Витрина', tiles: 'Плитки' };
+const HUNT_LAYOUT_CLASS = { row: 'slot-grid', showcase: 'hunt-showcase', tiles: 'hunt-tiles' };
+const HUNT_LAYOUT_KEY = 'l2browser_hunt_layout';
+const HUNT_SLOTS_PER_LOC = 6;
+// slots — карточки текущей локации, current — выбранная (по центру ленты / в витрине),
+// focus[локация] — id монстра, на котором остановились (после боя раскладка не прыгает в начало).
+const HUNT_ROW = { slots: [], current: 0, focus: {} };
 
-function getStackFront(monsterId) {
+// ---------- Выбор раскладки (хранится на устройстве: на телефоне и компьютере можно разные) ----------
+function getHuntLayout() {
+  let v = null;
+  try { v = localStorage.getItem(HUNT_LAYOUT_KEY); } catch (e) {}
+  return HUNT_LAYOUTS.includes(v) ? v : 'row';
+}
+
+function setHuntLayout(v) {
+  if (!HUNT_LAYOUTS.includes(v)) return;
+  try { localStorage.setItem(HUNT_LAYOUT_KEY, v); } catch (e) {}
+  renderHuntLayoutButtons();
+  if (!isTownLoc(state.player.currentLocation)) renderMonsters();
+}
+
+function renderHuntLayoutButtons() {
+  const box = document.getElementById('hunt-layout-buttons');
+  if (!box) return;
+  const cur = getHuntLayout();
+  box.innerHTML = '';
+  HUNT_LAYOUTS.forEach(v => {
+    const btn = document.createElement('button');
+    btn.className = 'settings-btn' + (v === cur ? ' active' : '');
+    btn.textContent = HUNT_LAYOUT_NAMES[v];
+    btn.onclick = () => setHuntLayout(v);
+    box.appendChild(btn);
+  });
+}
+
+function getHuntVariant(monsterId) {
   const v = state.player.huntVariant && state.player.huntVariant[monsterId];
-  return STACK_VARIANTS.includes(v) ? v : 'normal';
+  return HUNT_VARIANTS.includes(v) ? v : 'normal';
 }
 
-function setStackFront(monsterId, variantId) {
+function setHuntVariant(monsterId, variantId) {
   if (!state.player.huntVariant || typeof state.player.huntVariant !== 'object') state.player.huntVariant = {};
   state.player.huntVariant[monsterId] = variantId;
 }
 
-function buildMonsterStack(template, fromMine) {
-  const stack = document.createElement('div');
-  stack.className = 'monster-stack';
-  stack.dataset.id = template.id;
+// Ряд сейчас листается вбок (раскладка «Ряд» на телефоне) или все карточки видны сразу?
+function isHuntRowScrolling() {
+  const grid = document.getElementById('monsters-grid');
+  return !!grid && grid.classList.contains('slot-grid') && getComputedStyle(grid).overflowX !== 'visible';
+}
 
-  const cards = {};
-  STACK_VARIANTS.forEach(v => {
+// Карточка открывается шторкой снизу («Витрина» и «Плитки» на телефоне)?
+function isHuntSheetMode() {
+  const stage = document.querySelector('#monsters-grid .hunt-stage');
+  return !!stage && getComputedStyle(stage).position === 'fixed';
+}
+
+// Лента миниатюр (над рядом) и кнопка «В бой» (под рядом) создаются один раз.
+function ensureHuntPart(id, tag, grid, before) {
+  let el = document.getElementById(id);
+  if (!el) {
+    el = document.createElement(tag);
+    el.id = id;
+    el.className = id;
+    if (tag === 'button') el.type = 'button';
+    grid.parentNode.insertBefore(el, before ? grid : grid.nextSibling);
+  }
+  return el;
+}
+
+function renderHuntLayout(grid, list, fromMine, layout) {
+  const strip = ensureHuntPart('hunt-strip', 'div', grid, true);
+  const go = ensureHuntPart('hunt-go', 'button', grid, false);
+  strip.innerHTML = '';
+  const isRow = layout === 'row';
+  strip.style.display = go.style.display = (isRow && list.length) ? '' : 'none';
+
+  HUNT_ROW.slots = list.map(t => buildMonsterSlot(t, fromMine, layout));
+  if (list.length) {
+    for (let k = list.length; k < HUNT_SLOTS_PER_LOC; k++) HUNT_ROW.slots.push(buildStubSlot(layout));
+  }
+
+  if (isRow) {
+    HUNT_ROW.slots.forEach(s => { grid.appendChild(s.el); strip.appendChild(s.pick); });
+    grid.onscroll = onHuntRowScroll;
+  } else {
+    // «Витрина» и «Плитки»: выбор (список / плитки) + сцена с карточками (на телефоне — шторка)
+    grid.onscroll = null;
+    const pick = document.createElement('div');
+    pick.className = 'hunt-pick';
+    const stage = document.createElement('div');
+    stage.className = 'hunt-stage';
+    stage.setAttribute('role', 'dialog');
+    const handle = document.createElement('button');
+    handle.type = 'button';
+    handle.className = 'hunt-sheet-handle';
+    handle.setAttribute('aria-label', 'Закрыть');
+    handle.onclick = closeHuntSheet;
+    stage.appendChild(handle);
+    HUNT_ROW.slots.forEach(s => { pick.appendChild(s.pick); stage.appendChild(s.el); });
+    const stageGo = document.createElement('button');
+    stageGo.type = 'button';
+    stageGo.className = 'hunt-stage-go';
+    stageGo.onclick = () => fightHuntCurrent();
+    stage.appendChild(stageGo);
+    const bg = document.createElement('div');
+    bg.className = 'hunt-sheet-bg';
+    bg.onclick = closeHuntSheet;
+    grid.appendChild(pick);
+    grid.appendChild(stage);
+    grid.appendChild(bg);
+  }
+
+  // С какой карточки начать: где остановились → последняя цель охоты → первая.
+  const loc = state.player.currentLocation;
+  const last = state.battle.lastTarget && state.battle.lastTarget.id;
+  let start = HUNT_ROW.slots.findIndex(s => !s.stub && s.template.id === HUNT_ROW.focus[loc]);
+  if (start < 0) start = HUNT_ROW.slots.findIndex(s => !s.stub && s.template.id === last);
+  setHuntCurrent(Math.max(0, start));
+  centerHuntSlot(HUNT_ROW.current, false);
+
+  go.onclick = () => fightHuntCurrent();
+}
+
+function fightHuntCurrent() {
+  const s = HUNT_ROW.slots[HUNT_ROW.current];
+  if (!s) return;
+  closeHuntSheet();
+  s.fight();
+}
+
+// ---------- Шторка («Витрина» и «Плитки» на телефоне) ----------
+function openHuntSheet() {
+  const grid = document.getElementById('monsters-grid');
+  if (!grid) return;
+  // Нижние вкладки лежат выше всей страницы — шторка встаёт над ними, а не под ними.
+  const tabs = document.querySelector('.tabs');
+  grid.style.setProperty('--hunt-tabs-h', (tabs ? tabs.offsetHeight : 0) + 'px');
+  grid.classList.add('sheet-open');
+  document.body.classList.add('hunt-sheet-lock');
+  const stage = grid.querySelector('.hunt-stage');
+  if (stage) stage.scrollTop = 0;
+}
+
+function closeHuntSheet() {
+  const grid = document.getElementById('monsters-grid');
+  if (grid) grid.classList.remove('sheet-open');
+  document.body.classList.remove('hunt-sheet-lock');
+}
+
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeHuntSheet(); });
+
+// Нажали на строку списка / плитку / миниатюру в ленте.
+function onHuntPick(slot) {
+  const i = HUNT_ROW.slots.indexOf(slot);
+  if (i < 0) return;
+  if (isHuntRowScrolling()) { centerHuntSlot(i, true); return; }
+  setHuntCurrent(i);
+  if (isHuntSheetMode()) openHuntSheet();
+}
+
+// Значок выбора монстра: миниатюра (Ряд), строка списка (Витрина) или плитка (Плитки).
+function buildHuntPick(layout, stub) {
+  const pick = document.createElement('button');
+  pick.type = 'button';
+  pick.className = (layout === 'row' ? 'hunt-thumb' : layout === 'showcase' ? 'hunt-prow' : 'hunt-tile') + (stub ? ' pick-stub' : '');
+  return pick;
+}
+
+// Точки подтипов: выбранный закрашен, ещё не убитый ни разу — тусклый.
+function huntPipsHtml(templateId, variantId) {
+  return `<span class="hunt-pips">${HUNT_VARIANTS.map(v =>
+    `<i class="pip-${v}${v === variantId ? ' on' : ''}${getMonsterKills(templateId, v) > 0 ? ' seen' : ''}" title="${HUNT_TAB_NAMES[v]}"></i>`).join('')}</span>`;
+}
+
+function updateHuntPick(slot) {
+  const pick = slot.pick;
+  const variantId = getHuntVariant(slot.template.id);
+  const monster = buildMonsterInstance(slot.template, variantId);
+  HUNT_VARIANTS.forEach(v => pick.classList.toggle(MONSTER_VARIANTS[v].cssClass, v === variantId));
+  const art = `url('${monster.art}')`;
+  if (slot.layout === 'row') {
+    pick.style.backgroundImage = art;
+    pick.innerHTML = `<span>${monster.level}</span>`;
+  } else if (slot.layout === 'showcase') {
+    const kills = getMonsterKills(slot.template.id, variantId);
+    pick.innerHTML = `<span class="prow-art" style="background-image:${art}"></span>` +
+      `<span class="prow-lvl">${monster.level}</span>` +
+      `<span class="prow-text"><b>${slot.template.name}</b><small>${HUNT_TAB_NAMES[variantId]} · убито ${kills.toLocaleString('ru-RU')}</small></span>` +
+      huntPipsHtml(slot.template.id, variantId);
+  } else {
+    pick.style.backgroundImage = art;
+    pick.innerHTML = huntPipsHtml(slot.template.id, variantId) +
+      `<span class="tile-label"><span class="tile-lvl">${monster.level}</span><span class="tile-name">${slot.template.name}</span></span>`;
+  }
+}
+
+function buildMonsterSlot(template, fromMine, layout) {
+  const el = document.createElement('div');
+  el.className = 'monster-slot';
+  el.dataset.id = template.id;
+
+  const cardsBox = document.createElement('div');
+  cardsBox.className = 'slot-cards';
+  const tabsBox = document.createElement('div');
+  tabsBox.className = 'slot-tabs';
+
+  const pick = buildHuntPick(layout, false);
+  pick.title = template.name;
+
+  const slot = { el, pick, template, layout, cards: {}, tabs: {} };
+  slot.fight = () => selectMonster(template, getHuntVariant(template.id), fromMine);
+
+  HUNT_VARIANTS.forEach(v => {
     const card = buildMonsterCard(template, v, fromMine);
     const startFight = card.onclick;
-    const tab = document.createElement('div');
-    tab.className = 'stack-tab';
-    tab.innerHTML = `<span>${STACK_TAB_NAMES[v]}</span>`;   // v0.36: титул — значком в левом нижнем углу карточки
-    card.appendChild(tab);
     card.onclick = (e) => {
-      if (stack._swiped) { stack._swiped = false; return; }
-      if (!card.classList.contains('stack-front')) {   // край задней карточки — только выдвинуть
-        e.stopPropagation();
-        showStackVariant(stack, cards, template, v);
-        return;
+      const i = HUNT_ROW.slots.indexOf(slot);
+      if (i !== HUNT_ROW.current) {
+        // лента: соседняя карточка сначала подъезжает к центру, бой — со второго нажатия
+        if (isHuntRowScrolling()) { centerHuntSlot(i, true); return; }
+        setHuntCurrent(i);
       }
+      closeHuntSheet();
       startFight(e);
     };
-    cards[v] = card;
-    stack.appendChild(card);
+    slot.cards[v] = card;
+    cardsBox.appendChild(card);
+
+    const tab = document.createElement('button');
+    tab.type = 'button';
+    tab.className = 'slot-tab tab-' + v;
+    const titleDef = MONSTER_TITLE_ICONS[getMonsterTitle(template.id, v)];   // титул виден и на закладке
+    tab.innerHTML = (titleDef ? `<img src="img/tags/${titleDef.img}.jpg" alt="" title="${titleDef.name}">` : '') +
+      `<span>${HUNT_TAB_NAMES[v]}</span>`;
+    tab.onclick = () => showSlotVariant(slot, v, true);
+    slot.tabs[v] = tab;
+    tabsBox.appendChild(tab);
   });
 
-  layoutStack(cards, getStackFront(template.id));
-  attachStackSwipe(stack, cards, template);
-  return stack;
+  pick.onclick = () => onHuntPick(slot);
+
+  el.appendChild(cardsBox);
+  el.appendChild(tabsBox);
+  showSlotVariant(slot, getHuntVariant(template.id), false);
+  return slot;
 }
 
-// Порядок: выбранный подтип спереди, остальные — по порядку за ним.
-function layoutStack(cards, front) {
-  const order = [front, ...STACK_VARIANTS.filter(v => v !== front)];
-  order.forEach((v, pos) => {
-    const c = cards[v];
-    c.style.setProperty('--pos', pos);
-    c.style.zIndex = String(3 - pos);
-    c.classList.toggle('stack-front', pos === 0);
-    c.classList.toggle('stack-back', pos > 0);
+// Заглушка на месте будущей твари: та же рамка, картинки нет, нажать нельзя.
+function buildStubSlot(layout) {
+  const el = document.createElement('div');
+  el.className = 'monster-slot slot-stub';
+  const card = document.createElement('div');
+  card.className = 'monster-card variant-normal monster-stub slot-front';
+  card.innerHTML = `
+    <div class="monster-portrait-img stub-art"><span>?</span></div>
+    <div class="monster-head"><span class="monster-lvl">?</span><div class="monster-name">Скоро</div></div>
+    <div class="stub-text">Здесь появится новая тварь</div>`;
+  const cardsBox = document.createElement('div');
+  cardsBox.className = 'slot-cards';
+  cardsBox.appendChild(card);
+  const tabsBox = document.createElement('div');
+  tabsBox.className = 'slot-tabs';
+  HUNT_VARIANTS.forEach(v => {
+    const tab = document.createElement('button');
+    tab.type = 'button';
+    tab.className = 'slot-tab tab-' + v;
+    tab.disabled = true;
+    tab.innerHTML = `<span>${HUNT_TAB_NAMES[v]}</span>`;
+    tabsBox.appendChild(tab);
   });
+  el.appendChild(cardsBox);
+  el.appendChild(tabsBox);
+
+  const pick = buildHuntPick(layout, true);
+  pick.title = 'Скоро здесь появится новая тварь';
+  if (layout === 'row') pick.innerHTML = '<span>?</span>';
+  else if (layout === 'showcase') pick.innerHTML = '<span class="prow-art"></span><span class="prow-lvl">?</span><span class="prow-text"><b>Скоро</b><small>Новая тварь ещё не пришла</small></span>';
+  else pick.innerHTML = '<span class="tile-label"><span class="tile-lvl">?</span><span class="tile-name">Скоро</span></span>';
+
+  const slot = { el, pick, layout, stub: true, template: { id: '__stub', name: 'Новая тварь' } };
+  slot.fight = () => { if (typeof showToast === 'function') showToast('❔', 'Скоро здесь появится новая тварь'); };
+  pick.onclick = () => onHuntPick(slot);
+  card.onclick = () => slot.fight();
+  return slot;
 }
 
-function showStackVariant(stack, cards, template, variantId) {
-  const prev = getStackFront(template.id);
-  setStackFront(template.id, variantId);
-  layoutStack(cards, variantId);
+// Показать подтип в карточке. byPlayer — игрок нажал закладку (запомнить выбор, показать разницу статов).
+function showSlotVariant(slot, variantId, byPlayer) {
+  const id = slot.template.id;
+  const prev = getHuntVariant(id);
+  if (byPlayer) setHuntVariant(id, variantId);
+
+  HUNT_VARIANTS.forEach(v => {
+    slot.cards[v].classList.toggle('slot-front', v === variantId);
+    slot.cards[v].classList.remove('slot-flip');
+    slot.tabs[v].classList.toggle('active', v === variantId);
+    slot.tabs[v].setAttribute('aria-pressed', String(v === variantId));
+  });
+  updateHuntPick(slot);
+
+  if (!byPlayer) return;
   if (typeof hideTooltip === 'function') hideTooltip();
-  if (prev !== variantId) showStackDeltas(cards[prev], cards[variantId]);
+  if (prev !== variantId) {
+    slot.cards[variantId].classList.add('slot-flip');   // новая карточка проявляется поверх старой
+    showVariantDeltas(slot.cards[prev], slot.cards[variantId]);
+  }
+  updateHuntGoButton();
 }
+
+// Выбранная карточка: подсветить её значок, подписать кнопку «В бой».
+function setHuntCurrent(i) {
+  HUNT_ROW.current = i;
+  HUNT_ROW.slots.forEach((s, k) => {
+    s.el.classList.toggle('slot-current', k === i);
+    s.pick.classList.toggle('active', k === i);
+  });
+  const s = HUNT_ROW.slots[i];
+  if (s && !s.stub) HUNT_ROW.focus[state.player.currentLocation] = s.template.id;
+  updateHuntGoButton();
+}
+
+function updateHuntGoButton() {
+  const s = HUNT_ROW.slots[HUNT_ROW.current];
+  if (!s) return;
+  const html = s.stub
+    ? '<span>Скоро здесь появится новая тварь</span>'
+    : `<span class="hunt-go-ico">⚔</span><span>В бой · ${buildMonsterInstance(s.template, getHuntVariant(s.template.id)).name}</span>`;
+  document.querySelectorAll('#hunt-go, #monsters-grid .hunt-stage-go').forEach(b => {
+    b.innerHTML = html;
+    b.disabled = !!s.stub;
+  });
+}
+
+// Подвезти карточку к центру ленты (если ряд не листается — ничего не делаем).
+function centerHuntSlot(i, smooth) {
+  const grid = document.getElementById('monsters-grid');
+  const s = HUNT_ROW.slots[i];
+  if (!grid || !s || !isHuntRowScrolling()) return;
+  const g = grid.getBoundingClientRect();
+  const r = s.el.getBoundingClientRect();
+  const left = grid.scrollLeft + (r.left + r.width / 2) - (g.left + g.width / 2);
+  if (Math.abs(left - grid.scrollLeft) < 1) return;   // уже по центру
+  grid.scrollTo({ left, behavior: smooth ? 'smooth' : 'auto' });
+}
+
+// Ленту пролистали — выбранной становится карточка, которая ближе всех к центру.
+let huntRowRaf = 0;
+let huntRowScrolledAt = 0;
+function onHuntRowScroll() {
+  huntRowScrolledAt = performance.now();
+  cancelAnimationFrame(huntRowRaf);
+  huntRowRaf = requestAnimationFrame(() => {
+    const grid = document.getElementById('monsters-grid');
+    if (!grid || !isHuntRowScrolling()) return;
+    const g = grid.getBoundingClientRect();
+    const mid = g.left + g.width / 2;
+    let best = 0, bestDist = Infinity;
+    HUNT_ROW.slots.forEach((s, k) => {
+      const r = s.el.getBoundingClientRect();
+      const d = Math.abs(r.left + r.width / 2 - mid);
+      if (d < bestDist) { bestDist = d; best = k; }
+    });
+    if (best !== HUNT_ROW.current) setHuntCurrent(best);
+  });
+}
+
+// Повернули телефон или изменили окно — выбранная карточка возвращается в центр,
+// а если окно стало широким — шторка закрывается (на компьютере её нет).
+// На телефоне resize приходит и когда прячется адресная строка: если карточка уже по центру,
+// centerHuntSlot ничего не делает, а пока ленту листают пальцем — не вмешиваемся.
+window.addEventListener('resize', () => {
+  if (!isHuntSheetMode()) closeHuntSheet();
+  if (performance.now() - huntRowScrolledAt < 200) return;
+  centerHuntSlot(HUNT_ROW.current, false);
+});
 
 // v0.34.1: над статами — насколько монстр стал сильнее (+N зелёным) или слабее (−N красным):
 // здоровье, атака, защита, маг. защита. Только для статов, открытых на ОБЕИХ карточках, —
 // иначе подсказка выдала бы закрытое значение.
-function showStackDeltas(fromCard, toCard) {
+function showVariantDeltas(fromCard, toCard) {
   if (!fromCard || !toCard) return;
   toCard.querySelectorAll('.monster-stat[data-val]').forEach(el => {
     const from = fromCard.querySelector(`.monster-stat[data-stat="${el.dataset.stat}"][data-val]`);
@@ -140,28 +458,6 @@ function showStackDeltas(fromCard, toCard) {
     void el.offsetWidth;
     el.classList.add('stat-flash');
     setTimeout(() => { d.remove(); el.classList.remove('stat-flash'); }, 1900);
-  });
-}
-
-// Телефон: смахнуть карточку влево — следующий подтип, вправо — предыдущий.
-function attachStackSwipe(stack, cards, template) {
-  const monsterId = template.id;
-  let sx = 0, sy = 0, on = false;
-  stack.addEventListener('touchstart', (e) => {
-    if (e.touches.length !== 1) return;
-    sx = e.touches[0].clientX; sy = e.touches[0].clientY; on = true;
-  }, { passive: true });
-  stack.addEventListener('touchend', (e) => {
-    if (!on) return;
-    on = false;
-    const t = e.changedTouches[0];
-    const dx = t.clientX - sx, dy = t.clientY - sy;
-    if (Math.abs(dx) < 45 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
-    const cur = STACK_VARIANTS.indexOf(getStackFront(monsterId));
-    const next = STACK_VARIANTS[(cur + (dx < 0 ? 1 : -1) + STACK_VARIANTS.length) % STACK_VARIANTS.length];
-    stack._swiped = true;
-    setTimeout(() => { stack._swiped = false; }, 400);
-    showStackVariant(stack, cards, template, next);
   });
 }
 

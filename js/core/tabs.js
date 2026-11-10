@@ -30,6 +30,7 @@
 function switchTab(tab) {
   // Скрываем тултип — при переключении вкладки он не нужен.
   if (typeof hideTooltip === 'function') hideTooltip();
+  if (typeof closeHuntSheet === 'function') closeHuntSheet();   // шторка с карточкой монстра (телефон)
 
   // Если игрок уходит на вкладку «Карта» — отменяем автостарт.
   if (tab === 'map' && typeof cancelWaitingForResume === 'function') {

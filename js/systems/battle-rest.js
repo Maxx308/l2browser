@@ -88,12 +88,20 @@ function hideRestCamp() {
 // сытость — ещё +FOOD_HEAL_PER_SEC HP в секунду. Раньше скорость «подсматривали» по факту
 // за первые секунды и без учёта еды — таймер прыгал. Теперь он ровно убывает по секунде.
 // v0.35.1: сытость — по виду еды (FOOD_KINDS): на привале hp + restHp, мана — mp.
+// Добавка к регену у костра (сет «Новичок»): действует, пока герой на привале — ждёт восстановления.
+function restCampBonus() {
+  const p = state.player;
+  if (!state.battle.waitingForResume || state.battle.active) return { hp: 0, mp: 0 };
+  return { hp: p.campHpRegen || 0, mp: p.campMpRegen || 0 };
+}
+
 function restRegenRates() {
   const p = state.player;
   const k = typeof currentFoodKind === 'function' ? currentFoodKind(p) : null;
+  const camp = restCampBonus();
   return {
-    hp: 1 + (p.hpRegenOutBonus || 0),
-    mp: (p.mpRegenOut || 1) + (p.mpRegenOutBonus || 0),
+    hp: 1 + (p.hpRegenOutBonus || 0) + camp.hp,
+    mp: (p.mpRegenOut || 1) + (p.mpRegenOutBonus || 0) + camp.mp,
     food: k ? k.hp + (k.restHp || 0) : 0,
     foodMp: k ? (k.mp || 0) : 0,
   };

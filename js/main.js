@@ -50,6 +50,7 @@ function openSettings() {
   syncStackCapSlider();
   if (typeof renderChatFilterSettings === 'function') renderChatFilterSettings();   // v0.32: вкладка «Чат»
   if (typeof renderTodButtons === 'function') renderTodButtons();   // v0.32: время суток
+  if (typeof renderHuntLayoutButtons === 'function') renderHuntLayoutButtons();   // раскладка карточек монстров
   overlay.classList.add('active');
 }
 
