@@ -176,7 +176,10 @@ function buildOwnerChatNodes(npcId) {
       onEnter: () => {
         if (!topicOpen(npcId, t)) return;
         markOwnerTopic(npcId, t.id);
-        (t.lore || []).forEach(k => unlockLore(k));
+        // v0.36.4: кусок Энциклопедии из разговора — это то, что игрок только что прочитал.
+        // Записываем (всплывашка «Энциклопедия: …» остаётся), но «новым» не помечаем —
+        // иначе красная точка загоралась после каждой темы, хотя ничего нового там нет.
+        (t.lore || []).forEach(k => { unlockLore(k); if (typeof markLoreSeen === 'function') markLoreSeen(k); });
         if (t.act) t.act();
       },
       // Сначала вопросы-продолжения этой темы, потом «Ещё вопрос».

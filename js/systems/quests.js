@@ -225,11 +225,14 @@ function markQuestsSeen() {
   const c = state.player.chronicle;
   if (!c) return;
   if (!c.questsSeen) c.questsSeen = {};
+  let changed = false;
   Object.keys(QUESTS).forEach(id => {
     const pr = getQuestProgress(id);
-    if (pr) c.questsSeen[id] = pr.stage;
-    else if (isQuestOffered(id)) c.questsSeen[id] = 'offered';
+    const v = pr ? pr.stage : (isQuestOffered(id) ? 'offered' : null);
+    if (v !== null && c.questsSeen[id] !== v) { c.questsSeen[id] = v; changed = true; }
   });
+  // v0.36.4: прочитанное — сразу в сейв (иначе после перезахода точка загоралась снова)
+  if (changed && typeof saveCurrentSlotSoon === 'function') saveCurrentSlotSoon();
 }
 
 function renderQuestJournal(box) {

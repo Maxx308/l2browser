@@ -48,6 +48,9 @@ function selectMonster(template, variantId, fromMine = false) {
   document.querySelectorAll('.monster-card').forEach(c => c.classList.remove('selected'));
   const found = document.querySelector(`.monster-card[data-id="${template.id}"][data-variant="${variantId}"]`);
   if (found) found.classList.add('selected');
+  // v0.36.4: «Повторять бой» включён сразу (по умолчанию ВКЛ). Раньше каждый бой начинался с ВЫКЛ,
+  // и быструю тварь убивали раньше, чем игрок успевал нажать кнопку. Выключил сам — запомнили.
+  state.battle.repeatBattle = state.player.repeatPref !== false;
   startBattle(template, variantId);
 }
 
@@ -242,6 +245,7 @@ function toggleAuto() {
 
 function toggleRepeat() {
   state.battle.repeatBattle = !state.battle.repeatBattle;
+  state.player.repeatPref = state.battle.repeatBattle;   // v0.36.4: следующий бой начнётся так же
   const btn = document.getElementById('btn-repeat');
   btn.textContent = `🔁 Повторять бой: ${state.battle.repeatBattle ? 'ВКЛ' : 'ВЫКЛ'}`;
   btn.classList.toggle('active', state.battle.repeatBattle);

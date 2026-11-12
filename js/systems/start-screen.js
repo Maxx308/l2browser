@@ -18,6 +18,7 @@ let pendingRaceId = 'human';
 
 function showStartScreen() {
   document.getElementById('start-screen').classList.add('active');
+  if (typeof slotsClaimForAccount === 'function') slotsClaimForAccount();   // v0.36.4: чужих героев не показываем
   renderSlots();
   if (typeof renderPatchTabs === 'function') renderPatchTabs();
   if (typeof renderCloudAuth === 'function') renderCloudAuth();
@@ -152,7 +153,7 @@ function renderSlots() {
       } else if (source === 'cloud') {
         sourceBadge = '<div class="slot-cloud-badge cloud-only" title="Только в облаке — загрузится по клику">☁️</div>';
       } else if (source === 'local') {
-        sourceBadge = '<div class="slot-cloud-badge local-only" title="Только локально — залейте в облако">💾</div>';
+        sourceBadge = '<div class="slot-cloud-badge local-only" title="Пока только на этом устройстве — уйдёт в облако само">💾</div>';
       }
 
       const deleteBtn = hasLocal
@@ -199,17 +200,40 @@ function renderSlots() {
   }
 }
 
-function onSlotClick(slotIndex, isUsed) {
+// v0.36.4: облако — главное, локальный слот — его копия. Свежий сейв берём сами,
+// спрашиваем только при риске (cloudConflictIsRisky): другой герой или свежий ниже уровнем.
+let __slotClickBusy = false;
+async function onSlotClick(slotIndex, isUsed) {
   if (!isUsed) {
     openCreateScreen(slotIndex);
     return;
   }
+  if (__slotClickBusy) return;
 
   if (typeof cloudIsReady === 'function' && cloudIsReady() && typeof cloudCompareSlots === 'function') {
+    __slotClickBusy = true;
+    try { if (typeof cloudEnsureFresh === 'function') await cloudEnsureFresh(4000); } finally { __slotClickBusy = false; }
     const cmp = cloudCompareSlots(slotIndex);
 
     if (cmp && cmp.status === 'both-diff') {
-      handleSlotConflict(slotIndex, cmp);
+      if (typeof cloudConflictIsRisky === 'function' && cloudConflictIsRisky(cmp)) {
+        handleSlotConflict(slotIndex, cmp);
+        return;
+      }
+      if (cmp.newer === 'cloud') {
+        await loadSlotFromCloudAndStartOverwrite(slotIndex);   // прежний локальный — в запасную копию, тост «Облачный сейв загружен»
+        return;
+      }
+      // Свежее на этом устройстве (облако не успело принять — например, телефон свернули):
+      // облачную версию — в запасную копию, играем локальной и сразу отправляем её в облако.
+      try { localStorage.setItem(slotBackupKey(slotIndex), JSON.stringify(cmp.cloud.payload)); } catch (e) {}
+      loadSlotAndStart(slotIndex);
+      if (state.activeSlotIndex === slotIndex) saveCurrentSlot();
+      showToast('💾', 'Взято более свежее сохранение с этого устройства');
+      return;
+    }
+    if (cmp && cmp.status === 'only-cloud') {   // локальной копии нет — подтянуть из облака
+      loadSlotFromCloudAndStart(slotIndex);
       return;
     }
   }
@@ -261,6 +285,7 @@ function loadSlotAndStart(slotIndex, opts) {
   // Раньше каждое новое поле требовало отдельной строки в этом месте — и забытая
   // строка тихо передавала значение прошлого героя.
   migrateSavePayload(saved);
+  if (saved.cloudSeen && typeof SLOT_CLOUD_SEEN !== 'undefined') SLOT_CLOUD_SEEN[slotIndex] = true;   // v0.36.4
   Object.assign(state.player, saved.player);
   // v0.29.2: дробные цены продажи оставляли хвост в Оболах (34500.199999997)
   state.player.gold = Math.max(0, Math.round(Number(state.player.gold) || 0));
@@ -369,6 +394,7 @@ async function loadSlotFromCloudAndStart(slotIndex) {
   }
 
   backupLocalSlot(slotIndex);   // v0.36.3: прежнюю локальную копию сохраняем до перезаписи
+  if (typeof SLOT_CLOUD_SEEN !== 'undefined') SLOT_CLOUD_SEEN[slotIndex] = true;   // v0.36.4: этот сейв облако знает
   writeSlot(slotIndex, res.data);
 
   if (typeof showToast === 'function') showToast('☁️', 'Слот загружен из облака');
@@ -395,6 +421,7 @@ async function loadSlotFromCloudAndStartOverwrite(slotIndex) {
   }
 
   backupLocalSlot(slotIndex);   // v0.36.3: прежнюю локальную копию сохраняем до перезаписи
+  if (typeof SLOT_CLOUD_SEEN !== 'undefined') SLOT_CLOUD_SEEN[slotIndex] = true;   // v0.36.4: этот сейв облако знает
   writeSlot(slotIndex, res.data);
 
   if (typeof showToast === 'function') showToast('☁️', 'Облачный сейв загружен');
@@ -637,6 +664,7 @@ function resetStateToFresh() {
   state.player.breakthroughResult = 0;
   state.player.soulHuntCap = 0;
   state.player.hideProfile = false;
+  state.player.repeatPref = true;   // v0.36.4: «Повторять бой» — сразу ВКЛ
 
   state.player.chronicle = typeof makeFreshChronicle === 'function' ? makeFreshChronicle() : null;   // v0.30
   state.player.bag = typeof makeFreshBag === 'function' ? makeFreshBag() : null;

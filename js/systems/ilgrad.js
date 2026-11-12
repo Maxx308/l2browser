@@ -92,7 +92,7 @@ function startIlgradBreakthrough() {
 
 // Шапка города и какая сетка карточек видна.
 const CITY_HEADERS = {
-  town:   { title: 'АНДЕРВУД', subtitle: 'Последний оплот людей на краю земель' },
+  town:   { title: 'АНДЕРВУД', subtitle: 'Последний оплот живых на краю земель' },
   ilgrad: { title: 'ИЛЬГРАД',  subtitle: 'Город людей в кольце нежити. Стены ещё держатся' },
 };
 

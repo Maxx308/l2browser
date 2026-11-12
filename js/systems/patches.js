@@ -133,6 +133,15 @@ function buildPatchGroupTab(groupEntries) {
   const list = document.createElement('div');
   list.className = 'patch-group-list';
   list.dataset.groupList = 'old';
+  // v0.36.4: старых версий уже 35 — столбиком они уходили за край экрана.
+  // Теперь это сетка «чипов» со своей прокруткой и заголовком.
+  const head = document.createElement('div');
+  head.className = 'patch-group-head';
+  head.textContent = `Старые версии · ${groupEntries.length}`;
+  list.appendChild(head);
+  const grid = document.createElement('div');
+  grid.className = 'patch-group-grid';
+  list.appendChild(grid);
 
   groupEntries.forEach((entry) => {
     const item = document.createElement('div');
@@ -155,8 +164,10 @@ function buildPatchGroupTab(groupEntries) {
       });
     }
 
-    list.appendChild(item);
+    grid.appendChild(item);
   });
+  // Тап по заголовку/пустому месту списка не должен закрывать группу (клик по закладке-группе — это toggle).
+  list.addEventListener('click', (e) => e.stopPropagation());
 
   tab.appendChild(list);
 
@@ -182,6 +193,8 @@ function buildPatchGroupTab(groupEntries) {
         const list = group ? group.querySelector('.patch-group-list') : null;
         if (groupTab && groupTab.matches(':hover')) return;
         if (list && list.matches(':hover')) return;
+        const panel = document.getElementById('patch-panel');
+        if (panel && panel.matches(':hover')) return;   // читаем старый патч — список не прячем
         closePatchGroup();
       }, 150);
     });
@@ -198,7 +211,32 @@ function openPatchGroup() {
   __patchOpenGroup = 'old';
 
   const list = document.querySelector('.patch-group-list');
-  if (list) list.classList.add('visible');
+  if (list) {
+    list.classList.add('visible');
+    positionPatchGroupList(list);
+  }
+}
+
+// v0.36.4: список держим целиком на экране.
+// Десктоп — слева от столбика закладок, низом к закладке-группе (мышь ведём прямо влево),
+// но не выше верхнего края. Телефон — под рядом чипов, на всю ширину.
+function positionPatchGroupList(list) {
+  const tab = list.closest('.patch-tab-group');
+  const container = document.getElementById('patch-tabs');
+  if (!tab || !container) return;
+  const pad = 10;
+  list.style.top = list.style.right = list.style.maxHeight = '';
+  if (isPatchMobile()) {
+    const top = container.getBoundingClientRect().bottom + 6;
+    list.style.top = top + 'px';
+    list.style.maxHeight = Math.max(160, window.innerHeight - top - pad) + 'px';
+    return;
+  }
+  const r = tab.getBoundingClientRect();
+  list.style.right = (window.innerWidth - r.left + 6) + 'px';
+  list.style.maxHeight = (window.innerHeight - pad * 2) + 'px';
+  const h = list.offsetHeight;
+  list.style.top = Math.max(pad, Math.min(r.bottom - h, window.innerHeight - pad - h)) + 'px';
 }
 
 function closePatchGroup() {
@@ -268,6 +306,16 @@ function openPatchPanel(version) {
   }
 
   container.appendChild(panel);
+
+  // v0.36.4: старый патч из открытого списка — панель встаёт левее списка, а не поверх него.
+  const groupList = container.querySelector('.patch-group-list.visible');
+  if (!mobile && groupList && groupList.querySelector(`.patch-group-item[data-version="${version}"]`)) {
+    const lr = groupList.getBoundingClientRect();
+    panel.style.right = (window.innerWidth - lr.left + 6) + 'px';
+    const top = Math.max(10, Math.min(lr.top, window.innerHeight * 0.2));
+    panel.style.top = top + 'px';
+    panel.style.maxHeight = (window.innerHeight - top - 10) + 'px';
+  }
 
   requestAnimationFrame(() => panel.classList.add('visible'));
 }

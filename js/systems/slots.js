@@ -95,15 +95,105 @@ function readSlotUpdatedAt(slotIndex) {
   return data ? (data.updatedAt || null) : null;
 }
 
+// ========================================================
+//  v0.36.4: ГЕРОИ ПРИВЯЗАНЫ К АККАУНТУ
+//  Облако — главное хранилище, локальный слот — его копия на устройстве.
+//  У каждого локального сейва есть uid — чей он. Зашли другим аккаунтом —
+//  чужие герои откладываются в сторону (ключ l2browser_park_<uid>_<слот>),
+//  не показываются и никуда не заливаются; вернутся, когда зайдёт хозяин.
+//  Старые сейвы без uid отдаём аккаунту, который последним синхронизировал
+//  склад на этом устройстве (l2browser_storage_user), а если такого нет
+//  (герой ещё из времён до аккаунтов) — тому, кто вошёл сейчас.
+//  cloudSeen — сейв хоть раз был принят облаком: если в облаке его больше нет,
+//  значит героя удалили на другом устройстве — не воскрешаем.
+// ========================================================
+const SLOT_PARK_PREFIX = 'l2browser_park_';
+const SLOT_CLOUD_SEEN = {};   // слот → облако уже принимало его сейв (в этой сессии или раньше)
+
+function slotOwnerId() {
+  return (typeof cloudUser !== 'undefined' && cloudUser && cloudUser.id) || null;
+}
+
+function slotParkKey(owner, slotIndex) {
+  return SLOT_PARK_PREFIX + owner + '_' + slotIndex;
+}
+
+// Переложить слот в сторону (вместе с запасной копией). Более свежий отложенный не затираем старым.
+function slotPark(owner, slotIndex, tag) {
+  const key = SLOT_KEY_PREFIX + slotIndex;
+  const raw = localStorage.getItem(key);
+  if (!raw) return false;
+  const pk = slotParkKey(tag ? tag + '_' + owner : owner, slotIndex);
+  try {
+    const prev = localStorage.getItem(pk);
+    const newer = (a, b) => { try { return (JSON.parse(a).updatedAt || '') >= (JSON.parse(b).updatedAt || ''); } catch (e) { return true; } };
+    if (!prev || newer(raw, prev)) {
+      localStorage.setItem(pk, raw);
+      const bak = localStorage.getItem(slotBackupKey(slotIndex));
+      if (bak) localStorage.setItem(pk + '_bak', bak);
+    }
+    localStorage.removeItem(key);
+    localStorage.removeItem(slotBackupKey(slotIndex));
+    return true;
+  } catch (e) {
+    console.warn('[slot] не удалось отложить слот', slotIndex, e);
+    return false;
+  }
+}
+
+// При входе в аккаунт: пометить свои, отложить чужие, вернуть свои отложенные.
+function slotsClaimForAccount() {
+  const uid = slotOwnerId();
+  const res = { parked: 0, restored: 0, tagged: 0 };
+  if (!uid) return res;
+  let last = null;
+  try { last = localStorage.getItem('l2browser_storage_user'); } catch (e) {}
+
+  for (let i = 0; i < SLOT_COUNT; i++) {
+    const key = SLOT_KEY_PREFIX + i;
+    const raw = localStorage.getItem(key);
+    if (!raw) continue;
+    let data;
+    try { data = JSON.parse(raw); } catch (e) { continue; }   // битую строку не трогаем — её прочтёт запасная копия
+    let owner = data.uid || null;
+    if (!owner) {
+      owner = (last && last !== uid) ? last : uid;
+      data.uid = owner;
+      try { localStorage.setItem(key, JSON.stringify(data)); res.tagged++; } catch (e) {}
+    }
+    if (owner !== uid && slotPark(owner, i)) res.parked++;
+  }
+
+  for (let i = 0; i < SLOT_COUNT; i++) {
+    const pk = slotParkKey(uid, i);
+    const praw = localStorage.getItem(pk);
+    if (!praw || localStorage.getItem(SLOT_KEY_PREFIX + i)) continue;
+    try {
+      localStorage.setItem(SLOT_KEY_PREFIX + i, praw);
+      const pbak = localStorage.getItem(pk + '_bak');
+      if (pbak) localStorage.setItem(slotBackupKey(i), pbak);
+      localStorage.removeItem(pk);
+      localStorage.removeItem(pk + '_bak');
+      res.restored++;
+    } catch (e) {}
+  }
+  if (res.parked || res.restored) console.log('[slot] аккаунт сменился: отложено', res.parked, ', возвращено', res.restored);
+  return res;
+}
+
 // Записать сохранение в слот (локально).
 // Сохраняем и сам объект state, и метку времени updatedAt,
 // чтобы можно было сравнить с облаком.
 function writeSlot(slotIndex, stateObj) {
   try {
+    const uid = slotOwnerId();
     const payload = Object.assign({}, stateObj, {
       updatedAt: new Date().toISOString(),
       // v0.36.3: версия формата — чтобы будущие правки полей знали, откуда мигрировать
       v: (typeof SAVE_VERSION === 'number') ? SAVE_VERSION : undefined,
+      // v0.36.4: чей это герой (аккаунт) и бывал ли сейв в облаке — см. slotsClaimForAccount
+      uid: uid || stateObj.uid || undefined,
+      cloudSeen: SLOT_CLOUD_SEEN[slotIndex] === true || stateObj.cloudSeen === true || undefined,
     });
     localStorage.setItem(SLOT_KEY_PREFIX + slotIndex, JSON.stringify(payload));
     return true;
@@ -164,6 +254,7 @@ function deleteSlot(slotIndex) {
   }
 
   // ---- 2. Локально ----
+  delete SLOT_CLOUD_SEEN[slotIndex];   // v0.36.4: новый герой в этой ячейке облаку ещё не знаком
   localStorage.removeItem(SLOT_KEY_PREFIX + slotIndex);
   localStorage.removeItem(slotBackupKey(slotIndex));   // v0.36.3: иначе герой вернётся из копии
 
@@ -281,7 +372,9 @@ function saveCurrentSlot() {
   // Только если игрок вошёл. Ошибки сети не ломают игру.
   if (typeof cloudIsReady === 'function' && cloudIsReady()) {
     if (typeof cloudSaveSlot === 'function') {
-      cloudSaveSlot(state.activeSlotIndex, payload).then(res => {
+      const savedSlot = state.activeSlotIndex;
+      cloudSaveSlot(savedSlot, payload).then(res => {
+        if (res && res.ok) SLOT_CLOUD_SEEN[savedSlot] = true;   // v0.36.4: облако знает этого героя
         if (!res || !res.ok) {
           console.warn('[cloud] не удалось сохранить слот в облако:', res && res.error);
         }

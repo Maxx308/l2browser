@@ -29,6 +29,21 @@
 .chron-sub.active { color: var(--gold-bright); border-color: var(--gold); background: var(--bg-2); }
 
 .chron-body { max-width: calc(760 * var(--u)); margin: 0 auto; }
+
+/* v0.36.4: «Отметить всё прочитанным» — маленькая кнопка справа над содержимым */
+.chron-readall-row { max-width: calc(760 * var(--u)); margin: calc(-6 * var(--u)) auto calc(10 * var(--u)); display: flex; justify-content: flex-end; }
+.chron-readall {
+  padding: calc(4 * var(--u)) calc(12 * var(--u));
+  background: rgba(0,0,0,0.35);
+  border: 1px solid rgba(184,148,90,0.45);
+  border-radius: calc(12 * var(--u));
+  font-family: 'Cinzel', serif;
+  font-size: calc(11.5 * var(--u));
+  color: #d6ccb8;
+  cursor: pointer;
+  transition: border-color 0.2s, color 0.2s;
+}
+.chron-readall:hover { border-color: var(--gold); color: var(--gold-bright); }
 .chron-soon {
   color: var(--text-dim); font-style: italic; text-align: center;
   border: 1px dashed var(--border); border-radius: calc(4 * var(--u));

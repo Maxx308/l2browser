@@ -29,7 +29,15 @@ const REST_SHOW_DELAY_MS = 1800;
 
 // Вызывается из battle-rewards.js вместо закрытия окна боя.
 // instant = true — без паузы на баннер (после обновления страницы).
+// v0.36.4: костёр (анимированный WebP, 117 КБ) качаем только когда герой садится на привал —
+// раньше он грузился в первые миллисекунды страницы и отнимал канал у кода игры.
+function restLoadFire() {
+  const img = document.querySelector('#bx-rest .bx-rest-fire img[data-src]');
+  if (img && !img.getAttribute('src')) img.setAttribute('src', img.dataset.src);
+}
+
 function enterRestCamp(instant) {
+  restLoadFire();   // пока идёт пауза перед показом привала — картинка уже качается
   const p = state.player;
   const hpPct = p.maxHp > 0 ? (p.hp / p.maxHp) * 100 : 100;
   const mpPct = p.maxMp > 0 ? (p.mp / p.maxMp) * 100 : 100;
@@ -59,6 +67,7 @@ function showRestCamp() {
   const restBox = document.getElementById('bx-rest');
   if (normalBox) normalBox.style.display = 'none';
   if (searchBox) searchBox.style.display = 'none';
+  restLoadFire();
   if (restBox) restBox.style.display = 'flex';
   document.getElementById('bx-stage')?.classList.add('bx-resting');
 

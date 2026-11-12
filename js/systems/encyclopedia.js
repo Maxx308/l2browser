@@ -180,10 +180,27 @@ function loreOnKill(m) {
   loreSyncBeasts(false);
 }
 
+// v0.36.4: «новое» — только то, что можно открыть и прочитать: кусок есть в какой-то статье,
+// и статья в списке уже не «???» (её основной кусок известен). Иначе точка горела вечно.
 function loreHasNews() {
   const c = state.player.chronicle;
   if (!c || !c.lore) return false;
-  return Object.keys(c.lore).some(k => !(c.loreSeen && c.loreSeen[k]));
+  const unseen = Object.keys(c.lore).filter(k => !(c.loreSeen && c.loreSeen[k]));
+  if (!unseen.length) return false;
+  const arts = getLoreArticles();
+  return unseen.some(k => {
+    const a = arts.find(x => x.parts.some(p => p.key === k));
+    return !!a && knowsLore(a.parts[0].key);
+  });
+}
+
+// v0.36.4: отметить кусок прочитанным (и сохранить — иначе «новое» возвращалось после перезахода).
+function markLoreSeen(key) {
+  const c = loreState();
+  if (!c || !c.lore[key] || c.loreSeen[key]) return;
+  c.loreSeen[key] = true;
+  updateChronicleDot();
+  if (typeof saveCurrentSlotSoon === 'function') saveCurrentSlotSoon();
 }
 function loreArticleIsNew(a) {
   const c = state.player.chronicle;
@@ -195,9 +212,12 @@ function openLoreArticle(id) {
   if (!a || !knowsLore(a.parts[0].key)) return;
   __loreOpen = id;
   const c = loreState();
-  a.parts.forEach(p => { if (knowsLore(p.key)) c.loreSeen[p.key] = true; });
+  let changed = false;
+  a.parts.forEach(p => { if (knowsLore(p.key) && !c.loreSeen[p.key]) { c.loreSeen[p.key] = true; changed = true; } });
   renderChronicle();
   updateChronicleDot();
+  // v0.36.4: прочитанное — сразу в сейв, а не «когда-нибудь потом» (перезашёл — «новое» снова горело)
+  if (changed && typeof saveCurrentSlotSoon === 'function') saveCurrentSlotSoon();
 }
 function closeLoreArticle() {
   __loreOpen = null;

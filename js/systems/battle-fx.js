@@ -124,7 +124,7 @@ const BX_FX_DIR = 'img/fx/';
 const BX_WEAPON_IMG = { swords: 'b_12', axes: 'c_47', maces: 'b_14', daggers: 'b_42', spears: 'c_15', bows: 'b_25', crossbows: 'b_27', staves: 'b_24' };
 const BX_UNARMED_IMG = 'c_34';
 // Удар монстра — по виду.
-const BX_MONSTER_IMG = { silkworm: 'c_11', ent: 'b_54', bandit: 'c_16', frog: 'b_16', wolf: 'b_11', goblin: 'c_12', kobold: 'b_28', arachnid: 'c_46', golem: 'c_56' };
+const BX_MONSTER_IMG = { silkworm: 'c_11', ent: 'b_54', bandit: 'c_16', frog: 'b_16', wolf: 'b_11', goblin: 'c_12', kobold: 'b_28', arachnid: 'c_46', caveBat: 'b_42', golem: 'c_56' };
 const BX_MONSTER_IMG_PHYS = 'c_34', BX_MONSTER_IMG_MAGIC = 'b_32';
 // События массовых навыков (ev.fx) → попадание.
 const BX_EVENT_IMG = {
@@ -135,6 +135,9 @@ const BX_EVENT_IMG = {
 // Снаряды-картинки. На всех картинках голова снаряда смотрит влево-вниз (135°) — доворачиваем к цели.
 const BX_PROJ_IMG = { fire: 'c_22', ice: 'c_23', dark: 'c_27', arrow: 'c_21', toxic: 'c_24' };
 const BX_PROJ_IMG_HEADING = 135;
+// v0.36.4: у направленных картинок попадания (стрела b_25, болт b_27, выпад копья c_15) удар
+// нарисован тоже «влево-вниз» — то есть от твари к герою. Доворачиваем по линии полёта (bxImpact).
+const BX_FX_DIR_HEADING = 135;
 const BX_HEAL_IMG = 'c_36';
 
 function bxFxSrc(key) { return BX_FX_DIR + key + '.webp'; }
@@ -164,7 +167,9 @@ function bxPreloadFx() {
 }
 window.addEventListener('load', () => setTimeout(bxPreloadFx, 4000));
 
-function bxProjectile(kind, fromEl, toEl, ms) {
+// v0.36.4: снаряд поворачивается вдоль своей дуги (на взлёте задран, к цели клюёт носом),
+// а не держит один угол всю дорогу. flat — без дуги, прямой выстрел (арбалетный болт).
+function bxProjectile(kind, fromEl, toEl, ms, flat) {
   return new Promise(resolve => {
     const a = bxCenter(fromEl), b = bxCenter(toEl);
     const pi = BX_PROJ_IMG[kind];
@@ -172,15 +177,26 @@ function bxProjectile(kind, fromEl, toEl, ms) {
       ? bxAdd('bx-proj img', a.x, a.y, `<img src="${bxFxSrc(pi)}" alt="" style="transform:rotate(${-BX_PROJ_IMG_HEADING}deg)">`, '', ms + 200)
       : bxAdd('bx-proj ' + kind, a.x, a.y, '', '', ms + 200);
     if (!d || typeof d.animate !== 'function') { setTimeout(resolve, ms); return; }
-    const ang = Math.atan2(b.y - a.y, b.x - a.x) * 180 / Math.PI;
     const dx = b.x - a.x, dy = b.y - a.y;
+    const lift = flat ? 0 : Math.min(36, Math.hypot(dx, dy) * 0.12);
+    const deg = (x, y) => Math.atan2(y, x) * 180 / Math.PI;
+    const angMid = deg(dx, dy);
+    // касательная к дуге: на взлёте — к вершине, на подлёте — от вершины к цели
+    const angStart = deg(dx * .5, dy * .5 - lift), angEnd = deg(dx * .5, dy * .5 + lift);
     const anim = d.animate([
-      { transform: `translate(0,0) rotate(${ang}deg) scale(.6)` },
-      { transform: `translate(${dx * .5}px,${dy * .5 - 36}px) rotate(${ang}deg) scale(1)`, offset: .5 },
-      { transform: `translate(${dx}px,${dy}px) rotate(${ang}deg) scale(1.1)` },
-    ], { duration: ms, easing: 'ease-in' });
+      { transform: `translate(0,0) rotate(${angStart}deg) scale(.6)` },
+      { transform: `translate(${dx * .5}px,${dy * .5 - lift}px) rotate(${angMid}deg) scale(1)`, offset: .5 },
+      { transform: `translate(${dx}px,${dy}px) rotate(${angEnd}deg) scale(1.1)` },
+    ], { duration: ms, easing: flat ? 'linear' : 'ease-in' });
     anim.onfinish = () => { d.remove(); resolve(); };
   });
+}
+
+// v0.36.4: угол полёта от атакующего к цели (для направленных картинок попадания — стрела, болт, выпад).
+function bxFlightAngle(fromEl, toEl) {
+  if (!fromEl || !toEl) return null;
+  const a = bxCenter(fromEl), b = bxCenter(toEl);
+  return Math.atan2(b.y - a.y, b.x - a.x) * 180 / Math.PI;
 }
 function bxTotalXp() {
   const p = state.player;
@@ -475,10 +491,26 @@ function bxPlayerActionLook(skill) {
     return { mode: 'aoe-cast', aoe: true };
   }
   // v0.30: img — картинка попадания (img/fx); imgEach — на каждый удар (второй — зеркально).
+  // v0.36.4: dir — куда «летит» нарисованное на картинке (стрела, болт, выпад копья); её доворачивают
+  // по линии «атакующий → цель». Воинские навыки — от оружия в руках: из лука — выстрел, а не рывок с разрезом.
+  const w0 = p.equipment && p.equipment.weapon;
+  const wcat = (!isMage() && w0 && typeof getWeaponCategory === 'function') ? getWeaponCategory(w0.name) : null;
+  const ranged = wcat === 'bows' || wcat === 'crossbows';
+  if (skill && ranged && ['powerStrike', 'doubleStrike', 'orcRage', 'dwarfGreed'].includes(skill.id)) {
+    const shot = bxRangedLook(wcat);
+    if (skill.id === 'powerStrike') return { ...shot, sparks: '#ffd27a', k: 1.25 };
+    if (skill.id === 'doubleStrike') return { ...shot, imgEach: true };
+    if (skill.id === 'orcRage') return { ...shot, rage: true, sparks: '#ff5a3a' };
+    return { ...shot, sparks: '#ffd34d' };   // Жадность гнома
+  }
   if (skill) {
     switch (skill.id) {
-      case 'powerStrike':     return { mode: 'melee', fx: 'slash', color: '#ffd27a', img: 'b_53' };
-      case 'doubleStrike':    return { mode: 'melee', fx: 'double', color: '#ffe8b0', img: 'b_12', imgEach: true };
+      // свой удар у копья (выпад), дубины (в землю) и кинжала (росчерки); полумесяц — у мечей и топоров
+      case 'powerStrike':     return wcat === 'spears' ? { mode: 'melee', img: 'c_15', dir: BX_FX_DIR_HEADING, sparks: '#ffd27a', k: 1.2 }
+                                   : (wcat === 'maces' || wcat === 'daggers') ? { mode: 'melee', img: BX_WEAPON_IMG[wcat], sparks: '#ffd27a', k: 1.2 }
+                                   : { mode: 'melee', fx: 'slash', color: '#ffd27a', img: 'b_53' };
+      case 'doubleStrike':    return wcat === 'spears' ? { mode: 'melee', img: 'c_15', dir: BX_FX_DIR_HEADING, imgEach: true }
+                                   : { mode: 'melee', fx: 'double', color: '#ffe8b0', img: (wcat && wcat !== 'swords') ? BX_WEAPON_IMG[wcat] : 'b_12', imgEach: true };
       case 'orcRage':         return { mode: 'melee', fx: 'rage', color: '#ff3a2a', img: 'b_55' };
       case 'dwarfGreed':      return { mode: 'melee', fx: 'slash', color: '#ffc94a', sparks: '#ffd34d', img: 'b_45' };
       case 'fireball':        return { mode: 'proj', proj: 'fire', burst: 'fire', sparks: '#ffb04a', ms: 420, img: 'b_35' };
@@ -490,10 +522,17 @@ function bxPlayerActionLook(skill) {
     if (skill.isHeal) return { mode: 'heal' };
   }
   if (isMage()) return { mode: 'proj', proj: 'arcane', burst: 'arcane', sparks: '#b8d4ff', ms: 320, img: BX_WEAPON_IMG.staves };
-  const w = p.equipment && p.equipment.weapon;
-  const cat = (w && typeof getWeaponCategory === 'function') ? getWeaponCategory(w.name) : null;
-  if (cat === 'bows' || cat === 'crossbows') return { mode: 'proj', proj: 'arrow', burst: null, ms: 220, slash: true, img: BX_WEAPON_IMG[cat] };
-  return { mode: 'melee', fx: 'slash', color: '#ffd27a', img: BX_WEAPON_IMG[cat] || BX_UNARMED_IMG };
+  if (ranged) return bxRangedLook(wcat);
+  if (wcat === 'spears') return { mode: 'melee', img: BX_WEAPON_IMG.spears, dir: BX_FX_DIR_HEADING };   // выпад — от героя к цели
+  return { mode: 'melee', fx: 'slash', color: '#ffd27a', img: BX_WEAPON_IMG[wcat] || BX_UNARMED_IMG };
+}
+
+// Выстрел из лука (дугой) или арбалета (прямо и быстрее). Стрела на картинке попадания торчит
+// из цели так, как прилетела — хвостом к стрелку.
+function bxRangedLook(cat) {
+  return cat === 'crossbows'
+    ? { mode: 'proj', proj: 'arrow', flat: true, ms: 170, img: BX_WEAPON_IMG.crossbows, dir: BX_FX_DIR_HEADING }
+    : { mode: 'proj', proj: 'arrow', ms: 240, img: BX_WEAPON_IMG.bows, dir: BX_FX_DIR_HEADING };
 }
 
 function bxMonsterActionLook(m) {
@@ -517,14 +556,19 @@ function bxSlashSize(cardEl, k) {
 }
 
 // Нарисовать «попадание» (вспышка + эффект) по карточке.
-function bxImpact(cardEl, look, isFirst) {
+function bxImpact(cardEl, look, isFirst, fromEl) {
   if (!cardEl || !look) return;
   const c = bxCenter(cardEl);
   const sz = bxSlashSize(cardEl);
   const szClaw = bxSlashSize(cardEl, 0.95);
   // v0.30: есть картинка — рисуем её вместо разреза/вспышки (искры оставляем).
   if (look.img) {
-    if (isFirst || look.imgEach) bxFxImg(cardEl, look.img, { flip: !!look.imgEach && !isFirst });
+    if (isFirst || look.imgEach) {
+      // v0.36.4: направленная картинка — по линии полёта; вторая стрела/выпад — чуть иным углом, без зеркала
+      const fly = look.dir !== undefined ? bxFlightAngle(fromEl, cardEl) : null;
+      if (fly !== null) bxFxImg(cardEl, look.img, { rot: Math.round(fly - look.dir + (isFirst ? 0 : 9)), k: look.k });
+      else bxFxImg(cardEl, look.img, { flip: !!look.imgEach && !isFirst, k: look.k });
+    }
     if (look.sparks && isFirst) bxSparks(c.x, c.y, look.sparks, 12);
     return;
   }
@@ -594,7 +638,7 @@ function bxPlayEvents(events, delay, look, attackerCard) {
       } else if (t !== 'miss') {
         bxRetrig(cardEl, 'bx-hit');
         // эффект удара — только если событие от «атакующего», а не тик/отдача
-        if (ev.fromAction && look && !ev.fx) bxImpact(cardEl, look, firstOnThis);
+        if (ev.fromAction && look && !ev.fx) bxImpact(cardEl, look, firstOnThis, attackerCard);
         if (ev.storm && attackerCard) {
           const c = bxCenter(cardEl);
           const h = Math.max(60, c.y);
@@ -688,7 +732,9 @@ function bxPlayPlayerAction(ctx) {
     bxRetrig(hero, 'bx-cast');
     if (look.rage) bxRetrig(hero, 'bx-rage');
     delay = 120 + look.ms;
-    if (targetCard) setTimeout(() => { if (bxOn()) bxProjectile(look.proj, hero, targetCard, look.ms); }, 120);
+    if (targetCard) setTimeout(() => { if (bxOn()) bxProjectile(look.proj, hero, targetCard, look.ms, look.flat); }, 120);
+    // Двойной выстрел — вторая стрела следом
+    if (targetCard && look.imgEach) setTimeout(() => { if (bxOn()) bxProjectile(look.proj, hero, targetCard, look.ms, look.flat); }, 260);
   }
 
   bxPlayEvents(ctx.events, delay, look, hero);

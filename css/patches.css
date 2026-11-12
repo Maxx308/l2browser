@@ -111,6 +111,9 @@
   font-size: calc(12.5 * var(--u));
   transition: transform 0.2s;
 }
+/* transform на закладке сделал бы её «рамкой» для position:fixed списка внутри — список уехал бы. */
+.patch-tabs .patch-tab-group:hover,
+.patch-tabs .patch-tab-group.active { transform: none; }
 .patch-tab-group:hover .pt-arrow {
   transform: translateY(-50%) translateX(calc(2 * var(--u)));
 }
@@ -119,16 +122,21 @@
    СПИСОК ВЕРСИЙ ВНУТРИ ГРУППЫ
    ======================================================== */
 
+/* v0.36.4: старых версий стало 35 — столбиком список уходил за низ экрана.
+   Теперь fixed-окно (место считает positionPatchGroupList), внутри сетка чипов в 3 колонки
+   со своей прокруткой. */
 .patch-group-list {
-  position: absolute;
-  top: 0;
-  right: 100%;
-  margin-right: calc(6 * var(--u));
+  position: fixed;
+  top: calc(20 * var(--u));
+  right: calc(220 * var(--u));
   display: none;
   flex-direction: column;
-  gap: calc(3 * var(--u));
-  min-width: calc(140 * var(--u));
-  padding: calc(4 * var(--u));
+  gap: calc(4 * var(--u));
+  width: calc(270 * var(--u));
+  max-height: calc(100vh - 20px);
+  padding: calc(6 * var(--u));
+  box-sizing: border-box;
+  cursor: default;
   background: linear-gradient(180deg, rgba(20,15,10,0.98), rgba(10,8,5,0.98));
   border: 1px solid var(--gold);
   border-radius: calc(3 * var(--u));
@@ -138,16 +146,51 @@
 }
 .patch-group-list.visible { display: flex; }
 
+.patch-group-head {
+  font-family: 'Cinzel', serif;
+  font-size: calc(11 * var(--u));
+  color: var(--gold);
+  letter-spacing: calc(1 * var(--u));
+  text-align: center;
+  padding: calc(2 * var(--u)) 0 calc(4 * var(--u));
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.patch-group-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: calc(3 * var(--u));
+  overflow-y: auto;
+  min-height: 0;
+  overscroll-behavior: contain;
+  padding-right: calc(2 * var(--u));
+}
+.patch-group-grid::-webkit-scrollbar { width: calc(5 * var(--u)); }
+.patch-group-grid::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: calc(3 * var(--u));
+}
+
 .patch-group-item {
-  padding: calc(4 * var(--u)) calc(10 * var(--u));
+  padding: calc(4 * var(--u)) calc(4 * var(--u));
   border-radius: calc(2 * var(--u));
   cursor: pointer;
   transition: all 0.15s;
-  text-align: right;
+  text-align: center;
   display: flex;
-  justify-content: space-between;
+  flex-direction: column;
   align-items: center;
-  gap: calc(8 * var(--u));
+  gap: calc(1 * var(--u));
+  background: rgba(0,0,0,0.25);
+  min-width: 0;
+}
+.patch-group-item .pt-version,
+.patch-group-item .pt-date {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
 }
 .patch-group-item:hover,
 .patch-group-item.active {
@@ -332,12 +375,14 @@
   }
 
   .patch-group-list {
-    top: 100%;
-    right: 0;
-    margin-right: 0;
-    margin-top: calc(4 * var(--u));
-    min-width: calc(180 * var(--u));
+    left: calc(10 * var(--u));
+    right: calc(10 * var(--u));
+    width: auto;
+    top: calc(90 * var(--u));
+    max-height: 60vh;
   }
+  .patch-group-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .patch-group-item { padding: calc(6 * var(--u)) calc(3 * var(--u)); }
 
   .patch-panel {
     top: 0;
@@ -350,6 +395,7 @@
     border: none;
     border-top: 2px solid var(--gold);
     transform: translateY(calc(-20 * var(--u)));
+    z-index: 30;   /* v0.36.4: поверх открытого списка старых версий; закрыли патч — список на месте */
   }
   .patch-panel.visible {
     transform: translateY(0);

@@ -80,6 +80,7 @@ const SAVE_PLAYER_DEFAULTS = {
   breakthroughResult: 0,
   soulHuntCap: 0,
   hideProfile: false,
+  repeatPref: true,   // v0.36.4: «Повторять бой» в начале боя
 };
 
 // Новые герои получают то же самое, что и старые сейвы без этих полей.
@@ -129,7 +130,7 @@ function saveNormalizePlayer(p) {
   });
 
   // булевы
-  ['usedCheat', 'ilgradOpen', 'underwoodFallen', 'hideProfile'].forEach(k => {
+  ['usedCheat', 'ilgradOpen', 'underwoodFallen', 'hideProfile', 'repeatPref'].forEach(k => {
     p[k] = !!p[k];
   });
 

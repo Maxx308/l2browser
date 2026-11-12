@@ -227,9 +227,39 @@ function annalsHaveNews() {
   const lastId = c.entries.length ? c.entries[c.entries.length - 1].id : 0;
   return lastId > (c.seen || 0) || c.entries.some(e => e.ask && e.ask.answer === null);
 }
+// v0.36.4: есть ли что «прочитать» кнопкой (неотвеченные вопросы Летописи — не в счёт, на них надо ответить)
+function chronicleHasReadableNews() {
+  const c = state.player.chronicle;
+  if (!c) return false;
+  const lastId = c.entries.length ? c.entries[c.entries.length - 1].id : 0;
+  return lastId > (c.seen || 0) || (typeof loreHasNews === 'function' && loreHasNews())
+    || (typeof questNews === 'function' && questNews());
+}
+
+// v0.36.4: кнопка «Отметить всё прочитанным» — Летопись, Поручения и Энциклопедия разом.
+function markAllChronicleRead() {
+  const c = state.player.chronicle;
+  if (!c) return;
+  if (c.entries.length) c.seen = c.entries[c.entries.length - 1].id;
+  if (!c.loreSeen) c.loreSeen = {};
+  Object.keys(c.lore || {}).forEach(k => { c.loreSeen[k] = true; });
+  if (typeof markQuestsSeen === 'function') markQuestsSeen();
+  if (typeof saveCurrentSlotSoon === 'function') saveCurrentSlotSoon();
+  renderChronicle();
+  updateChronicleDot();
+  const pending = c.entries.filter(e => e.ask && e.ask.answer === null).length;
+  showToast('✓', pending ? `Прочитано. В Летописи ждут ответа: ${pending}` : 'Всё в Хрониках отмечено прочитанным');
+}
+
 function updateChronicleDot() {
   const tab = document.querySelector('.tab[data-tab="chronicle"]');
   if (tab) tab.classList.toggle('has-news', chronicleHasNews());
+  const readAll = document.getElementById('chron-readall');
+  if (readAll) {
+    const show = chronicleHasReadableNews();
+    readAll.style.display = show ? '' : 'none';
+    if (readAll.parentElement) readAll.parentElement.style.display = show ? '' : 'none';
+  }
   const loreSub = document.querySelector('.chron-sub[data-sec="lore"]');
   if (loreSub) loreSub.classList.toggle('has-news', typeof loreHasNews === 'function' && loreHasNews());
   const questSub = document.querySelector('.chron-sub[data-sec="quests"]');
@@ -326,7 +356,11 @@ function renderChronicle() {
 // Открыли вкладку — новые записи прочитаны.
 function openChroniclePanel() {
   const c = state.player.chronicle;
-  if (c && c.entries.length) c.seen = c.entries[c.entries.length - 1].id;
+  const lastId = c && c.entries.length ? c.entries[c.entries.length - 1].id : 0;
+  if (c && lastId > (c.seen || 0)) {
+    c.seen = lastId;
+    if (typeof saveCurrentSlotSoon === 'function') saveCurrentSlotSoon();   // v0.36.4: прочитанное — сразу в сейв
+  }
   renderChronicle();
   updateChronicleDot();
 }

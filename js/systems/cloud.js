@@ -553,7 +553,14 @@ async function cloudSaveSlot(slotIndex, payload) {
     cloudResetOfflineFlag();
     cloudToastThrottled('saved', '☁️', 'Сохранено в облако', 'saved');
 
-    return { ok: true, updatedAt: data ? data.updated_at : null };
+    // v0.36.4: запомненная копия облака — тоже свежая. Раньше она обновлялась только при входе,
+    // и после игры локальный сейв выглядел «новее облака» — отсюда вечный вопрос «какой брать».
+    const updatedAt = (data && data.updated_at) || new Date().toISOString();
+    if (slotIndex >= 0 && slotIndex < (typeof SLOT_COUNT === 'number' ? SLOT_COUNT : 5)) {
+      cloudSlotsCache[slotIndex] = { data: payload, updatedAt };
+    }
+
+    return { ok: true, updatedAt };
   } catch (e) {
     console.warn('[cloud] saveSlot exception:', e);
 
@@ -604,18 +611,65 @@ function cloudGetCachedSlot(slotIndex) {
   return cloudSlotsCache[slotIndex] || null;
 }
 
+// v0.36.4: идущая подгрузка — чтобы клик по герою мог её дождаться (а не сравнивать со старым),
+// и признак, что облако хоть раз ответило в этом входе (без этого не делаем выводов «в облаке пусто»).
+let __cloudPrefetchPromise = null;
+let __cloudPrefetchOk = false;
+
 async function cloudPrefetchSlots() {
   if (!cloudIsReady()) {
     cloudSlotsCache = {};
+    __cloudPrefetchOk = false;
     return { ok: false, error: 'not authorized', slots: {} };
   }
+  if (typeof slotsClaimForAccount === 'function') slotsClaimForAccount();   // v0.36.4: свои герои — свои
 
-  const res = await cloudFetchAllSlots();
-  if (res.ok) {
-    cloudSlotsCache = res.slots || {};
-    cloudResetOfflineFlag();
+  const run = (async () => {
+    const res = await cloudFetchAllSlots();
+    if (res.ok) {
+      cloudSlotsCache = res.slots || {};
+      __cloudPrefetchOk = true;
+      cloudResetOfflineFlag();
+    }
+    return res;
+  })();
+  __cloudPrefetchPromise = run;
+  try { return await run; } finally { if (__cloudPrefetchPromise === run) __cloudPrefetchPromise = null; }
+}
+
+// Дождаться идущей подгрузки (не дольше maxMs). Если облако ещё ни разу не отвечало — подгрузить.
+async function cloudEnsureFresh(maxMs) {
+  if (!cloudIsReady()) return false;
+  const p = __cloudPrefetchPromise || (__cloudPrefetchOk ? null : cloudPrefetchSlots());
+  if (p) await Promise.race([p, new Promise(r => setTimeout(r, maxMs || 4000))]);
+  return __cloudPrefetchOk;
+}
+
+// v0.36.4: вместо окна «залить локальные сохранения» — тихо, сами.
+// Свой локальный герой, которого нет в облаке:
+//   + облако его ещё не видело (создан до аккаунтов / не успел уйти) — заливаем;
+//   + облако его уже принимало (cloudSeen), а теперь его там нет — удалён на другом
+//     устройстве: откладываем в сторону, не воскрешаем.
+async function cloudAutoSyncLocalSlots() {
+  if (!cloudIsReady() || !__cloudPrefetchOk || typeof readSlot !== 'function') return { uploaded: 0, removed: 0 };
+  let uploaded = 0, removed = 0;
+  for (let i = 0; i < SLOT_COUNT; i++) {
+    const local = readSlot(i);
+    if (!local || cloudGetCachedSlot(i)) continue;
+    if (local.uid && local.uid !== cloudUser.id) continue;
+    if (local.cloudSeen) {
+      if (typeof slotPark === 'function' && slotPark(cloudUser.id, i, 'deleted')) removed++;
+      continue;
+    }
+    const res = await cloudSaveSlot(i, { player: local.player, battle: local.battle, cheat: local.cheat, v: local.v });
+    if (res && res.ok) {
+      uploaded++;
+      if (typeof SLOT_CLOUD_SEEN !== 'undefined') SLOT_CLOUD_SEEN[i] = true;
+    }
   }
-  return res;
+  if (uploaded && typeof showToast === 'function') showToast('☁️', `Герои с этого устройства сохранены в облако: ${uploaded}`);
+  if ((uploaded || removed) && typeof renderSlots === 'function' && document.getElementById('start-screen')?.classList.contains('active')) renderSlots();
+  return { uploaded, removed };
 }
 
 function cloudClearCache() {
@@ -717,6 +771,18 @@ function cloudCompareSlots(slotIndex) {
   };
 }
 
+// v0.36.4: спрашивать игрока только когда молча взять свежий сейв опасно:
+// свежий — другой герой (имя, раса, класс) или у него уровень НИЖЕ, чем у старого.
+// Во всех остальных случаях берём свежий сам (старый остаётся запасной копией).
+function cloudConflictIsRisky(cmp) {
+  if (!cmp || cmp.status !== 'both-diff' || !cmp.local || !cmp.cloud) return false;
+  const fresh = cmp.newer === 'cloud' ? cmp.cloud.info : cmp.local.info;
+  const old = cmp.newer === 'cloud' ? cmp.local.info : cmp.cloud.info;
+  if (!fresh || !old) return true;
+  if (fresh.name !== old.name || fresh.classId !== old.classId || fresh.raceId !== old.raceId) return true;
+  return (fresh.level || 1) < (old.level || 1);
+}
+
 function cloudFormatDate(isoString) {
   if (!isoString) return '—';
   const d = new Date(isoString);
@@ -803,7 +869,13 @@ function cloudShowConflictModal(slotIndex, onChoose, onCancel) {
   }
 
   const hint = document.getElementById('cloud-conflict-hint');
-  if (cmp.newer === 'local') {
+  const freshInfo = cmp.newer === 'cloud' ? (cmp.cloud && cmp.cloud.info) : (cmp.local && cmp.local.info);
+  const oldInfo = cmp.newer === 'cloud' ? (cmp.local && cmp.local.info) : (cmp.cloud && cmp.cloud.info);
+  if (freshInfo && oldInfo && (freshInfo.name !== oldInfo.name || freshInfo.classId !== oldInfo.classId || freshInfo.raceId !== oldInfo.raceId)) {
+    hint.innerHTML = '⚠ <b>Здесь два разных героя.</b> Выберите, кого оставить в этой ячейке — второй сохранится запасной копией.';
+  } else if (freshInfo && oldInfo && (freshInfo.level || 1) < (oldInfo.level || 1)) {
+    hint.innerHTML = `⚠ <b>У более свежего сейва уровень ниже</b> (${freshInfo.level} против ${oldInfo.level}). Похоже, где-то играли старой копией — выберите сами.`;
+  } else if (cmp.newer === 'local') {
     hint.innerHTML = '💡 <b>Локальный сейв свежее.</b> Скорее всего, он более актуален.';
   } else if (cmp.newer === 'cloud') {
     hint.innerHTML = '💡 <b>Облачный сейв свежее.</b> Возможно, вы играли с другого устройства.';
@@ -959,6 +1031,11 @@ async function cloudMigrateAll() {
 let __cloudMigrationPending = false;
 
 function cloudTryShowMigrationModal() {
+  // v0.36.4: окно больше не показываем — локальные герои уходят в облако сами
+  // (cloudAutoSyncLocalSlots). Старый код окна оставлен ниже на случай отката.
+  cloudAutoSyncLocalSlots();
+  return;
+  // eslint-disable-next-line no-unreachable
   if (!cloudShouldAskMigration()) return;
   if (__cloudMigrationPending) return;
   if (!cloudIsReady()) return;

@@ -117,6 +117,7 @@
 
 .auto-slider {
   flex: 1;
+  min-width: 0;   /* v0.36.4: у range своя ширина ~130px — без этого на телефоне вылезал за край и «СТАРТ» налезал на соседа */
   appearance: none;
   -webkit-appearance: none;
   height: calc(6 * var(--u));
@@ -213,9 +214,10 @@
   .auto-stop-label { font-size: calc(12 * var(--u)); gap: calc(4 * var(--u)); }
   .auto-stop-icon { font-size: calc(14 * var(--u)); }
   .auto-stop-name { font-size: calc(11 * var(--u)); }
-  .auto-stop-sliders { gap: calc(6 * var(--u)); }
-  .auto-slider-group { gap: calc(5 * var(--u)); min-width: 0; flex: 1; }
-  .auto-slider-tag { font-size: calc(9.5 * var(--u)); padding: calc(2 * var(--u)) calc(4 * var(--u)); letter-spacing: 0; }
+  /* v0.36.4: на телефоне «СТОП» и «СТАРТ» — друг под другом, каждый на всю ширину */
+  .auto-stop-sliders { flex-direction: column; flex-wrap: nowrap; gap: calc(8 * var(--u)); }
+  .auto-slider-group { gap: calc(8 * var(--u)); min-width: 0; width: 100%; flex: none; }
+  .auto-slider-tag { font-size: calc(9.5 * var(--u)); padding: calc(2 * var(--u)) calc(4 * var(--u)); letter-spacing: 0; min-width: calc(46 * var(--u)); text-align: center; }
   .auto-slider-value { font-size: calc(11 * var(--u)); min-width: calc(36 * var(--u)); }
   .auto-slider::-webkit-slider-thumb { width: calc(18 * var(--u)); height: calc(18 * var(--u)); }
   .auto-slider::-moz-range-thumb { width: calc(18 * var(--u)); height: calc(18 * var(--u)); }
