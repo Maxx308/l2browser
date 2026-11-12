@@ -474,7 +474,7 @@ function renderCreateScreen() {
     el.className = 'create-option class-option' + (isSelected ? ' selected' : '');
 
     el.innerHTML = `
-      <div class="create-portrait" style="background-image:url('img/classes/${classId}.png')"></div>
+      <div class="create-portrait" style="background-image:url('img/classes/${classId}.webp')"></div>
       <div class="create-name">${cls.name}</div>
       <div class="create-desc">${cls.desc}</div>
       <div class="create-stats">

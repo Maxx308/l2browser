@@ -49,7 +49,7 @@ function readSlot(slotIndex) {
   try {
     const raw = localStorage.getItem(SLOT_KEY_PREFIX + slotIndex);
     if (!raw) return null;
-    return JSON.parse(raw);
+    return imgPathsToWebp(JSON.parse(raw));   // v0.36.2: старые пути картинок → .webp
   } catch (e) {
     return null;
   }
@@ -182,8 +182,29 @@ function deleteSlot(slotIndex) {
 
 // Записать текущий state в АКТИВНЫЙ слот (локально + облако).
 // Активный слот — тот, с которым сейчас играем (state.activeSlotIndex).
+// v0.36.2: в бою сохраняем не на каждого убитого, а не чаще раза в SLOT_SAVE_MIN_GAP_MS
+// (стая из шести от массового навыка раньше давала шесть сохранений и шесть запросов
+// в облако в один миг). Отложенное сохранение дожимает игровой тик (battle-loop.js),
+// а при сворачивании или закрытии игры оно делается сразу.
+const SLOT_SAVE_MIN_GAP_MS = 4000;
+let slotSaveLast = 0;
+let slotSavePending = false;
+
+function saveCurrentSlotSoon() {
+  if (performance.now() - slotSaveLast >= SLOT_SAVE_MIN_GAP_MS) saveCurrentSlot();
+  else slotSavePending = true;
+}
+function flushPendingSlotSave(force) {
+  if (!slotSavePending) return;
+  if (force || performance.now() - slotSaveLast >= SLOT_SAVE_MIN_GAP_MS) saveCurrentSlot();
+}
+document.addEventListener('visibilitychange', () => { if (document.hidden) flushPendingSlotSave(true); });
+window.addEventListener('pagehide', () => flushPendingSlotSave(true));
+
 function saveCurrentSlot() {
+  slotSavePending = false;
   if (state.activeSlotIndex === null || state.activeSlotIndex === undefined) return;
+  slotSaveLast = performance.now();
 
   // ---- Формируем тот же payload, что и раньше ----
   const payload = {

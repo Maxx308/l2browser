@@ -22,7 +22,7 @@
 //
 //  НОВОЕ (v0.12d):
 //  + Материалы Копи теперь используют PNG:
-//    img/materials/copper.png, tin.png, chitin.png, stone_plates.png.
+//    img/materials/copper.webp, tin.png, chitin.png, stone_plates.png.
 //  + SVG-иконки (copper, tin, chitin, stonePlates) остаются как
 //    резервный вариант — если PNG не найдётся.
 // ========================================================
@@ -175,24 +175,24 @@ function cheatGrantResources(amount) {
   // v0.12d: для них появились PNG (copper, tin, chitin, stone_plates).
   //         SVG-иконки оставлены как резерв.
   const matPng = {
-    'Нить':        'img/materials/thread.png',
-    'Ткань':       'img/materials/fabric.png',
-    'Клей':        'img/materials/glue.png',
-    'Ветвь':       'img/materials/branch.png',
-    'Руда железа': 'img/materials/iron_ore.png',
-    'Кости':       'img/materials/bone.png',
-    'Жабья шкура': 'img/materials/frog.png',
-    'Шкура волка': 'img/materials/pelt.png',
-    'Мясо':        'img/materials/meat.png',
-    'Клык':        'img/materials/fang.png',
-    'Кожа':        'img/materials/leather.png',
-    'Шкура':       'img/materials/fur.png',
-    'Уголь':       'img/materials/coal.png',
+    'Нить':        'img/materials/thread.webp',
+    'Ткань':       'img/materials/fabric.webp',
+    'Клей':        'img/materials/glue.webp',
+    'Ветвь':       'img/materials/branch.webp',
+    'Руда железа': 'img/materials/iron_ore.webp',
+    'Кости':       'img/materials/bone.webp',
+    'Жабья шкура': 'img/materials/frog.webp',
+    'Шкура волка': 'img/materials/pelt.webp',
+    'Мясо':        'img/materials/meat.webp',
+    'Клык':        'img/materials/fang.webp',
+    'Кожа':        'img/materials/leather.webp',
+    'Шкура':       'img/materials/fur.webp',
+    'Уголь':       'img/materials/coal.webp',
     // ---- НОВОЕ (v0.12d): материалы Копи ----
-    'Медь':              'img/materials/copper.png',
-    'Олово':             'img/materials/tin.png',
-    'Хитин':             'img/materials/chitin.png',
-    'Каменные пластины': 'img/materials/stone_plates.png',
+    'Медь':              'img/materials/copper.webp',
+    'Олово':             'img/materials/tin.webp',
+    'Хитин':             'img/materials/chitin.webp',
+    'Каменные пластины': 'img/materials/stone_plates.webp',
   };
 
   // SVG-иконки для новых материалов Копи (v0.12b) — резерв,

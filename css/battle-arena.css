@@ -199,6 +199,15 @@
 }
 
 /* ---------- ATB-КОЛЬЦА ---------- */
+/* v0.36.2: игра двигает шкалу 10 раз в секунду. Чтобы кольцо шло плавно, а не рывками,
+   --p объявлен числом (@property) и ему дан transition чуть длиннее игрового тика (100 мс).
+   .bx-snap ставит battle-fx.js, когда шкала сбросилась после хода: без плавной «отмотки» назад.
+   Старые браузеры @property не знают — там кольцо идёт шагами, как раньше. */
+@property --p {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 0;
+}
 .bx-atb {
   --p: 0;
   position: absolute; z-index: 3;
@@ -207,7 +216,9 @@
   border-radius: 50%;
   background: conic-gradient(var(--gold-bright) calc(var(--p) * 1turn), rgba(30,26,20,.92) 0);
   box-shadow: 0 0 0 2px #000, 0 4px 10px rgba(0,0,0,.6);
+  transition: --p .13s linear;
 }
+.bx-atb.bx-snap { transition: none; }
 .bx-atb::after {
   content: attr(data-icon);
   position: absolute; inset: calc(5 * var(--u)); border-radius: 50%;
@@ -215,8 +226,16 @@
   display: flex; align-items: center; justify-content: center;
   font-size: calc(18 * var(--u)); color: var(--gold-bright);
 }
-.bx-atb.bx-ready { animation: bxAtbReady .7s ease-in-out infinite alternate; }
-@keyframes bxAtbReady { to { box-shadow: 0 0 0 2px #000, 0 0 18px 4px rgba(255,214,120,.75); } }
+/* v0.36.2: «шкала готова» — свечение лежит отдельным слоем, мигает его прозрачность.
+   Раньше анимировалась сама тень (box-shadow): телефон перерисовывал её каждый кадр,
+   а прозрачность он меняет видеоускорителем, без перерисовки. Выглядит так же. */
+.bx-atb::before {
+  content: ""; position: absolute; inset: 0; border-radius: 50%;
+  box-shadow: 0 0 18px 4px rgba(255,214,120,.75);
+  opacity: 0; pointer-events: none;
+}
+.bx-atb.bx-ready::before { animation: bxGlowPulse .7s ease-in-out infinite alternate; }
+@keyframes bxGlowPulse { to { opacity: 1; } }
 .bx-atb.bx-atb-enemy {
   position: relative; left: 0; top: 0;
   width: calc(34 * var(--u)); height: calc(34 * var(--u));
@@ -234,15 +253,16 @@
   left:   calc(max(calc(22 * var(--u)), calc(var(--w) * .23)) * -.3);
   top:    calc(max(calc(22 * var(--u)), calc(var(--w) * .23)) * -.3);
   background: conic-gradient(#ff7a5a calc(var(--p) * 1turn), rgba(30,20,18,.92) 0);
-  transition: width .35s ease, height .35s ease, left .35s ease, top .35s ease;
+  transition: width .35s ease, height .35s ease, left .35s ease, top .35s ease, --p .13s linear;
 }
+.bx-atb.bx-atb-mob.bx-snap { transition: width .35s ease, height .35s ease, left .35s ease, top .35s ease; }
 .bx-atb.bx-atb-mob::after {
   inset: 13%;
   font-size: max(calc(10 * var(--u)), calc(var(--w) * .085));
   color: #ff9a7a;
 }
-.bx-atb.bx-atb-mob.bx-ready { animation: bxAtbReadyMob .6s ease-in-out infinite alternate; }
-@keyframes bxAtbReadyMob { to { box-shadow: 0 0 0 2px #000, 0 0 16px 4px rgba(255,110,80,.8); } }
+.bx-atb.bx-atb-mob::before { box-shadow: 0 0 16px 4px rgba(255,110,80,.8); }
+.bx-atb.bx-atb-mob.bx-ready::before { animation-duration: .6s; }
 .bx-enemy.bx-dying .bx-atb-mob,
 .bx-enemy.bx-dead .bx-atb-mob { display: none; }
 
@@ -314,7 +334,8 @@
 .bx-enemy.variant-bloody  .fighter-name { color: #ff8f7d; }
 
 .bx-enemy.bx-spawn { animation: bxSpawn .45s ease-out backwards; }   /* v0.26: было .9s — слабых мобов убивали раньше, чем они проявлялись */
-@keyframes bxSpawn { from { opacity: 0; filter: blur(10px) brightness(.2); transform: scale(.6) translateY(20px); } }
+/* v0.36.2: без размытия (blur) — на телефоне оно самое дорогое, а за 0.45 с его почти не видно */
+@keyframes bxSpawn { from { opacity: 0; filter: brightness(.2); transform: scale(.6) translateY(20px); } }
 
 /* ---------- v0.29: ПОДМОГА СТАИ ----------
    .bx-lurker   — силуэт «?»: кто-то на подходе, выйдет в следующий ход стаи.
@@ -322,7 +343,14 @@
 .bx-enemy.bx-lurker { opacity: .85; filter: none; }
 .bx-lurker .bx-card {
   background: linear-gradient(145deg, #3a3326, #14110c 45%, #2a241a 70%, #0c0a07);
+  box-shadow: 0 0 0 1px #000, 0 0 calc(6 * var(--u)) rgba(224,190,122,.2);
   animation: bxLurk 1.4s ease-in-out infinite;
+}
+/* v0.36.2: пульс свечения — отдельным слоем через прозрачность (см. .bx-atb::before) */
+.bx-lurker .bx-card::after {
+  content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
+  box-shadow: 0 0 calc(22 * var(--u)) rgba(224,190,122,.55);
+  opacity: 0; animation: bxLurkGlow 1.4s ease-in-out infinite;
 }
 .bx-lurker .bx-pic {
   background: radial-gradient(ellipse 45% 55% at 50% 62%, rgba(0,0,0,.95), rgba(0,0,0,.6) 60%, transparent 75%),
@@ -339,10 +367,11 @@
 .bx-lurker .fighter-name { color: #b8a27a; font-style: italic; }
 .bx-lurker .bx-bar { opacity: .35; }
 @keyframes bxLurk {
-  0%, 100% { box-shadow: 0 0 0 1px #000, 0 0 calc(6 * var(--u)) rgba(224,190,122,.2); transform: translateX(0); }
+  0%, 100% { transform: translateX(0); }
   25%      { transform: translateX(calc(-2 * var(--u))); }
-  50%      { box-shadow: 0 0 0 1px #000, 0 0 calc(22 * var(--u)) rgba(224,190,122,.55); transform: translateX(calc(2 * var(--u))); }
+  50%      { transform: translateX(calc(2 * var(--u))); }
 }
+@keyframes bxLurkGlow { 50% { opacity: 1; } }
 @keyframes bxLurkMark { 50% { transform: scale(1.12); opacity: .7; } }
 
 .bx-enemy.bx-reinforce { animation: bxReinforce .7s cubic-bezier(.2,.8,.3,1.2) backwards; }
@@ -352,7 +381,7 @@
   60%  { opacity: 1; transform: translateX(calc(-6 * var(--u))) scale(1.04); filter: brightness(1.4); }
 }
 @media (prefers-reduced-motion: reduce) {
-  .bx-lurker .bx-card, .bx-lurker-mark, .bx-enemy.bx-reinforce { animation: none; }
+  .bx-lurker .bx-card, .bx-lurker .bx-card::after, .bx-lurker-mark, .bx-enemy.bx-reinforce { animation: none; }
 }
 .bx-unit.bx-dying { animation: bxDie .9s forwards; }
 @keyframes bxDie {
@@ -445,7 +474,9 @@
 @keyframes bxFog { 0% { opacity: 0; transform: translateX(40px); } 35% { opacity: 1; } 100% { opacity: 0; transform: translateX(-30px); } }
 
 /* ---------- СЛОЙ ЭФФЕКТОВ ---------- */
-.bx-fx { position: absolute; inset: 0; pointer-events: none; z-index: 20; overflow: hidden; }
+/* v0.36.2: contain — цифры и вспышки появляются и исчезают внутри слоя, не заставляя
+   браузер пересчитывать раскладку всей сцены */
+.bx-fx { position: absolute; inset: 0; pointer-events: none; z-index: 20; overflow: hidden; contain: layout paint; }
 
 .bx-num {
   position: absolute; transform: translate(-50%, -50%);
@@ -820,25 +851,29 @@
   box-shadow: 0 0 calc(10 * var(--u)) var(--soul) inset;
   overflow: hidden;
 }
+/* v0.36.2: блик едет сдвигом слоя (transform), а не сменой фона — без перерисовки каждый кадр */
 .bx-enemy.bx-has-soul .bx-bar .bar-fill.hp::before {
-  content: ""; position: absolute; inset: 0;
-  background: linear-gradient(100deg, transparent 35%, rgba(255,255,255,.65) 50%, transparent 65%);
-  background-size: 250% 100%;
+  content: ""; position: absolute; top: 0; bottom: 0; left: 0; width: 75%;
+  background: linear-gradient(100deg, transparent, rgba(255,255,255,.65) 50%, transparent);
   animation: bxSoulShine 2.2s linear infinite;
 }
-@keyframes bxSoulShine { from { background-position: 150% 0; } to { background-position: -100% 0; } }
+@keyframes bxSoulShine { from { transform: translateX(-110%); } to { transform: translateX(145%); } }
 .bx-enemy.bx-has-soul .bx-bar .bar-text { text-shadow: 0 0 3px #000, 0 0 3px #000; }
 
 /* 2) Сияние карточки — отдельный слой, чтобы не мешать рывкам и тряске самой карточки */
 .bx-soul-aura {
   position: absolute; inset: 0; z-index: 1;
   border-radius: inherit; pointer-events: none;
-  animation: bxSoulAura 1.8s ease-in-out infinite;
+  box-shadow: 0 0 0 1px rgba(0,0,0,.6), 0 0 calc(10 * var(--u)) var(--soul);
 }
-@keyframes bxSoulAura {
-  0%, 100% { box-shadow: 0 0 0 1px rgba(0,0,0,.6), 0 0 calc(10 * var(--u)) var(--soul); }
-  50%      { box-shadow: 0 0 0 2px var(--soul), 0 0 calc(30 * var(--u)) var(--soul), inset 0 0 calc(14 * var(--u)) var(--soul); }
+/* v0.36.2: слабое сияние стоит постоянно, сильное — отдельным слоем и мигает прозрачностью
+   (раньше анимировалась сама тень — перерисовка каждый кадр на каждой карточке с душой) */
+.bx-soul-aura::after {
+  content: ""; position: absolute; inset: 0; border-radius: inherit;
+  box-shadow: 0 0 0 2px var(--soul), 0 0 calc(30 * var(--u)) var(--soul), inset 0 0 calc(14 * var(--u)) var(--soul);
+  opacity: 0; animation: bxSoulAura 1.8s ease-in-out infinite;
 }
+@keyframes bxSoulAura { 50% { opacity: 1; } }
 
 /* 3) Камень — маленькая SVG-иконка в правом нижнем углу картинки */
 .bx-soul {
@@ -860,7 +895,8 @@
 .bx-enemy.bx-dying .bx-soul-aura, .bx-enemy.bx-dead .bx-soul-aura, .bx-deck .bx-soul-aura { display: none; }
 .log-entry.soul-log { color: #e8d8ff; font-weight: 600; }
 @media (prefers-reduced-motion: reduce) {
-  .bx-soul, .bx-soul .bx-soul-spark, .bx-soul-aura, .bx-enemy.bx-has-soul .bx-bar .bar-fill.hp::before { animation: none; }
+  .bx-soul, .bx-soul .bx-soul-spark, .bx-soul-aura::after, .bx-enemy.bx-has-soul .bx-bar .bar-fill.hp::before { animation: none; }
+  .bx-enemy.bx-has-soul .bx-bar .bar-fill.hp::before { display: none; }
 }
 /* ---------- v0.36: ПРОРЫВ К ИЛЬГРАДУ (ilgrad-breakthrough.js) ---------- */
 #bx-break {

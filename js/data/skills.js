@@ -22,7 +22,7 @@ const SKILLS = {
   powerStrike: {
     id: 'powerStrike', classId: 'warrior', name: 'Сильный удар', type: 'active',
     iconKey: 'skillPowerStrike',
-    iconPng: 'img/skills/warrior/powerStrike.png',
+    iconPng: 'img/skills/warrior/powerStrike.webp',
     maxLevel: 5,
     levels: [
       { mpCost: 10, multiplier: 2.0 }, { mpCost: 11, multiplier: 2.25 },
@@ -36,7 +36,7 @@ const SKILLS = {
   resilience: {
     id: 'resilience', classId: 'warrior', name: 'Стойкость', type: 'passive',
     iconKey: 'skillResilience',
-    iconPng: 'img/skills/warrior/resilience.png',
+    iconPng: 'img/skills/warrior/resilience.webp',
     maxLevel: 5,
     levels: [
       { pDefPercent: 5, maxHpPercent: 5 }, { pDefPercent: 6, maxHpPercent: 6 },
@@ -49,7 +49,7 @@ const SKILLS = {
   weaponMasterW: {
     id: 'weaponMasterW', classId: 'warrior', name: 'Мастер оружия', type: 'passive',
     iconKey: 'skillWeaponMasterW',
-    iconPng: 'img/skills/warrior/weaponMasterW.png',
+    iconPng: 'img/skills/warrior/weaponMasterW.webp',
     maxLevel: 5,
     levels: [
       { pAtkPercent: 5, pAtkFlat: 1 }, { pAtkPercent: 6, pAtkFlat: 2 },
@@ -66,7 +66,7 @@ const SKILLS = {
   fireball: {
     id: 'fireball', classId: 'mage', name: 'Огненный шар', type: 'active',
     iconKey: 'skillFireball',
-    iconPng: 'img/skills/mage/fireball.png',
+    iconPng: 'img/skills/mage/fireball.webp',
     maxLevel: 5,
     levels: [
       // v0.19.1: урон −20% (было 2.50 / 2.80 / 3.10 / 3.40 / 3.70)
@@ -83,7 +83,7 @@ const SKILLS = {
   manaRegen: {
     id: 'manaRegen', classId: 'mage', name: 'Регенерация маны', type: 'passive',
     iconKey: 'skillManaRegen',
-    iconPng: 'img/skills/mage/manaRegen.png',
+    iconPng: 'img/skills/mage/manaRegen.webp',
     maxLevel: 5,
     levels: [
       { mpRegenInBattle: 0.5 }, { mpRegenInBattle: 0.6 }, { mpRegenInBattle: 0.7 },
@@ -95,7 +95,7 @@ const SKILLS = {
   weaponMasterM: {
     id: 'weaponMasterM', classId: 'mage', name: 'Мастер оружия', type: 'passive',
     iconKey: 'skillWeaponMasterM',
-    iconPng: 'img/skills/mage/weaponMasterM.png',
+    iconPng: 'img/skills/mage/weaponMasterM.webp',
     maxLevel: 5,
     // v0.35: + процент маг. атаки (раньше только плоская прибавка, которая не росла с экипировкой)
     levels: [
@@ -112,7 +112,7 @@ const SKILLS = {
   forestBlessing: {
     id: 'forestBlessing', raceId: 'elf', name: 'Благословение Леса', type: 'passive',
     iconKey: 'skillForestBlessing',
-    iconPng: 'img/skills/elf/forest_blessing.png',
+    iconPng: 'img/skills/elf/forest_blessing.webp',
     maxLevel: 5,
     // v0.35: ×2 (было 10…50%) и бонус наконец работает: дробная часть — шансом на +1 опыт,
     //        действует и на Терновый вихрь / Похищение жизни
@@ -126,7 +126,7 @@ const SKILLS = {
   heal: {
     id: 'heal', classId: 'mage', raceId: 'elf', name: 'Исцеление', type: 'active',
     iconKey: 'skillHeal',
-    iconPng: 'img/skills/elf/heal.png',
+    iconPng: 'img/skills/elf/heal.webp',
     maxLevel: 5,
     levels: [
       { mpCost: 10, multiplier: 2.00 }, { mpCost: 11, multiplier: 2.25 },
@@ -140,7 +140,7 @@ const SKILLS = {
   fastPrayer: {
     id: 'fastPrayer', classId: 'mage', raceId: 'elf', name: 'Быстрая молитва', type: 'passive',
     iconKey: 'skillFastPrayer',
-    iconPng: 'img/skills/elf/fast_prayer.png',
+    iconPng: 'img/skills/elf/fast_prayer.webp',
     maxLevel: 5,
     levels: [
       { atbPercent: 2 }, { atbPercent: 4 }, { atbPercent: 6 },
@@ -152,7 +152,7 @@ const SKILLS = {
   natureHeal: {
     id: 'natureHeal', classId: 'warrior', raceId: 'elf', name: 'Дыхание природы', type: 'active',
     iconKey: 'skillNatureHeal',
-    iconPng: 'img/skills/elf/nature_heal.png',
+    iconPng: 'img/skills/elf/nature_heal.webp',
     maxLevel: 5,
     levels: [
       { mpCost: 10, multiplier: 2.00 }, { mpCost: 11, multiplier: 2.25 },
@@ -166,7 +166,7 @@ const SKILLS = {
   grace: {
     id: 'grace', classId: 'warrior', raceId: 'elf', name: 'Грация', type: 'passive',
     iconKey: 'skillGrace',
-    iconPng: 'img/skills/elf/grace.png',
+    iconPng: 'img/skills/elf/grace.webp',
     maxLevel: 5,
     levels: [
       { evasionBonus: 1 }, { evasionBonus: 2 }, { evasionBonus: 3 },
@@ -182,7 +182,7 @@ const SKILLS = {
   discharge: {
     id: 'discharge', raceId: 'drow', name: 'Разряд', type: 'active',
     iconKey: 'skillDischarge', maxLevel: 5,
-    iconPng: 'img/skills/drow/discharge.png',
+    iconPng: 'img/skills/drow/discharge.webp',
     levels: [
       { mpCost: 12, multiplier: 1.80, atbReduction: 20 },
       { mpCost: 13, multiplier: 2.00, atbReduction: 25 },
@@ -197,7 +197,7 @@ const SKILLS = {
   stormLegacy: {
     id: 'stormLegacy', raceId: 'drow', name: 'Наследие Грозы', type: 'passive',
     iconKey: 'skillStormLegacy', maxLevel: 5,
-    iconPng: 'img/skills/drow/storm_legacy.png',
+    iconPng: 'img/skills/drow/storm_legacy.webp',
     levels: [
       { frequency: 5 }, { frequency: 4 }, { frequency: 3 },
       { frequency: 2 }, { frequency: 1 },
@@ -208,7 +208,7 @@ const SKILLS = {
   lightningSpeed: {
     id: 'lightningSpeed', classId: 'warrior', raceId: 'drow', name: 'Скорость молнии', type: 'passive',
     iconKey: 'skillLightningSpeed', maxLevel: 5,
-    iconPng: 'img/skills/drow/lightning_speed.png',
+    iconPng: 'img/skills/drow/lightning_speed.webp',
     // v0.23: при увороте шкала ATB +10…50% (может перевалить за 100% — остаток идёт на следующий ход),
     //        после срабатывания — перезарядка на 2 хода героя.
     levels: [ { value: 10 }, { value: 20 }, { value: 30 }, { value: 40 }, { value: 50 } ],
@@ -219,7 +219,7 @@ const SKILLS = {
   chainMind: {
     id: 'chainMind', classId: 'mage', raceId: 'drow', name: 'Цепной разум', type: 'passive',
     iconKey: 'skillChainMind', maxLevel: 5,
-    iconPng: 'img/skills/drow/chain_mind.png',
+    iconPng: 'img/skills/drow/chain_mind.webp',
     levels: [
       { chance: 20 }, { chance: 30 }, { chance: 40 },
       { chance: 50 }, { chance: 60 },
@@ -235,7 +235,7 @@ const SKILLS = {
     id: 'orcRage', classId: 'warrior', raceId: 'orc',
     name: 'Ярость', type: 'active',
     iconKey: 'skillOrcRage',
-    iconPng: 'img/skills/orc/orcRage.png',
+    iconPng: 'img/skills/orc/orcRage.webp',
     maxLevel: 5,
     levels: [
       { mpCost: 0, multiplier: 2.2, recoilPercent: 4, harvestCdCut: 1 }, { mpCost: 0, multiplier: 2.4, recoilPercent: 4, harvestCdCut: 1 },
@@ -257,7 +257,7 @@ const SKILLS = {
     id: 'spiritWrath', classId: 'mage', raceId: 'orc',
     name: 'Гнев', type: 'active',
     iconKey: 'skillSpiritWrath',
-    iconPng: 'img/skills/orc/spiritWrath.png',
+    iconPng: 'img/skills/orc/spiritWrath.webp',
     maxLevel: 5,
     levels: [
       { mpCost: 0, multiplier: 2.70, recoilPercent: 4 },
@@ -279,7 +279,7 @@ const SKILLS = {
   orcBlood: {
     id: 'orcBlood', raceId: 'orc', name: 'Кровь орка', type: 'passive',
     iconKey: 'skillOrcBlood',
-    iconPng: 'img/skills/orc/orcBlood.png',
+    iconPng: 'img/skills/orc/orcBlood.webp',
     maxLevel: 5,
     levels: [
       { hpRegenInBattle: 0.3 }, { hpRegenInBattle: 0.45 }, { hpRegenInBattle: 0.6 },
@@ -291,7 +291,7 @@ const SKILLS = {
   ironSkin: {
     id: 'ironSkin', classId: 'warrior', raceId: 'orc', name: 'Железная шкура', type: 'passive',
     iconKey: 'skillIronSkin',
-    iconPng: 'img/skills/orc/ironSkin.png',
+    iconPng: 'img/skills/orc/ironSkin.webp',
     maxLevel: 5,
     levels: [
       { flatDamageReduce: 1 }, { flatDamageReduce: 1.5 }, { flatDamageReduce: 2 },
@@ -303,7 +303,7 @@ const SKILLS = {
   shamanWisdom: {
     id: 'shamanWisdom', classId: 'mage', raceId: 'orc', name: 'Шаманская мудрость', type: 'passive',
     iconKey: 'skillShamanWisdom',
-    iconPng: 'img/skills/orc/shamanWisdom.png',
+    iconPng: 'img/skills/orc/shamanWisdom.webp',
     maxLevel: 5,
     // v0.35: + маг. атака (как у «Рунного знания» гнома) — орк-маг качался медленнее всех
     levels: [
@@ -322,7 +322,7 @@ const SKILLS = {
     id: 'dwarfGreed', classId: 'warrior', raceId: 'dwarf',
     name: 'Жадность', type: 'active',
     iconKey: 'skillDwarfGreed', maxLevel: 5,
-    iconPng: 'img/skills/dwarf/dwarfGreed.png',
+    iconPng: 'img/skills/dwarf/dwarfGreed.webp',
     levels: [
       // v0.19.1: markTurns — сколько ходов живёт метка (растёт с уровнем, чтобы метки успевали складываться)
       { mpCost: 10, multiplier: 0.90, markTurns: 3 }, { mpCost: 11, multiplier: 0.95, markTurns: 4 },
@@ -346,7 +346,7 @@ const SKILLS = {
     id: 'dwarfGreedMagic', classId: 'mage', raceId: 'dwarf',
     name: 'Жадность', type: 'active',
     iconKey: 'skillDwarfGreedMagic', maxLevel: 5,
-    iconPng: 'img/skills/dwarf/dwarfGreed.png',
+    iconPng: 'img/skills/dwarf/dwarfGreed.webp',
     levels: [
       { mpCost: 12, multiplier: 2.00, markTurns: 3 },
       { mpCost: 13, multiplier: 2.20, markTurns: 4 },
@@ -374,7 +374,7 @@ const SKILLS = {
   stoneSkin: {
     id: 'stoneSkin', raceId: 'dwarf', name: 'Каменная кожа', type: 'passive',
     iconKey: 'skillStoneSkin', maxLevel: 5,
-    iconPng: 'img/skills/dwarf/stoneSkin.png',
+    iconPng: 'img/skills/dwarf/stoneSkin.webp',
     levels: [
       { flatDamageReduce: 1 }, { flatDamageReduce: 1.5 }, { flatDamageReduce: 2 },
       { flatDamageReduce: 2.5 }, { flatDamageReduce: 3 },
@@ -389,7 +389,7 @@ const SKILLS = {
   dwarfFortitude: {
     id: 'dwarfFortitude', classId: 'warrior', raceId: 'dwarf', name: 'Крепкая стойка', type: 'passive',
     iconKey: 'skillDwarfFortitude', maxLevel: 5,
-    iconPng: 'img/skills/dwarf/dwarfFortitude.png',
+    iconPng: 'img/skills/dwarf/dwarfFortitude.webp',
     levels: [
       { pDefPercent: 5, maxHpPercent: 5 }, { pDefPercent: 6, maxHpPercent: 6 },
       { pDefPercent: 7, maxHpPercent: 7 }, { pDefPercent: 8, maxHpPercent: 8 },
@@ -406,7 +406,7 @@ const SKILLS = {
   runeKnowledge: {
     id: 'runeKnowledge', classId: 'mage', raceId: 'dwarf', name: 'Рунное знание', type: 'passive',
     iconKey: 'skillRuneKnowledge', maxLevel: 5,
-    iconPng: 'img/skills/dwarf/runeKnowledge.png',
+    iconPng: 'img/skills/dwarf/runeKnowledge.webp',
     levels: [
       { maxMpPercent: 3, mAtkFlat: 2 }, { maxMpPercent: 6, mAtkFlat: 4 },
       { maxMpPercent: 9, mAtkFlat: 6 }, { maxMpPercent: 12, mAtkFlat: 8 },
@@ -422,7 +422,7 @@ const SKILLS = {
   experience: {
     id: 'experience', raceId: 'human', name: 'Опыт', type: 'passive',
     iconKey: 'skillExperience',
-    iconPng: 'img/skills/human/experience.png',
+    iconPng: 'img/skills/human/experience.webp',
     maxLevel: 5,
     // v0.35: ×2 (было 1…5%) и тот же процент к шансу бонусного опыта владения —
     //        чтобы навык не умирал на капе уровня
@@ -440,7 +440,7 @@ const SKILLS = {
   rest: {
     id: 'rest', classId: 'warrior', raceId: 'human', name: 'Привал', type: 'passive',
     iconKey: 'skillRest',
-    iconPng: 'img/skills/human/rest.png',
+    iconPng: 'img/skills/human/rest.webp',
     maxLevel: 5,
     levels: [
       { hpRegenOutBonus: 0.5 }, { hpRegenOutBonus: 1.0 }, { hpRegenOutBonus: 1.5 },
@@ -453,7 +453,7 @@ const SKILLS = {
     id: 'doubleStrike', classId: 'warrior', raceId: 'human',
     name: 'Двойной удар', type: 'active',
     iconKey: 'skillDoubleStrike',
-    iconPng: 'img/skills/human/doubleStrike.png',
+    iconPng: 'img/skills/human/doubleStrike.webp',
     maxLevel: 5,
     levels: [
       { mpCost: 10, multiplier: 0.90 }, { mpCost: 11, multiplier: 0.95 },
@@ -471,7 +471,7 @@ const SKILLS = {
   meditation: {
     id: 'meditation', classId: 'mage', raceId: 'human', name: 'Медитация', type: 'passive',
     iconKey: 'skillMeditation',
-    iconPng: 'img/skills/mage/meditation.png',
+    iconPng: 'img/skills/mage/meditation.webp',
     maxLevel: 5,
     levels: [
       { mpRegenOutBonus: 0.5 }, { mpRegenOutBonus: 1.0 }, { mpRegenOutBonus: 1.5 },
@@ -484,7 +484,7 @@ const SKILLS = {
     id: 'iceArrow', classId: 'mage', raceId: 'human',
     name: 'Ледяная стрела', type: 'active',
     iconKey: 'skillIceArrow',
-    iconPng: 'img/skills/mage/iceArrow.png',
+    iconPng: 'img/skills/mage/iceArrow.webp',
     maxLevel: 5,
     levels: [
       // v0.19.1: −10% по итогам прогона (было 2.30 / 2.60 / 2.90 / 3.20 / 3.50) — человек-маг на 31% быстрее среднего
@@ -506,31 +506,31 @@ const SKILLS = {
 
 const GUILD_BUFFS = {
   berserk: {
-    id: 'berserk', name: 'Берсерк', iconKey: 'buffBerserk', iconPng: 'img/buffs/berserk.png',
+    id: 'berserk', name: 'Берсерк', iconKey: 'buffBerserk', iconPng: 'img/buffs/berserk.webp',
     price: BUFF_PRICE, duration: BUFF_DURATION,
     effects: { pAtkPercent: 4, mAtkPercent: 8, atbPercent: 5, pDefPercent: -4, mDefPercent: -8 },
     desc: 'Ярость берсерка: мощнее, но уязвимее.'
   },
   eloquence: {
-    id: 'eloquence', name: 'Говорливость', iconKey: 'buffEloquence', iconPng: 'img/buffs/eloquence.png',
+    id: 'eloquence', name: 'Говорливость', iconKey: 'buffEloquence', iconPng: 'img/buffs/eloquence.webp',
     price: BUFF_PRICE, duration: BUFF_DURATION,
     effects: { atbPercent: 15 }, mageOnly: true,
     desc: 'Только для магических классов: ускоряет скорость каста.'
   },
   combat: {
-    id: 'combat', name: 'Боевое усиление', iconKey: 'buffCombat', iconPng: 'img/buffs/combat.png',
+    id: 'combat', name: 'Боевое усиление', iconKey: 'buffCombat', iconPng: 'img/buffs/combat.webp',
     price: BUFF_PRICE, duration: BUFF_DURATION,
     effects: { pAtkPercent: 6, pDefPercent: 6 },
     desc: 'Универсальное боевое усиление.'
   },
   accuracy: {
-    id: 'accuracy', name: 'Меткость', iconKey: 'buffCombat', iconPng: 'img/buffs/accuracy.png',
+    id: 'accuracy', name: 'Меткость', iconKey: 'buffCombat', iconPng: 'img/buffs/accuracy.webp',
     price: BUFF_PRICE, duration: BUFF_DURATION,
     effects: { accuracyFlat: 5 },
     desc: 'Гильдейские маги накладывают чары точности. +5 к точности.'
   },
   shieldwall: {
-    id: 'shieldwall', name: 'Расширить щит', iconKey: 'buffCombat', iconPng: 'img/buffs/shieldwall.png',
+    id: 'shieldwall', name: 'Расширить щит', iconKey: 'buffCombat', iconPng: 'img/buffs/shieldwall.webp',
     price: BUFF_PRICE, duration: BUFF_DURATION,
     effects: { blockFlat: 3 },
     desc: 'Укрепляет защиту щитом. +3% к шансу блока.'
@@ -538,13 +538,13 @@ const GUILD_BUFFS = {
   // v0.29: стаи (battle-pack.js). Действуют не на статы, а на размер стаи и подкрепления.
   // Вместе не работают: покупка одного снимает другой.
   quietStep: {
-    id: 'quietStep', name: 'Тихий шаг', iconKey: 'buffQuietStep', iconPng: 'img/buffs/quietStep.png',
+    id: 'quietStep', name: 'Тихий шаг', iconKey: 'buffQuietStep', iconPng: 'img/buffs/quietStep.webp',
     price: BUFF_PRICE, duration: BUFF_DURATION,
     effects: {}, packMode: 'quiet', packRival: 'provoker',
     desc: 'Чары бесшумной поступи: стаи меньше, подмога почти не приходит.'
   },
   provoker: {
-    id: 'provoker', name: 'Провокатор', iconKey: 'buffProvoker', iconPng: 'img/buffs/provoker.png',
+    id: 'provoker', name: 'Провокатор', iconKey: 'buffProvoker', iconPng: 'img/buffs/provoker.webp',
     price: BUFF_PRICE, duration: BUFF_DURATION,
     effects: {}, packMode: 'provoke', packRival: 'quietStep',
     desc: 'Чары вызова: стаи больше, подмога сбегается со всей округи.'
@@ -561,7 +561,7 @@ const TAVERN_BUFFS = {
     name: 'Отдых',
     desc: 'Хорошо посидеть, отдохнуть от дороги. Опыт капает быстрее.',
     iconKey: 'tavernRest',
-    iconPng: 'img/buffs/rest.png',   // v0.30
+    iconPng: 'img/buffs/rest.webp',   // v0.30
     effect: 'xpPercent',
     value: TAVERN_XP_BONUS_PERCENT,
     duration: TAVERN_BUFF_DURATION,
@@ -572,7 +572,7 @@ const TAVERN_BUFFS = {
     name: 'Расслабон',
     desc: 'Поговорить, выпить, посмеяться. Дело спорится — умения растут быстрее.',
     iconKey: 'tavernRelax',
-    iconPng: 'img/buffs/relax.png',   // v0.30
+    iconPng: 'img/buffs/relax.webp',   // v0.30
     effect: 'profPercent',
     value: TAVERN_PROF_BONUS_PERCENT,
     duration: TAVERN_BUFF_DURATION,

@@ -57,11 +57,11 @@ const SOUL_LOCATIONS = {
 
 // Камни как предметы. tier — как вещь какого тира распыляется.
 const SOUL_GEM_ITEMS = {
-  'Сырой изумруд': { color: 'green',  tier: 3, icon: 'img/materials/raw_emerald.png',  sellPrice: 50 },
-  'Сырой сапфир':  { color: 'blue',   tier: 3, icon: 'img/materials/raw_sapphire.png', sellPrice: 100 },
-  'Сырой аметист': { color: 'purple', tier: 3, icon: 'img/materials/raw_amethyst.png', sellPrice: 150 },
-  'Сырой топаз':   { color: 'yellow', tier: 3, icon: 'img/materials/raw_topaz.png',    sellPrice: 250 },
-  'Сырой рубин':   { color: 'red',    tier: 3, icon: 'img/materials/raw_ruby.png',     sellPrice: 500 },
+  'Сырой изумруд': { color: 'green',  tier: 3, icon: 'img/materials/raw_emerald.webp',  sellPrice: 50 },
+  'Сырой сапфир':  { color: 'blue',   tier: 3, icon: 'img/materials/raw_sapphire.webp', sellPrice: 100 },
+  'Сырой аметист': { color: 'purple', tier: 3, icon: 'img/materials/raw_amethyst.webp', sellPrice: 150 },
+  'Сырой топаз':   { color: 'yellow', tier: 3, icon: 'img/materials/raw_topaz.webp',    sellPrice: 250 },
+  'Сырой рубин':   { color: 'red',    tier: 3, icon: 'img/materials/raw_ruby.webp',     sellPrice: 500 },
 };
 
 // Сколько камней с монстра с душой — по подтипу.

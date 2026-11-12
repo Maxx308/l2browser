@@ -99,27 +99,16 @@ function renderEffectsPanel() {
     ? ''
     : '<div class="effects-panel-title">ЭФФЕКТЫ</div>' + chips.join('');
 
-  // Основная панель (вне боя)
-  const panelMain = document.getElementById('effects-panel');
-  if (panelMain) {
-    if (chips.length === 0) {
-      panelMain.classList.remove('active');
-      panelMain.innerHTML = '';
-    } else {
-      panelMain.classList.add('active');
-      panelMain.innerHTML = html;
-    }
-  }
-
-  // Панель в бою (внутри overlay)
-  const panelBattle = document.getElementById('effects-panel-battle');
-  if (panelBattle) {
-    if (chips.length === 0) {
-      panelBattle.classList.remove('active');
-      panelBattle.innerHTML = '';
-    } else {
-      panelBattle.classList.add('active');
-      panelBattle.innerHTML = html;
-    }
-  }
+  // v0.36.2: функция зовётся 10 раз в секунду, а таймеры меняются раз в секунду.
+  // Пересобираем панель, только когда её содержимое действительно изменилось
+  // (раньше значки эффектов создавались заново 20 раз в секунду).
+  // Основная панель (вне боя) и панель в бою (внутри overlay).
+  ['effects-panel', 'effects-panel-battle'].forEach(id => {
+    const panel = document.getElementById(id);
+    if (!panel) return;
+    if (panel.__effectsHtml === html && (html === '') === (panel.childElementCount === 0)) return;
+    panel.__effectsHtml = html;
+    panel.classList.toggle('active', chips.length > 0);
+    panel.innerHTML = html;
+  });
 }

@@ -22,7 +22,7 @@ function updatePlayerAvatar() {
   const raceId = p.raceId || 'human';
   const imgSrc = (typeof getRaceIcon === 'function')
     ? getRaceIcon(raceId, p.classId)
-    : `img/races/${raceId}.png`;
+    : `img/races/${raceId}.webp`;
 
   if (p.classId === 'warrior') slot.classList.add('class-warrior');
   if (p.classId === 'mage')    slot.classList.add('class-mage');

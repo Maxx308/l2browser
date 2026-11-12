@@ -257,7 +257,7 @@ function onMonsterDeath(deadMonster) {
 
   updateBattleKillsCounter(m);
   updateTopStatus();
-  updateCharacterPanel();
+  uiLazy('charPanel', updateCharacterPanel);   // v0.36.2: лист героя закрыт окном боя — обновится, когда его видно
   updateInventoryFooter();
   updateSkillPointsBadge();
 
@@ -274,7 +274,7 @@ function onMonsterDeath(deadMonster) {
 
   monsterTagsOnDeath(m);   // v0.36: Вор, Падальщик, Злопамятный
 
-  saveCurrentSlot();
+  saveCurrentSlotSoon();   // v0.36.2: не чаще раза в несколько секунд (slots.js)
 
   // ========================================================
   //  ГРУППОВЫЕ БОИ: проверяем, остались ли живые

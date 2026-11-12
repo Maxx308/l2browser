@@ -535,6 +535,8 @@ function initGame() {
   document.getElementById('btn-autobattle').classList.add('active');
   switchTab('hunt');
   rememberSlotForReload();   // v0.24: после обновления страницы — сразу в этого героя
+  // v0.36.2: чуть погодя (чтобы не мешать первому экрану) — монстры и фон боя текущего места
+  setTimeout(() => { if (typeof preloadLocationImages === 'function') preloadLocationImages(state.player.currentLocation); }, 1500);
   if (typeof refreshStorageFromCloud === 'function') refreshStorageFromCloud();   // v0.25: склад из облака
 
   if (!window.__gameLoopStarted) {

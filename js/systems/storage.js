@@ -44,7 +44,7 @@ function loadStorage() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return [];
-    const arr = JSON.parse(raw);
+    const arr = imgPathsToWebp(JSON.parse(raw));   // v0.36.2: старые пути картинок → .webp
     if (!Array.isArray(arr)) return [];
     // v0.33: старые рубины и сапфиры (обычный дроп) изъяты — со склада тоже
     return typeof isRetiredGem === 'function' ? arr.filter(i => !isRetiredGem(i)) : arr;

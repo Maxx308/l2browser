@@ -25,7 +25,7 @@ const SKILLS_AOE = {
   // ========================================================
   whirlwind: {
     id: 'whirlwind', classId: 'warrior', raceId: 'human',
-    name: 'Круговой удар', type: 'active', iconPng: 'img/skills/human/whirlwind.png',
+    name: 'Круговой удар', type: 'active', iconPng: 'img/skills/human/whirlwind.webp',
     maxLevel: 5, minLevel: 10, cooldown: 5, fxAnim: 'melee',
     aoe: { kind: 'whirlwind', minTargets: 2 },
     levels: [
@@ -41,7 +41,7 @@ const SKILLS_AOE = {
 
   elementalVolley: {
     id: 'elementalVolley', classId: 'mage', raceId: 'human',
-    name: 'Стихийный залп', type: 'active', iconPng: 'img/skills/human/elementalVolley.png',
+    name: 'Стихийный залп', type: 'active', iconPng: 'img/skills/human/elementalVolley.webp',
     maxLevel: 5, minLevel: 10, cooldown: 5, fxAnim: 'cast',
     aoe: { kind: 'volley', minTargets: 2 },
     levels: [
@@ -60,7 +60,7 @@ const SKILLS_AOE = {
   // ========================================================
   bloodHarvest: {
     id: 'bloodHarvest', classId: 'warrior', raceId: 'orc',
-    name: 'Кровавая жатва', type: 'active', iconPng: 'img/skills/orc/bloodHarvest.png',
+    name: 'Кровавая жатва', type: 'active', iconPng: 'img/skills/orc/bloodHarvest.webp',
     maxLevel: 5, minLevel: 10, cooldown: 4, fxAnim: 'melee', element: 'death',   // v0.19.1: КД 5 → 4
     aoe: { kind: 'harvest', minTargets: 2 },
     levels: [
@@ -76,7 +76,7 @@ const SKILLS_AOE = {
 
   pestilence: {
     id: 'pestilence', classId: 'mage', raceId: 'orc',
-    name: 'Мор', type: 'active', iconPng: 'img/skills/orc/pestilence.png',
+    name: 'Мор', type: 'active', iconPng: 'img/skills/orc/pestilence.webp',
     maxLevel: 5, minLevel: 10, cooldown: 5, fxAnim: 'cast', element: 'death',
     aoe: { kind: 'pestilence', minTargets: 2 },
     levels: [
@@ -99,7 +99,7 @@ const SKILLS_AOE = {
   // ========================================================
   thornWhirl: {
     id: 'thornWhirl', classId: 'warrior', raceId: 'elf',
-    name: 'Терновый вихрь', type: 'active', iconPng: 'img/skills/elf/thorn_whirl.png',
+    name: 'Терновый вихрь', type: 'active', iconPng: 'img/skills/elf/thorn_whirl.webp',
     maxLevel: 5, minLevel: 10, cooldown: 5, fxAnim: 'melee', element: 'life',
     aoe: { kind: 'thorns', minTargets: 2 },
     levels: [
@@ -115,7 +115,7 @@ const SKILLS_AOE = {
 
   lifeDrain: {
     id: 'lifeDrain', classId: 'mage', raceId: 'elf',
-    name: 'Похищение жизни', type: 'active', iconPng: 'img/skills/elf/life_drain.png',
+    name: 'Похищение жизни', type: 'active', iconPng: 'img/skills/elf/life_drain.webp',
     maxLevel: 5, minLevel: 10, cooldown: 5, fxAnim: 'cast', element: 'life',
     aoe: { kind: 'drain', minTargets: 2, falloff: [1, 0.7, 0.5, 0.35] },
     healCdBonusPercent: 50,   // v0.19.1: пока Исцеление на перезарядке — урон +50%
@@ -135,7 +135,7 @@ const SKILLS_AOE = {
   // ========================================================
   sparkSlash: {
     id: 'sparkSlash', classId: 'warrior', raceId: 'drow',
-    name: 'Искровой разрез', type: 'active', iconPng: 'img/skills/drow/spark_slash.png',
+    name: 'Искровой разрез', type: 'active', iconPng: 'img/skills/drow/spark_slash.webp',
     maxLevel: 5, minLevel: 10, cooldown: 5, fxAnim: 'melee', element: 'lightning',
     aoe: { kind: 'spark', minTargets: 2 },
     levels: [
@@ -151,7 +151,7 @@ const SKILLS_AOE = {
 
   chainLightning: {
     id: 'chainLightning', classId: 'mage', raceId: 'drow',
-    name: 'Цепная молния', type: 'active', iconPng: 'img/skills/drow/chain_lightning.png',
+    name: 'Цепная молния', type: 'active', iconPng: 'img/skills/drow/chain_lightning.webp',
     maxLevel: 5, minLevel: 10, cooldown: 5, fxAnim: 'cast', element: 'lightning',
     aoe: { kind: 'chain', minTargets: 2, falloff: [1, 0.7, 0.49] },
     levels: [
@@ -170,7 +170,7 @@ const SKILLS_AOE = {
   // ========================================================
   frostQuake: {
     id: 'frostQuake', classId: 'warrior', raceId: 'dwarf',
-    name: 'Ледяной раскол', type: 'active', iconPng: 'img/skills/dwarf/frostQuake.png',
+    name: 'Ледяной раскол', type: 'active', iconPng: 'img/skills/dwarf/frostQuake.webp',
     maxLevel: 5, minLevel: 10, cooldown: 5, fxAnim: 'melee', element: 'ice',
     aoe: { kind: 'quake', minTargets: 2 },
     levels: [
@@ -186,7 +186,7 @@ const SKILLS_AOE = {
 
   blizzardRune: {
     id: 'blizzardRune', classId: 'mage', raceId: 'dwarf',
-    name: 'Руна вьюги', type: 'active', iconPng: 'img/skills/dwarf/blizzardRune.png',
+    name: 'Руна вьюги', type: 'active', iconPng: 'img/skills/dwarf/blizzardRune.webp',
     maxLevel: 5, minLevel: 10, cooldown: 5, fxAnim: 'cast', element: 'ice',
     aoe: { kind: 'rune', minTargets: 2 },
     levels: [

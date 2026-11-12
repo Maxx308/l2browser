@@ -361,7 +361,7 @@ function renderDebuffBar(target) {
 
   if (ids.length === 0) {
     if (bar.innerHTML) bar.innerHTML = '';
-    bar.dataset.ids = '';
+    if (bar.dataset.ids !== '') bar.dataset.ids = '';
     return;
   }
 

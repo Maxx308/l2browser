@@ -151,7 +151,7 @@ function openIlgradWatch() {
 
 // Кузница — ковка и подгонка под одной крышей: выбор через окно места.
 NPCS.ilgrad_forge = { id: 'ilgrad_forge', name: 'Кузница', fullName: 'Кузница Ильграда', icon: 'ilgrad_forge', dialogueStart: null };
-NPC_SVG.ilgrad_forge = `<img src="img/city/ilgrad/forge.jpg" alt="">`;
+NPC_SVG.ilgrad_forge = `<img src="img/city/ilgrad/forge.webp" alt="">`;
 DIALOGUES.ilgrad_forge = {
   start: 'hello',
   nodes: {

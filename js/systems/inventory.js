@@ -81,14 +81,14 @@ function addToInventory(drop) {
 
   if (existing) {
     existing.qty++;
-    renderInventory();
+    uiLazy('inventory', renderInventory);   // v0.36.2: за окном боя не рисуем, вне боя — один раз за кадр
     return true;
   }
 
   if (p.inventory.length >= invMaxSlots()) {
     showToast('📦', 'Инвентарь переполнен');
     logLoot(`📦 Инвентарь переполнен — «${drop.name}» потерян.`, 'log-info');
-    renderInventory();
+    uiLazy('inventory', renderInventory);
     return false;
   }
 
@@ -118,7 +118,7 @@ function addToInventory(drop) {
   if (drop.rarity) item.rarity = drop.rarity;
   if (drop.bonusStats) item.bonusStats = drop.bonusStats;
   p.inventory.push(item);
-  renderInventory();
+  uiLazy('inventory', renderInventory);
   return true;
 }
 
@@ -317,6 +317,7 @@ function refreshItemIcons(list) {
 function renderInventory() {
   const grid = document.getElementById('inventory-grid');
   if (!grid) return;
+  UI_LAZY.jobs.delete('inventory');   // v0.36.2: рисуем сейчас — отложенная перерисовка уже не нужна
   grid.innerHTML = '';
   const p = state.player;
   refreshItemIcons(p.inventory);
@@ -730,12 +731,12 @@ function migrateOldPatchedSet() {
     // ---- 1. Переименование старых предметов ----
     if (item.name === 'Верх доспеха') {
       item.name = 'Потрёпанная куртка';
-      item.icon = 'img/armor/patched_top.png';
+      item.icon = 'img/armor/patched_top.webp';
       item.stats = { pDef: 2 };
       item.setId = 'patched';
     } else if (item.name === 'Низ доспеха') {
       item.name = 'Потрёпанные штаны';
-      item.icon = 'img/armor/patched_bottom.png';
+      item.icon = 'img/armor/patched_bottom.webp';
       item.stats = { pDef: 2, mpBonus: 10 };
       item.setId = 'patched';
     }

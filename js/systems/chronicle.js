@@ -332,9 +332,9 @@ function openChroniclePanel() {
 }
 
 // ---- Слот сумки в снаряжении ----
-// Картинки сумок — img/bags/bag01_worn.png … bag10_arcane.png. Наша «Видавшая виды» — потёртая (bag01),
+// Картинки сумок — img/bags/bag01_worn.webp … bag10_arcane.png. Наша «Видавшая виды» — потёртая (bag01),
 // v0.35.1: с ростом Заплечника вид меняется (BAG_LOOKS в js/data/bag-quests.js).
-const BAG_SLOT_IMG = 'img/bags/bag01_worn.png';
+const BAG_SLOT_IMG = 'img/bags/bag01_worn.webp';
 
 function renderBagSlot(el) {
   el.classList.add('filled', 'bag-slot');

@@ -71,7 +71,7 @@
 }
 
 /* v0.31: карточки Андервуда — деревянная рамка и подпись кодом.
-   Картинка без текста и рамки (img/city/underwood/*.jpg, 512×512),
+   Картинка без текста и рамки (img/city/underwood/*.webp, 512×512),
    название — в .city-card-label. Карточки с текстом на картинке
    (без .city-card-wood и подписи) выглядят как раньше. */
 .city-card.city-card-wood {
@@ -324,7 +324,7 @@
   line-height: 1.5;
 }
 
-/* v0.31: фон локации на карточке перехода (img/locations/map/*.jpg, 960×540).
+/* v0.31: фон локации на карточке перехода (img/locations/map/*.webp, 960×540).
    Затемнение сверху — чтобы текст читался; к середине чуть светлее — видно место.
    Новая локация = ещё одна строка с её data-loc. */
 .map-card[data-loc] {
@@ -337,12 +337,12 @@
   flex-direction: column;
   justify-content: center;
 }
-.map-card[data-loc="field"] { background-image: var(--map-shade), url('../img/locations/map/field.jpg'); }
-.map-card[data-loc="town"]  { background-image: var(--map-shade), url('../img/locations/map/town.jpg'); }
-.map-card[data-loc="mine"]  { background-image: var(--map-shade), url('../img/locations/map/mine.jpg'); }
-.map-card[data-loc="outskirts"] { background-image: var(--map-shade), url('../img/locations/map/outskirts.jpg'); }
+.map-card[data-loc="field"] { background-image: var(--map-shade), url('../img/locations/map/field.webp'); }
+.map-card[data-loc="town"]  { background-image: var(--map-shade), url('../img/locations/map/town.webp'); }
+.map-card[data-loc="mine"]  { background-image: var(--map-shade), url('../img/locations/map/mine.webp'); }
+.map-card[data-loc="outskirts"] { background-image: var(--map-shade), url('../img/locations/map/outskirts.webp'); }
 /* v0.36: своей картинки для карты пока нет — вышка на стене с горящим городом */
-.map-card[data-loc="ilgrad"] { background-image: var(--map-shade), url('../img/city/ilgrad/watchtower.jpg'); }
+.map-card[data-loc="ilgrad"] { background-image: var(--map-shade), url('../img/city/ilgrad/watchtower.webp'); }
 .map-card[data-loc] .map-name,
 .map-card[data-loc] .map-desc,
 .map-card[data-loc] .map-meta { text-shadow: 0 1px 3px rgba(0,0,0,0.95), 0 0 calc(10 * var(--u)) rgba(0,0,0,0.8); }
@@ -364,8 +364,8 @@
   background-position: center;
   filter: grayscale(1) brightness(0.8);
 }
-.map-card[data-loc="ilgrad"] .map-lock-bg { background-image: linear-gradient(180deg, rgba(10,10,14,0.35), rgba(10,10,14,0.82)), url('../img/city/ilgrad/watchtower.jpg'); }
-.map-card[data-loc="town"] .map-lock-bg { background-image: linear-gradient(180deg, rgba(10,10,14,0.35), rgba(10,10,14,0.82)), url('../img/locations/map/town.jpg'); }
+.map-card[data-loc="ilgrad"] .map-lock-bg { background-image: linear-gradient(180deg, rgba(10,10,14,0.35), rgba(10,10,14,0.82)), url('../img/city/ilgrad/watchtower.webp'); }
+.map-card[data-loc="town"] .map-lock-bg { background-image: linear-gradient(180deg, rgba(10,10,14,0.35), rgba(10,10,14,0.82)), url('../img/locations/map/town.webp'); }
 .map-lock-fog {
   position: absolute; left: -60%; right: -60%; bottom: -10%; height: 75%;
   background:

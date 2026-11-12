@@ -53,7 +53,7 @@ const LORE_ARTICLES = {
   },
 
   elder: {
-    cat: 'people', title: 'Старейшина', kind: 'Андервуд', race: 'Человек', portrait: 'img/npc/elder.jpg',
+    cat: 'people', title: 'Старейшина', kind: 'Андервуд', race: 'Человек', portrait: 'img/npc/elder.webp',
     parts: [
       { key: 'elder', text: 'Глава Андервуда. Первым встречает тех, кто появляется прямо из воздуха, и помогает чем может: старым оружием, советом, парой Оболов.' },
       { key: 'elder.years', label: 'Сорок лет', text: 'Выбран жителями лет сорок назад и с тех пор пытается наладить дела. За эти годы повидал десятка четыре Появленцев.' },
@@ -62,7 +62,7 @@ const LORE_ARTICLES = {
   },
 
   trader: {
-    cat: 'people', title: 'Торговец', kind: 'Андервуд', race: 'Человек', portrait: 'img/npc/trader.jpg',
+    cat: 'people', title: 'Торговец', kind: 'Андервуд', race: 'Человек', portrait: 'img/npc/trader.webp',
     parts: [
       { key: 'trader', text: 'Держит лавку у ворот Андервуда. Зелья, микстуры, всё, что нужно в дорогу. Скупает добычу — не всю и не дорого.' },
       // v0.31: куски из разговора с Торговцем (кнопка «Поговорить» в лавке)
@@ -78,7 +78,7 @@ const LORE_ARTICLES = {
 
   // v0.31: основа — при первом заходе в таверну, остальное — из разговора.
   hostess: {
-    cat: 'people', title: 'Хозяйка таверны', kind: 'Андервуд', race: 'Человек', portrait: 'img/npc/hostess.jpg',
+    cat: 'people', title: 'Хозяйка таверны', kind: 'Андервуд', race: 'Человек', portrait: 'img/npc/hostess.webp',
     parts: [
       { key: 'hostess', text: 'Держит таверну «Козье вымя». Кормит, поит, знает всех в Андервуде — и про каждого что-нибудь.' },
       { key: 'hostess.name', label: 'Имя', byTalk: true, text: 'Зовут Марфа. Имя называет охотно — не то что Торговец. Кормит и поит Андервуд двадцать лет.' },
@@ -93,7 +93,7 @@ const LORE_ARTICLES = {
 
   // v0.31: основа — при первом заходе в кузницу, остальное — из разговора.
   smith: {
-    cat: 'people', title: 'Кузнец', kind: 'Андервуд', race: 'Гном', portrait: 'img/npc/smith.jpg',
+    cat: 'people', title: 'Кузнец', kind: 'Андервуд', race: 'Гном', portrait: 'img/npc/smith.webp',
     parts: [
       { key: 'smith', text: 'Гном. Держит кузницу Андервуда: куёт оружие, доспехи и украшения из того, что принесёшь. Ворчит, но дело знает.' },
       { key: 'smith.name', label: 'Имя', byTalk: true, text: 'Зовут Гундар. Уверен, что Появленцы всё равно переврут.' },
@@ -111,7 +111,7 @@ const LORE_ARTICLES = {
 
   // v0.31: основа — при первом заходе в Мастерскую, остальное — из разговора.
   refiner: {
-    cat: 'people', title: 'Мастерица', kind: 'Андервуд', race: 'Гномка', portrait: 'img/npc/refiner.jpg',
+    cat: 'people', title: 'Мастерица', kind: 'Андервуд', race: 'Гномка', portrait: 'img/npc/refiner.webp',
     parts: [
       { key: 'refiner', text: 'Гномка, сестра кузнеца. Держит Мастерскую: подгоняет снаряжение по руке хозяина.' },
       { key: 'refiner.dwarf', label: 'Не похожа', byTalk: true, text: 'На гномок из ярмарочных баек не похожа. Говорит, борода в их семье одна — брат растит её за двоих.' },
@@ -131,7 +131,7 @@ const LORE_ARTICLES = {
 
   // v0.31: основа — при первом заходе к наставнику, остальное — из разговора.
   mentor: {
-    cat: 'people', title: 'Наставник', kind: 'Андервуд', race: 'Орк', portrait: 'img/npc/mentor.jpg',
+    cat: 'people', title: 'Наставник', kind: 'Андервуд', race: 'Орк', portrait: 'img/npc/mentor.webp',
     parts: [
       { key: 'mentor', text: 'Орк-ветеран со шрамами. Учит всех, кто готов слушать: показывает, как пробудить и развить навыки.' },
       { key: 'mentor.name', label: 'Имя', byTalk: true, text: 'Зовут Урдах. Имя, по его словам, — для друзей и для врагов.' },
@@ -151,7 +151,7 @@ const LORE_ARTICLES = {
 
   // v0.35.1: основа — при первом заходе к Алхимику, остальное — из разговора.
   alchemist: {
-    cat: 'people', title: 'Алхимик', kind: 'Андервуд', race: 'Человек', portrait: 'img/npc/alchemist.jpg',
+    cat: 'people', title: 'Алхимик', kind: 'Андервуд', race: 'Человек', portrait: 'img/npc/alchemist.webp',
     parts: [
       { key: 'alchemist', text: 'Держит лавку алхимика: распыляет вещи в пыль, перекраивает их свойства, возвышает и переплавляет пыль. Молод, болтлив и без бровей.' },
       { key: 'alchemist.name', label: 'Имя', byTalk: true, text: 'Зовут Ефим. Просит не звать его Фимой: алхимик должен звучать солидно. Фимкой его звал только учитель.' },
@@ -171,7 +171,7 @@ const LORE_ARTICLES = {
 
   // v0.35.1: основа — при первом заходе на Склад, остальное — из разговора.
   keeper: {
-    cat: 'people', title: 'Кладовщица', kind: 'Андервуд', race: 'Дроу', portrait: 'img/npc/keeper.jpg',
+    cat: 'people', title: 'Кладовщица', kind: 'Андервуд', race: 'Дроу', portrait: 'img/npc/keeper.webp',
     parts: [
       { key: 'keeper', text: 'Держит Склад Андервуда. Дроу: говорит мало, помнит всё. Что кладут — не спрашивает. Ни разу ничего не пропало.' },
       { key: 'keeper.name', label: 'Имя', byTalk: true, text: 'Зовут Вирна. Полное имя длиннее — «здесь хватает этого».' },
@@ -189,7 +189,7 @@ const LORE_ARTICLES = {
   // v0.31: основа — при первом заходе в Гильдию, остальное — из разговора.
   // Зачем она здесь на самом деле — в игре не пишем.
   guildmage: {
-    cat: 'people', title: 'Эльфийка из Гильдии', kind: 'Андервуд', race: 'Эльфийка', portrait: 'img/npc/guildmage.jpg',
+    cat: 'people', title: 'Эльфийка из Гильдии', kind: 'Андервуд', race: 'Эльфийка', portrait: 'img/npc/guildmage.webp',
     parts: [
       { key: 'guildmage', text: 'Держит Гильдию магов: продаёт чары, что помогают в бою. Юна, умна и совершенно непроницаема.' },
       { key: 'guildmage.name', label: 'Имя', byTalk: true, text: 'Зовут Лиэль. Полное имя не называет: «Ты не выговоришь».' },
@@ -210,7 +210,7 @@ const LORE_ARTICLES = {
   // «Не бросишь» — только тем, кто пробовал её сбросить. Кто он такой на самом деле — в игре не пишем.
   bag: {
     cat: 'items', order: -1, title: 'Видавшая виды сумка', kind: 'Снаряжение героя',
-    get icon() { return typeof bagLookImg === 'function' ? bagLookImg() : 'img/bags/bag01_worn.png'; },   // v0.35.1: вид по уровню
+    get icon() { return typeof bagLookImg === 'function' ? bagLookImg() : 'img/bags/bag01_worn.webp'; },   // v0.35.1: вид по уровню
     parts: [
       { key: 'bag', text: 'Потёртая, латаная, пахнет пылью и чем-то горелым. Кажется, ей лет сто. Или больше. Висит за спиной с самого появления. Снять, продать или распылить её нельзя.' },
       { key: 'bag.voice', label: 'Голос', text: 'Сумка говорит. Голос мужской, ворчливый, с ехидцей. Кто он и откуда — не помнит и, кажется, не очень-то переживает.' },
@@ -270,7 +270,7 @@ const LORE_ARTICLES = {
 
   // v0.32: открывается на первом привале (battle-rest.js).
   camp: {
-    cat: 'buffs', order: 5, title: 'Привал', kind: 'Отдых на охоте', icon: 'img/locations/campfire.png',
+    cat: 'buffs', order: 5, title: 'Привал', kind: 'Отдых на охоте', icon: 'img/locations/campfire.webp',
     parts: [
       { key: 'camp', text: 'Когда здоровье или мана падают ниже порога «Авто-стопа», герой не лезет в новую драку: разводит костёр прямо на месте охоты и ждёт, пока силы вернутся. Дошли до порога продолжения — снова в бой. Пороги задаются кнопкой «⚙ Авто-стоп» в окне охоты.',
         rows: [

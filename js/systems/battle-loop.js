@@ -31,6 +31,8 @@ function gameLoop() {
   const dt = Math.min(0.1, (now - state.lastTick) / 1000);
   state.lastTick = now;
 
+  flushPendingSlotSave(false);   // v0.36.2: отложенное сохранение после убийств (slots.js)
+
   // ---- ЕДА (сытность) ----
   if (state.player.foodTimer > 0) {
     state.player.foodTimer -= dt;
@@ -216,7 +218,7 @@ function gameLoop() {
 
     // ---- v0.20: ручной режим — пока игрок выбирает действие, бой на паузе ----
     if (!state.battle.autoBattle && state.battle.manualWait) {
-      document.getElementById('battle-status').textContent = 'Ваш ход';
+      setText(document.getElementById('battle-status'), 'Ваш ход');
       manualTick(dt);
     } else {
       state.battle.playerATB += playerSpeed * dt;
@@ -226,7 +228,7 @@ function gameLoop() {
       for (const m of state.battle.monsters) {
         if (m.hp > 0) m.atb = (m.atb || 0) + monsterSpeed * dt * (m.atbMult || 1);   // v0.36: Стремительный, Неповоротливый
       }
-      document.getElementById('battle-status').textContent = 'ATB заряжается...';
+      setText(document.getElementById('battle-status'), 'ATB заряжается...');
 
       // ---- Ход игрока (общий для автобоя и ручного режима, см. battle-manual.js) ----
       if (state.battle.playerATB >= 1) {

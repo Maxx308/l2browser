@@ -211,7 +211,7 @@ async function openHeroInspect(row) {
       .from('leaderboard').select('profile')
       .eq('user_id', row.user_id).eq('slot', row.slot).maybeSingle();
     if (error) throw error;
-    raw = data && data.profile;
+    raw = imgPathsToWebp(data && data.profile);   // v0.36.2: старые пути картинок → .webp
   } catch (e) {
     console.warn('[inspect]', e);
     body.innerHTML = inspectNote('⚠', 'Не удалось загрузить', 'Проверьте интернет и попробуйте ещё раз.');

@@ -16,8 +16,8 @@
 // ========================================================
 
 const BAG_LOOKS = [
-  { from: 0,  img: 'img/bags/bag01_worn.png' },
-  { from: 10, img: 'img/bags/bag03_antler.png',
+  { from: 0,  img: 'img/bags/bag01_worn.webp' },
+  { from: 10, img: 'img/bags/bag03_antler.webp',
     desc: 'Потёртая, латаная — но заплатки свежие: шёлк, жабья кожа, медная пряжка. Между ремней торчат рога, а под клапаном мерцает зелёный камешек.' },
 ];
 

@@ -476,7 +476,7 @@ async function cloudFetchAllSlots() {
     const slots = {};
     (data || []).forEach(row => {
       slots[row.slot] = {
-        data: row.data,
+        data: imgPathsToWebp(row.data),   // v0.36.2: старые пути картинок → .webp
         updatedAt: row.updated_at,
       };
     });
@@ -510,7 +510,7 @@ async function cloudFetchSlot(slotIndex) {
       return { ok: true, data: null };
     }
 
-    return { ok: true, data: data.data, updatedAt: data.updated_at };
+    return { ok: true, data: imgPathsToWebp(data.data), updatedAt: data.updated_at };   // v0.36.2: старые пути картинок → .webp
   } catch (e) {
     console.warn('[cloud] fetchSlot exception:', e);
     return { ok: false, error: String(e) };

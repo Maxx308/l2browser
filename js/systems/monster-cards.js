@@ -295,7 +295,7 @@ function buildMonsterSlot(template, fromMine, layout) {
     tab.type = 'button';
     tab.className = 'slot-tab tab-' + v;
     const titleDef = MONSTER_TITLE_ICONS[getMonsterTitle(template.id, v)];   // титул виден и на закладке
-    tab.innerHTML = (titleDef ? `<img src="img/tags/${titleDef.img}.jpg" alt="" title="${titleDef.name}">` : '') +
+    tab.innerHTML = (titleDef ? `<img src="img/tags/${titleDef.img}.webp" alt="" title="${titleDef.name}">` : '') +
       `<span>${HUNT_TAB_NAMES[v]}</span>`;
     tab.onclick = () => showSlotVariant(slot, v, true);
     slot.tabs[v] = tab;
@@ -531,7 +531,7 @@ function buildMonsterCard(template, variantId, fromMine = false) {
   // HP видно сразу (v0.34.1). Пороги: атака и физ. защита 50, маг. защита 150, уворот 400.
   const statHtml = (key, open, val, dataStat) => {
     const def = MONSTER_STAT_ICONS[key];
-    const icon = `<img class="stat-ico" src="img/tags/${def.img}.jpg" alt="${def.name}" title="${def.name}">`;
+    const icon = `<img class="stat-ico" src="img/tags/${def.img}.webp" alt="${def.name}" title="${def.name}">`;
     const data = dataStat ? ` data-stat="${dataStat}"` : '';
     return open
       ? `<span class="monster-stat"${data}${dataStat ? ` data-val="${val}"` : ''}>${icon}<b>${val}</b></span>`
@@ -548,7 +548,7 @@ function buildMonsterCard(template, variantId, fromMine = false) {
 
   // ---- ТИТУЛ: значок в левом нижнем углу, виден и на задних карточках стопки ----
   const titleDef = MONSTER_TITLE_ICONS[getMonsterTitle(template.id, variantId)];
-  const titleHtml = titleDef ? `<div class="monster-hunter ${titleDef.css}" title="${titleDef.name}"><img src="img/tags/${titleDef.img}.jpg" alt="${titleDef.name}"></div>` : '';
+  const titleHtml = titleDef ? `<div class="monster-hunter ${titleDef.css}" title="${titleDef.name}"><img src="img/tags/${titleDef.img}.webp" alt="${titleDef.name}"></div>` : '';
 
   // ---- Счётчик: череп и «убито / до следующего открытия» ----
   const nextGoal = KILL_REVEAL_STEPS.find(n => kills < n);
@@ -556,7 +556,7 @@ function buildMonsterCard(template, variantId, fromMine = false) {
   // Строка под именем — только если есть что показать: подтип и «их время».
   const metaHtml = (variant.name ? `<span class="monster-variant-word">${variant.name}</span>` : '') +
     (typeof primeTimeLineHtml === 'function' ? primeTimeLineHtml(template) : '');
-  const killsHtml = `<div class="monster-kills" title="Убито. Следующая цифра — сколько нужно, чтобы узнать о твари больше"><img class="kills-ico" src="img/tags/kills.jpg" alt=""><span>${killsText}</span></div>`;
+  const killsHtml = `<div class="monster-kills" title="Убито. Следующая цифра — сколько нужно, чтобы узнать о твари больше"><img class="kills-ico" src="img/tags/kills.webp" alt=""><span>${killsText}</span></div>`;
 
   card.innerHTML = `
     <div class="monster-portrait-img" style="background-image:url('${monster.art}')">${packBadgeHtml(template)}${monsterTagsHtml(monster)}</div>

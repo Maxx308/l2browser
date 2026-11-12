@@ -11,17 +11,17 @@
 const RACES = {
   human: {
     id: 'human', name: 'Человек',
-    icon:        'img/races/human.png',
-    iconWarrior: 'img/races/human_warrior.png',
-    iconMage:    'img/races/human_mage.png',
+    icon:        'img/races/human.webp',
+    iconWarrior: 'img/races/human_warrior.webp',
+    iconMage:    'img/races/human_mage.webp',
     desc: 'Универсалы. Не лучшие ни в чём, но и не худшие. Умеют всё — понемногу.',
     available: true,
   },
   orc: {
     id: 'orc', name: 'Орк',
-    icon:        'img/races/orc.png',
-    iconWarrior: 'img/races/orc_warrior.png',
-    iconMage:    'img/races/orc_mage.png',
+    icon:        'img/races/orc.webp',
+    iconWarrior: 'img/races/orc_warrior.webp',
+    iconMage:    'img/races/orc_mage.webp',
     desc: 'Гора мышц и упрямства. Думают медленно, бьют сильно, живут долго. Отличный выбор для тех, кто устал от тонких материй.',
     available: true,
     statsByClass: {
@@ -31,9 +31,9 @@ const RACES = {
   },
   elf: {
     id: 'elf', name: 'Эльф',
-    icon:        'img/races/elf.png',
-    iconWarrior: 'img/races/elf_warrior.png',
-    iconMage:    'img/races/elf_mage.png',
+    icon:        'img/races/elf.webp',
+    iconWarrior: 'img/races/elf_warrior.webp',
+    iconMage:    'img/races/elf_mage.webp',
     desc: 'Живут вечно, стреляют метко, смотрят свысока. Умирают от одной стрелы в спину — ирония судьбы.',
     available: true,
     statsByClass: {
@@ -43,9 +43,9 @@ const RACES = {
   },
   drow: {
     id: 'drow', name: 'Дроу',
-    icon:        'img/races/drow.png',
-    iconWarrior: 'img/races/drow_warrior.png',
-    iconMage:    'img/races/drow_mage.png',
+    icon:        'img/races/drow.webp',
+    iconWarrior: 'img/races/drow_warrior.webp',
+    iconMage:    'img/races/drow_mage.webp',
     desc: 'Живут в темноте, ненавидят солнце и всех вокруг. Магия — сильная. Характер — так себе.',
     available: true,
     // Статы из Lineage 2 C4 (округлены под наш баланс)
@@ -56,9 +56,9 @@ const RACES = {
   },
   dwarf: {
     id: 'dwarf', name: 'Гном',
-    icon:        'img/races/dwarf.png',
-    iconWarrior: 'img/races/dwarf_warrior.png',
-    iconMage:    'img/races/dwarf_mage.png',
+    icon:        'img/races/dwarf.webp',
+    iconWarrior: 'img/races/dwarf_warrior.webp',
+    iconMage:    'img/races/dwarf_mage.webp',
     desc: 'Низкорослые, бородатые, упрямые. Могут перепить орка и переспорить эльфа. Уважают только пиво и золото.',
     available: true,
     statsByClass: {

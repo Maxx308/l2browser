@@ -470,7 +470,7 @@ function buildLeaderboardRowHtml(row, rank, idx) {
   const classId = hasOwnKey(CLASSES, row.class_id) ? row.class_id : 'warrior';
   const icon = (typeof getRaceIcon === 'function')
     ? getRaceIcon(raceId, classId)
-    : `img/races/${raceId}.png`;
+    : `img/races/${raceId}.webp`;
 
   // Названия расы и класса.
   const raceName = RACES[raceId].name;

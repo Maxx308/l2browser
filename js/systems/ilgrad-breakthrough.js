@@ -264,7 +264,7 @@ function breakPair() {
     const pos = bxCenter(document.getElementById('bx-enemy-row'));
     const hammer = document.createElement('img');
     hammer.className = 'bxa-hammer';
-    hammer.src = 'img/tags/fx_hammer.jpg';
+    hammer.src = 'img/tags/fx_hammer.webp';
     hammer.alt = '';
     hammer.style.left = pos.x + 'px';
     hammer.style.top = pos.y + 'px';

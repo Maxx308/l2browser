@@ -144,18 +144,18 @@ const NPCS = {
 const NPC_SVG = {
   // v0.35.1: вид меняется с уровнем Заплечника (BAG_LOOKS)
   get bag() {
-    const img = typeof bagLookImg === 'function' ? bagLookImg() : 'img/bags/bag01_worn.png';
+    const img = typeof bagLookImg === 'function' ? bagLookImg() : 'img/bags/bag01_worn.webp';
     return `<img src="${img}" alt="" style="object-fit:contain; padding:8%; box-sizing:border-box;">`;
   },
-  // v0.31: портреты жителей — img/npc/*.jpg (512×512, лицо крупно; исходники — C:\МояИграКлоуд\персонажи)
-  trader:  `<img src="img/npc/trader.jpg" alt="">`,
-  hostess: `<img src="img/npc/hostess.jpg" alt="">`,
-  smith:   `<img src="img/npc/smith.jpg" alt="">`,
-  elder:   `<img src="img/npc/elder.jpg" alt="">`,   // v0.31: вместо SVG-заглушки
-  refiner: `<img src="img/npc/refiner.jpg" alt="">`,
-  mentor:  `<img src="img/npc/mentor.jpg" alt="">`,
-  guildmage: `<img src="img/npc/guildmage.jpg" alt="">`,
+  // v0.31: портреты жителей — img/npc/*.webp (512×512, лицо крупно; исходники — C:\МояИграКлоуд\персонажи)
+  trader:  `<img src="img/npc/trader.webp" alt="">`,
+  hostess: `<img src="img/npc/hostess.webp" alt="">`,
+  smith:   `<img src="img/npc/smith.webp" alt="">`,
+  elder:   `<img src="img/npc/elder.webp" alt="">`,   // v0.31: вместо SVG-заглушки
+  refiner: `<img src="img/npc/refiner.webp" alt="">`,
+  mentor:  `<img src="img/npc/mentor.webp" alt="">`,
+  guildmage: `<img src="img/npc/guildmage.webp" alt="">`,
 
-  alchemist: `<img src="img/npc/alchemist.jpg" alt="">`,   // v0.35.1: ученик Ефим вместо SVG-заглушки
-  keeper:    `<img src="img/npc/keeper.jpg" alt="">`,   // v0.35.1: кладовщица Вирна
+  alchemist: `<img src="img/npc/alchemist.webp" alt="">`,   // v0.35.1: ученик Ефим вместо SVG-заглушки
+  keeper:    `<img src="img/npc/keeper.webp" alt="">`,   // v0.35.1: кладовщица Вирна
 };

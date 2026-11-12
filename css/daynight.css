@@ -125,9 +125,9 @@
     linear-gradient(180deg, rgba(10,18,52,calc(.5 * var(--night))), rgba(4,8,26,calc(.45 * var(--night))));
   background-blend-mode: soft-light, soft-light, normal, normal, normal, normal;
 }
-.map-card[data-loc="field"] { background-image: var(--map-tod), var(--map-shade), url('../img/locations/map/field.jpg'); }
-.map-card[data-loc="town"]  { background-image: var(--map-tod), var(--map-shade), url('../img/locations/map/town.jpg'); }
-.map-card[data-loc="ilgrad"] { background-image: var(--map-tod), var(--map-shade), url('../img/city/ilgrad/watchtower.jpg'); }
+.map-card[data-loc="field"] { background-image: var(--map-tod), var(--map-shade), url('../img/locations/map/field.webp'); }
+.map-card[data-loc="town"]  { background-image: var(--map-tod), var(--map-shade), url('../img/locations/map/town.webp'); }
+.map-card[data-loc="ilgrad"] { background-image: var(--map-tod), var(--map-shade), url('../img/city/ilgrad/watchtower.webp'); }
 
 /* ---------- v0.36: ТЕГИ «НОЧНОЙ» И «ДНЕВНОЙ»: рамка разгорается в своё время суток ---------- */
 .monster-tag.tag-nocturnal, .monster-tag.tag-diurnal { transition: opacity 3s, box-shadow 3s; }

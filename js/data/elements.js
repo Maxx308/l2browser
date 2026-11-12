@@ -11,11 +11,11 @@
 // ========================================================
 
 const ELEMENTS = {
-  fire:      { id: 'fire',      name: 'Огонь',  icon: 'img/prof/fire.png',      desc: 'Огненные заклинания.' },
-  ice:       { id: 'ice',       name: 'Лёд',    icon: 'img/prof/ice.png',       desc: 'Ледяные заклинания.' },
-  lightning: { id: 'lightning', name: 'Молния', icon: 'img/prof/lightning.png', desc: 'Электрические заклинания.' },
-  life:      { id: 'life',      name: 'Жизнь',  icon: 'img/prof/life.png',      desc: 'Светлая магия и лечение.' },
-  death:     { id: 'death',     name: 'Смерть', icon: 'img/prof/death.png',     desc: 'Тёмная магия и проклятия.' },
+  fire:      { id: 'fire',      name: 'Огонь',  icon: 'img/prof/fire.webp',      desc: 'Огненные заклинания.' },
+  ice:       { id: 'ice',       name: 'Лёд',    icon: 'img/prof/ice.webp',       desc: 'Ледяные заклинания.' },
+  lightning: { id: 'lightning', name: 'Молния', icon: 'img/prof/lightning.webp', desc: 'Электрические заклинания.' },
+  life:      { id: 'life',      name: 'Жизнь',  icon: 'img/prof/life.webp',      desc: 'Светлая магия и лечение.' },
+  death:     { id: 'death',     name: 'Смерть', icon: 'img/prof/death.webp',     desc: 'Тёмная магия и проклятия.' },
 };
 
 // Порядок отображения на вкладке «ВЛАДЕНИЕ»

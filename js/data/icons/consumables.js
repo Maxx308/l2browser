@@ -108,7 +108,7 @@ const SVG_CONSUMABLES = {
 
 // ---- v0.20: зелья и микстуры — PNG-картинки (img/potions/) вместо SVG ----
 (function () {
-  const img = (n) => `<img class="svg-icon potion-png" src="img/potions/${n}.png" alt="" style="width:36px;height:36px;object-fit:contain;">`;
+  const img = (n) => `<img class="svg-icon potion-png" src="img/potions/${n}.webp" alt="" style="width:36px;height:36px;object-fit:contain;">`;
   Object.assign(SVG_CONSUMABLES, {
     potionHeal:  img('heal'),
     potionHeal2: img('heal2'),
@@ -118,7 +118,7 @@ const SVG_CONSUMABLES = {
     potionDef:   img('def'),
   });
   // пыль алхимии — img/dust/ (заполняет ячейку, как картинки материалов)
-  const dust = (n) => `<img class="svg-icon dust-png" src="img/dust/${n}.png" alt="" style="width:100%;height:100%;object-fit:contain;">`;
+  const dust = (n) => `<img class="svg-icon dust-png" src="img/dust/${n}.webp" alt="" style="width:100%;height:100%;object-fit:contain;">`;
   Object.assign(SVG_CONSUMABLES, {
     dustGreen: dust('green'), dustBlue: dust('blue'), dustPurple: dust('purple'), dustYellow: dust('yellow'), dustRed: dust('red'),
   });

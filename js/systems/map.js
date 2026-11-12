@@ -16,6 +16,31 @@
 //  + refundTeleportScrolls() — возврат Оболов за старые свитки.
 // ========================================================
 
+// ========================================================
+//  v0.36.2: КАРТИНКИ МЕСТА — ЗАРАНЕЕ
+//  Пока герой идёт (или сразу после входа в игру), тихо качаем монстров
+//  этого места и фон боя — чтобы карточки и арена не появлялись с задержкой.
+//  Каждая картинка качается один раз; браузер потом берёт её из своей памяти.
+// ========================================================
+const IMG_PRELOADED = new Map();
+function preloadImages(list) {
+  (list || []).forEach(src => {
+    if (!src || IMG_PRELOADED.has(src)) return;
+    const im = new Image();
+    im.decoding = 'async';
+    im.src = src;
+    IMG_PRELOADED.set(src, im);
+  });
+}
+function preloadLocationImages(loc) {
+  const list = [];
+  if (typeof getMonstersByLocation === 'function') {
+    getMonstersByLocation(loc).forEach(m => { if (m.art) list.push(m.art); });
+  }
+  if (list.length && typeof BX_LOCATION_BG !== 'undefined' && BX_LOCATION_BG[loc]) list.push(BX_LOCATION_BG[loc]);
+  preloadImages(list);
+}
+
 // v0.26: тропы из любой локации в любую соседнюю, цена — getMagicPathPrice (config.js).
 function useMagicPath(destination) {
   const p = state.player;
@@ -96,6 +121,7 @@ function tryTravel(loc) {
   state.travel.timer = time;
   state.travel.duration = time;
   state.travel.destination = loc;
+  preloadLocationImages(loc);   // v0.36.2: пока идём — качаем монстров и фон боя этого места
 
   const place = LOCATION_NAMES[loc] || loc;
   document.getElementById('travel-title').textContent = `ПУТЬ: ${place}`;

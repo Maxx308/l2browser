@@ -16,7 +16,7 @@
 //
 //  НОВОЕ (v0.12):
 //  + Ювелирка «Новичка» переведена с SVG на PNG:
-//    img/jewelry/novice_ring.png, novice_earring.png, novice_necklace.png.
+//    img/jewelry/novice_ring.webp, novice_earring.png, novice_necklace.png.
 //  + Кольца/серьги/амулеты, которые падают с монстров (Фрог, Арахнид),
 //    остаются на SVG (iconKey: ring / earring / necklace).
 //
@@ -28,7 +28,7 @@
 //    Слиток бронзы  = 3 × Медь + 1 × Олово.
 //    Все по 100 Оболов. Пока только для продажи (в другие рецепты
 //    НЕ входят — добавим позже).
-//  + Иконки слитков — PNG: img/materials/*_ingot.png.
+//  + Иконки слитков — PNG: img/materials/*_ingot.webp.
 // ========================================================
 
 // Сеты экипировки
@@ -114,355 +114,355 @@ const CRAFT_PRICE_UKHA = 800;      // v0.35.1: Грибная уха — дор�
 // Рецепты кузницы.
 const RECIPES = {
   resources: [
-    { id: 'fabric', name: 'Ткань', icon: 'img/materials/fabric.png', price: CRAFT_PRICE_RESOURCE,
-      result: { name: 'Ткань', icon: 'img/materials/fabric.png', type: 'material', sellPrice: 8 },
+    { id: 'fabric', name: 'Ткань', icon: 'img/materials/fabric.webp', price: CRAFT_PRICE_RESOURCE,
+      result: { name: 'Ткань', icon: 'img/materials/fabric.webp', type: 'material', sellPrice: 8 },
       materials: [{ name: 'Нить', qty: 15 }] },
 
-    { id: 'glue', name: 'Клей', icon: 'img/materials/glue.png', price: CRAFT_PRICE_RESOURCE,
-      result: { name: 'Клей', icon: 'img/materials/glue.png', type: 'material', sellPrice: 6 },
+    { id: 'glue', name: 'Клей', icon: 'img/materials/glue.webp', price: CRAFT_PRICE_RESOURCE,
+      result: { name: 'Клей', icon: 'img/materials/glue.webp', type: 'material', sellPrice: 6 },
       materials: [{ name: 'Кости', qty: 3 }] },
 
     // ---- НОВОЕ (v0.12e): ПЛАВКА СЛИТКОВ ----
-    { id: 'ironIngot', name: 'Слиток железа', icon: 'img/materials/iron_ingot.png', price: CRAFT_PRICE_RESOURCE,
-      result: { name: 'Слиток железа', icon: 'img/materials/iron_ingot.png', type: 'material', sellPrice: 25 },
+    { id: 'ironIngot', name: 'Слиток железа', icon: 'img/materials/iron_ingot.webp', price: CRAFT_PRICE_RESOURCE,
+      result: { name: 'Слиток железа', icon: 'img/materials/iron_ingot.webp', type: 'material', sellPrice: 25 },
       materials: [{ name: 'Руда железа', qty: 3 }, { name: 'Уголь', qty: 1 }] },
 
-    { id: 'copperIngot', name: 'Слиток меди', icon: 'img/materials/copper_ingot.png', price: CRAFT_PRICE_RESOURCE,
-      result: { name: 'Слиток меди', icon: 'img/materials/copper_ingot.png', type: 'material', sellPrice: 20 },
+    { id: 'copperIngot', name: 'Слиток меди', icon: 'img/materials/copper_ingot.webp', price: CRAFT_PRICE_RESOURCE,
+      result: { name: 'Слиток меди', icon: 'img/materials/copper_ingot.webp', type: 'material', sellPrice: 20 },
       materials: [{ name: 'Медь', qty: 3 }, { name: 'Уголь', qty: 1 }] },
 
-    { id: 'tinIngot', name: 'Слиток олова', icon: 'img/materials/tin_ingot.png', price: CRAFT_PRICE_RESOURCE,
-      result: { name: 'Слиток олова', icon: 'img/materials/tin_ingot.png', type: 'material', sellPrice: 22 },
+    { id: 'tinIngot', name: 'Слиток олова', icon: 'img/materials/tin_ingot.webp', price: CRAFT_PRICE_RESOURCE,
+      result: { name: 'Слиток олова', icon: 'img/materials/tin_ingot.webp', type: 'material', sellPrice: 22 },
       materials: [{ name: 'Олово', qty: 3 }, { name: 'Уголь', qty: 1 }] },
 
-    { id: 'bronzeIngot', name: 'Слиток бронзы', icon: 'img/materials/bronze_ingot.png', price: CRAFT_PRICE_RESOURCE,
-      result: { name: 'Слиток бронзы', icon: 'img/materials/bronze_ingot.png', type: 'material', sellPrice: 30 },
+    { id: 'bronzeIngot', name: 'Слиток бронзы', icon: 'img/materials/bronze_ingot.webp', price: CRAFT_PRICE_RESOURCE,
+      result: { name: 'Слиток бронзы', icon: 'img/materials/bronze_ingot.webp', type: 'material', sellPrice: 30 },
       materials: [{ name: 'Медь', qty: 3 }, { name: 'Олово', qty: 1 }] },
   ],
   armor: [
     // ---- ГАМБЕЗОН (воинский сет) — ТИР 2 ----
-    { id: 'gambesonTop', name: 'Гамбезон (верх)', icon: 'img/armor/gambesonTop.png', setId: 'gambeson', price: CRAFT_PRICE_GEAR, tier: 2,
-      result: { name: 'Гамбезон (верх)', icon: 'img/armor/gambesonTop.png', type: 'armorTop', sellPrice: 30,
+    { id: 'gambesonTop', name: 'Гамбезон (верх)', icon: 'img/armor/gambesonTop.webp', setId: 'gambeson', price: CRAFT_PRICE_GEAR, tier: 2,
+      result: { name: 'Гамбезон (верх)', icon: 'img/armor/gambesonTop.webp', type: 'armorTop', sellPrice: 30,
         stats: { pDef: 8 }, setId: 'gambeson' },
       materials: [{ name: 'Ткань', qty: 5 }, { name: 'Клей', qty: 2 }] },
 
-    { id: 'gambesonBottom', name: 'Гамбезон (низ)', icon: 'img/armor/gambesonBottom.png', setId: 'gambeson', price: CRAFT_PRICE_GEAR, tier: 2,
-      result: { name: 'Гамбезон (низ)', icon: 'img/armor/gambesonBottom.png', type: 'armorBottom', sellPrice: 30,
+    { id: 'gambesonBottom', name: 'Гамбезон (низ)', icon: 'img/armor/gambesonBottom.webp', setId: 'gambeson', price: CRAFT_PRICE_GEAR, tier: 2,
+      result: { name: 'Гамбезон (низ)', icon: 'img/armor/gambesonBottom.webp', type: 'armorBottom', sellPrice: 30,
         stats: { pDef: 8 }, setId: 'gambeson' },
       materials: [{ name: 'Ткань', qty: 5 }, { name: 'Клей', qty: 2 }] },
 
-    { id: 'gambesonHelm', name: 'Гамбезон (шлем)', icon: 'img/armor/gambesonHelm.png', setId: 'gambeson', price: CRAFT_PRICE_GEAR, tier: 2,
-      result: { name: 'Гамбезон (шлем)', icon: 'img/armor/gambesonHelm.png', type: 'helmet', sellPrice: 15,
+    { id: 'gambesonHelm', name: 'Гамбезон (шлем)', icon: 'img/armor/gambesonHelm.webp', setId: 'gambeson', price: CRAFT_PRICE_GEAR, tier: 2,
+      result: { name: 'Гамбезон (шлем)', icon: 'img/armor/gambesonHelm.webp', type: 'helmet', sellPrice: 15,
         stats: { pDef: 3 }, setId: 'gambeson' },
       materials: [{ name: 'Ткань', qty: 2 }, { name: 'Клей', qty: 1 }] },
 
-    { id: 'gambesonBoots', name: 'Гамбезон (ботинки)', icon: 'img/armor/gambesonBoots.png', setId: 'gambeson', price: CRAFT_PRICE_GEAR, tier: 2,
-      result: { name: 'Гамбезон (ботинки)', icon: 'img/armor/gambesonBoots.png', type: 'boots', sellPrice: 15,
+    { id: 'gambesonBoots', name: 'Гамбезон (ботинки)', icon: 'img/armor/gambesonBoots.webp', setId: 'gambeson', price: CRAFT_PRICE_GEAR, tier: 2,
+      result: { name: 'Гамбезон (ботинки)', icon: 'img/armor/gambesonBoots.webp', type: 'boots', sellPrice: 15,
         stats: { pDef: 3 }, setId: 'gambeson' },
       materials: [{ name: 'Ткань', qty: 2 }, { name: 'Клей', qty: 1 }] },
 
-    { id: 'gambesonGloves', name: 'Гамбезон (перчатки)', icon: 'img/armor/gambesonGloves.png', setId: 'gambeson', price: CRAFT_PRICE_GEAR, tier: 2,
-      result: { name: 'Гамбезон (перчатки)', icon: 'img/armor/gambesonGloves.png', type: 'gloves', sellPrice: 15,
+    { id: 'gambesonGloves', name: 'Гамбезон (перчатки)', icon: 'img/armor/gambesonGloves.webp', setId: 'gambeson', price: CRAFT_PRICE_GEAR, tier: 2,
+      result: { name: 'Гамбезон (перчатки)', icon: 'img/armor/gambesonGloves.webp', type: 'gloves', sellPrice: 15,
         stats: { pDef: 3 }, setId: 'gambeson' },
       materials: [{ name: 'Ткань', qty: 2 }, { name: 'Клей', qty: 1 }] },
 
     // ---- МАНТИЯ УЧЕНИКА (магический сет) — ТИР 2 ----
-    { id: 'robeTop', name: 'Мантия ученика (верх)', icon: 'img/armor/robe_top.png', setId: 'robe', price: CRAFT_PRICE_GEAR, tier: 2,
-      result: { name: 'Мантия ученика (верх)', icon: 'img/armor/robe_top.png', type: 'armorTop', sellPrice: 30,
+    { id: 'robeTop', name: 'Мантия ученика (верх)', icon: 'img/armor/robe_top.webp', setId: 'robe', price: CRAFT_PRICE_GEAR, tier: 2,
+      result: { name: 'Мантия ученика (верх)', icon: 'img/armor/robe_top.webp', type: 'armorTop', sellPrice: 30,
         stats: { pDef: 3, mpBonus: 40 }, setId: 'robe' },
       materials: [{ name: 'Ткань', qty: 5 }, { name: 'Клей', qty: 2 }] },
 
-    { id: 'robeBottom', name: 'Мантия ученика (низ)', icon: 'img/armor/robe_bottom.png', setId: 'robe', price: CRAFT_PRICE_GEAR, tier: 2,
-      result: { name: 'Мантия ученика (низ)', icon: 'img/armor/robe_bottom.png', type: 'armorBottom', sellPrice: 30,
+    { id: 'robeBottom', name: 'Мантия ученика (низ)', icon: 'img/armor/robe_bottom.webp', setId: 'robe', price: CRAFT_PRICE_GEAR, tier: 2,
+      result: { name: 'Мантия ученика (низ)', icon: 'img/armor/robe_bottom.webp', type: 'armorBottom', sellPrice: 30,
         stats: { pDef: 3, mpBonus: 40 }, setId: 'robe' },
       materials: [{ name: 'Ткань', qty: 5 }, { name: 'Клей', qty: 2 }] },
 
-    { id: 'robeHelm', name: 'Мантия ученика (шлем)', icon: 'img/armor/robe_helm.png', setId: 'robe', price: CRAFT_PRICE_GEAR, tier: 2,
-      result: { name: 'Мантия ученика (шлем)', icon: 'img/armor/robe_helm.png', type: 'helmet', sellPrice: 15,
+    { id: 'robeHelm', name: 'Мантия ученика (шлем)', icon: 'img/armor/robe_helm.webp', setId: 'robe', price: CRAFT_PRICE_GEAR, tier: 2,
+      result: { name: 'Мантия ученика (шлем)', icon: 'img/armor/robe_helm.webp', type: 'helmet', sellPrice: 15,
         stats: { pDef: 1, mpBonus: 15 }, setId: 'robe' },
       materials: [{ name: 'Ткань', qty: 2 }, { name: 'Клей', qty: 1 }] },
 
-    { id: 'robeBoots', name: 'Мантия ученика (ботинки)', icon: 'img/armor/robe_boots.png', setId: 'robe', price: CRAFT_PRICE_GEAR, tier: 2,
-      result: { name: 'Мантия ученика (ботинки)', icon: 'img/armor/robe_boots.png', type: 'boots', sellPrice: 15,
+    { id: 'robeBoots', name: 'Мантия ученика (ботинки)', icon: 'img/armor/robe_boots.webp', setId: 'robe', price: CRAFT_PRICE_GEAR, tier: 2,
+      result: { name: 'Мантия ученика (ботинки)', icon: 'img/armor/robe_boots.webp', type: 'boots', sellPrice: 15,
         stats: { pDef: 1, mpBonus: 15 }, setId: 'robe' },
       materials: [{ name: 'Ткань', qty: 2 }, { name: 'Клей', qty: 1 }] },
 
-    { id: 'robeGloves', name: 'Мантия ученика (перчатки)', icon: 'img/armor/robe_gloves.png', setId: 'robe', price: CRAFT_PRICE_GEAR, tier: 2,
-      result: { name: 'Мантия ученика (перчатки)', icon: 'img/armor/robe_gloves.png', type: 'gloves', sellPrice: 15,
+    { id: 'robeGloves', name: 'Мантия ученика (перчатки)', icon: 'img/armor/robe_gloves.webp', setId: 'robe', price: CRAFT_PRICE_GEAR, tier: 2,
+      result: { name: 'Мантия ученика (перчатки)', icon: 'img/armor/robe_gloves.webp', type: 'gloves', sellPrice: 15,
         stats: { pDef: 1, mpBonus: 15 }, setId: 'robe' },
       materials: [{ name: 'Ткань', qty: 2 }, { name: 'Клей', qty: 1 }] },
 
     // ---- v0.21: КОЛЬЧУГА КОПЕЙ (воинский сет) — ТИР 3 ----
-    { id: 'chainTop', name: 'Кольчуга Копей (верх)', icon: 'img/armor/chain_top.png', setId: 'chain', price: CRAFT_PRICE_GEAR_T3, tier: 3,
-      result: { name: 'Кольчуга Копей (верх)', icon: 'img/armor/chain_top.png', type: 'armorTop', sellPrice: 120,
+    { id: 'chainTop', name: 'Кольчуга Копей (верх)', icon: 'img/armor/chain_top.webp', setId: 'chain', price: CRAFT_PRICE_GEAR_T3, tier: 3,
+      result: { name: 'Кольчуга Копей (верх)', icon: 'img/armor/chain_top.webp', type: 'armorTop', sellPrice: 120,
         stats: { pDef: 9, hpBonus: 40 }, setId: 'chain' },
       materials: [{ name: 'Слиток железа', qty: 20 }, { name: 'Каменные пластины', qty: 14 }, { name: 'Ткань', qty: 5 }, { name: 'Ядро голема', qty: 2 }] },
-    { id: 'chainBottom', name: 'Кольчуга Копей (низ)', icon: 'img/armor/chain_bottom.png', setId: 'chain', price: CRAFT_PRICE_GEAR_T3, tier: 3,
-      result: { name: 'Кольчуга Копей (низ)', icon: 'img/armor/chain_bottom.png', type: 'armorBottom', sellPrice: 120,
+    { id: 'chainBottom', name: 'Кольчуга Копей (низ)', icon: 'img/armor/chain_bottom.webp', setId: 'chain', price: CRAFT_PRICE_GEAR_T3, tier: 3,
+      result: { name: 'Кольчуга Копей (низ)', icon: 'img/armor/chain_bottom.webp', type: 'armorBottom', sellPrice: 120,
         stats: { pDef: 9, hpBonus: 40 }, setId: 'chain' },
       materials: [{ name: 'Слиток железа', qty: 16 }, { name: 'Каменные пластины', qty: 12 }, { name: 'Ткань', qty: 4 }, { name: 'Ядро голема', qty: 1 }] },
-    { id: 'chainHelm', name: 'Кольчуга Копей (шлем)', icon: 'img/armor/chain_helm.png', setId: 'chain', price: CRAFT_PRICE_GEAR_T3, tier: 3,
-      result: { name: 'Кольчуга Копей (шлем)', icon: 'img/armor/chain_helm.png', type: 'helmet', sellPrice: 60,
+    { id: 'chainHelm', name: 'Кольчуга Копей (шлем)', icon: 'img/armor/chain_helm.webp', setId: 'chain', price: CRAFT_PRICE_GEAR_T3, tier: 3,
+      result: { name: 'Кольчуга Копей (шлем)', icon: 'img/armor/chain_helm.webp', type: 'helmet', sellPrice: 60,
         stats: { pDef: 4, hpBonus: 20 }, setId: 'chain' },
       materials: [{ name: 'Слиток железа', qty: 8 }, { name: 'Каменные пластины', qty: 6 }, { name: 'Ткань', qty: 2 }] },
-    { id: 'chainBoots', name: 'Кольчуга Копей (ботинки)', icon: 'img/armor/chain_boots.png', setId: 'chain', price: CRAFT_PRICE_GEAR_T3, tier: 3,
-      result: { name: 'Кольчуга Копей (ботинки)', icon: 'img/armor/chain_boots.png', type: 'boots', sellPrice: 60,
+    { id: 'chainBoots', name: 'Кольчуга Копей (ботинки)', icon: 'img/armor/chain_boots.webp', setId: 'chain', price: CRAFT_PRICE_GEAR_T3, tier: 3,
+      result: { name: 'Кольчуга Копей (ботинки)', icon: 'img/armor/chain_boots.webp', type: 'boots', sellPrice: 60,
         stats: { pDef: 4, hpBonus: 20 }, setId: 'chain' },
       materials: [{ name: 'Слиток железа', qty: 8 }, { name: 'Каменные пластины', qty: 6 }, { name: 'Ткань', qty: 2 }] },
-    { id: 'chainGloves', name: 'Кольчуга Копей (перчатки)', icon: 'img/armor/chain_gloves.png', setId: 'chain', price: CRAFT_PRICE_GEAR_T3, tier: 3,
-      result: { name: 'Кольчуга Копей (перчатки)', icon: 'img/armor/chain_gloves.png', type: 'gloves', sellPrice: 60,
+    { id: 'chainGloves', name: 'Кольчуга Копей (перчатки)', icon: 'img/armor/chain_gloves.webp', setId: 'chain', price: CRAFT_PRICE_GEAR_T3, tier: 3,
+      result: { name: 'Кольчуга Копей (перчатки)', icon: 'img/armor/chain_gloves.webp', type: 'gloves', sellPrice: 60,
         stats: { pDef: 4, hpBonus: 20 }, setId: 'chain' },
       materials: [{ name: 'Слиток железа', qty: 8 }, { name: 'Каменные пластины', qty: 6 }, { name: 'Ткань', qty: 2 }] },
 
     // ---- v0.21: ШЁЛКОВАЯ МАНТИЯ (магический сет) — ТИР 3 ----
-    { id: 'silkTop', name: 'Шёлковая мантия (верх)', icon: 'img/armor/silk_top.png', setId: 'silk', price: CRAFT_PRICE_GEAR_T3, tier: 3,
-      result: { name: 'Шёлковая мантия (верх)', icon: 'img/armor/silk_top.png', type: 'armorTop', sellPrice: 120,
+    { id: 'silkTop', name: 'Шёлковая мантия (верх)', icon: 'img/armor/silk_top.webp', setId: 'silk', price: CRAFT_PRICE_GEAR_T3, tier: 3,
+      result: { name: 'Шёлковая мантия (верх)', icon: 'img/armor/silk_top.webp', type: 'armorTop', sellPrice: 120,
         stats: { pDef: 5, mpBonus: 60, hpBonus: 25 }, setId: 'silk' },
       materials: [{ name: 'Паучий шёлк', qty: 30 }, { name: 'Ткань', qty: 5 }, { name: 'Хитин', qty: 10 }, { name: 'Слиток олова', qty: 5 }, { name: 'Ядовитая железа', qty: 2 }] },
-    { id: 'silkBottom', name: 'Шёлковая мантия (низ)', icon: 'img/armor/silk_bottom.png', setId: 'silk', price: CRAFT_PRICE_GEAR_T3, tier: 3,
-      result: { name: 'Шёлковая мантия (низ)', icon: 'img/armor/silk_bottom.png', type: 'armorBottom', sellPrice: 120,
+    { id: 'silkBottom', name: 'Шёлковая мантия (низ)', icon: 'img/armor/silk_bottom.webp', setId: 'silk', price: CRAFT_PRICE_GEAR_T3, tier: 3,
+      result: { name: 'Шёлковая мантия (низ)', icon: 'img/armor/silk_bottom.webp', type: 'armorBottom', sellPrice: 120,
         stats: { pDef: 5, mpBonus: 60, hpBonus: 25 }, setId: 'silk' },
       materials: [{ name: 'Паучий шёлк', qty: 25 }, { name: 'Ткань', qty: 4 }, { name: 'Хитин', qty: 8 }, { name: 'Слиток олова', qty: 4 }, { name: 'Ядовитая железа', qty: 1 }] },
-    { id: 'silkHelm', name: 'Шёлковая мантия (шлем)', icon: 'img/armor/silk_helm.png', setId: 'silk', price: CRAFT_PRICE_GEAR_T3, tier: 3,
-      result: { name: 'Шёлковая мантия (шлем)', icon: 'img/armor/silk_helm.png', type: 'helmet', sellPrice: 60,
+    { id: 'silkHelm', name: 'Шёлковая мантия (шлем)', icon: 'img/armor/silk_helm.webp', setId: 'silk', price: CRAFT_PRICE_GEAR_T3, tier: 3,
+      result: { name: 'Шёлковая мантия (шлем)', icon: 'img/armor/silk_helm.webp', type: 'helmet', sellPrice: 60,
         stats: { pDef: 2, mpBonus: 25, hpBonus: 10 }, setId: 'silk' },
       materials: [{ name: 'Паучий шёлк', qty: 12 }, { name: 'Ткань', qty: 2 }, { name: 'Хитин', qty: 4 }, { name: 'Слиток олова', qty: 2 }] },
-    { id: 'silkBoots', name: 'Шёлковая мантия (ботинки)', icon: 'img/armor/silk_boots.png', setId: 'silk', price: CRAFT_PRICE_GEAR_T3, tier: 3,
-      result: { name: 'Шёлковая мантия (ботинки)', icon: 'img/armor/silk_boots.png', type: 'boots', sellPrice: 60,
+    { id: 'silkBoots', name: 'Шёлковая мантия (ботинки)', icon: 'img/armor/silk_boots.webp', setId: 'silk', price: CRAFT_PRICE_GEAR_T3, tier: 3,
+      result: { name: 'Шёлковая мантия (ботинки)', icon: 'img/armor/silk_boots.webp', type: 'boots', sellPrice: 60,
         stats: { pDef: 2, mpBonus: 25, hpBonus: 10 }, setId: 'silk' },
       materials: [{ name: 'Паучий шёлк', qty: 12 }, { name: 'Ткань', qty: 2 }, { name: 'Хитин', qty: 4 }, { name: 'Слиток олова', qty: 2 }] },
-    { id: 'silkGloves', name: 'Шёлковая мантия (перчатки)', icon: 'img/armor/silk_gloves.png', setId: 'silk', price: CRAFT_PRICE_GEAR_T3, tier: 3,
-      result: { name: 'Шёлковая мантия (перчатки)', icon: 'img/armor/silk_gloves.png', type: 'gloves', sellPrice: 60,
+    { id: 'silkGloves', name: 'Шёлковая мантия (перчатки)', icon: 'img/armor/silk_gloves.webp', setId: 'silk', price: CRAFT_PRICE_GEAR_T3, tier: 3,
+      result: { name: 'Шёлковая мантия (перчатки)', icon: 'img/armor/silk_gloves.webp', type: 'gloves', sellPrice: 60,
         stats: { pDef: 2, mpBonus: 25, hpBonus: 10 }, setId: 'silk' },
       materials: [{ name: 'Паучий шёлк', qty: 12 }, { name: 'Ткань', qty: 2 }, { name: 'Хитин', qty: 4 }, { name: 'Слиток олова', qty: 2 }] },
   ],
 
   weapons: [
     { id: 'swordShort', name: 'Короткий меч', category: 'swords', price: CRAFT_PRICE_GEAR, tier: 2,
-      result: { name: 'Короткий меч', icon: 'img/weapons/sword_short.png', type: 'weapon', sellPrice: 27,
+      result: { name: 'Короткий меч', icon: 'img/weapons/sword_short.webp', type: 'weapon', sellPrice: 27,
         stats: { pAtk: 12 } },   // v0.25: 11 → 12
       materials: [{ name: 'Руда железа', qty: 20 }, { name: 'Клей', qty: 5 }] },
 
     { id: 'swordLong', name: 'Длинный меч', category: 'swords', price: CRAFT_PRICE_GEAR, tier: 2,
-      result: { name: 'Длинный меч', icon: 'img/weapons/sword_long.png', type: 'weapon', sellPrice: 60,
+      result: { name: 'Длинный меч', icon: 'img/weapons/sword_long.webp', type: 'weapon', sellPrice: 60,
         stats: { pAtk: 22, atbSpeedMod: 0.02, critChance: 1 } },   // v0.25: 20 → 22
       materials: [{ name: 'Руда железа', qty: 40 }, { name: 'Клей', qty: 10 }, { name: 'Шкура волка', qty: 5 }] },
 
     { id: 'axeBattle', name: 'Боевой топор', category: 'axes', price: CRAFT_PRICE_GEAR, tier: 2,
-      result: { name: 'Боевой топор', icon: 'img/weapons/axe_battle.png', type: 'weapon', sellPrice: 32,   // v0.29.2: было 31.5 — дробь оставалась в Оболах
+      result: { name: 'Боевой топор', icon: 'img/weapons/axe_battle.webp', type: 'weapon', sellPrice: 32,   // v0.29.2: было 31.5 — дробь оставалась в Оболах
         stats: { pAtk: 11 } },
       materials: [{ name: 'Руда железа', qty: 25 }, { name: 'Клей', qty: 5 }] },
 
     { id: 'axeGreat', name: 'Секира', category: 'axes', price: CRAFT_PRICE_GEAR, tier: 2,
-      result: { name: 'Секира', icon: 'img/weapons/axe_great.png', type: 'weapon', sellPrice: 94,
+      result: { name: 'Секира', icon: 'img/weapons/axe_great.webp', type: 'weapon', sellPrice: 94,
         stats: { pAtk: 29, atbSpeedMod: -0.03 }, twoHanded: true },   // v0.27: двуручное ×1.35
       materials: [{ name: 'Руда железа', qty: 50 }, { name: 'Клей', qty: 15 }, { name: 'Клык', qty: 5 }] },
 
     { id: 'dagger', name: 'Кинжал', category: 'daggers', price: CRAFT_PRICE_GEAR, tier: 2,
-      result: { name: 'Кинжал', icon: 'img/weapons/dagger.png', type: 'weapon', sellPrice: 19,
+      result: { name: 'Кинжал', icon: 'img/weapons/dagger.webp', type: 'weapon', sellPrice: 19,
         stats: { pAtk: 8, atbSpeedMod: 0.05, critChance: 3 } },
       materials: [{ name: 'Руда железа', qty: 15 }, { name: 'Клей', qty: 3 }] },
 
     { id: 'daggerShadow', name: 'Клинок Тени', category: 'daggers', price: CRAFT_PRICE_GEAR, tier: 2,
-      result: { name: 'Клинок Тени', icon: 'img/weapons/dagger_shadow.png', type: 'weapon', sellPrice: 49,
+      result: { name: 'Клинок Тени', icon: 'img/weapons/dagger_shadow.webp', type: 'weapon', sellPrice: 49,
         stats: { pAtk: 15, atbSpeedMod: 0.10, critChance: 7 } },
       materials: [{ name: 'Руда железа', qty: 30 }, { name: 'Шкура волка', qty: 8 }, { name: 'Клык', qty: 3 }] },
 
     { id: 'spear', name: 'Копьё', category: 'spears', price: CRAFT_PRICE_GEAR, tier: 2,
-      result: { name: 'Копьё', icon: 'img/weapons/spear.png', type: 'weapon', sellPrice: 33,
+      result: { name: 'Копьё', icon: 'img/weapons/spear.webp', type: 'weapon', sellPrice: 33,
         stats: { pAtk: 19 }, twoHanded: true },   // v0.27: двуручное ×1.35
       materials: [{ name: 'Ветвь', qty: 30 }, { name: 'Руда железа', qty: 10 }, { name: 'Клей', qty: 5 }] },
 
     { id: 'glaive', name: 'Глефа', category: 'spears', price: CRAFT_PRICE_GEAR, tier: 2,
-      result: { name: 'Глефа', icon: 'img/weapons/glaive.png', type: 'weapon', sellPrice: 71,
+      result: { name: 'Глефа', icon: 'img/weapons/glaive.webp', type: 'weapon', sellPrice: 71,
         stats: { pAtk: 28, atbSpeedMod: -0.02 }, twoHanded: true },   // v0.27: двуручное ×1.35
       materials: [{ name: 'Ветвь', qty: 50 }, { name: 'Руда железа', qty: 20 }, { name: 'Клей', qty: 10 }] },
 
     { id: 'bowShort', name: 'Короткий лук', category: 'bows', price: CRAFT_PRICE_GEAR, tier: 2,
-      result: { name: 'Короткий лук', icon: 'img/weapons/bow_short.png', type: 'weapon', sellPrice: 23,
+      result: { name: 'Короткий лук', icon: 'img/weapons/bow_short.webp', type: 'weapon', sellPrice: 23,
         stats: { pAtk: 16, atbSpeedMod: 0.05 }, twoHanded: true },   // v0.27: двуручное ×1.35
       materials: [{ name: 'Ветвь', qty: 30 }, { name: 'Нить', qty: 5 }, { name: 'Клей', qty: 3 }] },
 
     { id: 'bowLong', name: 'Длинный лук', category: 'bows', price: CRAFT_PRICE_GEAR, tier: 2,
-      result: { name: 'Длинный лук', icon: 'img/weapons/bow_long.png', type: 'weapon', sellPrice: 44,
+      result: { name: 'Длинный лук', icon: 'img/weapons/bow_long.webp', type: 'weapon', sellPrice: 44,
         stats: { pAtk: 27 }, twoHanded: true },   // v0.27: двуручное ×1.35
       materials: [{ name: 'Ветвь', qty: 60 }, { name: 'Нить', qty: 15 }, { name: 'Клей', qty: 8 }] },
 
     { id: 'crossbow', name: 'Арбалет', category: 'crossbows', price: CRAFT_PRICE_GEAR, tier: 2,
-      result: { name: 'Арбалет', icon: 'img/weapons/crossbow.png', type: 'weapon', sellPrice: 30,
+      result: { name: 'Арбалет', icon: 'img/weapons/crossbow.webp', type: 'weapon', sellPrice: 30,
         stats: { pAtk: 20 }, twoHanded: true },   // v0.27: двуручное ×1.35
       materials: [{ name: 'Ветвь', qty: 25 }, { name: 'Руда железа', qty: 15 }, { name: 'Клей', qty: 10 }] },
 
     { id: 'crossbowHeavy', name: 'Тяжёлый арбалет', category: 'crossbows', price: CRAFT_PRICE_GEAR, tier: 2,
-      result: { name: 'Тяжёлый арбалет', icon: 'img/weapons/crossbow_heavy.png', type: 'weapon', sellPrice: 87,
+      result: { name: 'Тяжёлый арбалет', icon: 'img/weapons/crossbow_heavy.webp', type: 'weapon', sellPrice: 87,
         stats: { pAtk: 31, atbSpeedMod: -0.05 }, twoHanded: true },   // v0.27: двуручное ×1.35
       materials: [{ name: 'Ветвь', qty: 50 }, { name: 'Руда железа', qty: 30 }, { name: 'Клей', qty: 20 }] },
 
     { id: 'club', name: 'Дубина', category: 'maces', price: CRAFT_PRICE_GEAR, tier: 2,
-      result: { name: 'Дубина', icon: 'img/weapons/club.png', type: 'weapon', sellPrice: 25,
+      result: { name: 'Дубина', icon: 'img/weapons/club.webp', type: 'weapon', sellPrice: 25,
         stats: { pAtk: 10 } },   // v0.25: 9 → 10
       materials: [{ name: 'Ветвь', qty: 20 }, { name: 'Клей', qty: 5 }] },
 
     // v0.19: вторая дубина — одноручная, можно со щитом.
     { id: 'maceBattle', name: 'Боевая булава', category: 'maces', price: CRAFT_PRICE_GEAR, tier: 2,
-      result: { name: 'Боевая булава', icon: 'img/weapons/mace_battle.png', type: 'weapon', sellPrice: 55,
+      result: { name: 'Боевая булава', icon: 'img/weapons/mace_battle.webp', type: 'weapon', sellPrice: 55,
         stats: { pAtk: 20, atbSpeedMod: -0.02 } },   // v0.25: 18 → 20
       materials: [{ name: 'Руда железа', qty: 35 }, { name: 'Ветвь', qty: 15 }, { name: 'Клей', qty: 10 }] },
 
     { id: 'wand', name: 'Жезл Ученика', category: 'staves', price: CRAFT_PRICE_GEAR, tier: 2,
-      result: { name: 'Жезл Ученика', icon: 'img/weapons/wand.png', type: 'weapon', sellPrice: 25,
+      result: { name: 'Жезл Ученика', icon: 'img/weapons/wand.webp', type: 'weapon', sellPrice: 25,
         stats: { mAtk: 5, mpBonus: 30, mpRegenIn: 0.5 } },   // v0.25: + реген маны в бою
       materials: [{ name: 'Ветвь', qty: 20 }, { name: 'Клей', qty: 5 }] },
 
     { id: 'staff', name: 'Двуручный Посох Ученика', category: 'staves', price: CRAFT_PRICE_GEAR, tier: 2,
-      result: { name: 'Двуручный Посох Ученика', icon: 'img/weapons/staff.png', type: 'weapon', sellPrice: 40,
+      result: { name: 'Двуручный Посох Ученика', icon: 'img/weapons/staff.webp', type: 'weapon', sellPrice: 40,
         stats: { mAtk: 15, atbSpeedMod: -0.05 }, twoHanded: true },
       materials: [{ name: 'Ветвь', qty: 40 }, { name: 'Клей', qty: 8 }] },
 
     // ---- v0.24: ОРУЖИЕ ТИРА 3 — из ресурсов Копей. Фишки типа сильнее на +2% (см. weaponTypes.js) ----
     // v0.25: атака всего Т3 поднята (мечи и дубины — сильнее остальных), жезлу — реген маны в бою
     { id: 'swordMines', name: 'Меч Стража Копей', category: 'swords', price: CRAFT_PRICE_GEAR_T3, tier: 3,
-      result: { name: 'Меч Стража Копей', icon: 'img/weapons/T3/sword_mines.png', type: 'weapon', sellPrice: 120,
+      result: { name: 'Меч Стража Копей', icon: 'img/weapons/T3/sword_mines.webp', type: 'weapon', sellPrice: 120,
         stats: { pAtk: 34, atbSpeedMod: 0.03, critChance: 2 } },   // 28 → 34
       materials: [{ name: 'Слиток железа', qty: 16 }, { name: 'Слиток бронзы', qty: 6 }, { name: 'Каменные пластины', qty: 10 }, { name: 'Ядовитая железа', qty: 2 }] },
 
     // v0.32: в тире 3 у мечей, топоров, дубин и копий — пара «одноручное / двуручное».
     // Двуручное ≈ одноручное × 1.35 по атаке, медленнее; рецепт ~×1.3 и +1 редкая железа.
     { id: 'swordRune', name: 'Рунный меч Глубин', category: 'swords', price: CRAFT_PRICE_GEAR_T3, tier: 3,
-      result: { name: 'Рунный меч Глубин', icon: 'img/weapons/T3/sword_rune.png', type: 'weapon', sellPrice: 160,
+      result: { name: 'Рунный меч Глубин', icon: 'img/weapons/T3/sword_rune.webp', type: 'weapon', sellPrice: 160,
         stats: { pAtk: 46, atbSpeedMod: -0.03, critChance: 2 }, twoHanded: true },
       materials: [{ name: 'Слиток железа', qty: 20 }, { name: 'Слиток бронзы', qty: 10 }, { name: 'Каменные пластины', qty: 12 }, { name: 'Ядовитая железа', qty: 3 }] },
 
     { id: 'axeMiner', name: 'Секира Рудокопа', category: 'axes', price: CRAFT_PRICE_GEAR_T3, tier: 3,
-      result: { name: 'Секира Рудокопа', icon: 'img/weapons/T3/axe_miner.png', type: 'weapon', sellPrice: 180,
+      result: { name: 'Секира Рудокопа', icon: 'img/weapons/T3/axe_miner.webp', type: 'weapon', sellPrice: 180,
         stats: { pAtk: 46, atbSpeedMod: -0.03 }, twoHanded: true },   // v0.27: 39 → 46/45 (двуручное ×1.35)
       materials: [{ name: 'Слиток железа', qty: 20 }, { name: 'Каменные пластины', qty: 12 }, { name: 'Ядовитая железа', qty: 2 }] },
 
     { id: 'axeTunneler', name: 'Топор Проходчика', category: 'axes', price: CRAFT_PRICE_GEAR_T3, tier: 3,
-      result: { name: 'Топор Проходчика', icon: 'img/weapons/T3/axe_tunneler.png', type: 'weapon', sellPrice: 110,
+      result: { name: 'Топор Проходчика', icon: 'img/weapons/T3/axe_tunneler.webp', type: 'weapon', sellPrice: 110,
         stats: { pAtk: 34 } },   // v0.32: одноручный — можно со щитом или в пару
       materials: [{ name: 'Слиток железа', qty: 14 }, { name: 'Слиток бронзы', qty: 4 }, { name: 'Каменные пластины', qty: 8 }, { name: 'Ядовитая железа', qty: 2 }] },
 
     { id: 'daggerVenom', name: 'Ядовитый клинок', category: 'daggers', price: CRAFT_PRICE_GEAR_T3, tier: 3,
-      result: { name: 'Ядовитый клинок', icon: 'img/weapons/T3/dagger_venom.png', type: 'weapon', sellPrice: 100,
+      result: { name: 'Ядовитый клинок', icon: 'img/weapons/T3/dagger_venom.webp', type: 'weapon', sellPrice: 100,
         stats: { pAtk: 29, atbSpeedMod: 0.10, critChance: 8 } },   // 26 → 29
       materials: [{ name: 'Слиток железа', qty: 12 }, { name: 'Хитин', qty: 20 }, { name: 'Ядовитая железа', qty: 10 }] },
 
     { id: 'pikeDepths', name: 'Пика Глубин', category: 'spears', price: CRAFT_PRICE_GEAR_T3, tier: 3,
-      result: { name: 'Пика Глубин', icon: 'img/weapons/T3/pike_depths.png', type: 'weapon', sellPrice: 140,
+      result: { name: 'Пика Глубин', icon: 'img/weapons/T3/pike_depths.webp', type: 'weapon', sellPrice: 140,
         stats: { pAtk: 45, atbSpeedMod: -0.02 }, twoHanded: true },   // v0.27: 39 → 46/45 (двуручное ×1.35)
       materials: [{ name: 'Слиток железа', qty: 14 }, { name: 'Ветвь', qty: 50 }, { name: 'Хитин', qty: 16 }, { name: 'Ядовитая железа', qty: 5 }] },
 
     { id: 'spearGuard', name: 'Копьё Стража', category: 'spears', price: CRAFT_PRICE_GEAR_T3, tier: 3,
-      result: { name: 'Копьё Стража', icon: 'img/weapons/T3/spear_guard.png', type: 'weapon', sellPrice: 100,
+      result: { name: 'Копьё Стража', icon: 'img/weapons/T3/spear_guard.webp', type: 'weapon', sellPrice: 100,
         stats: { pAtk: 33, atbSpeedMod: 0.02 } },   // v0.32: одноручное копьё — «копьё и щит» (в пару копья не берутся)
       materials: [{ name: 'Слиток железа', qty: 10 }, { name: 'Ветвь', qty: 30 }, { name: 'Хитин', qty: 10 }, { name: 'Ядовитая железа', qty: 3 }] },
 
     { id: 'bowSilk', name: 'Шёлковый лук', category: 'bows', price: CRAFT_PRICE_GEAR_T3, tier: 3,
-      result: { name: 'Шёлковый лук', icon: 'img/weapons/T3/bow_silk.png', type: 'weapon', sellPrice: 90,
+      result: { name: 'Шёлковый лук', icon: 'img/weapons/T3/bow_silk.webp', type: 'weapon', sellPrice: 90,
         stats: { pAtk: 44 }, twoHanded: true },   // v0.27: 38 → 44 (двуручное ×1.35)
       materials: [{ name: 'Ветвь', qty: 60 }, { name: 'Паучий шёлк', qty: 30 }, { name: 'Хитин', qty: 16 }] },
 
     { id: 'crossbowBronze', name: 'Бронзовый арбалет', category: 'crossbows', price: CRAFT_PRICE_GEAR_T3, tier: 3,
-      result: { name: 'Бронзовый арбалет', icon: 'img/weapons/T3/crossbow_bronze.png', type: 'weapon', sellPrice: 170,
+      result: { name: 'Бронзовый арбалет', icon: 'img/weapons/T3/crossbow_bronze.webp', type: 'weapon', sellPrice: 170,
         stats: { pAtk: 42, atbSpeedMod: -0.05 }, twoHanded: true },   // v0.27: 34 → 42 (двуручное ×1.35)
       materials: [{ name: 'Слиток бронзы', qty: 14 }, { name: 'Ветвь', qty: 40 }, { name: 'Паучий шёлк', qty: 16 }] },
 
     { id: 'maceGolem', name: 'Булава голема', category: 'maces', price: CRAFT_PRICE_GEAR_T3, tier: 3,
-      result: { name: 'Булава голема', icon: 'img/weapons/T3/mace_golem.png', type: 'weapon', sellPrice: 110,
+      result: { name: 'Булава голема', icon: 'img/weapons/T3/mace_golem.webp', type: 'weapon', sellPrice: 110,
         stats: { pAtk: 33, atbSpeedMod: -0.02 } },   // 26 → 33
       materials: [{ name: 'Слиток железа', qty: 14 }, { name: 'Каменные пластины', qty: 16 }, { name: 'Ядовитая железа', qty: 3 }] },
 
     { id: 'maulGolem', name: 'Палица голема', category: 'maces', price: CRAFT_PRICE_GEAR_T3, tier: 3,
-      result: { name: 'Палица голема', icon: 'img/weapons/T3/maul_golem.png', type: 'weapon', sellPrice: 170,
+      result: { name: 'Палица голема', icon: 'img/weapons/T3/maul_golem.webp', type: 'weapon', sellPrice: 170,
         stats: { pAtk: 45, atbSpeedMod: -0.04 }, twoHanded: true },   // v0.32: двуручная пара Булавы голема
       materials: [{ name: 'Слиток железа', qty: 18 }, { name: 'Каменные пластины', qty: 22 }, { name: 'Ядро голема', qty: 2 }, { name: 'Ядовитая железа', qty: 3 }] },
 
     { id: 'staffDepths', name: 'Посох Глубин', category: 'staves', price: CRAFT_PRICE_GEAR_T3, tier: 3,
-      result: { name: 'Посох Глубин', icon: 'img/weapons/T3/staff_depths.png', type: 'weapon', sellPrice: 80,
+      result: { name: 'Посох Глубин', icon: 'img/weapons/T3/staff_depths.webp', type: 'weapon', sellPrice: 80,
         stats: { mAtk: 29, atbSpeedMod: -0.05 }, twoHanded: true },   // 25 → 29
       materials: [{ name: 'Ветвь', qty: 50 }, { name: 'Паучий шёлк', qty: 20 }, { name: 'Ядро голема', qty: 3 }, { name: 'Слиток меди', qty: 6 }] },
 
     { id: 'wandDepths', name: 'Жезл Глубин', category: 'staves', price: CRAFT_PRICE_GEAR_T3, tier: 3,
-      result: { name: 'Жезл Глубин', icon: 'img/weapons/T3/wand_depths.png', type: 'weapon', sellPrice: 50,
+      result: { name: 'Жезл Глубин', icon: 'img/weapons/T3/wand_depths.webp', type: 'weapon', sellPrice: 50,
         stats: { mAtk: 14, mpBonus: 60, mpRegenIn: 1 } },   // мАтк 11 → 14, + реген маны в бою
       materials: [{ name: 'Ветвь', qty: 25 }, { name: 'Паучий шёлк', qty: 10 }, { name: 'Ядро голема', qty: 2 }, { name: 'Слиток меди', qty: 4 }] },
   ],
 
   shields: [
     { id: 'wickerShield', name: 'Плетёный щит', price: CRAFT_PRICE_GEAR, tier: 2,
-      result: { name: 'Плетёный щит', icon: 'img/weapons/wicker_shield.png', type: 'shield', sellPrice: 20,
+      result: { name: 'Плетёный щит', icon: 'img/weapons/wicker_shield.webp', type: 'shield', sellPrice: 20,
         stats: { pDef: 2, flatDamageReduce: 1, blockChance: 8 } },   // v0.27: блок 5 → 8, + защита 2
       materials: [{ name: 'Ветвь', qty: 20 }, { name: 'Клей', qty: 3 }] },
 
     // v0.24: щит тира 3 — защита 4 (в плане было 3).
     { id: 'bronzeShield', name: 'Бронзовый щит', price: CRAFT_PRICE_GEAR_T3, tier: 3,
-      result: { name: 'Бронзовый щит', icon: 'img/weapons/T3/shield_bronze.png', type: 'shield', sellPrice: 60,
+      result: { name: 'Бронзовый щит', icon: 'img/weapons/T3/shield_bronze.webp', type: 'shield', sellPrice: 60,
         stats: { pDef: 4, flatDamageReduce: 2, blockChance: 10 } },   // v0.27: блок 5 → 10 (Т2 8%, Т3 10%, +2% за тир)
       materials: [{ name: 'Слиток бронзы', qty: 10 }, { name: 'Каменные пластины', qty: 10 }, { name: 'Клей', qty: 5 }] },
   ],
 
   // ---- НОВОЕ (v0.12): ювелирка «Новичка» — PNG вместо SVG ----
   jewelry: [
-    { id: 'noviceRing', name: 'Кольцо Новичка', icon: 'img/jewelry/novice_ring.png', setId: 'novice', price: CRAFT_PRICE_GEAR, tier: 2,
-      result: { name: 'Кольцо Новичка', icon: 'img/jewelry/novice_ring.png', type: 'ring', sellPrice: 25, stats: { mDef: 2, mpBonus: 5 }, setId: 'novice' },
+    { id: 'noviceRing', name: 'Кольцо Новичка', icon: 'img/jewelry/novice_ring.webp', setId: 'novice', price: CRAFT_PRICE_GEAR, tier: 2,
+      result: { name: 'Кольцо Новичка', icon: 'img/jewelry/novice_ring.webp', type: 'ring', sellPrice: 25, stats: { mDef: 2, mpBonus: 5 }, setId: 'novice' },
       materials: [{ name: 'Руда железа', qty: 5 }, { name: 'Жабья шкура', qty: 5 }] },
 
-    { id: 'noviceEarring', name: 'Серьга Новичка', icon: 'img/jewelry/novice_earring.png', setId: 'novice', price: CRAFT_PRICE_GEAR, tier: 2,
-      result: { name: 'Серьга Новичка', icon: 'img/jewelry/novice_earring.png', type: 'earring', sellPrice: 25, stats: { mDef: 2, mpBonus: 5 }, setId: 'novice' },
+    { id: 'noviceEarring', name: 'Серьга Новичка', icon: 'img/jewelry/novice_earring.webp', setId: 'novice', price: CRAFT_PRICE_GEAR, tier: 2,
+      result: { name: 'Серьга Новичка', icon: 'img/jewelry/novice_earring.webp', type: 'earring', sellPrice: 25, stats: { mDef: 2, mpBonus: 5 }, setId: 'novice' },
       materials: [{ name: 'Руда железа', qty: 5 }, { name: 'Жабья шкура', qty: 5 }] },
 
-    { id: 'noviceNecklace', name: 'Ожерелье Новичка', icon: 'img/jewelry/novice_necklace.png', setId: 'novice', price: CRAFT_PRICE_GEAR, tier: 2,
-      result: { name: 'Ожерелье Новичка', icon: 'img/jewelry/novice_necklace.png', type: 'necklace', sellPrice: 35, stats: { mDef: 3, mpBonus: 5 }, setId: 'novice' },
+    { id: 'noviceNecklace', name: 'Ожерелье Новичка', icon: 'img/jewelry/novice_necklace.webp', setId: 'novice', price: CRAFT_PRICE_GEAR, tier: 2,
+      result: { name: 'Ожерелье Новичка', icon: 'img/jewelry/novice_necklace.webp', type: 'necklace', sellPrice: 35, stats: { mDef: 3, mpBonus: 5 }, setId: 'novice' },
       materials: [{ name: 'Жабья шкура', qty: 7 }, { name: 'Клык', qty: 1 }] },
 
     // ---- v0.25: МАЛАХИТОВЫЕ ОБЕРЕГИ — ТИР 3. Маг. защита 4/4/5 + мини-сет бижутерии (config.js) ----
-    { id: 'malachiteRing', name: 'Малахитовое кольцо', icon: 'img/jewelry/T3/ring_malachite.png', setId: 'malachite', price: CRAFT_PRICE_GEAR_T3, tier: 3,
-      result: { name: 'Малахитовое кольцо', icon: 'img/jewelry/T3/ring_malachite.png', type: 'ring', sellPrice: 60,
+    { id: 'malachiteRing', name: 'Малахитовое кольцо', icon: 'img/jewelry/T3/ring_malachite.webp', setId: 'malachite', price: CRAFT_PRICE_GEAR_T3, tier: 3,
+      result: { name: 'Малахитовое кольцо', icon: 'img/jewelry/T3/ring_malachite.webp', type: 'ring', sellPrice: 60,
         stats: { mDef: 4, hpBonus: 15, mpBonus: 10 }, setId: 'malachite' },
       materials: [{ name: 'Слиток меди', qty: 6 }, { name: 'Слиток олова', qty: 4 }, { name: 'Хитин', qty: 6 }, { name: 'Ядовитая железа', qty: 2 }] },
 
-    { id: 'malachiteEarring', name: 'Малахитовая серьга', icon: 'img/jewelry/T3/earring_malachite.png', setId: 'malachite', price: CRAFT_PRICE_GEAR_T3, tier: 3,
-      result: { name: 'Малахитовая серьга', icon: 'img/jewelry/T3/earring_malachite.png', type: 'earring', sellPrice: 60,
+    { id: 'malachiteEarring', name: 'Малахитовая серьга', icon: 'img/jewelry/T3/earring_malachite.webp', setId: 'malachite', price: CRAFT_PRICE_GEAR_T3, tier: 3,
+      result: { name: 'Малахитовая серьга', icon: 'img/jewelry/T3/earring_malachite.webp', type: 'earring', sellPrice: 60,
         stats: { mDef: 4, hpBonus: 15, mpBonus: 10 }, setId: 'malachite' },
       materials: [{ name: 'Слиток олова', qty: 6 }, { name: 'Слиток меди', qty: 4 }, { name: 'Паучий шёлк', qty: 6 }, { name: 'Ядовитая железа', qty: 2 }] },
 
-    { id: 'malachiteNecklace', name: 'Малахитовое ожерелье', icon: 'img/jewelry/T3/necklace_malachite.png', setId: 'malachite', price: CRAFT_PRICE_GEAR_T3, tier: 3,
-      result: { name: 'Малахитовое ожерелье', icon: 'img/jewelry/T3/necklace_malachite.png', type: 'necklace', sellPrice: 90,
+    { id: 'malachiteNecklace', name: 'Малахитовое ожерелье', icon: 'img/jewelry/T3/necklace_malachite.webp', setId: 'malachite', price: CRAFT_PRICE_GEAR_T3, tier: 3,
+      result: { name: 'Малахитовое ожерелье', icon: 'img/jewelry/T3/necklace_malachite.webp', type: 'necklace', sellPrice: 90,
         stats: { mDef: 5, hpBonus: 25, mpBonus: 20 }, setId: 'malachite' },
       materials: [{ name: 'Слиток бронзы', qty: 8 }, { name: 'Паучий шёлк', qty: 8 }, { name: 'Ядовитая железа', qty: 3 }, { name: 'Ядро голема', qty: 2 }] },
   ],
 
   consumables: [
     // НОВОЕ (v0.11): цена снижена до 100.
-    { id: 'cookedMeat', name: 'Жареное мясо', icon: 'img/materials/cooked_meat.png', price: CRAFT_PRICE_FOOD,
-      result: { name: 'Жареное мясо', icon: 'img/materials/cooked_meat.png', type: 'food', sellPrice: 10,
+    { id: 'cookedMeat', name: 'Жареное мясо', icon: 'img/materials/cooked_meat.webp', price: CRAFT_PRICE_FOOD,
+      result: { name: 'Жареное мясо', icon: 'img/materials/cooked_meat.webp', type: 'food', sellPrice: 10,
         food: { healPerSec: 1, duration: FOOD_DURATION, kind: 'cookedMeat' } },
       materials: [{ name: 'Мясо', qty: 1 }, { name: 'Ветвь', qty: 1 }] },
     // ---- v0.35.1: сытость сильнее — продукты уходят быстрее (FOOD_KINDS в config.js). Картинки — временно чужие. ----
-    { id: 'hearty', name: 'Сытное рагу', icon: 'img/materials/dish_wolf_stew.png', price: CRAFT_PRICE_HEARTY,
-      result: { name: 'Сытное рагу', icon: 'img/materials/dish_wolf_stew.png', type: 'food', sellPrice: 30,
+    { id: 'hearty', name: 'Сытное рагу', icon: 'img/materials/dish_wolf_stew.webp', price: CRAFT_PRICE_HEARTY,
+      result: { name: 'Сытное рагу', icon: 'img/materials/dish_wolf_stew.webp', type: 'food', sellPrice: 30,
         food: { healPerSec: 2, duration: FOOD_DURATION, kind: 'hearty' } },
       materials: [{ name: 'Мясо', qty: 4 }, { name: 'Кости', qty: 3 }, { name: 'Ветвь', qty: 2 }, { name: 'Уголь', qty: 1 }] },
-    { id: 'feast', name: 'Охотничий пир', icon: 'img/materials/dish_mushroom_roast.png', price: CRAFT_PRICE_FEAST,
-      result: { name: 'Охотничий пир', icon: 'img/materials/dish_mushroom_roast.png', type: 'food', sellPrice: 120,
+    { id: 'feast', name: 'Охотничий пир', icon: 'img/materials/dish_mushroom_roast.webp', price: CRAFT_PRICE_FEAST,
+      result: { name: 'Охотничий пир', icon: 'img/materials/dish_mushroom_roast.webp', type: 'food', sellPrice: 120,
         food: { healPerSec: 2, duration: FOOD_DURATION, kind: 'feast' } },
       materials: [{ name: 'Мясо', qty: 12 }, { name: 'Кости', qty: 8 }, { name: 'Пещерный гриб', qty: 6 }, { name: 'Уголь', qty: 4 }, { name: 'Клык', qty: 2 }] },
-    { id: 'ukha', name: 'Грибная уха', icon: 'img/materials/dish_mushroom_brew.png', price: CRAFT_PRICE_UKHA,
-      result: { name: 'Грибная уха', icon: 'img/materials/dish_mushroom_brew.png', type: 'food', sellPrice: 100,
+    { id: 'ukha', name: 'Грибная уха', icon: 'img/materials/dish_mushroom_brew.webp', price: CRAFT_PRICE_UKHA,
+      result: { name: 'Грибная уха', icon: 'img/materials/dish_mushroom_brew.webp', type: 'food', sellPrice: 100,
         food: { healPerSec: 2, duration: FOOD_DURATION, kind: 'ukha' } },
       materials: [{ name: 'Мясо', qty: 6 }, { name: 'Пещерный гриб', qty: 12 }, { name: 'Жабья шкура', qty: 4 }, { name: 'Уголь', qty: 4 }] },
     // ---- v0.20: блюда — сытность + бонус на DISH_DURATION (одно блюдо за раз) ----
-    { id: 'mushroomRoast', name: 'Жаркое с грибами', icon: 'img/materials/dish_mushroom_roast.png', price: CRAFT_PRICE_DISH,
-      result: { name: 'Жаркое с грибами', icon: 'img/materials/dish_mushroom_roast.png', type: 'food', sellPrice: 15,
+    { id: 'mushroomRoast', name: 'Жаркое с грибами', icon: 'img/materials/dish_mushroom_roast.webp', price: CRAFT_PRICE_DISH,
+      result: { name: 'Жаркое с грибами', icon: 'img/materials/dish_mushroom_roast.webp', type: 'food', sellPrice: 15,
         food: { healPerSec: 1, duration: DISH_DURATION, dish: 'mushroomRoast' } },
       materials: [{ name: 'Мясо', qty: 2 }, { name: 'Пещерный гриб', qty: 2 }, { name: 'Уголь', qty: 1 }] },
-    { id: 'wolfStew', name: 'Похлёбка из волчатины', icon: 'img/materials/dish_wolf_stew.png', price: CRAFT_PRICE_DISH,
-      result: { name: 'Похлёбка из волчатины', icon: 'img/materials/dish_wolf_stew.png', type: 'food', sellPrice: 15,
+    { id: 'wolfStew', name: 'Похлёбка из волчатины', icon: 'img/materials/dish_wolf_stew.webp', price: CRAFT_PRICE_DISH,
+      result: { name: 'Похлёбка из волчатины', icon: 'img/materials/dish_wolf_stew.webp', type: 'food', sellPrice: 15,
         food: { healPerSec: 1, duration: DISH_DURATION, dish: 'wolfStew' } },
       materials: [{ name: 'Мясо', qty: 2 }, { name: 'Кости', qty: 2 }, { name: 'Ветвь', qty: 1 }] },
-    { id: 'mushroomBrew', name: 'Грибной отвар', icon: 'img/materials/dish_mushroom_brew.png', price: CRAFT_PRICE_DISH,
-      result: { name: 'Грибной отвар', icon: 'img/materials/dish_mushroom_brew.png', type: 'food', sellPrice: 15,
+    { id: 'mushroomBrew', name: 'Грибной отвар', icon: 'img/materials/dish_mushroom_brew.webp', price: CRAFT_PRICE_DISH,
+      result: { name: 'Грибной отвар', icon: 'img/materials/dish_mushroom_brew.webp', type: 'food', sellPrice: 15,
         food: { healPerSec: 1, duration: DISH_DURATION, dish: 'mushroomBrew' } },
       materials: [{ name: 'Пещерный гриб', qty: 3 }, { name: 'Нить', qty: 1 }] },
   ],

@@ -43,10 +43,10 @@ const BX_ART_CROP = {
 
 // Фон сцены по локации.
 const BX_LOCATION_BG = {
-  field: 'img/locations/field.jpg',   // v0.20: свой фон Поляны
-  mine:  'img/monsters/ore.jpg',
-  outskirts: 'img/locations/outskirts.jpg',   // v0.36
-  town:  'img/start-bg.jpg',
+  field: 'img/locations/field.webp',   // v0.20: свой фон Поляны
+  mine:  'img/monsters/ore.webp',
+  outskirts: 'img/locations/outskirts.webp',   // v0.36
+  town:  'img/start-bg.webp',
 };
 
 // --------------------------------------------------------
@@ -62,10 +62,24 @@ function bxLayer() { return document.getElementById('bx-fx'); }
 function bxHeroCard() { return document.getElementById('bx-hero-card'); }
 function bxMonCard(m) { const c = m && BX.cards.get(m); return c ? c.card : null; }
 
+// v0.36.2: где стоит карточка, спрашиваем у браузера один раз за «пачку» эффектов.
+// Раньше каждая цифра и вспышка мерила сцену заново — а между замерами на страницу
+// добавлялся новый эффект, и телефон каждый раз пересчитывал раскладку (за удар по стае — десятки раз).
+// Память замеров живёт до конца текущего действия и сама очищается.
+const BX_RECTS = new Map();
+function bxRect(el) {
+  let r = BX_RECTS.get(el);
+  if (!r) {
+    if (!BX_RECTS.size) queueMicrotask(() => BX_RECTS.clear());
+    r = el.getBoundingClientRect();
+    BX_RECTS.set(el, r);
+  }
+  return r;
+}
 function bxCenter(el) {
   const st = bxStage();
   if (!st || !el) return { x: 0, y: 0 };
-  const s = st.getBoundingClientRect(), r = el.getBoundingClientRect();
+  const s = bxRect(st), r = bxRect(el);
   return { x: r.left - s.left + r.width / 2, y: r.top - s.top + r.height / 2 };
 }
 function bxAdd(cls, x, y, html, style, life) {
@@ -83,7 +97,7 @@ function bxAdd(cls, x, y, html, style, life) {
 function bxRetrig(el, cls) {
   if (!el) return;
   el.classList.remove(cls);
-  void el.offsetWidth;
+  void getComputedStyle(el).animationName;   // v0.36.2: перезапуск анимации без пересчёта раскладки (было offsetWidth)
   el.classList.add(cls);
   clearTimeout(el['__bx_' + cls]);
   el['__bx_' + cls] = setTimeout(() => el.classList.remove(cls), 1500);
@@ -123,7 +137,7 @@ const BX_PROJ_IMG = { fire: 'c_22', ice: 'c_23', dark: 'c_27', arrow: 'c_21', to
 const BX_PROJ_IMG_HEADING = 135;
 const BX_HEAL_IMG = 'c_36';
 
-function bxFxSrc(key) { return BX_FX_DIR + key + '.png'; }
+function bxFxSrc(key) { return BX_FX_DIR + key + '.webp'; }
 
 // Картинка попадания поверх карточки: вспыхнула, чуть выросла, погасла.
 // opts: k — размер от карточки, rot — поворот (иначе случайный ±12°), flip — зеркально.
@@ -131,21 +145,24 @@ function bxFxImg(cardEl, key, opts) {
   if (!cardEl || !key) return;
   const o = opts || {};
   const c = bxCenter(cardEl);
-  const r = cardEl.getBoundingClientRect();
+  const r = bxRect(cardEl);
   const s = Math.round(Math.min(r.width, r.height || r.width) * (o.k || 1.05));
   const rot = o.rot !== undefined ? o.rot : Math.round(Math.random() * 24 - 12);
   bxAdd('bx-img', c.x, c.y, `<img src="${bxFxSrc(key)}" alt="">`, `width:${s}px;height:${s}px;--r:${rot}deg;--sx:${o.flip ? -1 : 1}`, 650);
 }
 
 // Подгрузить заранее — чтобы первая вспышка не мигнула пустым местом.
+// v0.36.2: не в первую секунду загрузки (там это отнимало канал у стартового экрана),
+// а через несколько секунд после неё — либо при первом бое, если он начался раньше.
 const BX_FX_PRELOADED = [];
 function bxPreloadFx() {
+  if (BX_FX_PRELOADED.length) return;
   const keys = new Set([...Object.values(BX_WEAPON_IMG), ...Object.values(BX_MONSTER_IMG), ...Object.values(BX_EVENT_IMG),
     ...Object.values(BX_PROJ_IMG), BX_UNARMED_IMG, BX_MONSTER_IMG_PHYS, BX_MONSTER_IMG_MAGIC, BX_HEAL_IMG,
     'b_53', 'b_55', 'b_45', 'c_38']);
   keys.forEach(k => { const im = new Image(); im.src = bxFxSrc(k); BX_FX_PRELOADED.push(im); });
 }
-bxPreloadFx();
+window.addEventListener('load', () => setTimeout(bxPreloadFx, 4000));
 
 function bxProjectile(kind, fromEl, toEl, ms) {
   return new Promise(resolve => {
@@ -387,16 +404,21 @@ function bxSync() {
     }
   }
   const ghost = document.getElementById('bx-hero-hp-ghost');
-  if (ghost && p.maxHp > 0) ghost.style.width = Math.max(0, p.hp / p.maxHp * 100) + '%';
+  if (ghost && p.maxHp > 0) setBarWidth(ghost, p.hp / p.maxHp * 100);
 
+  // v0.36.2: кольцо заполняется плавно (transition по --p в battle-arena.css), а не скачками
+  // 10 раз в секунду. Когда шкала сбрасывается после хода — bx-snap: сразу, без «отмотки» назад.
   const heroAtb = document.getElementById('bx-hero-atb');
   if (heroAtb) {
-    const v = Math.min(1, state.battle.playerATB || 0);
-    heroAtb.style.setProperty('--p', v.toFixed(3));
-    heroAtb.classList.toggle('bx-ready', v >= 0.98);
+    const v = Math.round(Math.min(1, state.battle.playerATB || 0) * 200) / 200;
+    if (v !== BX.heroAtbP) {
+      heroAtb.classList.toggle('bx-snap', v < (BX.heroAtbP || 0));
+      BX.heroAtbP = v;
+      heroAtb.style.setProperty('--p', v.toFixed(3));
+      heroAtb.classList.toggle('bx-ready', v >= 0.98);
+    }
   }
-  const packAtb = document.getElementById('bx-pack-atb');
-  if (packAtb) packAtb.style.setProperty('--p', Math.min(1, state.battle.monstersATB || 0).toFixed(3));
+  // (общее кольцо стаи #bx-pack-atb скрыто с v0.23 — его больше не обновляем)
 
   // ---- Мобы ----
   const group = state.battle.monsters || [];
@@ -407,12 +429,12 @@ function bxSync() {
   const cur = (typeof getCurrentMonster === 'function') ? getCurrentMonster() : null;
   BX.cards.forEach((c, m) => {
     const pct = m.maxHp > 0 ? Math.max(0, m.hp / m.maxHp * 100) : 0;
-    c.fill.style.width = pct + '%';
-    c.ghost.style.width = pct + '%';
-    c.text.textContent = `${Math.max(0, Math.floor(m.hp))} / ${m.maxHp}`;
+    setBarWidth(c.fill, pct);
+    setBarWidth(c.ghost, pct);
+    setText(c.text, `${Math.max(0, Math.floor(m.hp))} / ${m.maxHp}`);
     if (c.mpFill) {
-      c.mpFill.style.width = Math.max(0, m.mp / m.maxMp * 100) + '%';
-      c.mpText.textContent = `${Math.max(0, Math.floor(m.mp))} / ${m.maxMp}`;
+      setBarWidth(c.mpFill, m.mp / m.maxMp * 100);
+      setText(c.mpText, `${Math.max(0, Math.floor(m.mp))} / ${m.maxMp}`);
     }
 
     if (m.hp <= 0) {
@@ -429,6 +451,7 @@ function bxSync() {
     if (c.atb) {
       const ap = Math.round(Math.min(1, m.atb || 0) * 200) / 200;
       if (ap !== c.atbP) {
+        c.atb.classList.toggle('bx-snap', ap < c.atbP);   // v0.36.2: сброс шкалы — без плавной «отмотки»
         c.atbP = ap;
         c.atb.style.setProperty('--p', ap.toFixed(3));
         c.atb.classList.toggle('bx-ready', ap >= 0.98);
@@ -487,7 +510,7 @@ function bxMonsterActionLook(m) {
 // v0.19.1: размер разреза/когтей — от размера карточки, а не фиксированный.
 // На телефоне карточки маленькие, и разрез 220px тянулся через весь экран «лазером».
 function bxSlashSize(cardEl, k) {
-  const r = cardEl && cardEl.getBoundingClientRect ? cardEl.getBoundingClientRect() : null;
+  const r = cardEl && cardEl.getBoundingClientRect ? bxRect(cardEl) : null;
   if (!r || !r.width) return '';
   const s = Math.round(Math.min(r.width, r.height || r.width) * (k || 1.25));
   return `width:${s}px;height:${s}px;`;
@@ -738,7 +761,7 @@ function bxPlayLoot(loot, fromCard) {
   if (!loot || !loot.length || !fromCard) return;
   const st = bxStage(), target = document.getElementById('bx-loot-column');
   if (!st || !target) return;
-  const s = st.getBoundingClientRect(), r = target.getBoundingClientRect();
+  const s = bxRect(st), r = bxRect(target);
   const tx = r.left - s.left + r.width / 2, ty = r.top - s.top + 12;
   loot.slice(0, 6).forEach((item, i) => {
     setTimeout(() => {
@@ -946,6 +969,7 @@ function bxPlayDefeat() {
   // ---- Начало боя ----
   const origStart = startBattle;
   startBattle = function () {
+    bxPreloadFx();   // v0.36.2: если бой начался раньше отложенной подгрузки эффектов
     const win = document.getElementById('battle-window');
     const wasOpen = !!(win && win.classList.contains('active'));
     const r = origStart.apply(this, arguments);

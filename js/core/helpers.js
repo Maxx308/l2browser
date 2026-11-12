@@ -32,6 +32,83 @@ function formatTime(sec) {
   return `${s}с`;
 }
 
+// ========================================================
+//  v0.36.2: КАРТИНКИ ПЕРЕВЕДЕНЫ В WEBP
+//  В сохранениях вещей лежит путь к картинке («img/armor/x.png»).
+//  Файлов .png/.jpg больше нет — при чтении сохранения (своего, облачного,
+//  склада, чужого героя) пути меняются на .webp.
+//  Не трогаем: img/icons/ (значки сайта) и запасной костёр campfire.png.
+// ========================================================
+const IMG_OLD_EXT_RE = /(img\/(?!icons\/|locations\/campfire\.png)[^"'\\\s()<>]*?)\.(?:png|jpe?g)(?![a-z0-9])/gi;
+function imgPathsToWebp(obj) {
+  if (obj === null || obj === undefined) return obj;
+  try {
+    const s = JSON.stringify(obj);
+    if (!s || !/\.(?:png|jpe?g)/i.test(s)) return obj;
+    return JSON.parse(s.replace(IMG_OLD_EXT_RE, '$1.webp'));
+  } catch (e) {
+    return obj;
+  }
+}
+// Подстраховка: если где-то всё же остался старый путь и картинка не нашлась —
+// один раз пробуем тот же файл в .webp (раньше, чем сработает onerror самой картинки).
+window.addEventListener('error', function (e) {
+  const el = e.target;
+  if (!el || el.tagName !== 'IMG' || el.dataset.webpTried) return;
+  const src = el.getAttribute('src') || '';
+  if (!/img\/(?!icons\/|locations\/campfire\.png).*\.(?:png|jpe?g)(?:[?#].*)?$/i.test(src)) return;
+  el.dataset.webpTried = '1';
+  e.stopImmediatePropagation();
+  el.src = src.replace(/\.(?:png|jpe?g)(?=([?#].*)?$)/i, '.webp');
+}, true);
+
+// ========================================================
+//  v0.36.2: ОПТИМИЗАЦИЯ ИНТЕРФЕЙСА
+//  Бой обновляет экран 10 раз в секунду. Чтобы телефон не делал лишнего:
+//  • setText / setBarWidth — пишут на страницу, только если значение изменилось;
+//  • uiLazy — перерисовка того, что закрыто окном боя (инвентарь, лист героя),
+//    ждёт, пока это станет видно, и делается один раз, а не на каждого убитого.
+// ========================================================
+function setText(el, text) {
+  if (!el) return;
+  text = String(text);
+  if (el.textContent !== text) el.textContent = text;
+}
+function setBarWidth(el, pct) {
+  if (!el) return;
+  if (!isFinite(pct)) pct = 0;
+  const v = (Math.round(Math.max(0, Math.min(100, pct)) * 100) / 100) + '%';
+  if (el.style.width !== v) el.style.width = v;
+}
+
+const UI_LAZY = { jobs: new Map(), raf: 0 };
+// Окно боя на весь экран и не свёрнуто «подглядыванием» в инвентарь — под ним ничего не видно.
+function uiCoveredByBattle() {
+  const w = document.getElementById('battle-window');
+  return !!(w && w.classList.contains('active')) && !document.body.classList.contains('bx-peek');
+}
+function uiLazy(key, fn) {
+  UI_LAZY.jobs.set(key, fn);
+  uiLazyKick();
+}
+function uiLazyKick() {
+  if (UI_LAZY.raf || !UI_LAZY.jobs.size) return;
+  UI_LAZY.raf = requestAnimationFrame(() => {
+    UI_LAZY.raf = 0;
+    if (uiCoveredByBattle()) return;   // ждём: сработает, когда окно боя закроют или свернут
+    const jobs = [...UI_LAZY.jobs.values()];
+    UI_LAZY.jobs.clear();
+    jobs.forEach(fn => { try { fn(); } catch (e) { console.warn('[ui-lazy]', e); } });
+  });
+}
+// Окно боя закрыли / свернули — доделываем отложенное.
+window.addEventListener('DOMContentLoaded', () => {
+  const obs = new MutationObserver(uiLazyKick);
+  const w = document.getElementById('battle-window');
+  if (w) obs.observe(w, { attributes: true, attributeFilter: ['class'] });
+  obs.observe(document.body, { attributes: true, attributeFilter: ['class'] });
+});
+
 // Всплывающая цифра урона/лечения над бойцом
 function spawnFloatDamage(elementId, dmg, type) {
   const el = document.getElementById(elementId);
@@ -50,6 +127,20 @@ function spawnFloatDamage(elementId, dmg, type) {
   float.style.top = (rect.top + 20) + 'px';
   document.body.appendChild(float);
   setTimeout(() => float.remove(), 900);
+}
+
+// v0.36.2: журнал прокручивается вниз один раз за кадр, а не на каждую строку.
+// За удар по стае в журнал падает десяток строк, и каждая прокрутка заставляла
+// телефон заново пересчитывать раскладку страницы.
+const LOG_SCROLL = { set: new Set(), raf: 0 };
+function logScrollSoon(log) {
+  LOG_SCROLL.set.add(log);
+  if (LOG_SCROLL.raf) return;
+  LOG_SCROLL.raf = requestAnimationFrame(() => {
+    LOG_SCROLL.raf = 0;
+    LOG_SCROLL.set.forEach(l => { l.scrollTop = l.scrollHeight; });
+    LOG_SCROLL.set.clear();
+  });
 }
 
 // Запись в лог боя (левая колонка)
@@ -71,8 +162,8 @@ function logCombat(text, cls = 'log-entry', note, cat) {
     });
   }
   log.appendChild(div);
-  log.scrollTop = log.scrollHeight;
-  while (log.children.length > 500) log.removeChild(log.firstChild);
+  logScrollSoon(log);
+  while (log.childElementCount > 500) log.removeChild(log.firstChild);
 }
 
 // Запись в лог добычи (правая колонка)
@@ -90,8 +181,8 @@ function logLoot(text, cls = 'log-loot', note) {
     div.appendChild(span);
   }
   log.appendChild(div);
-  log.scrollTop = log.scrollHeight;
-  while (log.children.length > 500) log.removeChild(log.firstChild);
+  logScrollSoon(log);
+  while (log.childElementCount > 500) log.removeChild(log.firstChild);
 }
 
 // v0.30: окончания под пол героя. «{м|ж}» в тексте → первое для мужского, второе для женского.

@@ -54,7 +54,13 @@
 <link rel="icon" type="image/png" sizes="32x32" href="img/icons/favicon-32.png">
 <link rel="icon" type="image/png" sizes="192x192" href="img/icons/icon-192.png">
 <link rel="apple-touch-icon" sizes="180x180" href="img/icons/apple-touch-icon.png">
-<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&display=swap" rel="stylesheet">
+<!-- v0.36.2: быстрый первый экран. Фон старта качается сразу, не дожидаясь стилей и скриптов.
+     Шрифты Google больше не задерживают показ страницы: соединение открывается заранее (preconnect),
+     а сам файл шрифтов подключается «в фоне» (media="print" → all). До его прихода текст виден запасным шрифтом. -->
+<link rel="preload" as="image" href="img/start-bg.webp">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
 <script>
 // v0.22: шрифт основного текста — выбирается в Настройках (по умолчанию PT Serif).
 // Подключаем сразу, до отрисовки, и только выбранный — чтобы не грузить лишнее.
@@ -78,38 +84,37 @@ function getSavedTextFont() { try { var v = localStorage.getItem(TEXT_FONT_STORA
 applyTextFont(getSavedTextFont());
 </script>
 
-<!-- Supabase (библиотека для облачных сохранений).
-     v0.29.1: лежит в игре, а не на CDN — на телефонах jsdelivr не всегда открывается, и форма входа пропадала. -->
-<script src="js/vendor/supabase-2.118.0.js"></script>
+<!-- v0.36.2: библиотека облака (Supabase, 213 КБ) переехала вниз, к остальным скриптам:
+     в шапке она задерживала показ страницы, пока не скачается целиком. -->
 
-<link rel="stylesheet" href="css/base.css?v=0.36.1">
-<link rel="stylesheet" href="css/effects.css?v=0.36.1">
-<link rel="stylesheet" href="css/monsters.css?v=0.36.1">
-<link rel="stylesheet" href="css/city-map.css?v=0.36.1">
-<link rel="stylesheet" href="css/battle.css?v=0.36.1">
-<link rel="stylesheet" href="css/debuffs.css?v=0.36.1">
-<link rel="stylesheet" href="css/battle-autostop.css?v=0.36.1">
-<link rel="stylesheet" href="css/battle-arena.css?v=0.36.1">
-<link rel="stylesheet" href="css/battle-session.css?v=0.36.1">
-<link rel="stylesheet" href="css/battle-rest.css?v=0.36.1">
-<link rel="stylesheet" href="css/inventory.css?v=0.36.1">
-<link rel="stylesheet" href="css/inventory-equip.css?v=0.36.1">
-<link rel="stylesheet" href="css/inventory-slots.css?v=0.36.1">
-<link rel="stylesheet" href="css/windows.css?v=0.36.1">
-<link rel="stylesheet" href="css/screens.css?v=0.36.1">
-<link rel="stylesheet" href="css/patches.css?v=0.36.1">
-<link rel="stylesheet" href="css/settings.css?v=0.36.1">
-<link rel="stylesheet" href="css/cheat.css?v=0.36.1">
-<link rel="stylesheet" href="css/overlays.css?v=0.36.1">
-<link rel="stylesheet" href="css/dialogue.css?v=0.36.1">
-<link rel="stylesheet" href="css/storage.css?v=0.36.1">
-<link rel="stylesheet" href="css/refine.css?v=0.36.1">
-<link rel="stylesheet" href="css/alchemist.css?v=0.36.1">
-<link rel="stylesheet" href="css/leaderboard.css?v=0.36.1">
-<link rel="stylesheet" href="css/hero-inspect.css?v=0.36.1">
-<link rel="stylesheet" href="css/chronicle.css?v=0.36.1">
-<link rel="stylesheet" href="css/daynight.css?v=0.36.1">
-<link rel="stylesheet" href="css/expeditions.css?v=0.36.1">
+<link rel="stylesheet" href="css/base.css?v=0.36.2">
+<link rel="stylesheet" href="css/effects.css?v=0.36.2">
+<link rel="stylesheet" href="css/monsters.css?v=0.36.2">
+<link rel="stylesheet" href="css/city-map.css?v=0.36.2">
+<link rel="stylesheet" href="css/battle.css?v=0.36.2">
+<link rel="stylesheet" href="css/debuffs.css?v=0.36.2">
+<link rel="stylesheet" href="css/battle-autostop.css?v=0.36.2">
+<link rel="stylesheet" href="css/battle-arena.css?v=0.36.2">
+<link rel="stylesheet" href="css/battle-session.css?v=0.36.2">
+<link rel="stylesheet" href="css/battle-rest.css?v=0.36.2">
+<link rel="stylesheet" href="css/inventory.css?v=0.36.2">
+<link rel="stylesheet" href="css/inventory-equip.css?v=0.36.2">
+<link rel="stylesheet" href="css/inventory-slots.css?v=0.36.2">
+<link rel="stylesheet" href="css/windows.css?v=0.36.2">
+<link rel="stylesheet" href="css/screens.css?v=0.36.2">
+<link rel="stylesheet" href="css/patches.css?v=0.36.2">
+<link rel="stylesheet" href="css/settings.css?v=0.36.2">
+<link rel="stylesheet" href="css/cheat.css?v=0.36.2">
+<link rel="stylesheet" href="css/overlays.css?v=0.36.2">
+<link rel="stylesheet" href="css/dialogue.css?v=0.36.2">
+<link rel="stylesheet" href="css/storage.css?v=0.36.2">
+<link rel="stylesheet" href="css/refine.css?v=0.36.2">
+<link rel="stylesheet" href="css/alchemist.css?v=0.36.2">
+<link rel="stylesheet" href="css/leaderboard.css?v=0.36.2">
+<link rel="stylesheet" href="css/hero-inspect.css?v=0.36.2">
+<link rel="stylesheet" href="css/chronicle.css?v=0.36.2">
+<link rel="stylesheet" href="css/daynight.css?v=0.36.2">
+<link rel="stylesheet" href="css/expeditions.css?v=0.36.2">
 </head>
 <body>
 
@@ -118,7 +123,7 @@ applyTextFont(getSavedTextFont());
 
 <!-- ЭКРАН СТАРТА -->
 <div class="screen-overlay active" id="start-screen">
-  <div class="start-bg" style="background-image:url('img/start-bg.jpg')"></div>
+  <div class="start-bg" style="background-image:url('img/start-bg.webp')"></div>
   <div class="patch-tabs" id="patch-tabs"></div>
 
   <div class="start-content">
@@ -216,96 +221,96 @@ applyTextFont(getSavedTextFont());
       <div class="city-grid" id="city-grid-town">
 
         <!-- v0.31: картинки Андервуда без текста (img/city/underwood), подпись — кодом.
-             Старые карточки с текстом (img/city/*.png) — запас для Ильграда. -->
+             Старые карточки с текстом (img/city/*.webp) — запас для Ильграда. -->
         <div class="city-card city-card-wood" onclick="openElder()">
-          <div class="city-icon-img" style="background-image:url('img/city/underwood/elder.jpg')"></div>
+          <div class="city-icon-img" style="background-image:url('img/city/underwood/elder.webp')"></div>
           <div class="city-card-label">Старейшина</div>
         </div>
 
         <div class="city-card city-card-wood" onclick="openTrader()">
-          <div class="city-icon-img" style="background-image:url('img/city/underwood/trader.jpg')"></div>
+          <div class="city-icon-img" style="background-image:url('img/city/underwood/trader.webp')"></div>
           <div class="city-card-label">Торговец</div>
         </div>
 
         <div class="city-card city-card-wood" onclick="openForge()">
-          <div class="city-icon-img" style="background-image:url('img/city/underwood/forge.jpg')"></div>
+          <div class="city-icon-img" style="background-image:url('img/city/underwood/forge.webp')"></div>
           <div class="city-card-label">Кузница</div>
         </div>
 
         <div class="city-card city-card-wood" onclick="openMentor()">
-          <div class="city-icon-img" style="background-image:url('img/city/underwood/mentor.jpg')"></div>
+          <div class="city-icon-img" style="background-image:url('img/city/underwood/mentor.webp')"></div>
           <div class="city-card-label">Наставник</div>
         </div>
 
         <div class="city-card city-card-wood" onclick="openTavern()">
-          <div class="city-icon-img" style="background-image:url('img/city/underwood/tavern.jpg')"></div>
+          <div class="city-icon-img" style="background-image:url('img/city/underwood/tavern.webp')"></div>
           <div class="city-card-label">Таверна</div>
         </div>
 
         <div class="city-card city-card-wood" onclick="openGuild()">
-          <div class="city-icon-img" style="background-image:url('img/city/underwood/guild.jpg')"></div>
+          <div class="city-icon-img" style="background-image:url('img/city/underwood/guild.webp')"></div>
           <div class="city-card-label">Гильдия магов</div>
         </div>
 
         <div class="city-card city-card-wood" onclick="openStorage()">
-          <div class="city-icon-img" style="background-image:url('img/city/underwood/storage.jpg')"></div>
+          <div class="city-icon-img" style="background-image:url('img/city/underwood/storage.webp')"></div>
           <div class="city-card-label">Склад</div>
         </div>
 
         <div class="city-card city-card-wood" onclick="openRefine()">
-          <div class="city-icon-img" style="background-image:url('img/city/underwood/refine.jpg')"></div>
+          <div class="city-icon-img" style="background-image:url('img/city/underwood/refine.webp')"></div>
           <div class="city-card-label">Мастерская</div>
         </div>
 
         <div class="city-card city-card-wood" onclick="openAlchemist()">
-          <div class="city-icon-img" style="background-image:url('img/city/underwood/alchemist.jpg')"></div>
+          <div class="city-icon-img" style="background-image:url('img/city/underwood/alchemist.webp')"></div>
           <div class="city-card-label">Алхимик</div>
         </div>
 
         <div class="city-card city-card-wood" id="city-card-leaderboard" onclick="openLeaderboard()" style="display:none;">
-          <div class="city-icon-img" style="background-image:url('img/city/underwood/leaderboard.jpg')"></div>
+          <div class="city-icon-img" style="background-image:url('img/city/underwood/leaderboard.webp')"></div>
           <div class="city-card-label">Зал славы</div>
         </div>
 
       </div>
 
       <!-- v0.36: ИЛЬГРАД — город в осаде (js/systems/ilgrad.js). Каменная рамка, подпись — сталь, не золото.
-           Картинки — img/city/ilgrad/*.jpg (404×404). Места подключены к тем же лавкам, что в Андервуде. -->
+           Картинки — img/city/ilgrad/*.webp (404×404). Места подключены к тем же лавкам, что в Андервуде. -->
       <div class="city-grid" id="city-grid-ilgrad" style="display:none;">
         <div class="city-card city-card-wood city-card-stone" onclick="openIlgradCommand()">
-          <div class="city-icon-img" style="background-image:url('img/city/ilgrad/command.jpg')"></div>
+          <div class="city-icon-img" style="background-image:url('img/city/ilgrad/command.webp')"></div>
           <div class="city-card-label">Комендатура</div>
         </div>
         <div class="city-card city-card-wood city-card-stone" onclick="openTrader()">
-          <div class="city-icon-img" style="background-image:url('img/city/ilgrad/arsenal.jpg')"></div>
+          <div class="city-icon-img" style="background-image:url('img/city/ilgrad/arsenal.webp')"></div>
           <div class="city-card-label">Арсенал</div>
         </div>
         <div class="city-card city-card-wood city-card-stone" onclick="openIlgradForge()">
-          <div class="city-icon-img" style="background-image:url('img/city/ilgrad/forge.jpg')"></div>
+          <div class="city-icon-img" style="background-image:url('img/city/ilgrad/forge.webp')"></div>
           <div class="city-card-label">Кузница</div>
         </div>
         <div class="city-card city-card-wood city-card-stone" onclick="openMentor()">
-          <div class="city-icon-img" style="background-image:url('img/city/ilgrad/barracks.jpg')"></div>
+          <div class="city-icon-img" style="background-image:url('img/city/ilgrad/barracks.webp')"></div>
           <div class="city-card-label">Казармы</div>
         </div>
         <div class="city-card city-card-wood city-card-stone" onclick="openTavern()">
-          <div class="city-icon-img" style="background-image:url('img/city/ilgrad/temple.jpg')"></div>
+          <div class="city-icon-img" style="background-image:url('img/city/ilgrad/temple.webp')"></div>
           <div class="city-card-label">Храм</div>
         </div>
         <div class="city-card city-card-wood city-card-stone" onclick="openGuild()">
-          <div class="city-icon-img" style="background-image:url('img/city/ilgrad/magetower.jpg')"></div>
+          <div class="city-icon-img" style="background-image:url('img/city/ilgrad/magetower.webp')"></div>
           <div class="city-card-label">Башня магов</div>
         </div>
         <div class="city-card city-card-wood city-card-stone" onclick="openStorage()">
-          <div class="city-icon-img" style="background-image:url('img/city/ilgrad/supply.jpg')"></div>
+          <div class="city-icon-img" style="background-image:url('img/city/ilgrad/supply.webp')"></div>
           <div class="city-card-label">Снабжение</div>
         </div>
         <div class="city-card city-card-wood city-card-stone" onclick="openAlchemist()">
-          <div class="city-icon-img" style="background-image:url('img/city/ilgrad/infirmary.jpg')"></div>
+          <div class="city-icon-img" style="background-image:url('img/city/ilgrad/infirmary.webp')"></div>
           <div class="city-card-label">Лазарет</div>
         </div>
         <div class="city-card city-card-wood city-card-stone" onclick="openIlgradWatch()">
-          <div class="city-icon-img" style="background-image:url('img/city/ilgrad/watchtower.jpg')"></div>
+          <div class="city-icon-img" style="background-image:url('img/city/ilgrad/watchtower.webp')"></div>
           <div class="city-card-label">Стена</div>
         </div>
       </div>
@@ -1329,112 +1334,117 @@ applyTextFont(getSavedTextFont());
   <button class="btn bxp-back" onclick="event.stopPropagation(); returnToBattle()">Вернуться в бой</button>
 </div>
 
-<script src="js/data/config.js?v=0.36.1"></script>
-<script src="js/data/classes.js?v=0.36.1"></script>
-<script src="js/data/races.js?v=0.36.1"></script>
+<!-- Supabase (библиотека для облачных сохранений).
+     v0.29.1: лежит в игре, а не на CDN — на телефонах jsdelivr не всегда открывается, и форма входа пропадала.
+     v0.36.2: подключается здесь, а не в шапке (должна стоять раньше js/systems/cloud.js). -->
+<script src="js/vendor/supabase-2.118.0.js"></script>
+
+<script src="js/data/config.js?v=0.36.2"></script>
+<script src="js/data/classes.js?v=0.36.2"></script>
+<script src="js/data/races.js?v=0.36.2"></script>
 
 <!-- ИКОНКИ: разбиты на папку icons/ -->
-<script src="js/data/icons/materials.js?v=0.36.1"></script>
-<script src="js/data/icons/consumables.js?v=0.36.1"></script>
-<script src="js/data/icons/equipment.js?v=0.36.1"></script>
-<script src="js/data/icons/weapons.js?v=0.36.1"></script>
-<script src="js/data/icons/skills.js?v=0.36.1"></script>
-<script src="js/data/icons/index.js?v=0.36.1"></script>
+<script src="js/data/icons/materials.js?v=0.36.2"></script>
+<script src="js/data/icons/consumables.js?v=0.36.2"></script>
+<script src="js/data/icons/equipment.js?v=0.36.2"></script>
+<script src="js/data/icons/weapons.js?v=0.36.2"></script>
+<script src="js/data/icons/skills.js?v=0.36.2"></script>
+<script src="js/data/icons/index.js?v=0.36.2"></script>
 
-<script src="js/data/monsters.js?v=0.36.1"></script>
-<script src="js/data/souls.js?v=0.36.1"></script>
-<script src="js/data/expeditions.js?v=0.36.1"></script>
-<script src="js/data/skills.js?v=0.36.1"></script>
-<script src="js/data/skills-aoe.js?v=0.36.1"></script>
-<script src="js/data/recipes.js?v=0.36.1"></script>
-<script src="js/data/weaponSkills.js?v=0.36.1"></script>
-<script src="js/data/elements.js?v=0.36.1"></script>
-<script src="js/data/weaponTypes.js?v=0.36.1"></script>
-<script src="js/data/changelog.js?v=0.36.1"></script>
-<script src="js/data/npcs.js?v=0.36.1"></script>
-<script src="js/data/alchemy.js?v=0.36.1"></script>
-<script src="js/data/dialogues.js?v=0.36.1"></script>
-<script src="js/data/annals.js?v=0.36.1"></script>
-<script src="js/data/encyclopedia.js?v=0.36.1"></script>
-<script src="js/data/quests.js?v=0.36.1"></script>
-<script src="js/data/bag-quests.js?v=0.36.1"></script>
+<script src="js/data/monsters.js?v=0.36.2"></script>
+<script src="js/data/souls.js?v=0.36.2"></script>
+<script src="js/data/expeditions.js?v=0.36.2"></script>
+<script src="js/data/skills.js?v=0.36.2"></script>
+<script src="js/data/skills-aoe.js?v=0.36.2"></script>
+<script src="js/data/recipes.js?v=0.36.2"></script>
+<script src="js/data/weaponSkills.js?v=0.36.2"></script>
+<script src="js/data/elements.js?v=0.36.2"></script>
+<script src="js/data/weaponTypes.js?v=0.36.2"></script>
+<script src="js/data/changelog.js?v=0.36.2"></script>
+<script src="js/data/npcs.js?v=0.36.2"></script>
+<script src="js/data/alchemy.js?v=0.36.2"></script>
+<script src="js/data/dialogues.js?v=0.36.2"></script>
+<script src="js/data/annals.js?v=0.36.2"></script>
+<script src="js/data/encyclopedia.js?v=0.36.2"></script>
+<script src="js/data/quests.js?v=0.36.2"></script>
+<script src="js/data/bag-quests.js?v=0.36.2"></script>
 
-<script src="js/state.js?v=0.36.1"></script>
+<script src="js/state.js?v=0.36.2"></script>
 
-<script src="js/core/helpers.js?v=0.36.1"></script>
-<script src="js/systems/chat-filter.js?v=0.36.1"></script>
-<script src="js/core/stats.js?v=0.36.1"></script>
-<script src="js/core/top-status.js?v=0.36.1"></script>
-<script src="js/core/tabs.js?v=0.36.1"></script>
-<script src="js/core/effects.js?v=0.36.1"></script>
-<script src="js/core/toast.js?v=0.36.1"></script>
+<script src="js/core/helpers.js?v=0.36.2"></script>
+<script src="js/systems/chat-filter.js?v=0.36.2"></script>
+<script src="js/core/stats.js?v=0.36.2"></script>
+<script src="js/core/top-status.js?v=0.36.2"></script>
+<script src="js/core/tabs.js?v=0.36.2"></script>
+<script src="js/core/effects.js?v=0.36.2"></script>
+<script src="js/core/toast.js?v=0.36.2"></script>
 
-<script src="js/systems/slots.js?v=0.36.1"></script>
-<script src="js/systems/cloud.js?v=0.36.1"></script>
-<script src="js/systems/leaderboard.js?v=0.36.1"></script>
-<script src="js/systems/hero-inspect.js?v=0.36.1"></script>
-<script src="js/systems/start-screen.js?v=0.36.1"></script>
-<script src="js/systems/mobile.js?v=0.36.1"></script>
-<script src="js/systems/patches.js?v=0.36.1"></script>
-<script src="js/systems/cheat.js?v=0.36.1"></script>
-<script src="js/systems/tooltips.js?v=0.36.1"></script>
-<script src="js/systems/stat-info.js?v=0.36.1"></script>
-<script src="js/systems/debuffs.js?v=0.36.1"></script>
-<script src="js/systems/elder.js?v=0.36.1"></script>
-<script src="js/systems/dialogue.js?v=0.36.1"></script>
-<script src="js/systems/townsfolk.js?v=0.36.1"></script>
-<script src="js/systems/quests.js?v=0.36.1"></script>
-<script src="js/systems/mentor.js?v=0.36.1"></script>
-<script src="js/systems/skill-slots.js?v=0.36.1"></script>
-<script src="js/systems/player-avatar.js?v=0.36.1"></script>
-<script src="js/systems/guild.js?v=0.36.1"></script>
-<script src="js/systems/tavern.js?v=0.36.1"></script>
-<script src="js/systems/buff-shop.js?v=0.36.1"></script>
-<script src="js/systems/map.js?v=0.36.1"></script>
-<script src="js/systems/inventory.js?v=0.36.1"></script>
-<script src="js/systems/equipment.js?v=0.36.1"></script>
-<script src="js/systems/trader.js?v=0.36.1"></script>
-<script src="js/systems/forge.js?v=0.36.1"></script>
-<script src="js/systems/storage.js?v=0.36.1"></script>
-<script src="js/systems/refine.js?v=0.36.1"></script>
-<script src="js/systems/alchemist.js?v=0.36.1"></script>
-<script src="js/systems/proficiency.js?v=0.36.1"></script>
-<script src="js/systems/proficiency-ui.js?v=0.36.1"></script>
-<script src="js/systems/chronicle.js?v=0.36.1"></script>
-<script src="js/systems/bag.js?v=0.36.1"></script>
-<script src="js/systems/ilgrad.js?v=0.36.1"></script>
-<script src="js/systems/encyclopedia.js?v=0.36.1"></script>
-<script src="js/systems/monster-kills.js?v=0.36.1"></script>
-<script src="js/systems/monster-cards.js?v=0.36.1"></script>
+<script src="js/systems/slots.js?v=0.36.2"></script>
+<script src="js/systems/cloud.js?v=0.36.2"></script>
+<script src="js/systems/leaderboard.js?v=0.36.2"></script>
+<script src="js/systems/hero-inspect.js?v=0.36.2"></script>
+<script src="js/systems/start-screen.js?v=0.36.2"></script>
+<script src="js/systems/mobile.js?v=0.36.2"></script>
+<script src="js/systems/patches.js?v=0.36.2"></script>
+<script src="js/systems/cheat.js?v=0.36.2"></script>
+<script src="js/systems/tooltips.js?v=0.36.2"></script>
+<script src="js/systems/stat-info.js?v=0.36.2"></script>
+<script src="js/systems/debuffs.js?v=0.36.2"></script>
+<script src="js/systems/elder.js?v=0.36.2"></script>
+<script src="js/systems/dialogue.js?v=0.36.2"></script>
+<script src="js/systems/townsfolk.js?v=0.36.2"></script>
+<script src="js/systems/quests.js?v=0.36.2"></script>
+<script src="js/systems/mentor.js?v=0.36.2"></script>
+<script src="js/systems/skill-slots.js?v=0.36.2"></script>
+<script src="js/systems/player-avatar.js?v=0.36.2"></script>
+<script src="js/systems/guild.js?v=0.36.2"></script>
+<script src="js/systems/tavern.js?v=0.36.2"></script>
+<script src="js/systems/buff-shop.js?v=0.36.2"></script>
+<script src="js/systems/map.js?v=0.36.2"></script>
+<script src="js/systems/inventory.js?v=0.36.2"></script>
+<script src="js/systems/equipment.js?v=0.36.2"></script>
+<script src="js/systems/trader.js?v=0.36.2"></script>
+<script src="js/systems/forge.js?v=0.36.2"></script>
+<script src="js/systems/storage.js?v=0.36.2"></script>
+<script src="js/systems/refine.js?v=0.36.2"></script>
+<script src="js/systems/alchemist.js?v=0.36.2"></script>
+<script src="js/systems/proficiency.js?v=0.36.2"></script>
+<script src="js/systems/proficiency-ui.js?v=0.36.2"></script>
+<script src="js/systems/chronicle.js?v=0.36.2"></script>
+<script src="js/systems/bag.js?v=0.36.2"></script>
+<script src="js/systems/ilgrad.js?v=0.36.2"></script>
+<script src="js/systems/encyclopedia.js?v=0.36.2"></script>
+<script src="js/systems/monster-kills.js?v=0.36.2"></script>
+<script src="js/systems/monster-cards.js?v=0.36.2"></script>
 
 <!-- ===== БОЙ: разбит на несколько файлов (v0.10) ===== -->
-<script src="js/systems/battle-mixtures.js?v=0.36.1"></script>
-<script src="js/systems/battle-effects.js?v=0.36.1"></script>
-<script src="js/systems/battle-skills.js?v=0.36.1"></script>
-<script src="js/systems/battle-player-attack.js?v=0.36.1"></script>
-<script src="js/systems/battle-aoe.js?v=0.36.1"></script>
-<script src="js/systems/battle-weapon-styles.js?v=0.36.1"></script>
-<script src="js/systems/battle-manual.js?v=0.36.1"></script>
-<script src="js/systems/battle-monster-kit.js?v=0.36.1"></script>
-<script src="js/systems/battle-monster-attack.js?v=0.36.1"></script>
-<script src="js/systems/battle-rewards.js?v=0.36.1"></script>
-<script src="js/systems/battle-search.js?v=0.36.1"></script>
-<script src="js/systems/battle-autostop.js?v=0.36.1"></script>
-<script src="js/systems/battle-core.js?v=0.36.1"></script>
-<script src="js/systems/battle-loop.js?v=0.36.1"></script>
-<script src="js/systems/battle.js?v=0.36.1"></script>
+<script src="js/systems/battle-mixtures.js?v=0.36.2"></script>
+<script src="js/systems/battle-effects.js?v=0.36.2"></script>
+<script src="js/systems/battle-skills.js?v=0.36.2"></script>
+<script src="js/systems/battle-player-attack.js?v=0.36.2"></script>
+<script src="js/systems/battle-aoe.js?v=0.36.2"></script>
+<script src="js/systems/battle-weapon-styles.js?v=0.36.2"></script>
+<script src="js/systems/battle-manual.js?v=0.36.2"></script>
+<script src="js/systems/battle-monster-kit.js?v=0.36.2"></script>
+<script src="js/systems/battle-monster-attack.js?v=0.36.2"></script>
+<script src="js/systems/battle-rewards.js?v=0.36.2"></script>
+<script src="js/systems/battle-search.js?v=0.36.2"></script>
+<script src="js/systems/battle-autostop.js?v=0.36.2"></script>
+<script src="js/systems/battle-core.js?v=0.36.2"></script>
+<script src="js/systems/battle-loop.js?v=0.36.2"></script>
+<script src="js/systems/battle.js?v=0.36.2"></script>
 
 <!-- ===== ГРУППОВЫЕ БОИ: модалка (v0.11) ===== -->
-<script src="js/systems/battle-pack.js?v=0.36.1"></script>
-<script src="js/systems/battle-souls.js?v=0.36.1"></script>
-<script src="js/systems/ilgrad-breakthrough.js?v=0.36.1"></script>
-<script src="js/systems/battle-fx.js?v=0.36.1"></script>
-<script src="js/systems/battle-session.js?v=0.36.1"></script>
-<script src="js/systems/battle-rest.js?v=0.36.1"></script>
-<script src="js/systems/expeditions.js?v=0.36.1"></script>
-<script src="js/systems/daynight.js?v=0.36.1"></script>
+<script src="js/systems/battle-pack.js?v=0.36.2"></script>
+<script src="js/systems/battle-souls.js?v=0.36.2"></script>
+<script src="js/systems/ilgrad-breakthrough.js?v=0.36.2"></script>
+<script src="js/systems/battle-fx.js?v=0.36.2"></script>
+<script src="js/systems/battle-session.js?v=0.36.2"></script>
+<script src="js/systems/battle-rest.js?v=0.36.2"></script>
+<script src="js/systems/expeditions.js?v=0.36.2"></script>
+<script src="js/systems/daynight.js?v=0.36.2"></script>
 
-<script src="js/main.js?v=0.36.1"></script>
+<script src="js/main.js?v=0.36.2"></script>
 
 </body>
 </html>

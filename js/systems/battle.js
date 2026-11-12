@@ -23,11 +23,12 @@ function updateBattleUI() {
   const m = state.battle.monster;
   if (!m) return;
 
-  document.getElementById('player-hp-bar').style.width = Math.max(0, p.hp / p.maxHp * 100) + '%';
-  document.getElementById('player-hp-text').textContent = `${Math.floor(p.hp)} / ${p.maxHp}`;
+  // v0.36.2: вызывается каждый тик боя — пишем на страницу только изменившееся (setText / setBarWidth).
+  setBarWidth(document.getElementById('player-hp-bar'), p.hp / p.maxHp * 100);
+  setText(document.getElementById('player-hp-text'), `${Math.floor(p.hp)} / ${p.maxHp}`);
 
-  document.getElementById('player-mp-bar').style.width = Math.max(0, p.mp / p.maxMp * 100) + '%';
-  document.getElementById('player-mp-text').textContent = `${Math.floor(p.mp)} / ${p.maxMp}`;
+  setBarWidth(document.getElementById('player-mp-bar'), p.mp / p.maxMp * 100);
+  setText(document.getElementById('player-mp-text'), `${Math.floor(p.mp)} / ${p.maxMp}`);
 
   // ---- HP-полоса монстра ----
   const hpBar = document.getElementById('monster-hp-bar');
@@ -36,27 +37,27 @@ function updateBattleUI() {
   const alive = (typeof getAliveMonstersCount === 'function') ? getAliveMonstersCount() : 1;
 
   if (!state.battle.monsterHpAnimating) {
-    hpBar.style.width = Math.max(0, m.hp / m.maxHp * 100) + '%';
+    setBarWidth(hpBar, m.hp / m.maxHp * 100);
   }
-  hpText.textContent = `${Math.floor(m.hp)} / ${m.maxHp}`;
+  setText(hpText, `${Math.floor(m.hp)} / ${m.maxHp}`);
 
   // ---- Групповой маркер (v0.11) ----
   if (alive > 1) {
     hpBar.classList.add('grouped');
     if (groupCounter) {
-      groupCounter.textContent = '×' + alive;
-      groupCounter.style.display = 'block';
+      setText(groupCounter, '×' + alive);
+      if (groupCounter.style.display !== 'block') groupCounter.style.display = 'block';
     }
   } else {
     hpBar.classList.remove('grouped');
     if (groupCounter) {
-      groupCounter.textContent = '';
-      groupCounter.style.display = 'none';
+      setText(groupCounter, '');
+      if (groupCounter.style.display !== 'none') groupCounter.style.display = 'none';
     }
   }
 
-  document.getElementById('player-atb-bar').style.width = Math.min(100, state.battle.playerATB * 100) + '%';
-  document.getElementById('monster-atb-bar').style.width = Math.min(100, state.battle.monstersATB * 100) + '%';
+  setBarWidth(document.getElementById('player-atb-bar'), state.battle.playerATB * 100);
+  setBarWidth(document.getElementById('monster-atb-bar'), state.battle.monstersATB * 100);
 
   // ---- v0.20: панель ручного режима (заменила кнопку «Ударить») ----
   if (typeof renderManualPanel === 'function') renderManualPanel(false);
