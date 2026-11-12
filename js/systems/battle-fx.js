@@ -400,7 +400,7 @@ function bxSync() {
     const key = `${p.name}|${p.level}`;
     if (BX.heroName !== key || !nameEl.querySelector('.bx-lvl')) {
       BX.heroName = key;
-      nameEl.innerHTML = `${p.name}<span class="bx-lvl">ур. ${p.level}</span>`;
+      nameEl.innerHTML = `${escapeHtml(p.name)}<span class="bx-lvl">ур. ${p.level}</span>`;
     }
   }
   const ghost = document.getElementById('bx-hero-hp-ghost');
@@ -833,7 +833,7 @@ function bxPlayDefeat() {
   if (unit) { unit.classList.add('bx-dying'); setTimeout(() => unit.classList.remove('bx-dying'), 2100); }
   const b = document.createElement('div');
   b.className = 'bx-banner lose';
-  b.innerHTML = `<h2>ПОРАЖЕНИЕ</h2><p>${state.player.name} пал в бою</p>`;
+  b.innerHTML = `<h2>ПОРАЖЕНИЕ</h2><p>${escapeHtml(state.player.name)} пал в бою</p>`;
   st.appendChild(b);
   setTimeout(() => b.remove(), 2100);
 }
@@ -894,7 +894,7 @@ function bxPlayDefeat() {
     if (typeof orig !== 'function') return;
     window[name] = function () {
       if (BX.ctx) return orig.apply(this, arguments);
-      const ctx = BX.ctx = newCtx('tick', typeof getCurrentMonster === 'function' ? getCurrentMonster() : null);
+      const ctx = BX.ctx = newCtx('tick', arguments[0] || (typeof getCurrentMonster === 'function' ? getCurrentMonster() : null));   // v0.36.3: тик по любой твари
       try { return orig.apply(this, arguments); }
       finally {
         BX.ctx = null;

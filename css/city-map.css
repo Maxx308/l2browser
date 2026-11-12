@@ -422,28 +422,73 @@
   color: #a0d080;
 }
 
-/* v0.31: «🚶 Пешком» и «🌀 Магические тропы» рядом. */
-.map-travel-btns {
+/* v0.36.3: ряд портретов монстров места с уровнем. Цвет рамки — от уровня героя. */
+.map-mobs {
   display: flex;
-  flex-wrap: wrap;
   justify-content: center;
-  gap: calc(8 * var(--u));
-  margin-top: calc(12 * var(--u));
+  flex-wrap: wrap;
+  gap: calc(6 * var(--u));
+  margin-top: calc(2 * var(--u));
 }
-.map-travel-btns .map-travel-btn { margin-top: 0; }
+.map-mob {
+  position: relative;
+  width: calc(40 * var(--u));
+  height: calc(40 * var(--u));
+  border-radius: 50%;
+  border: 2px solid var(--mob-c, #8a7a5a);
+  background: #14110b;
+  box-shadow: 0 0 calc(6 * var(--u)) rgba(0,0,0,0.8);
+  cursor: help;
+}
+.map-mob img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; display: block; }
+.map-mob b {
+  position: absolute;
+  right: calc(-5 * var(--u));
+  bottom: calc(-4 * var(--u));
+  min-width: calc(15 * var(--u));
+  padding: 0 calc(3 * var(--u));
+  border-radius: calc(8 * var(--u));
+  background: var(--mob-c, #8a7a5a);
+  color: #0d0b08;
+  font: 700 calc(9.5 * var(--u))/calc(14 * var(--u)) 'Cinzel', serif;
+  text-align: center;
+  text-shadow: none;
+}
+.map-mob.low  { --mob-c: #7d7a74; filter: saturate(0.6); }
+.map-mob.ok   { --mob-c: #8fc870; }
+.map-mob.warn { --mob-c: #e0be5a; }
+.map-mob.hard { --mob-c: #e0604a; }
+
+/* v0.31: «🚶 Пешком» и «🌀 Тропы» рядом. v0.36.3: обе одной ширины и пониже. */
+.map-travel-btns {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
+  gap: calc(6 * var(--u));
+  margin: calc(10 * var(--u)) auto 0;
+  max-width: calc(340 * var(--u));
+  width: 100%;
+}
+.map-travel-btns .map-travel-btn {
+  margin-top: 0;
+  justify-content: center;
+  padding: calc(5 * var(--u)) calc(6 * var(--u));
+  font-size: calc(12 * var(--u));
+  white-space: nowrap;
+}
 .map-walk-btn {
   background: linear-gradient(180deg, #2a2418, #14110b);
   border-color: rgba(184,148,90,0.75);
 }
 
-/* v0.31: значки титулов — левый верхний угол карточки. */
+/* v0.31: значки титулов — левый верхний угол карточки. v0.36.3: в одну строку, мелко. */
 .map-titles {
   position: absolute;
-  top: calc(8 * var(--u));
-  left: calc(8 * var(--u));
+  top: calc(7 * var(--u));
+  left: calc(7 * var(--u));
   display: flex;
-  flex-direction: column;
-  align-items: flex-start;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
   gap: calc(4 * var(--u));
   z-index: 2;
   pointer-events: auto;
@@ -451,9 +496,9 @@
 .map-titles:empty { display: none; }
 .map-title {
   font-family: 'Cinzel', serif;
-  font-size: var(--fs-small);
-  letter-spacing: calc(0.5 * var(--u));
-  padding: calc(3 * var(--u)) calc(10 * var(--u));
+  font-size: calc(11 * var(--u));
+  letter-spacing: 0;
+  padding: calc(1 * var(--u)) calc(7 * var(--u));
   border-radius: calc(10 * var(--u));
   background: rgba(0,0,0,0.6);
   border: 1px solid currentColor;

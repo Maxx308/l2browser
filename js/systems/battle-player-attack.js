@@ -64,7 +64,6 @@ function playerAttack() {
   const monsterMDef = m.mDef || 0;
 
   const mixtureAtkMult = getMixtureAtkMult();
-  const woundMult = getWoundDamageMult();
 
   const critChance = getCritChance(weaponCategory);
   const critMult = getCritMultiplier(weaponCategory);
@@ -150,13 +149,13 @@ function playerAttack() {
         let baseDmg = Math.max(1, raw - pierce.effectivePDef);
         let dmg = Math.floor(baseDmg * data.multiplier);
         if (weaponBonusPercent > 0) dmg = Math.floor(dmg * (1 + weaponBonusPercent / 100));
-        if (woundMult > 1.0) dmg = Math.floor(dmg * woundMult);
         if (deathBonus > 0) dmg = Math.floor(dmg * (1 + deathBonus / 100));
         if (gripBonus > 0) dmg = Math.floor(dmg * (1 + gripBonus / 100));
         if (mixtureAtkMult > 1.0) dmg = Math.floor(dmg * mixtureAtkMult);
         const isCrit = Math.random() * 100 < critChance;
         if (isCrit) dmg = Math.floor(dmg * critMult);
         dmg = withSkillFlat(Math.max(1, dmg));
+        dmg = applyWoundMult(m, dmg);   // v0.36.3: зарубка — последней, по этой цели
         dmg = monsterTagDmg(m, dmg, heroPhysKinds(weaponCategory).concat(skill.id === 'orcRage' ? ['death'] : []));   // v0.36: теги твари
         m.hp -= dmg; totalDamage += dmg;
         thornsTaken += monsterThorns(m, weaponCategory);   // v0.36: шипы
@@ -191,7 +190,7 @@ function playerAttack() {
         if (m.hp <= 0 && typeof humanCycleOnKill === 'function') notes.push(humanCycleOnKill('powerStrike'));
         logCombat(`⚔ Сильный удар: ${dmgText}`, 'log-entry player-skill', notes.filter(Boolean).join(' · '));
       }
-      if (m.hp > 0) tryApplyWeaponTrait(weaponCategory, weapon);
+      if (m.hp > 0) tryApplyWeaponTrait(weaponCategory, weapon, 1, Math.round(totalDamage / Math.max(1, parts.length)));   // v0.36.3: от урона одного удара навыка
     }
     // ---- v0.36: лечение ранит мёртвых (сила как у лечения, защита не режет, Жизнь и теги — да) ----
     else if (skill.isHeal && healStrikeApplies(m)) {
@@ -395,7 +394,6 @@ function playerAttack() {
   }
 
   if (weaponBonusPercent > 0) dmg = Math.floor(dmg * (1 + weaponBonusPercent / 100));
-  if (woundMult > 1.0) dmg = Math.floor(dmg * woundMult);
   if (mixtureAtkMult > 1.0) dmg = Math.floor(dmg * mixtureAtkMult);
   // ---- v0.19: кинжал — добивание раненого ----
   const execMult = (!isMage() && typeof getExecuteMult === 'function') ? getExecuteMult(m, weaponCategory) : 1;
@@ -407,6 +405,7 @@ function playerAttack() {
   const cleave = (!isMage() && typeof planWeaponCleave === 'function') ? planWeaponCleave(weaponCategory, m) : null;
   const fullDmg = dmg;
   if (cleave && cleave.mainMult < 1) dmg = Math.max(1, Math.floor(dmg * cleave.mainMult));
+  dmg = applyWoundMult(m, dmg);   // v0.36.3: зарубка своей цели; вторая цель считает свою (applyWeaponCleave)
   dmg = monsterTagDmg(m, dmg, isMage() ? ['magic'] : heroPhysKinds(weaponCategory));   // v0.36: теги твари
   m.hp -= dmg;
   const thorns = monsterThorns(m, weaponCategory);   // v0.36: шипы
@@ -425,9 +424,9 @@ function playerAttack() {
 
   const mixtureData = getActiveMixtureData();
   if (mixtureData && mixtureData.chargeType === 'playerAttacks') tickMixtureCharge(swings);
-  if (m.hp > 0) tryApplyWeaponTrait(weaponCategory, weapon);
+  if (m.hp > 0) tryApplyWeaponTrait(weaponCategory, weapon, 1, dmg);   // v0.36.3: фишки считаются от урона удара
   // v0.27: фишки второго оружия — с половинным шансом
-  if (offhand && m.hp > 0) tryApplyWeaponTrait(getWeaponCategory(offhand.name), offhand, DUAL_WIELD_TRAIT_MULT);
+  if (offhand && m.hp > 0) tryApplyWeaponTrait(getWeaponCategory(offhand.name), offhand, DUAL_WIELD_TRAIT_MULT, dmg);
   if (m.hp <= 0) { m.hp = 0; onMonsterDeath(m); }
   checkHealPotion();
   updateBattleUI();

@@ -51,7 +51,7 @@ const DEBUFF_DEFS = {
     displayCount: (d) => d.stacks || 1,
     tooltip: (d) => {
       const stacks = d.stacks || 0;
-      const bonus = stacks * 5;
+      const bonus = stacks * (typeof WOUND_DAMAGE_PER_STACK === 'number' ? WOUND_DAMAGE_PER_STACK : 5);   // v0.36.3: 8%
       return `Зарубка ×${stacks} · +${bonus}% урона · осталось ${d.turnsLeft} ход.`;
     },
   },

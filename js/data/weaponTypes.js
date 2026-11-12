@@ -41,18 +41,23 @@ function getWeaponCategory(itemName) {
 //   мечи — парирование, топоры — удар по двум целям, копья — пробой насквозь,
 //   дубины — усиление массовых навыков, кинжалы — добивание,
 //   луки — стреляют в самого раненого, арбалеты — всегда игнорируют часть брони.
+// v0.36.3: перебаланс по замеру — кровотечение, зарубка, стихия копья и точный выстрел
+// давали 0–1,5% урона против +6–10% у крита. Теперь их урон — доля от удара, а шанс выше.
 const WEAPON_CATEGORY_TRAITS = {
-  swords:    { bleedChance: 5, parryChance: 10 },         // Кровотечение + парирование 10%
-  axes:      { woundChance: 5, cleaveMult: 0.70 },        // Зарубка + 2 цели по 70%
+  swords:    { bleedChance: 10, bleedHitPercent: 25, parryChance: 10 },   // Кровотечение: 3 тика по 25% удара + парирование 10%
+  axes:      { woundChance: 9, cleaveMult: 0.70 },        // 9%: при 12% зарубка давала +15–16% — выше прочих фишек       // Зарубка (+8% урона за стак, до 5) + 2 цели по 70%
   maces:     { stunChance: 5, aoeSkillBonus: 30 },        // Оглушение + массовые навыки +30%
   daggers:   { critBonus: 8, executeBonus: 50, executeHpPercent: 30 }, // крит + добивание
-  bows:      { preciseChance: 5, focusWounded: true },    // Точный выстрел + бьют самого раненого
+  bows:      { preciseChance: 10, preciseHitPercent: 60, focusWounded: true },   // Точный выстрел: +60% урона и −30% уворота на 2 хода
   crossbows: { armorIgnore: 25 },                         // Всегда игнорируют 25% pDef (+1% за 5 ур. владения, макс 50%)
 
   // ШАГ 4:
-  spears:    { elementChance: 5, elementBaseDamage: 3, pierceSecondMult: 0.40 }, // Стихия + пробой 40% по второму
+  spears:    { elementChance: 10, elementBaseDamage: 3, elementHitPercent: 50, pierceSecondMult: 0.40 }, // Стихия (50% удара) + пробой 40% по второму
   staves:    { soulSiphonChance: 5 },                     // Похищение души
 };
+
+// Шансы фишек у ТВАРЕЙ с оружием (battle-monster-kit.js) — прежние, перебаланс героя их не трогает.
+const MONSTER_WEAPON_TRAIT_CHANCES = { bleedChance: 5, woundChance: 5, elementChance: 5 };
 
 // ========================================================
 //  БОНУСЫ ОРУЖИЯ К ТОЧНОСТИ (L2 C4, округлено)

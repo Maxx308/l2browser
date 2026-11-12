@@ -284,17 +284,15 @@ function gameLoop() {
     if (state.battle.monstersATB >= 1) {
       state.battle.monstersATB = 0;
 
-      const current = getCurrentMonster();
-      if (current && current.hp > 0) {
-        if (getDebuff('monster', 'burn', current.index)) {
-          applyBurnTick();
-        }
-        if (getDebuff('monster', 'bleed', current.index) && current.hp > 0) {
-          applyBleedTick();
-        }
-        if (getDebuff('monster', 'wound', current.index) && current.hp > 0) {
-          applyWoundTick();
-        }
+      // v0.36.3: по ВСЕМ живым тварям, а не только по текущей цели — иначе кровотечение,
+      // поджог и зарубка на остальных замирали (лук постоянно меняет цель).
+      for (const m of state.battle.monsters.slice()) {
+        if (!state.battle.active) break;
+        if (m.hp <= 0) continue;
+        if (getDebuff('monster', 'burn', m.index)) applyBurnTick(m);
+        if (m.hp > 0 && getDebuff('monster', 'bleed', m.index)) applyBleedTick(m);
+        if (m.hp > 0 && getDebuff('monster', 'wound', m.index)) applyWoundTick(m);
+        if (m.hp > 0) applyConfusedTick(m);
       }
 
       if (state.battle.active) {

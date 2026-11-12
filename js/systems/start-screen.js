@@ -173,7 +173,7 @@ function renderSlots() {
         ${sourceBadge}
         <div class="slot-portrait" style="background-image:url('${portrait}')"></div>
         <div class="slot-info">
-          <div class="slot-name">${displayMeta.name}</div>
+          <div class="slot-name">${escapeHtml(displayMeta.name)}</div>
           <div class="slot-race">${race.name}</div>
           <div class="slot-class">${cls ? cls.name : '—'} · Ур. ${displayMeta.level}</div>
           ${expBadge}
@@ -255,21 +255,15 @@ function loadSlotAndStart(slotIndex, opts) {
     return;
   }
 
+  // v0.36.3: сначала приводим сейв к текущей версии (save-migrate.js).
+  // migrateSavePayload дополняет недостающие поля дефолтами, поэтому Object.assign
+  // ниже перекрывает ВСЕ поля игрока: наследовать что-то от предыдущего героя нельзя.
+  // Раньше каждое новое поле требовало отдельной строки в этом месте — и забытая
+  // строка тихо передавала значение прошлого героя.
+  migrateSavePayload(saved);
   Object.assign(state.player, saved.player);
-  // v0.33: экспедиция и темп охоты — только свои (у старого сейва полей нет)
-  state.player.expedition = (saved.player && saved.player.expedition) || null;
-  state.player.expeditionLoot = (saved.player && Array.isArray(saved.player.expeditionLoot)) ? saved.player.expeditionLoot : [];
-  state.player.huntPace = (saved.player && saved.player.huntPace) || {};
-  state.player.huntVariant = (saved.player && saved.player.huntVariant) || {};   // v0.34.1: стопки карточек
-  state.player.foodKind = (saved.player && saved.player.foodKind) || null;       // v0.35.1: вид сытости — только свой
-  state.player.ilgradOpen = !!(saved.player && saved.player.ilgradOpen);          // v0.36: Ильград — только свой
-  // v0.26: метка чита — только своя (у старого сейва поля нет, прошлый герой не должен «передать» её)
-  state.player.usedCheat = !!(saved.player && saved.player.usedCheat);
-  // v0.29.2: дробные цены продажи оставляли хвост в Оболах (34500.199999997) — убираем у старых героев
+  // v0.29.2: дробные цены продажи оставляли хвост в Оболах (34500.199999997)
   state.player.gold = Math.max(0, Math.round(Number(state.player.gold) || 0));
-  // v0.30: летопись и сумка — только свои (у старого сейва полей нет, прошлый герой не должен «передать» их)
-  state.player.chronicle = (saved.player && saved.player.chronicle) || null;
-  state.player.bag = (saved.player && saved.player.bag) || null;
   if (typeof ensureChronicle === 'function') ensureChronicle();
   if (saved.battle) Object.assign(state.battle, saved.battle);
 
@@ -295,16 +289,19 @@ function loadSlotAndStart(slotIndex, opts) {
   // v0.33: рубины и сапфиры из обычного дропа изъяты — теперь это камни душ
   if (typeof retireOldGemsOnLoad === 'function') retireOldGemsOnLoad();
   if (weaponsChanged) setTimeout(() => logLoot('⚔ Статы оружия обновлены под новый баланс.', 'log-info'), 1600);
+  // v0.36.3: деноминация пыли — сказать один раз, чтобы не выглядело пропажей
+  if (saved._dustRescaled || (typeof storageDustRescaled !== 'undefined' && storageDustRescaled)) {
+    storageDustRescaled = false;
+    setTimeout(() => {
+      showToast('✨', 'Пыль пересчитана: всё ÷10, цены Алхимика тоже');
+      logLoot('✨ Пыль пересчитана: запасы, выход с распыления и цены Алхимика поделены на 10. Ценность пыли не изменилась — просто числа стали меньше.', 'log-info');
+    }, 1900);
+  }
   if (refineFlatChanged) setTimeout(() => logLoot('🔧 Бонусы подгонки HP, MP и реген пересчитаны: на вещах тира 2 и выше они теперь больше.', 'log-info'), 1700);
   if (jewelryChanged) setTimeout(() => {
     showToast('💍', 'Бижутерия пересчитана: вехи подгонки теперь дают опыт и мастерство');
     logLoot('💍 Вехи подгонки бижутерии теперь дают опыт (ожерелья), мастерство (кольца) и одно из двух (серьги) вместо маг. защиты.', 'log-info');
   }, 1500);
-
-  if (state.player.lootFilterLevel === undefined)  state.player.lootFilterLevel = 0;
-  if (state.player.craftFilterLevel === undefined) state.player.craftFilterLevel = 0;
-  if (state.player.cheatRate === undefined) state.player.cheatRate = 1;
-  if (state.player.stackCap === undefined) state.player.stackCap = 3;
 
   // НОВОЕ (v0.13o): если игрок НЕ админ — принудительно cheatRate = 1.
   if (typeof cloudIsAdmin === 'function' && !cloudIsAdmin()) {
@@ -371,6 +368,7 @@ async function loadSlotFromCloudAndStart(slotIndex) {
     return;
   }
 
+  backupLocalSlot(slotIndex);   // v0.36.3: прежнюю локальную копию сохраняем до перезаписи
   writeSlot(slotIndex, res.data);
 
   if (typeof showToast === 'function') showToast('☁️', 'Слот загружен из облака');
@@ -396,6 +394,7 @@ async function loadSlotFromCloudAndStartOverwrite(slotIndex) {
     return;
   }
 
+  backupLocalSlot(slotIndex);   // v0.36.3: прежнюю локальную копию сохраняем до перезаписи
   writeSlot(slotIndex, res.data);
 
   if (typeof showToast === 'function') showToast('☁️', 'Облачный сейв загружен');
@@ -617,12 +616,28 @@ function resetStateToFresh() {
   state.player.foodTickAccum = 0;
   state.player.foodKind = null;   // v0.35.1
   state.player.ilgradOpen = false;   // v0.36
+  state.player.underwoodFallen = false;
+  state.player.fallStage = null;
+  state.player.fallBattle = null;
   state.player.dish = null;
   state.player.guildBuffs = {};
   state.player.tavernBuffs = {};
   state.player.weaponSkills = {};
   state.player.elements = {};
   state.player.monsterKills = {};
+
+  // v0.36.3: поручения, экспедиция, темп охоты и личные настройки прошлого героя
+  // не переходят новому. Раньше слот удаляли, создавали персонажа — и квесты
+  // с экспедицией оставались от предыдущего.
+  state.player.quests = {};
+  state.player.expedition = null;
+  state.player.expeditionLoot = [];
+  state.player.huntPace = {};
+  state.player.huntVariant = {};
+  state.player.breakthroughResult = 0;
+  state.player.soulHuntCap = 0;
+  state.player.hideProfile = false;
+
   state.player.chronicle = typeof makeFreshChronicle === 'function' ? makeFreshChronicle() : null;   // v0.30
   state.player.bag = typeof makeFreshBag === 'function' ? makeFreshBag() : null;
 

@@ -756,7 +756,7 @@ function cloudShowConflictModal(slotIndex, onChoose, onCancel) {
 
   if (cmp.local && cmp.local.info) {
     localInfo.innerHTML = `
-      <span class="name">${cmp.local.info.name}</span>
+      <span class="name">${escapeHtml(cmp.local.info.name)}</span>
       <div class="line">${cmp.local.info.raceName} · ${cmp.local.info.className}</div>
       <div class="line">Уровень: ${cmp.local.info.level}</div>
     `;
@@ -775,7 +775,7 @@ function cloudShowConflictModal(slotIndex, onChoose, onCancel) {
 
   if (cmp.cloud && cmp.cloud.info) {
     cloudInfo.innerHTML = `
-      <span class="name">${cmp.cloud.info.name}</span>
+      <span class="name">${escapeHtml(cmp.cloud.info.name)}</span>
       <div class="line">${cmp.cloud.info.raceName} · ${cmp.cloud.info.className}</div>
       <div class="line">Уровень: ${cmp.cloud.info.level}</div>
     `;
@@ -1021,33 +1021,4 @@ function pluralizeSlots(n) {
   if (mod10 === 1) return 'слот';
   if (mod10 >= 2 && mod10 <= 4) return 'слота';
   return 'слотов';
-}
-
-// ========================================================
-//  УР.2.3 (v0.13o): АДМИН-РЕЖИМ
-// ========================================================
-
-// Является ли текущий игрок админом?
-function cloudIsAdmin() {
-  if (cloudUser && cloudUser.email) {
-    const e = String(cloudUser.email).toLowerCase().trim();
-    if (CLOUD_ADMIN_EMAILS.indexOf(e) >= 0) return true;
-  }
-  if (cloudIsMasterUnlocked()) return true;
-
-  return false;
-}
-
-// Показать / скрыть кнопку «ЧИТ» в шапке.
-function updateCheatButtonVisibility() {
-  const btn = document.getElementById('btn-cheat');
-  if (!btn) return;
-
-  const isAdmin = cloudIsAdmin();
-
-  if (isAdmin) {
-    btn.style.display = '';
-  } else {
-    btn.style.display = 'none';
-  }
 }

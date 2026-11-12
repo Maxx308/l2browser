@@ -67,7 +67,7 @@ function applyWeaponCleave(m, plan, dmg) {
   const m2 = plan && plan.second;
   if (!m2 || m2.hp <= 0 || !state.battle.active) return;
   const w = state.player.equipment.weapon;
-  const d2 = monsterTagDmg(m2, Math.max(1, Math.floor(dmg)), heroPhysKinds(w ? getWeaponCategory(w.name) : null));   // v0.36: теги второй цели
+  const d2 = monsterTagDmg(m2, applyWoundMult(m2, Math.max(1, Math.floor(dmg))), heroPhysKinds(w ? getWeaponCategory(w.name) : null));   // v0.36: теги второй цели
   const saved = m.hp;
   if (saved <= 0) m.hp = 1;
   logCombat(`${plan.icon} ${plan.label}: ${m2.name} получает ${d2} урона.`, 'log-entry player');

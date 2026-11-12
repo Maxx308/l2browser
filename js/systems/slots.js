@@ -24,48 +24,75 @@
 const SLOT_COUNT = 5;
 const SLOT_KEY_PREFIX = 'l2browser_slot_';
 
+// --------------------------------------------------------
+//  v0.36.3: СТРАХОВОЧНАЯ КОПИЯ СЛОТА
+//  Перед перезаписью слота облачным сейвом кладём прежнюю строку
+//  в ключ ..._bak. Если основная строка побьётся, читаем копию —
+//  вместо того чтобы показать игроку «пустой слот» и потерять героя.
+// --------------------------------------------------------
+function slotBackupKey(slotIndex) {
+  return SLOT_KEY_PREFIX + slotIndex + '_bak';
+}
+
+function backupLocalSlot(slotIndex) {
+  try {
+    const raw = localStorage.getItem(SLOT_KEY_PREFIX + slotIndex);
+    if (!raw) return false;
+    localStorage.setItem(slotBackupKey(slotIndex), raw);
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
+// Разобранный сейв: основная строка, а при битом JSON — запасная копия.
+// Парсим один раз: карточки ячеек читают мету сразу после полного чтения.
+function readSlotData(slotIndex) {
+  const raw = localStorage.getItem(SLOT_KEY_PREFIX + slotIndex);
+  if (!raw) return null;   // слот пуст или удалён — копию не подсовываем
+  try { return JSON.parse(raw); } catch (e) {}
+  const bak = localStorage.getItem(slotBackupKey(slotIndex));
+  if (bak) {
+    try {
+      const data = JSON.parse(bak);
+      console.warn('[slot] слот ' + slotIndex + ': основная строка повреждена — читаем копию');
+      return data;
+    } catch (e) {}
+  }
+  return null;
+}
+
 // Прочитать мету слота (для ячейки).
 // Возвращает { used, name, classId, raceId, level, updatedAt? }.
 function readSlotMeta(slotIndex) {
-  try {
-    const raw = localStorage.getItem(SLOT_KEY_PREFIX + slotIndex);
-    if (!raw) return { used: false };
-    const data = JSON.parse(raw);
-    return {
-      used: true,
-      name: data.player && data.player.name,
-      classId: data.player && data.player.classId,
-      raceId: data.player && data.player.raceId,
-      level: data.player && data.player.level,
-      updatedAt: data.updatedAt || null,
-    };
-  } catch (e) {
-    return { used: false };
-  }
+  const data = readSlotData(slotIndex);
+  if (!data) return { used: false };
+  return {
+    used: true,
+    name: data.player && data.player.name,
+    classId: data.player && data.player.classId,
+    raceId: data.player && data.player.raceId,
+    level: data.player && data.player.level,
+    updatedAt: data.updatedAt || null,
+  };
 }
 
 // Прочитать полное сохранение (для загрузки в игру).
 function readSlot(slotIndex) {
+  const data = readSlotData(slotIndex);
+  if (!data) return null;
   try {
-    const raw = localStorage.getItem(SLOT_KEY_PREFIX + slotIndex);
-    if (!raw) return null;
-    return imgPathsToWebp(JSON.parse(raw));   // v0.36.2: старые пути картинок → .webp
+    return imgPathsToWebp(data);   // v0.36.2: старые пути картинок → .webp
   } catch (e) {
-    return null;
+    return data;                   // лучше без перевода путей, чем без героя
   }
 }
 
 // Прочитать метку времени локального слота (ISO-строка или null).
 // Используется для сравнения с облаком.
 function readSlotUpdatedAt(slotIndex) {
-  try {
-    const raw = localStorage.getItem(SLOT_KEY_PREFIX + slotIndex);
-    if (!raw) return null;
-    const data = JSON.parse(raw);
-    return data.updatedAt || null;
-  } catch (e) {
-    return null;
-  }
+  const data = readSlotData(slotIndex);
+  return data ? (data.updatedAt || null) : null;
 }
 
 // Записать сохранение в слот (локально).
@@ -75,12 +102,43 @@ function writeSlot(slotIndex, stateObj) {
   try {
     const payload = Object.assign({}, stateObj, {
       updatedAt: new Date().toISOString(),
+      // v0.36.3: версия формата — чтобы будущие правки полей знали, откуда мигрировать
+      v: (typeof SAVE_VERSION === 'number') ? SAVE_VERSION : undefined,
     });
     localStorage.setItem(SLOT_KEY_PREFIX + slotIndex, JSON.stringify(payload));
     return true;
   } catch (e) {
     console.error('Не удалось сохранить слот', slotIndex, e);
+    warnSlotSaveFailed(e);   // v0.36.3: сказать игроку, а не только в консоль
     return false;
+  }
+}
+
+// --------------------------------------------------------
+//  v0.36.3: ПРЕДУПРЕЖДЕНИЕ О НЕУДАЧНОЙ ЗАПИСИ
+//  Раньше ошибка записи уходила только в консоль: игрок мог час
+//  играть, а потом обнаружить, что прогресса нет. Теперь говорим
+//  об этом прямо — но не чаще раза в 30 секунд, чтобы не заспамить.
+// --------------------------------------------------------
+let slotSaveErrorShownAt = 0;
+
+function warnSlotSaveFailed(e) {
+  const now = Date.now();
+  if (now - slotSaveErrorShownAt < 30000) return;
+  slotSaveErrorShownAt = now;
+  if (typeof showToast !== 'function') return;
+
+  const quota = !!e && (
+    e.name === 'QuotaExceededError' ||
+    e.name === 'NS_ERROR_DOM_QUOTA_REACHED' ||
+    e.code === 22 ||
+    e.code === 1014
+  );
+
+  if (quota) {
+    showToast('⚠', 'В браузере кончилось место — герой не сохраняется локально. Освободите место, иначе прогресс только в облаке.');
+  } else {
+    showToast('⚠', 'Не удалось сохранить героя в браузере. Если включён режим инкогнито — сохранение не работает.');
   }
 }
 
@@ -107,6 +165,7 @@ function deleteSlot(slotIndex) {
 
   // ---- 2. Локально ----
   localStorage.removeItem(SLOT_KEY_PREFIX + slotIndex);
+  localStorage.removeItem(slotBackupKey(slotIndex));   // v0.36.3: иначе герой вернётся из копии
 
   // ---- 3. Из кеша облака (сразу, оптимистично) ----
   if (typeof cloudGetCachedSlots === 'function') {
@@ -211,6 +270,8 @@ function saveCurrentSlot() {
     player: state.player,
     battle: state.battle,
     cheat: state.cheat,
+    // v0.36.3: версия едет и в облако — иначе облачный сейв всегда выглядел бы как «нулевая версия»
+    v: (typeof SAVE_VERSION === 'number') ? SAVE_VERSION : undefined,
   };
 
   // ---- Локально (как было) ----

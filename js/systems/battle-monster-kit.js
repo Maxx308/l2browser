@@ -93,6 +93,7 @@ function monsterTagConditionalPct(m, kinds) {
   const part = m.maxHp > 0 ? m.hp / m.maxHp : 1;
   if (part > 0.5 && monsterHasTagFlag(m, 'thick')) pct -= 15;
   if (part < 0.3 && monsterHasTagFlag(m, 'savage')) pct += 15;
+  if (part < 0.3 && state.player.executeBonus) pct += state.player.executeBonus;   // v0.37: сет Палача +10
   if (kinds.includes('physical') && monsterHasTagFlag(m, 'formation')) pct += getAliveMonstersCount() >= 2 ? -15 : 15;
   return pct;
 }
@@ -249,9 +250,9 @@ function monsterTagsHtml(monster) {
 function monsterWeaponTraits(cat) {
   const t = WEAPON_CATEGORY_TRAITS[cat];
   if (!t) return null;
-  if (cat === 'swords')  return { bleedChance: t.bleedChance, bleedTurns: 3, bleedDamageDivisor: 6 };
+  if (cat === 'swords')  return { bleedChance: MONSTER_WEAPON_TRAIT_CHANCES.bleedChance, bleedTurns: 3, bleedDamageDivisor: 6 };
   if (cat === 'maces')   return { stunChance: t.stunChance, stunTurns: 1 };
-  if (cat === 'spears')  return { elementChance: t.elementChance, elementBonusPercent: 30 };
+  if (cat === 'spears')  return { elementChance: MONSTER_WEAPON_TRAIT_CHANCES.elementChance, elementBonusPercent: 30 };
   if (cat === 'daggers') return { critChance: 10 + t.critBonus, critMult: 2.2 };   // как кинжал героя: база 10% + бонус
   return null;
 }
@@ -297,7 +298,7 @@ function monsterKitRaw(m, skill, raw) {
 function monsterKitOnHit(m, skill, dmg, chanceMult) {
   m.kitLastHit = dmg;
   if (m.weapon === 'axes' && state.player.hp > 0) {
-    const chance = WEAPON_CATEGORY_TRAITS.axes.woundChance * chanceMult;
+    const chance = MONSTER_WEAPON_TRAIT_CHANCES.woundChance * chanceMult;
     if (Math.random() * 100 < chance) {
       const w = getDebuff('player', 'wound');
       if (w) {

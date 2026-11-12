@@ -126,8 +126,23 @@
 .exp-chip-ico img, .exp-chip-ico svg { width: 100%; height: 100%; object-fit: contain; }
 
 /* ---- Кнопка на карточке локации ---- */
-.map-exp { margin-top: 6px; }
-.map-exp-btn { width: 100%; }
+/* v0.36.3: маленькая кнопка под дорогой — не спорит с главными кнопками */
+.map-exp { margin-top: calc(6 * var(--u)); text-align: center; }
+.map-exp:empty { display: none; }
+.map-exp-btn {
+  display: inline-flex; align-items: center; gap: calc(4 * var(--u));
+  padding: calc(3 * var(--u)) calc(10 * var(--u));
+  background: rgba(0,0,0,0.45);
+  border: 1px solid rgba(184,148,90,0.45);
+  border-radius: calc(12 * var(--u));
+  font-family: 'Cinzel', serif;
+  font-size: calc(11 * var(--u));
+  color: #d6ccb8;
+  cursor: pointer;
+  transition: border-color 0.2s, color 0.2s;
+}
+.map-exp-btn:hover { border-color: var(--gold); color: var(--gold-bright); }
+.map-exp-btn.busy { color: #a0d080; border-color: rgba(160,208,128,0.6); }
 
 /* ---- Экран выбора героя ---- */
 .slot-exp { margin-top: 4px; font-size: 11px; color: #e0be7a; line-height: 1.35; }

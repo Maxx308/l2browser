@@ -203,9 +203,19 @@ function updateMapMeta() {
     const parts = [];
 
     // Уровни мобов (только для диких локаций).
+    // v0.36.3: ещё и ряд портретов с уровнем — новичку сразу видно, кто где живёт и кто ему по силам
+    // (цвет — от уровня героя: серый слабее, зелёный по силам, жёлтый чуть сильнее, красный опасно).
     const range = getMonsterLevelRange(loc);
     if (range) {
-      parts.push(`<span class="map-meta-line">⚔ Мобы: ур. ${range.min}–${range.max}</span>`);
+      const lvl = state.player.level || 1;
+      const mobs = getMonstersByLocation(loc).map(m => {
+        const d = (m.level || 1) - lvl;
+        const cls = d >= 3 ? 'hard' : d >= 1 ? 'warn' : d >= -3 ? 'ok' : 'low';
+        const img = m.art ? `<img src="${m.art}" alt="" loading="lazy" decoding="async">` : '';
+        return `<span class="map-mob ${cls}" title="${m.name} · ур. ${m.level}">${img}<b>${m.level}</b></span>`;
+      }).join('');
+      parts.push(`<span class="map-meta-line">⚔ Монстры · ур. ${range.min}–${range.max}</span>`);
+      parts.push(`<span class="map-mobs">${mobs}</span>`);
     } else if (isTownLoc(loc)) {
       parts.push(`<span class="map-meta-line map-meta-safe">🛡 Безопасная зона</span>`);
     }
@@ -248,17 +258,20 @@ function updateMapTitles(loc) {
     card.appendChild(box);
   }
 
+  // v0.36.3: компактно — значок и цифра; полный текст в подсказке и по нажатию (на телефоне подсказок нет)
   const s = getLocationTitleStats(loc);
   const badges = [];
+  const chip = (cls, label, tip) =>
+    `<span class="map-title ${cls}" title="${tip}" onclick="event.stopPropagation(); showToast('${cls === 'magnificent' ? '🌟' : '👑'}', this.title)">${label}</span>`;
   if (s && s.magnificent) {
-    badges.push(`<span class="map-title magnificent" title="Великолепный охотник: все монстры всех подтипов — по 1000+ убийств. Дроп и Оболы ×3">🌟 Великолепный охотник</span>`);
+    badges.push(chip('magnificent', '🌟 ×3', 'Великолепный охотник: все монстры всех подтипов — по 1000+ убийств. Дроп и Оболы ×3'));
   } else if (s) {
     if (s.glorious.length) {
       const names = s.glorious.map(getVariantDisplayName).join(', ');
-      badges.push(`<span class="map-title glorious" title="Прославленный охотник: все ${names} — по 1000+ убийств. Дроп и Оболы ×2">👑 Прославленный${s.glorious.length > 1 ? ' ×' + s.glorious.length : ''}</span>`);
+      badges.push(chip('glorious', '👑 ×2', `Прославленный охотник: все ${names} — по 1000+ убийств. Дроп и Оболы ×2`));
     }
     if (s.hunters > 0) {
-      badges.push(`<span class="map-title hunter" title="Титул «Охотник» (1000+ убийств): ${s.hunters} из ${s.total} — монстр × подтип">👑 ${s.hunters}/${s.total}</span>`);
+      badges.push(chip('hunter', `🎯 ${s.hunters}/${s.total}`, `Титул «Охотник» (1000+ убийств): ${s.hunters} из ${s.total} — монстр × подтип`));
     }
   }
   box.innerHTML = badges.join('');

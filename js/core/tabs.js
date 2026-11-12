@@ -95,11 +95,12 @@ function updateMapTravelButton() {
     const price = here ? null : getMagicPathPrice(p.currentLocation, loc);
     const btns = [];
     if (walk !== null) {
-      btns.push(`<button class="map-travel-btn map-walk-btn" onclick="event.stopPropagation(); tryTravel('${loc}')">🚶 Пешком · ${formatTravelTime(walk)}</button>`);
+      btns.push(`<button class="map-travel-btn map-walk-btn" onclick="event.stopPropagation(); tryTravel('${loc}')" title="Идти пешком — бесплатно">🚶 Пешком · ${formatTravelTime(walk)}</button>`);
     }
     if (price !== null) {
       const poor = (p.gold || 0) < price;
-      btns.push(`<button class="map-travel-btn${poor ? ' map-travel-btn-disabled' : ''}" onclick="event.stopPropagation(); useMagicPath('${loc}')"${poor ? ` title="Нужно ${price} Оболов"` : ''}>🌀 Магические тропы · 🪙 ${price}</button>`);
+      // v0.36.3: короче — «Тропы», полное название в подсказке; обе кнопки одной ширины (css .map-travel-btns)
+      btns.push(`<button class="map-travel-btn${poor ? ' map-travel-btn-disabled' : ''}" onclick="event.stopPropagation(); useMagicPath('${loc}')" title="${poor ? `Магические тропы: нужно ${price} Оболов` : 'Магические тропы — сразу, за Оболы'}">🌀 Тропы · 🪙 ${price}</button>`);
     }
     slot.innerHTML = btns.length ? `<div class="map-travel-btns">${btns.join('')}</div>` : '';
   });

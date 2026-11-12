@@ -233,13 +233,18 @@ function onMonsterDeath(deadMonster) {
   checkLevelUp();
 
   // ---- ТИТУЛЫ ----
+  // v0.36.3: сбежавшая тварь — не убийство. Раньше трус, ушедший на 20% здоровья,
+  // всё равно поднимал титул до «Охотника», закрывал поручения и открывал бестиарий.
+  const countsAsKill = !m.fled;
   const oldTitle = getMonsterTitle(m.id, m.variantId);
-  incrementMonsterKills(m.id, m.variantId);
-  const newTitle = getMonsterTitle(m.id, m.variantId);
-  if (typeof annalsFirst === 'function') annalsFirst('kill', { monster: m.name });   // v0.32: летопись
-  if (typeof questFindRoll === 'function') questFindRoll(m);   // v0.32: находки для поручений жителей
-  if (typeof bagOnKill === 'function') bagOnKill(m);           // v0.35.1: поручения Заплечника «убей»
-  if (typeof loreOnKill === 'function') loreOnKill(m);         // v0.34.1: Бестиарий и Поляна — куски за убийства
+  if (countsAsKill) incrementMonsterKills(m.id, m.variantId);
+  const newTitle = countsAsKill ? getMonsterTitle(m.id, m.variantId) : oldTitle;
+  if (countsAsKill) {
+    if (typeof annalsFirst === 'function') annalsFirst('kill', { monster: m.name });   // v0.32: летопись
+    if (typeof questFindRoll === 'function') questFindRoll(m);   // v0.32: находки для поручений жителей
+    if (typeof bagOnKill === 'function') bagOnKill(m);           // v0.35.1: поручения Заплечника «убей»
+    if (typeof loreOnKill === 'function') loreOnKill(m);         // v0.34.1: Бестиарий и Поляна — куски за убийства
+  }
 
   if (newTitle !== oldTitle) {
     const loc = getMonsterLocation(m.id);
@@ -261,7 +266,7 @@ function onMonsterDeath(deadMonster) {
   updateInventoryFooter();
   updateSkillPointsBadge();
 
-  trySoulSiphon(m);
+  if (countsAsKill) trySoulSiphon(m);   // v0.36.3: с сбежавшей душу не похитить
 
   // v0.19: Гниение перескакивает на соседа (до очистки дебаффов).
   if (typeof trySpreadRot === 'function') {
@@ -430,6 +435,11 @@ function switchMonsterUI(m) {
 // --------------------------------------------------------
 //  СМЕРТЬ ИГРОКА
 // --------------------------------------------------------
+
+// v0.36.3: единственный таймер возврата в город после смерти.
+// Храним ссылку, чтобы второй таймер не наложился на первый.
+let deathReturnTimer = null;
+
 function onPlayerDeath() {
   const p = state.player;
   if (state.battle.breakthrough) { breakthroughOnHeroDown(); return; }   // v0.36: в прорыве нельзя проиграть
@@ -462,14 +472,25 @@ function onPlayerDeath() {
   renderEffectsPanel();
   recalcStats();
 
+  // v0.36.3: здоровье восстанавливаем сразу, а не через 2 секунды в таймере.
+  // Иначе игрок успевал нажать «Закрыть», взять нового монстра — и бой начинался с 0 HP.
+  p.hp = Math.floor(p.maxHp * 0.5);
+
   showToast('💀', `${p.name} погиб. Потеряно ${lostXp} опыта`);
 
   saveCurrentSlot();
 
-  setTimeout(() => {
+  if (deathReturnTimer !== null) clearTimeout(deathReturnTimer);
+  deathReturnTimer = setTimeout(() => {
+    deathReturnTimer = null;
+
+    // Пока шёл таймер, мог начаться новый бой — тогда в город не переносим
+    // и чужое окно боя не закрываем (раньше бой оставался «активным», но невидимым).
+    if (state.battle.active) return;
+
     state.player.currentLocation = 'town';
-    state.player.hp = Math.floor(state.player.maxHp * 0.5);
-    document.getElementById('battle-window').classList.remove('active');
+    const battleWin = document.getElementById('battle-window');
+    if (battleWin) battleWin.classList.remove('active');
     document.querySelectorAll('.monster-card').forEach(c => c.classList.remove('selected'));
     updateMapUI();
     updateTopStatus();

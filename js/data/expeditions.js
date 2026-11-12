@@ -18,6 +18,7 @@ const EXPEDITION_HOURS = [2, 4, 8];
 const EXPEDITION_RATE = 0.5;          // доля от реального темпа героя
 const EXPEDITION_FULL_BONUS = 0.15;   // +15% ко всей добыче, если дождаться конца
 const EXPEDITION_MIN_KILLS = 50;      // столько раз убить монстра (с этим подтипом), чтобы ходить на него
+const EXPEDITION_MIN_LEVEL = 5;       // v0.36.3: кнопка на карте — с этого уровня (новичку раньше только мешала)
 const EXPEDITION_MIN_PACE_SEC = 300;  // столько секунд охоты на него нужно для замера темпа
 const EXPEDITION_MIN_PACE_KILLS = 10; // и столько убийств за это время
 const HUNT_PACE_WINDOW_SEC = 7200;    // темп — по последним ~2 часам охоты на монстра (старое «выцветает»)

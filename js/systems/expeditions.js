@@ -165,7 +165,7 @@ function expMakeItem(drop, qty) {
   let stats = null;
   if (drop.stats) {
     stats = {};
-    for (const k of ['pAtk','pDef','mDef','mAtk','flatDamageReduce','blockChance','mpBonus','hpBonus','atbSpeedMod','critChance','mpRegenIn']) {
+    for (const k of ['pAtk','pDef','mDef','mAtk','flatDamageReduce','blockChance','mpBonus','hpBonus','atbSpeedMod','critChance','mpRegenIn','evasionMod']) {
       if (drop.stats[k] !== undefined) stats[k] = drop.stats[k];
     }
   }
@@ -620,10 +620,13 @@ function expRenderMapButtons() {
     if (!state.player.classId) { box.innerHTML = ''; return; }
     const exp = state.player.expedition;
     const poolN = expPoolCount(state.player.expeditionLoot);
+    // v0.36.3: до 5 ур. кнопки нет (если герой не в походе и его не ждёт добыча) — новичку она только мешала
+    const busy = (exp && exp.loc === loc) || poolN > 0;
+    if (!busy && (state.player.level || 1) < EXPEDITION_MIN_LEVEL) { box.innerHTML = ''; return; }
     let label = '⛺ Экспедиция';
     if (exp && exp.loc === loc) label = `⛺ В пути · ${expFormatLeft(expLeftMsLocal(exp))}`;
-    else if (poolN > 0) label = `⛺ Добыча экспедиции · ${expNum(poolN)}`;
-    box.innerHTML = `<button type="button" class="map-travel-btn map-exp-btn" onclick="event.stopPropagation(); openExpeditionDialog('${loc}')">${label}</button>`;
+    else if (poolN > 0) label = `⛺ Добыча · ${expNum(poolN)}`;
+    box.innerHTML = `<button type="button" class="map-exp-btn${busy ? ' busy' : ''}" onclick="event.stopPropagation(); openExpeditionDialog('${loc}')" title="Экспедиция: герой охотится сам 2–8 часов, даже когда вас нет в игре">${label}</button>`;
   });
 }
 

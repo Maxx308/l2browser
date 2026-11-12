@@ -138,9 +138,60 @@ function renderAlchemistSmelt() {
     </div>`;
   }).join('');
 
+  // v0.37: Огранённые камни тира 4 — та же переплавка 4 → 1. Показываем, когда такие камни есть.
+  const gemTier = ALCHEMY_GEM_TIER;
+  const hasCut = typeof getTierGemName === 'function' &&
+    ALCHEMY_DUST_ORDER.some(c => { const n = getTierGemName(gemTier, c); return n && getGemCount(n) > 0; });
+  let gemRows = '';
+  if (hasCut) {
+    gemRows = `<div class="alchemist-smelt-note">Огранённые камни (тир 4) переплавляются так же: из ${rate} камней — 1 камень следующего цвета, до топаза.</div>` +
+      ALCHEMY_SMELT_STEPS.map(([from, to]) => {
+        const fromName = getTierGemName(gemTier, from), toName = getTierGemName(gemTier, to);
+        const max = getGemSmeltMax(fromName);
+        const ico = n => `<span class="alchemist-smelt-ico">${normalizeIconHtml(SOUL_GEM_ITEMS[n].icon)}</span>`;
+        const btn = (n, label) => {
+          const ok = n > 0 && n <= max;
+          return `<button class="alchemist-bulk-btn rarity-${to}"${ok ? ` onclick="smeltGems('${from}','${to}',${n})"` : ' disabled'}>${label}</button>`;
+        };
+        return `<div class="alchemist-smelt-row">
+          <div class="alchemist-smelt-rate">
+            <span class="alchemist-smelt-dust" style="color:${ALCHEMY_DUST[from].color}">${ico(fromName)} ${rate}</span>
+            <span class="alchemist-smelt-arrow">→</span>
+            <span class="alchemist-smelt-dust" style="color:${ALCHEMY_DUST[to].color}">${ico(toName)} 1</span>
+          </div>
+          <div class="alchemist-smelt-have">У вас: <b style="color:${ALCHEMY_DUST[from].color}">${fmt(getGemCount(fromName))}</b> ${fromName.toLowerCase()} · <b style="color:${ALCHEMY_DUST[to].color}">${fmt(getGemCount(toName))}</b> ${toName.toLowerCase()}</div>
+          <div class="alchemist-bulk-buttons">${btn(1, '+1')}${btn(10, '+10')}${btn(max, max > 0 ? `Всё: +${fmt(max)}` : 'Всё')}</div>
+        </div>`;
+      }).join('');
+  }
+
   pane.innerHTML = `
     <div class="alchemist-smelt-note">Алхимик переплавляет пыль: из ${rate} пыли выходит 1 пыль следующего цвета. Выше жёлтой не переплавляет — «красная пыль сама приходит, когда ей вздумается».</div>
-    ${rows}`;
+    ${rows}${gemRows}`;
+}
+
+// v0.37: сколько камней следующего цвета можно получить из камней fromName.
+function getGemSmeltMax(fromName) {
+  return fromName ? Math.floor(getGemCount(fromName) / ALCHEMY_SMELT_RATE) : 0;
+}
+
+// v0.37: переплавить n × 4 Огранённых камня цвета from в n камней цвета to.
+function smeltGems(from, to, n) {
+  n = Math.floor(n || 0);
+  const fromName = getTierGemName(ALCHEMY_GEM_TIER, from), toName = getTierGemName(ALCHEMY_GEM_TIER, to);
+  if (!fromName || !toName || n <= 0 || n > getGemSmeltMax(fromName)) { showToast('⚠', 'Не хватает камней'); return; }
+  // камни одного вида лежат одной стопкой — новая ячейка нужна, только если камня to ещё нет
+  const needCell = getGemCount(toName) === 0 && getGemCount(fromName) > n * ALCHEMY_SMELT_RATE;
+  if (needCell && state.player.inventory.length >= invMaxSlots()) { showToast('📦', 'Нет свободной ячейки'); return; }
+  if (!spendGems(fromName, n * ALCHEMY_SMELT_RATE)) { showToast('⚠', 'Не хватает камней'); return; }
+  const got = addSoulGems(toName, n);
+  alchemistDeed('alchemy.smelt');
+  if (typeof logLoot === 'function') logLoot(`⚗ Переплавлено: ${fromName} ×${n * ALCHEMY_SMELT_RATE} → ${toName} ×${got}`, 'log-craft rarity-' + to);
+  showToast('⚗', `${toName} ×${got}`);
+  renderInventory();
+  updateInventoryFooter();
+  renderAlchemistSmelt();
+  saveCurrentSlot();
 }
 
 // Переплавить: получить n пыли цвета to за n × 4 пыли цвета from.
@@ -161,6 +212,35 @@ function smeltDust(from, to, n) {
 }
 
 // --------------------------------------------------------
+//  v0.37: ЧЕМ ПЛАТИТЬ ЗА ВЕЩЬ — пылью (тиры 1–3) или Огранёнными камнями (тир 4+).
+//  Возвращает { gem, color, name, cssColor, icon, have(), spend(n), fmt(n) }.
+// --------------------------------------------------------
+function getAlchemyPay(item) {
+  const color = item.rarity;
+  const dust = ALCHEMY_DUST[color];
+  const cssColor = dust ? dust.color : '#c8c0b0';
+  if (isGemTier(item.tier)) {
+    const name = getTierGemName(item.tier || ALCHEMY_GEM_TIER, color);
+    const def = name ? SOUL_GEM_ITEMS[name] : null;
+    return {
+      gem: true, color, name: name || '?', cssColor,
+      icon: def ? normalizeIconHtml(def.icon) : '',
+      have: () => name ? getGemCount(name) : 0,
+      spend: n => !!name && spendGems(name, n),
+      fmt: n => `${(name || '?').toLowerCase()} ×${n}`,
+    };
+  }
+  const label = dust ? dust.name.toLowerCase() : color + ' пыль';
+  return {
+    gem: false, color, name: dust ? dust.name : label, cssColor,
+    icon: dust ? (SVG[dust.icon] || '') : '',
+    have: () => getDustCount(color),
+    spend: n => spendDust(color, n),
+    fmt: n => `${Number(n).toLocaleString('ru-RU')} ${label}`,
+  };
+}
+
+// --------------------------------------------------------
 //  СПИСОК ПРЕДМЕТОВ (общий для распыления и переролла)
 // --------------------------------------------------------
 function getAlchemistItems() {
@@ -173,9 +253,17 @@ function getAlchemistItems() {
 }
 
 // v0.33: распылять можно ещё и камни душ (перероллить и возвышать — нет). Камни — первыми.
+// v0.37: Огранённые камни (тир 4) не распыляются — они сами плата.
 function getDisenchantItems() {
-  const gems = state.player.inventory.filter(item => typeof getSoulGemDef === 'function' && getSoulGemDef(item));
+  const gems = state.player.inventory.filter(item => typeof getSoulGemDef === 'function' && getSoulGemDef(item) && getDisenchantYield(item));
   return [...gems, ...getAlchemistItems()];
+}
+
+// Текст выхода распыления: «10–30 зелёной пыли» или «огранённый изумруд ×1».
+function disenchantYieldText(y, qty) {
+  if (y.gem) return `${y.gem.toLowerCase()} ×${qty}`;
+  const dust = ALCHEMY_DUST[y.color];
+  return `${y.min * qty}–${y.max * qty} ${dust ? dust.name.toLowerCase() : y.color + ' пыль'}`;
 }
 
 // ========================================================
@@ -221,9 +309,9 @@ function buildAlchemistDisenchantCard(item) {
   const maxTotal = yieldData.max * qtyMult;
 
   const dust = ALCHEMY_DUST[yieldData.color];
-  const dustName = dust ? dust.name : (yieldData.color + ' пыль');
   const dustColor = dust ? dust.color : '#c8c0b0';
-  const dustIcon = dust ? (SVG[dust.icon] || '') : '';
+  const gemDef = yieldData.gem ? SOUL_GEM_ITEMS[yieldData.gem] : null;   // v0.37: вещь тира 4 → камень
+  const dustIcon = gemDef ? normalizeIconHtml(gemDef.icon) : (dust ? (SVG[dust.icon] || '') : '');
 
   const refineSuffix = (item.refineLevel > 0) ? ` +${item.refineLevel}` : '';
   const qtySuffix = qty > 1 ? ` ×${qty}` : '';
@@ -238,7 +326,7 @@ function buildAlchemistDisenchantCard(item) {
       <div class="alchemist-card-yield">
         <span class="alchemist-card-yield-icon">${dustIcon}</span>
         <span class="alchemist-card-yield-text" style="color: ${dustColor};">
-          Даст: ${minTotal}–${maxTotal} ${dustName.toLowerCase()}
+          Даст: ${disenchantYieldText(yieldData, qtyMult)}
         </span>
       </div>
     </div>
@@ -276,18 +364,30 @@ function disenchantItem(item) {
   const dust = ALCHEMY_DUST[yieldData.color];
   const dustName = dust ? dust.name : (yieldData.color + ' пыль');
 
-  const minTotal = yieldData.min * qty;
-  const maxTotal = yieldData.max * qty;
-
   const refineSuffix = (item.refineLevel > 0) ? ` +${item.refineLevel}` : '';
   const qtySuffix = qty > 1 ? ` ×${qty}` : '';
 
   const ok = confirm(
     `Распылить «${item.name}${refineSuffix}${qtySuffix}»?\n\n` +
-    `Получите: ${minTotal}–${maxTotal} ${dustName.toLowerCase()}.\n` +
+    `Получите: ${disenchantYieldText(yieldData, qty)}.\n` +
     `Предмет будет уничтожен.`
   );
   if (!ok) return;
+
+  // v0.37: вещь тира 4 → Огранённый камень своего цвета
+  if (yieldData.gem) {
+    p.inventory.splice(idx, 1);
+    const got = addSoulGems(yieldData.gem, qty);
+    if (typeof bumpChronicleCounter === 'function') bumpChronicleCounter('disenchanted', qty);
+    alchemistDeed('alchemy.disenchant');
+    if (typeof logLoot === 'function') logLoot(`🗑 Распылено: ${item.name}${refineSuffix}${qtySuffix} → 💎 ${yieldData.gem}${got > 1 ? ' ×' + got : ''}`, 'log-craft rarity-' + yieldData.color);
+    showToast('💎', `${yieldData.gem}${got > 1 ? ' ×' + got : ''}`);
+    renderInventory();
+    updateInventoryFooter();
+    renderAlchemistDisenchant();
+    saveCurrentSlot();
+    return;
+  }
 
   let totalDust = 0;
   for (let i = 0; i < qty; i++) {
@@ -345,16 +445,13 @@ function buildAlchemistRerollCard(item) {
   const rarity = item.rarity || 'white';
   card.className = 'alchemist-card alchemist-card-reroll rarity-' + rarity;
 
-  // Цена переролла.
+  // Цена переролла: пыль цвета вещи (тиры 1–3) или Огранённые камни (тир 4+, v0.37).
   const price = getRerollPrice(item);
-  const dustId = rarity;                         // цвет пыли = редкость предмета
-  const dust = ALCHEMY_DUST[dustId];
-  const dustName = dust ? dust.name : (dustId + ' пыль');
-  const dustColor = dust ? dust.color : '#c8c0b0';
-  const dustIcon = dust ? (SVG[dust.icon] || '') : '';
+  const pay = getAlchemyPay(item);
+  const dustColor = pay.cssColor;
+  const dustIcon = pay.icon;
 
-  // Сколько пыли у игрока.
-  const have = getDustCount(dustId);
+  const have = pay.have();
   const enough = have >= price;
 
   // Текущие бонусы.
@@ -377,11 +474,11 @@ function buildAlchemistRerollCard(item) {
       <div class="alchemist-card-yield">
         <span class="alchemist-card-yield-icon">${dustIcon}</span>
         <span class="alchemist-card-yield-text" style="color: ${dustColor};">
-          🎲 Переролл: ${price} ${dustName.toLowerCase()}
+          🎲 Переролл: ${pay.fmt(price)}
         </span>
       </div>
       <div class="alchemist-card-stock ${enough ? '' : 'low'}">
-        У вас: ${have} / ${price}
+        У вас: ${have.toLocaleString('ru-RU')} / ${price.toLocaleString('ru-RU')}
       </div>
     </div>
   `;
@@ -400,7 +497,7 @@ function buildAlchemistRerollCard(item) {
     };
   } else {
     card.onclick = () => {
-      showToast('⚠', `Мало ${dustName.toLowerCase()}: ${have} / ${price}`);
+      showToast('⚠', `Мало: ${pay.name.toLowerCase()} ${have} / ${price}`);
     };
   }
 
@@ -467,12 +564,11 @@ function rerollItem(item) {
   }
 
   const price = getRerollPrice(item);
-  const dust = ALCHEMY_DUST[rarity];
-  const dustName = dust ? dust.name : (rarity + ' пыль');
+  const pay = getAlchemyPay(item);   // v0.37: пыль или Огранённые камни
 
-  const have = getDustCount(rarity);
+  const have = pay.have();
   if (have < price) {
-    showToast('⚠', `Мало ${dustName.toLowerCase()}: ${have} / ${price}`);
+    showToast('⚠', `Мало: ${pay.name.toLowerCase()} ${have} / ${price}`);
     return;
   }
 
@@ -480,15 +576,13 @@ function rerollItem(item) {
 
   const ok = confirm(
     `Перероллить статы «${item.name}${refineSuffix}»?\n\n` +
-    `Стоимость: ${price} ${dustName.toLowerCase()}.\n` +
+    `Стоимость: ${pay.fmt(price)}.\n` +
     `Текущие бонусы сбросятся и будут раскиданы заново.`
   );
   if (!ok) return;
 
-  // Списываем пыль.
-  const spent = spendDust(rarity, price);
-  if (!spent) {
-    showToast('⚠', 'Не удалось списать пыль');
+  if (!pay.spend(price)) {
+    showToast('⚠', pay.gem ? 'Не удалось списать камни' : 'Не удалось списать пыль');
     return;
   }
 
@@ -504,7 +598,7 @@ function rerollItem(item) {
   // Логи.
   const bonusText = formatBonusStatsShort(newBonus);
   if (typeof logLoot === 'function') {
-    logLoot(`🎲 Переролл: ${item.name}${refineSuffix} → ${bonusText} (−${price} ${dustName.toLowerCase()})`, 'log-craft');
+    logLoot(`🎲 Переролл: ${item.name}${refineSuffix} → ${bonusText} (−${pay.fmt(price)})`, 'log-craft');
   }
   showToast('🎲', `${item.name}${refineSuffix} → новые статы: ${bonusText}`);
 
@@ -558,11 +652,10 @@ function buildAlchemistAscendCard(item, equipped) {
   card.className = 'alchemist-card alchemist-card-ascend rarity-' + rarity;
 
   const price = getAscendPrice(item);
-  const dust = ALCHEMY_DUST[rarity];
-  const dustName = dust ? dust.name : (rarity + ' пыль');
-  const dustColor = dust ? dust.color : '#c8c0b0';
-  const dustIcon = dust ? (SVG[dust.icon] || '') : '';
-  const have = getDustCount(rarity);
+  const pay = getAlchemyPay(item);   // v0.37: пыль или Огранённые камни
+  const dustColor = pay.cssColor;
+  const dustIcon = pay.icon;
+  const have = pay.have();
   const enough = have >= price;
   if (!enough) card.classList.add('alchemist-card-disabled');
 
@@ -581,7 +674,7 @@ function buildAlchemistAscendCard(item, equipped) {
       <div class="alchemist-card-yield">
         <span class="alchemist-card-yield-icon">${dustIcon}</span>
         <span class="alchemist-card-yield-text" style="color: ${dustColor};">
-          ⬆ Возвышение: ${price.toLocaleString('ru-RU')} ${dustName.toLowerCase()}
+          ⬆ Возвышение: ${pay.fmt(price)}
         </span>
       </div>
       <div class="alchemist-card-stock ${enough ? '' : 'low'}">
@@ -595,7 +688,7 @@ function buildAlchemistAscendCard(item, equipped) {
   card.onclick = () => {
     if (typeof hideTooltip === 'function') hideTooltip();
     if (enough) ascendItem(item);
-    else showToast('⚠', `Мало ${dustName.toLowerCase()}: ${have} / ${price}`);
+    else showToast('⚠', `Мало: ${pay.name.toLowerCase()} ${have} / ${price}`);
   };
   return card;
 }
@@ -606,11 +699,10 @@ function ascendItem(item) {
 
   const rarity = item.rarity;
   const price = getAscendPrice(item);
-  const dust = ALCHEMY_DUST[rarity];
-  const dustName = dust ? dust.name.toLowerCase() : rarity + ' пыль';
-  const have = getDustCount(rarity);
+  const pay = getAlchemyPay(item);   // v0.37: пыль или Огранённые камни
+  const have = pay.have();
   if (have < price) {
-    showToast('⚠', `Мало ${dustName}: ${have} / ${price}`);
+    showToast('⚠', `Мало: ${pay.name.toLowerCase()} ${have} / ${price}`);
     return;
   }
 
@@ -619,13 +711,13 @@ function ascendItem(item) {
   const ok = confirm(
     `Возвысить «${item.name}${refineSuffix}»?\n\n` +
     `${RARITIES[rarity].name} → ${RARITIES[target].name}\n` +
-    `Стоимость: ${price.toLocaleString('ru-RU')} ${dustName}.\n` +
+    `Стоимость: ${pay.fmt(price)}.\n` +
     `Бонусы сохранятся, добавится +${extra} к случайным статам.`
   );
   if (!ok) return;
 
-  if (!spendDust(rarity, price)) {
-    showToast('⚠', 'Не удалось списать пыль');
+  if (!pay.spend(price)) {
+    showToast('⚠', pay.gem ? 'Не удалось списать камни' : 'Не удалось списать пыль');
     return;
   }
 
@@ -640,7 +732,7 @@ function ascendItem(item) {
   recalcStats();
 
   const name = `${item.name}${refineSuffix}`;
-  logLoot(`⬆ Возвышение: ${name} → ${RARITIES[target].name} (${formatBonusStatsShort(add)}; −${price} ${dustName})`, 'log-craft rarity-' + target);
+  logLoot(`⬆ Возвышение: ${name} → ${RARITIES[target].name} (${formatBonusStatsShort(add)}; −${pay.fmt(price)})`, 'log-craft rarity-' + target);
   showToast('⬆', `${name}: ${RARITIES[target].name}!`);
 
   renderInventory();
@@ -683,6 +775,7 @@ function addDustToInventory(colorId, amount) {
       sellPrice: 0,
       rarity: dust.rarity,
       isDust: true,
+      dustV: DUST_SCALE_VERSION,   // v0.36.3: уже в новом масштабе (÷10) — повторно не делить
     });
     left -= qty;
   }
@@ -800,10 +893,12 @@ function disenchantBulk(rarity) {
 
   // ---- Сводка по цветам пыли ----
   const byColor = {};
+  const byGem = {};   // v0.37: вещи тира 4 → Огранённые камни
   items.forEach(item => {
     const y = getDisenchantYield(item);
     if (!y) return;
     const qty = item.qty || 1;
+    if (y.gem) { byGem[y.gem] = (byGem[y.gem] || 0) + qty; return; }
     const g = byColor[y.color] || (byColor[y.color] = { count: 0, min: 0, max: 0 });
     g.count += qty;
     g.min += y.min * qty;
@@ -824,6 +919,7 @@ function disenchantBulk(rarity) {
       capWarnings.push(`${dustName}: влезет ещё ${room} (нет свободных ячеек)`);
     }
   });
+  Object.keys(byGem).forEach(name => lines.push(`• Тир 4: ${byGem[name]} шт. → 💎 ${name} ×${byGem[name]}`));
 
   const totalQty = countItemsQty(items);
   let text = `Распылить ${totalQty} шт.?\n\n${lines.join('\n')}\n\nПредметы будут уничтожены.`;
@@ -837,10 +933,17 @@ function disenchantBulk(rarity) {
 
   // ---- Распыление ----
   const gained = {};
+  const gainedGems = {};
   items.forEach(item => {
     const idx = p.inventory.indexOf(item);
     if (idx < 0) return;
     const qty = item.qty || 1;
+    const first = getDisenchantYield(item);
+    if (first && first.gem) {   // v0.37: тир 4 — камень, а не пыль
+      p.inventory.splice(idx, 1);
+      gainedGems[first.gem] = (gainedGems[first.gem] || 0) + qty;
+      return;
+    }
     let sum = 0, color = null;
     for (let i = 0; i < qty; i++) {
       const one = getDisenchantYield(item);
@@ -867,6 +970,11 @@ function disenchantBulk(rarity) {
     if (typeof logLoot === 'function') {
       logLoot(`🗑 Распылено пачкой: ${byColor[color] ? byColor[color].count : ''} шт. → +${real} ${dustName}${lostStr}`, 'log-craft rarity-' + color);
     }
+  });
+  Object.keys(gainedGems).forEach(name => {
+    const got = addSoulGems(name, gainedGems[name]);
+    parts.push(`💎 ${name} ×${got}`);
+    if (typeof logLoot === 'function') logLoot(`🗑 Распылено пачкой: ${gainedGems[name]} шт. → 💎 ${name} ×${got}`, 'log-craft rarity-' + SOUL_GEM_ITEMS[name].color);
   });
 
   showToast('🗑', parts.length ? parts.join(', ') : 'Распылено');

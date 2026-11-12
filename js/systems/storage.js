@@ -37,6 +37,9 @@ const STORAGE_SYNCED_KEY = 'l2browser_storage_user';       // с каким ак
 // Какие типы стакаются.
 const STORAGE_STACKABLE_TYPES = ['material', 'consumable', 'food'];
 
+// v0.36.3: на складе нашлась пыль старого масштаба и была поделена на 10 (для сообщения игроку).
+let storageDustRescaled = false;
+
 // --------------------------------------------------------
 //  ЧТЕНИЕ / ЗАПИСЬ
 // --------------------------------------------------------
@@ -46,6 +49,12 @@ function loadStorage() {
     if (!raw) return [];
     const arr = imgPathsToWebp(JSON.parse(raw));   // v0.36.2: старые пути картинок → .webp
     if (!Array.isArray(arr)) return [];
+    // v0.36.3: пыль ÷10 — стопки без метки делятся при чтении (повторно не делятся).
+    // Поделённое сразу сохраняем с прежней меткой времени, чтобы не спорить с облаком.
+    if (typeof migrateDustScale === 'function' && migrateDustScale(arr) > 0) {
+      storageDustRescaled = true;
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(arr)); } catch (e) {}
+    }
     // v0.33: старые рубины и сапфиры (обычный дроп) изъяты — со склада тоже
     return typeof isRetiredGem === 'function' ? arr.filter(i => !isRetiredGem(i)) : arr;
   } catch (e) {
@@ -145,6 +154,8 @@ function pullStorageFromCloud() {
     if (!res || !res.ok) return false;
 
     const cloud = res.data && Array.isArray(res.data.items) ? res.data : null;
+    // v0.36.3: облачный склад тоже в новом масштабе пыли — до слияния с локальным
+    if (cloud && typeof migrateDustScale === 'function') migrateDustScale(cloud.items);
     const local = loadStorage();
     const localAt = getStorageLocalUpdatedAt();
     let synced = null;

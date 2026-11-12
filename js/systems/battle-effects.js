@@ -17,8 +17,10 @@
 // --------------------------------------------------------
 //  ПОДЖОГ (ОГНЕННЫЙ ШАР)
 // --------------------------------------------------------
-function applyBurnTick() {
-  const m = getCurrentMonster();
+// v0.36.3: тики идут по любой твари m (раньше — только по текущей цели,
+// и дебафф на остальных замирал). Без аргумента — по текущей, как раньше.
+function applyBurnTick(target) {
+  const m = target || getCurrentMonster();
   if (!m || m.hp <= 0) return;
   const b = getDebuff('monster', 'burn', m.index);
   if (!b) return;
@@ -27,7 +29,7 @@ function applyBurnTick() {
   m.hp -= dmg;
   b.turnsLeft = (b.turnsLeft || 0) - 1;
 
-  spawnFloatDamage('fighter-monster', dmg, 'fire');
+  spawnFloatDamage('fighter-monster', dmg, 'fire', { mon: m });
   logCombat(`🔥 Поджог: ${dmg} урона (осталось ${b.turnsLeft} ход.)`, 'log-entry fire');
 
   if (b.turnsLeft <= 0) {
@@ -48,8 +50,8 @@ function applyBurnTick() {
 // --------------------------------------------------------
 //  КРОВОТЕЧЕНИЕ (МЕЧИ) — на монстра
 // --------------------------------------------------------
-function applyBleedTick() {
-  const m = getCurrentMonster();
+function applyBleedTick(target) {
+  const m = target || getCurrentMonster();
   if (!m || m.hp <= 0) return;
   const b = getDebuff('monster', 'bleed', m.index);
   if (!b) return;
@@ -58,8 +60,8 @@ function applyBleedTick() {
   m.hp -= dmg;
   b.turnsLeft = (b.turnsLeft || 0) - 1;
 
-  spawnFloatDamage('fighter-monster', dmg, 'dmg');
-  logCombat(`🩸 Кровотечение: ${dmg} урона (осталось ${b.turnsLeft} ход.)`, 'log-entry loss');
+  spawnFloatDamage('fighter-monster', dmg, 'dmg', { mon: m });
+  logCombat(`🩸 Кровотечение ${m.name}: ${dmg} урона (осталось ${b.turnsLeft} ход.)`, 'log-entry loss');
 
   if (b.turnsLeft <= 0) {
     removeDebuff('monster', 'bleed', m.index);
@@ -79,8 +81,8 @@ function applyBleedTick() {
 // --------------------------------------------------------
 //  ЗАРУБКА (ТОПОРЫ)
 // --------------------------------------------------------
-function applyWoundTick() {
-  const m = getCurrentMonster();
+function applyWoundTick(target) {
+  const m = target || getCurrentMonster();
   if (!m) return;
   const w = getDebuff('monster', 'wound', m.index);
   if (!w) return;
@@ -89,10 +91,20 @@ function applyWoundTick() {
 
   if (w.turnsLeft <= 0) {
     removeDebuff('monster', 'wound', m.index);
-    logCombat(`🪓 Зарубка затянулась.`, 'log-entry');
+    logCombat(`🪓 Зарубка на ${m.name} затянулась.`, 'log-entry');
   } else {
     renderDebuffBar('monster');
   }
+}
+
+// v0.36.3: «Точный выстрел» лука тает раз в ход стаи (раньше не снимался до смерти твари).
+function applyConfusedTick(m) {
+  if (!m) return;
+  const c = getDebuff('monster', 'confused', m.index);
+  if (!c) return;
+  c.turnsLeft = (c.turnsLeft || 0) - 1;
+  if (c.turnsLeft <= 0) removeDebuff('monster', 'confused', m.index);
+  else renderDebuffBar('monster');
 }
 
 // --------------------------------------------------------
@@ -143,8 +155,10 @@ function applyPoisonTick() {
   if (p.hp <= 0) { p.hp = 0; onPlayerDeath(); }
 }
 
-function tryApplyPoison() {
-  const m = getCurrentMonster();
+// v0.36.3: attacker — тот, кто нанёс удар. Раньше бралась «текущая цель» на экране:
+// неядовитый монстр мог отравить, если в фокусе стоял ядовитый, и наоборот.
+function tryApplyPoison(attacker) {
+  const m = attacker || getCurrentMonster();
   if (!m || !m.poison) return;
   if (Math.random() * 100 >= POISON_CHANCE) return;
 

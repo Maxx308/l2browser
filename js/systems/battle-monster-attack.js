@@ -226,7 +226,7 @@ function monsterStrike(attacker, skill) {
   if (msAbsorbed > 0) logCombat(`🔷 Мана-щит: ${msAbsorbed} урона ушло в MP.`, 'log-entry magic');
 
   if (m.poison && p.hp > 0) {
-    tryApplyPoison();
+    tryApplyPoison(m);
   }
 
   // ========================================================
@@ -279,7 +279,8 @@ function monsterStrike(attacker, skill) {
   }
 
   // ---- Смерть игрока ----
-  if (p.hp <= 0) { p.hp = 0; onPlayerDeath(); }
+  const heroDied = p.hp <= 0;
+  if (heroDied) { p.hp = 0; onPlayerDeath(); }
   updateTopStatus();
-  checkHealPotion();
+  if (!heroDied) checkHealPotion();   // v0.36.3: в ход гибели зелье не тратим впустую
 }

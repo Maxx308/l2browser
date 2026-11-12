@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
+<meta charset="UTF-8">
 <script>
 // ========================================================
 //  АВТО-ПРОВЕРКА ВЕРСИИ
@@ -33,7 +34,6 @@
   } catch (e) {}
 })();
 </script>
-<meta charset="UTF-8">
 <!-- v0.18.1: без этой строки телефон рисует страницу шириной 980px, и мобильная вёрстка не включается -->
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <!-- ?v=... у css/js — чтобы после обновления телефон не брал старые файлы из кэша. Меняется с каждой версией. -->
@@ -87,34 +87,34 @@ applyTextFont(getSavedTextFont());
 <!-- v0.36.2: библиотека облака (Supabase, 213 КБ) переехала вниз, к остальным скриптам:
      в шапке она задерживала показ страницы, пока не скачается целиком. -->
 
-<link rel="stylesheet" href="css/base.css?v=0.36.2">
-<link rel="stylesheet" href="css/effects.css?v=0.36.2">
-<link rel="stylesheet" href="css/monsters.css?v=0.36.2">
-<link rel="stylesheet" href="css/city-map.css?v=0.36.2">
-<link rel="stylesheet" href="css/battle.css?v=0.36.2">
-<link rel="stylesheet" href="css/debuffs.css?v=0.36.2">
-<link rel="stylesheet" href="css/battle-autostop.css?v=0.36.2">
-<link rel="stylesheet" href="css/battle-arena.css?v=0.36.2">
-<link rel="stylesheet" href="css/battle-session.css?v=0.36.2">
-<link rel="stylesheet" href="css/battle-rest.css?v=0.36.2">
-<link rel="stylesheet" href="css/inventory.css?v=0.36.2">
-<link rel="stylesheet" href="css/inventory-equip.css?v=0.36.2">
-<link rel="stylesheet" href="css/inventory-slots.css?v=0.36.2">
-<link rel="stylesheet" href="css/windows.css?v=0.36.2">
-<link rel="stylesheet" href="css/screens.css?v=0.36.2">
-<link rel="stylesheet" href="css/patches.css?v=0.36.2">
-<link rel="stylesheet" href="css/settings.css?v=0.36.2">
-<link rel="stylesheet" href="css/cheat.css?v=0.36.2">
-<link rel="stylesheet" href="css/overlays.css?v=0.36.2">
-<link rel="stylesheet" href="css/dialogue.css?v=0.36.2">
-<link rel="stylesheet" href="css/storage.css?v=0.36.2">
-<link rel="stylesheet" href="css/refine.css?v=0.36.2">
-<link rel="stylesheet" href="css/alchemist.css?v=0.36.2">
-<link rel="stylesheet" href="css/leaderboard.css?v=0.36.2">
-<link rel="stylesheet" href="css/hero-inspect.css?v=0.36.2">
-<link rel="stylesheet" href="css/chronicle.css?v=0.36.2">
-<link rel="stylesheet" href="css/daynight.css?v=0.36.2">
-<link rel="stylesheet" href="css/expeditions.css?v=0.36.2">
+<link rel="stylesheet" href="css/base.css?v=0.36.3">
+<link rel="stylesheet" href="css/effects.css?v=0.36.3">
+<link rel="stylesheet" href="css/monsters.css?v=0.36.3">
+<link rel="stylesheet" href="css/city-map.css?v=0.36.3">
+<link rel="stylesheet" href="css/battle.css?v=0.36.3">
+<link rel="stylesheet" href="css/debuffs.css?v=0.36.3">
+<link rel="stylesheet" href="css/battle-autostop.css?v=0.36.3">
+<link rel="stylesheet" href="css/battle-arena.css?v=0.36.3">
+<link rel="stylesheet" href="css/battle-session.css?v=0.36.3">
+<link rel="stylesheet" href="css/battle-rest.css?v=0.36.3">
+<link rel="stylesheet" href="css/inventory.css?v=0.36.3">
+<link rel="stylesheet" href="css/inventory-equip.css?v=0.36.3">
+<link rel="stylesheet" href="css/inventory-slots.css?v=0.36.3">
+<link rel="stylesheet" href="css/windows.css?v=0.36.3">
+<link rel="stylesheet" href="css/screens.css?v=0.36.3">
+<link rel="stylesheet" href="css/patches.css?v=0.36.3">
+<link rel="stylesheet" href="css/settings.css?v=0.36.3">
+<link rel="stylesheet" href="css/cheat.css?v=0.36.3">
+<link rel="stylesheet" href="css/overlays.css?v=0.36.3">
+<link rel="stylesheet" href="css/dialogue.css?v=0.36.3">
+<link rel="stylesheet" href="css/storage.css?v=0.36.3">
+<link rel="stylesheet" href="css/refine.css?v=0.36.3">
+<link rel="stylesheet" href="css/alchemist.css?v=0.36.3">
+<link rel="stylesheet" href="css/leaderboard.css?v=0.36.3">
+<link rel="stylesheet" href="css/hero-inspect.css?v=0.36.3">
+<link rel="stylesheet" href="css/chronicle.css?v=0.36.3">
+<link rel="stylesheet" href="css/daynight.css?v=0.36.3">
+<link rel="stylesheet" href="css/expeditions.css?v=0.36.3">
 </head>
 <body>
 
@@ -1339,112 +1339,113 @@ applyTextFont(getSavedTextFont());
      v0.36.2: подключается здесь, а не в шапке (должна стоять раньше js/systems/cloud.js). -->
 <script src="js/vendor/supabase-2.118.0.js"></script>
 
-<script src="js/data/config.js?v=0.36.2"></script>
-<script src="js/data/classes.js?v=0.36.2"></script>
-<script src="js/data/races.js?v=0.36.2"></script>
+<script src="js/data/config.js?v=0.36.3"></script>
+<script src="js/data/classes.js?v=0.36.3"></script>
+<script src="js/data/races.js?v=0.36.3"></script>
 
 <!-- ИКОНКИ: разбиты на папку icons/ -->
-<script src="js/data/icons/materials.js?v=0.36.2"></script>
-<script src="js/data/icons/consumables.js?v=0.36.2"></script>
-<script src="js/data/icons/equipment.js?v=0.36.2"></script>
-<script src="js/data/icons/weapons.js?v=0.36.2"></script>
-<script src="js/data/icons/skills.js?v=0.36.2"></script>
-<script src="js/data/icons/index.js?v=0.36.2"></script>
+<script src="js/data/icons/materials.js?v=0.36.3"></script>
+<script src="js/data/icons/consumables.js?v=0.36.3"></script>
+<script src="js/data/icons/equipment.js?v=0.36.3"></script>
+<script src="js/data/icons/weapons.js?v=0.36.3"></script>
+<script src="js/data/icons/skills.js?v=0.36.3"></script>
+<script src="js/data/icons/index.js?v=0.36.3"></script>
 
-<script src="js/data/monsters.js?v=0.36.2"></script>
-<script src="js/data/souls.js?v=0.36.2"></script>
-<script src="js/data/expeditions.js?v=0.36.2"></script>
-<script src="js/data/skills.js?v=0.36.2"></script>
-<script src="js/data/skills-aoe.js?v=0.36.2"></script>
-<script src="js/data/recipes.js?v=0.36.2"></script>
-<script src="js/data/weaponSkills.js?v=0.36.2"></script>
-<script src="js/data/elements.js?v=0.36.2"></script>
-<script src="js/data/weaponTypes.js?v=0.36.2"></script>
-<script src="js/data/changelog.js?v=0.36.2"></script>
-<script src="js/data/npcs.js?v=0.36.2"></script>
-<script src="js/data/alchemy.js?v=0.36.2"></script>
-<script src="js/data/dialogues.js?v=0.36.2"></script>
-<script src="js/data/annals.js?v=0.36.2"></script>
-<script src="js/data/encyclopedia.js?v=0.36.2"></script>
-<script src="js/data/quests.js?v=0.36.2"></script>
-<script src="js/data/bag-quests.js?v=0.36.2"></script>
+<script src="js/data/monsters.js?v=0.36.3"></script>
+<script src="js/data/souls.js?v=0.36.3"></script>
+<script src="js/data/expeditions.js?v=0.36.3"></script>
+<script src="js/data/skills.js?v=0.36.3"></script>
+<script src="js/data/skills-aoe.js?v=0.36.3"></script>
+<script src="js/data/recipes.js?v=0.36.3"></script>
+<script src="js/data/weaponSkills.js?v=0.36.3"></script>
+<script src="js/data/elements.js?v=0.36.3"></script>
+<script src="js/data/weaponTypes.js?v=0.36.3"></script>
+<script src="js/data/changelog.js?v=0.36.3"></script>
+<script src="js/data/npcs.js?v=0.36.3"></script>
+<script src="js/data/alchemy.js?v=0.36.3"></script>
+<script src="js/data/dialogues.js?v=0.36.3"></script>
+<script src="js/data/annals.js?v=0.36.3"></script>
+<script src="js/data/encyclopedia.js?v=0.36.3"></script>
+<script src="js/data/quests.js?v=0.36.3"></script>
+<script src="js/data/bag-quests.js?v=0.36.3"></script>
 
-<script src="js/state.js?v=0.36.2"></script>
+<script src="js/state.js?v=0.36.3"></script>
 
-<script src="js/core/helpers.js?v=0.36.2"></script>
-<script src="js/systems/chat-filter.js?v=0.36.2"></script>
-<script src="js/core/stats.js?v=0.36.2"></script>
-<script src="js/core/top-status.js?v=0.36.2"></script>
-<script src="js/core/tabs.js?v=0.36.2"></script>
-<script src="js/core/effects.js?v=0.36.2"></script>
-<script src="js/core/toast.js?v=0.36.2"></script>
+<script src="js/core/helpers.js?v=0.36.3"></script>
+<script src="js/systems/chat-filter.js?v=0.36.3"></script>
+<script src="js/core/stats.js?v=0.36.3"></script>
+<script src="js/core/top-status.js?v=0.36.3"></script>
+<script src="js/core/tabs.js?v=0.36.3"></script>
+<script src="js/core/effects.js?v=0.36.3"></script>
+<script src="js/core/toast.js?v=0.36.3"></script>
+<script src="js/systems/save-migrate.js?v=0.36.3"></script>
 
-<script src="js/systems/slots.js?v=0.36.2"></script>
-<script src="js/systems/cloud.js?v=0.36.2"></script>
-<script src="js/systems/leaderboard.js?v=0.36.2"></script>
-<script src="js/systems/hero-inspect.js?v=0.36.2"></script>
-<script src="js/systems/start-screen.js?v=0.36.2"></script>
-<script src="js/systems/mobile.js?v=0.36.2"></script>
-<script src="js/systems/patches.js?v=0.36.2"></script>
-<script src="js/systems/cheat.js?v=0.36.2"></script>
-<script src="js/systems/tooltips.js?v=0.36.2"></script>
-<script src="js/systems/stat-info.js?v=0.36.2"></script>
-<script src="js/systems/debuffs.js?v=0.36.2"></script>
-<script src="js/systems/elder.js?v=0.36.2"></script>
-<script src="js/systems/dialogue.js?v=0.36.2"></script>
-<script src="js/systems/townsfolk.js?v=0.36.2"></script>
-<script src="js/systems/quests.js?v=0.36.2"></script>
-<script src="js/systems/mentor.js?v=0.36.2"></script>
-<script src="js/systems/skill-slots.js?v=0.36.2"></script>
-<script src="js/systems/player-avatar.js?v=0.36.2"></script>
-<script src="js/systems/guild.js?v=0.36.2"></script>
-<script src="js/systems/tavern.js?v=0.36.2"></script>
-<script src="js/systems/buff-shop.js?v=0.36.2"></script>
-<script src="js/systems/map.js?v=0.36.2"></script>
-<script src="js/systems/inventory.js?v=0.36.2"></script>
-<script src="js/systems/equipment.js?v=0.36.2"></script>
-<script src="js/systems/trader.js?v=0.36.2"></script>
-<script src="js/systems/forge.js?v=0.36.2"></script>
-<script src="js/systems/storage.js?v=0.36.2"></script>
-<script src="js/systems/refine.js?v=0.36.2"></script>
-<script src="js/systems/alchemist.js?v=0.36.2"></script>
-<script src="js/systems/proficiency.js?v=0.36.2"></script>
-<script src="js/systems/proficiency-ui.js?v=0.36.2"></script>
-<script src="js/systems/chronicle.js?v=0.36.2"></script>
-<script src="js/systems/bag.js?v=0.36.2"></script>
-<script src="js/systems/ilgrad.js?v=0.36.2"></script>
-<script src="js/systems/encyclopedia.js?v=0.36.2"></script>
-<script src="js/systems/monster-kills.js?v=0.36.2"></script>
-<script src="js/systems/monster-cards.js?v=0.36.2"></script>
+<script src="js/systems/slots.js?v=0.36.3"></script>
+<script src="js/systems/cloud.js?v=0.36.3"></script>
+<script src="js/systems/leaderboard.js?v=0.36.3"></script>
+<script src="js/systems/hero-inspect.js?v=0.36.3"></script>
+<script src="js/systems/start-screen.js?v=0.36.3"></script>
+<script src="js/systems/mobile.js?v=0.36.3"></script>
+<script src="js/systems/patches.js?v=0.36.3"></script>
+<script src="js/systems/cheat.js?v=0.36.3"></script>
+<script src="js/systems/tooltips.js?v=0.36.3"></script>
+<script src="js/systems/stat-info.js?v=0.36.3"></script>
+<script src="js/systems/debuffs.js?v=0.36.3"></script>
+<script src="js/systems/elder.js?v=0.36.3"></script>
+<script src="js/systems/dialogue.js?v=0.36.3"></script>
+<script src="js/systems/townsfolk.js?v=0.36.3"></script>
+<script src="js/systems/quests.js?v=0.36.3"></script>
+<script src="js/systems/mentor.js?v=0.36.3"></script>
+<script src="js/systems/skill-slots.js?v=0.36.3"></script>
+<script src="js/systems/player-avatar.js?v=0.36.3"></script>
+<script src="js/systems/guild.js?v=0.36.3"></script>
+<script src="js/systems/tavern.js?v=0.36.3"></script>
+<script src="js/systems/buff-shop.js?v=0.36.3"></script>
+<script src="js/systems/map.js?v=0.36.3"></script>
+<script src="js/systems/inventory.js?v=0.36.3"></script>
+<script src="js/systems/equipment.js?v=0.36.3"></script>
+<script src="js/systems/trader.js?v=0.36.3"></script>
+<script src="js/systems/forge.js?v=0.36.3"></script>
+<script src="js/systems/storage.js?v=0.36.3"></script>
+<script src="js/systems/refine.js?v=0.36.3"></script>
+<script src="js/systems/alchemist.js?v=0.36.3"></script>
+<script src="js/systems/proficiency.js?v=0.36.3"></script>
+<script src="js/systems/proficiency-ui.js?v=0.36.3"></script>
+<script src="js/systems/chronicle.js?v=0.36.3"></script>
+<script src="js/systems/bag.js?v=0.36.3"></script>
+<script src="js/systems/ilgrad.js?v=0.36.3"></script>
+<script src="js/systems/encyclopedia.js?v=0.36.3"></script>
+<script src="js/systems/monster-kills.js?v=0.36.3"></script>
+<script src="js/systems/monster-cards.js?v=0.36.3"></script>
 
 <!-- ===== БОЙ: разбит на несколько файлов (v0.10) ===== -->
-<script src="js/systems/battle-mixtures.js?v=0.36.2"></script>
-<script src="js/systems/battle-effects.js?v=0.36.2"></script>
-<script src="js/systems/battle-skills.js?v=0.36.2"></script>
-<script src="js/systems/battle-player-attack.js?v=0.36.2"></script>
-<script src="js/systems/battle-aoe.js?v=0.36.2"></script>
-<script src="js/systems/battle-weapon-styles.js?v=0.36.2"></script>
-<script src="js/systems/battle-manual.js?v=0.36.2"></script>
-<script src="js/systems/battle-monster-kit.js?v=0.36.2"></script>
-<script src="js/systems/battle-monster-attack.js?v=0.36.2"></script>
-<script src="js/systems/battle-rewards.js?v=0.36.2"></script>
-<script src="js/systems/battle-search.js?v=0.36.2"></script>
-<script src="js/systems/battle-autostop.js?v=0.36.2"></script>
-<script src="js/systems/battle-core.js?v=0.36.2"></script>
-<script src="js/systems/battle-loop.js?v=0.36.2"></script>
-<script src="js/systems/battle.js?v=0.36.2"></script>
+<script src="js/systems/battle-mixtures.js?v=0.36.3"></script>
+<script src="js/systems/battle-effects.js?v=0.36.3"></script>
+<script src="js/systems/battle-skills.js?v=0.36.3"></script>
+<script src="js/systems/battle-player-attack.js?v=0.36.3"></script>
+<script src="js/systems/battle-aoe.js?v=0.36.3"></script>
+<script src="js/systems/battle-weapon-styles.js?v=0.36.3"></script>
+<script src="js/systems/battle-manual.js?v=0.36.3"></script>
+<script src="js/systems/battle-monster-kit.js?v=0.36.3"></script>
+<script src="js/systems/battle-monster-attack.js?v=0.36.3"></script>
+<script src="js/systems/battle-rewards.js?v=0.36.3"></script>
+<script src="js/systems/battle-search.js?v=0.36.3"></script>
+<script src="js/systems/battle-autostop.js?v=0.36.3"></script>
+<script src="js/systems/battle-core.js?v=0.36.3"></script>
+<script src="js/systems/battle-loop.js?v=0.36.3"></script>
+<script src="js/systems/battle.js?v=0.36.3"></script>
 
 <!-- ===== ГРУППОВЫЕ БОИ: модалка (v0.11) ===== -->
-<script src="js/systems/battle-pack.js?v=0.36.2"></script>
-<script src="js/systems/battle-souls.js?v=0.36.2"></script>
-<script src="js/systems/ilgrad-breakthrough.js?v=0.36.2"></script>
-<script src="js/systems/battle-fx.js?v=0.36.2"></script>
-<script src="js/systems/battle-session.js?v=0.36.2"></script>
-<script src="js/systems/battle-rest.js?v=0.36.2"></script>
-<script src="js/systems/expeditions.js?v=0.36.2"></script>
-<script src="js/systems/daynight.js?v=0.36.2"></script>
+<script src="js/systems/battle-pack.js?v=0.36.3"></script>
+<script src="js/systems/battle-souls.js?v=0.36.3"></script>
+<script src="js/systems/ilgrad-breakthrough.js?v=0.36.3"></script>
+<script src="js/systems/battle-fx.js?v=0.36.3"></script>
+<script src="js/systems/battle-session.js?v=0.36.3"></script>
+<script src="js/systems/battle-rest.js?v=0.36.3"></script>
+<script src="js/systems/expeditions.js?v=0.36.3"></script>
+<script src="js/systems/daynight.js?v=0.36.3"></script>
 
-<script src="js/main.js?v=0.36.2"></script>
+<script src="js/main.js?v=0.36.3"></script>
 
 </body>
 </html>

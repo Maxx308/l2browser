@@ -56,7 +56,8 @@ function aoePhysHit(m, mult, elemBonusPct) {
 
   const crit = Math.random() * 100 < getCritChance(cat);
   if (crit) dmg = Math.floor(dmg * getCritMultiplier(cat));
-  return { miss: false, dmg: monsterTagDmg(m, withSkillFlat(Math.max(1, dmg)), heroPhysKinds(cat)), crit };
+  // v0.36.3: зарубка — у каждой цели своя (раньше массовые навыки её не учитывали)
+  return { miss: false, dmg: monsterTagDmg(m, applyWoundMult(m, withSkillFlat(Math.max(1, dmg))), heroPhysKinds(cat)), crit };
 }
 
 // Магический удар по одному мобу. Возвращает { miss, dmg }.
