@@ -105,6 +105,8 @@ function formatSetSkillFlatTiers(set) {
 const CRAFT_PRICE_RESOURCE = 100;   // ресурсы
 const CRAFT_PRICE_GEAR = 1000;      // снаряжение / ювелирка
 const CRAFT_PRICE_GEAR_T3 = 5000;   // v0.21: снаряжение тира 3
+const CRAFT_PRICE_GEAR_T4 = 12000;  // v0.37: снаряжение тира 4
+const CRAFT_PRICE_RESOURCE_T4 = 300;   // v0.37: улучшенные материалы тира 4
 const CRAFT_PRICE_FOOD = 100;
 const CRAFT_PRICE_DISH = 150;      // v0.20: блюда       // еда (v0.11)
 const CRAFT_PRICE_HEARTY = 200;    // v0.35.1: Сытное рагу
@@ -467,6 +469,148 @@ const RECIPES = {
       materials: [{ name: 'Пещерный гриб', qty: 3 }, { name: 'Нить', qty: 1 }] },
   ],
 };
+
+// ========================================================
+//  v0.37: ТИР 4 — ресурсы Окраин Ильграда, 6 сетов по весу брони (любой класс носит любую).
+//  Цифры — черновик. Пока Ильград закрыт, рецепты в Кузнице не видны (requiresIlgrad).
+//  Два вида одного веса — из одних материалов, различает редкий ресурс.
+// ========================================================
+const T4_MATERIALS = {
+  'Мёртвая сталь':          { icon: 'img/materials/dead_steel.webp', sellPrice: 60, from: [{ name: 'Ржавый доспех', qty: 3 }, { name: 'Каменные пластины', qty: 1 }, { name: 'Уголь', qty: 1 }] },
+  'Выделанная мертвокожа':  { icon: 'img/materials/cured_deathhide.webp', sellPrice: 60, from: [{ name: 'Мёртвая шкура', qty: 3 }, { name: 'Хитин', qty: 1 }, { name: 'Клей', qty: 1 }] },
+  'Призрачное полотно':     { icon: 'img/materials/ghost_cloth.webp', sellPrice: 60, from: [{ name: 'Саван', qty: 3 }, { name: 'Паучий шёлк', qty: 1 }, { name: 'Ткань', qty: 1 }] },
+  'Чернёное серебро':       { icon: 'img/materials/black_silver.webp', sellPrice: 60, from: [{ name: 'Потемневший медальон', qty: 3 }, { name: 'Слиток олова', qty: 1 }, { name: 'Уголь', qty: 1 }] },
+  // Редкие ресурсы Копей: у Кровавых шанс ×10, а титул умножает ещё — повод вернуться в Копи.
+  'Едрёная железа':         { icon: 'img/materials/edrenaya_gland.webp', sellPrice: 400, from: [{ name: 'Ядро голема', qty: 5 }, { name: 'Ядовитая железа', qty: 5 }] },
+  'Гранатовая нить':        { icon: 'img/materials/garnet_thread.webp', sellPrice: 200, from: [{ name: 'Сырой гранат', qty: 5 }, { name: 'Паучий шёлк', qty: 5 }] },
+};
+Object.entries(T4_MATERIALS).forEach(([name, m], i) => {
+  RECIPES.resources.push({
+    id: 't4Mat' + i, name, icon: m.icon, price: CRAFT_PRICE_RESOURCE_T4, requiresIlgrad: true,
+    result: { name, icon: m.icon, type: 'material', sellPrice: m.sellPrice },
+    materials: m.from,
+  });
+});
+
+// Сумма за комплект: лёгкий 20/14/110, скорость +6%; средний 32/7/170; тяжёлый 46/0/240, скорость −5%, уворот −8.
+// Порядок в массивах: верх, низ, шлем, ботинки, перчатки.
+const T4_WEIGHTS = {
+  light:  { pDef: [6, 6, 3, 3, 2],    mDef: [4, 4, 2, 2, 2], hpBonus: [33, 33, 15, 15, 14], atbSpeedMod: [0.02, 0.02, 0.01, 0.01, 0] },
+  medium: { pDef: [10, 10, 4, 4, 4],  mDef: [2, 2, 1, 1, 1], hpBonus: [50, 50, 24, 23, 23] },
+  heavy:  { pDef: [14, 14, 6, 6, 6],  hpBonus: [72, 72, 32, 32, 32], atbSpeedMod: [-0.02, -0.01, -0.01, -0.01, 0], evasionMod: [-3, -3, -1, -1, 0] },
+};
+const T4_PIECES = [
+  { key: 'top',    label: 'верх',     type: 'armorTop',    sellPrice: 240, qty: [16, 8, 3] },
+  { key: 'bottom', label: 'низ',      type: 'armorBottom', sellPrice: 240, qty: [13, 6, 2] },
+  { key: 'helm',   label: 'шлем',     type: 'helmet',      sellPrice: 120, qty: [7, 3, 1] },
+  { key: 'boots',  label: 'ботинки',  type: 'boots',       sellPrice: 120, qty: [7, 3, 0] },
+  { key: 'gloves', label: 'перчатки', type: 'gloves',      sellPrice: 120, qty: [7, 3, 0] },
+];
+const T4_SETS = [
+  { id: 'shroud', name: 'Саван', weight: 'light', material: 'Призрачное полотно', rare: 'Слеза плакальщицы', skillFlatTiers: { 2: 15, 3: 22, 4: 30 },
+    bonus: { mAtkPercent: 12, maxMpFlat: 280 }, bonusText: 'Магическая атака +12%, мана +280',
+    bonus10: { manaShield: 50 }, bonus10Text: 'Мана-щит: 50% урона по вам списывается с MP' },
+  { id: 'shadow', name: 'Тень', weight: 'light', material: 'Призрачное полотно', rare: 'Сердце колосса', skillFlatTiers: { 2: 30, 3: 45, 4: 60 },
+    bonus: { critPower: 8, critChance: 6 }, bonusText: 'Сила крита +8%, шанс крита +6%',
+    bonus10: { critPower: 6 }, bonus10Text: 'ещё сила крита +6%' },
+  { id: 'stalker', name: 'Ловчий', weight: 'medium', material: 'Выделанная мертвокожа', rare: 'Сердце колосса', skillFlatTiers: { 2: 30, 3: 45, 4: 60 },
+    bonus: { atbSpeed: 0.08, accuracy: 8 }, bonusText: 'Скорость атаки +8%, точность +8',
+    bonus10: { critChance: 5 }, bonus10Text: 'Шанс крита +5%' },
+  { id: 'herbalist', name: 'Знахарь', weight: 'medium', material: 'Выделанная мертвокожа', rare: 'Слеза плакальщицы', skillFlatTiers: { 2: 15, 3: 22, 4: 30 },
+    bonus: { hpRegenIn: 2, mpRegenIn: 2 }, bonusText: '+2 HP и +2 MP в секунду в бою',
+    bonus10: { buffTurns: 1 }, bonus10Text: 'Длительность усилений +1 ход' },
+  { id: 'bulwark', name: 'Оплот', weight: 'heavy', material: 'Мёртвая сталь', rare: 'Сердце колосса', skillFlatTiers: { 2: 30, 3: 45, 4: 60 },
+    bonus: { flatDamageReduce: 5, blockChance: 8 }, bonusText: 'Поглощение урона +5, шанс блока +8%',
+    bonus10: { flatDamageReduce: 5 }, bonus10Text: 'ещё поглощение +5 (всего +10)' },
+  { id: 'executioner', name: 'Палач', weight: 'heavy', material: 'Мёртвая сталь', rare: 'Слеза плакальщицы', skillFlatTiers: { 2: 30, 3: 45, 4: 60 },
+    bonus: { pAtkPercent: 10, evasion: -4 }, bonusText: 'Физическая атака +10%, уворот −4',
+    bonus10: { executePercent: 20 }, bonus10Text: 'Урон по цели ниже 30% здоровья +20%' },
+];
+T4_SETS.forEach(s => {
+  const pieceName = p => `${s.name} (${p.label})`;
+  SETS[s.id] = {
+    name: s.name, bonus: s.bonus, bonusText: s.bonusText, bonus10: s.bonus10, bonus10Text: s.bonus10Text,
+    skillFlatTiers: s.skillFlatTiers, pieces: T4_PIECES.map(pieceName),
+  };
+  T4_PIECES.forEach((p, i) => {
+    const icon = `img/armor/t4_${s.id}_${p.key}.webp`;
+    const stats = {};
+    Object.entries(T4_WEIGHTS[s.weight]).forEach(([k, arr]) => { if (arr[i]) stats[k] = arr[i]; });
+    const materials = [{ name: s.material, qty: p.qty[0] }, { name: 'Звонкая кость', qty: p.qty[1] }];
+    if (p.qty[2]) materials.push({ name: s.rare, qty: p.qty[2] });
+    RECIPES.armor.push({
+      id: `t4_${s.id}_${p.key}`, name: pieceName(p), icon, setId: s.id, price: CRAFT_PRICE_GEAR_T4, tier: 4, requiresIlgrad: true,
+      result: { name: pieceName(p), icon, type: p.type, sellPrice: p.sellPrice, stats, setId: s.id },
+      materials,
+    });
+  });
+});
+
+// Оружие Т4: атака ≈ Т3 ×2 (здоровье тварей от Копей к Окраинам растёт в 2,26 раза; оружие чуть отстаёт).
+const T4_WEAPON_MATS = {
+  blade:  [{ name: 'Мёртвая сталь', qty: 16 }, { name: 'Костяной клык', qty: 10 }],
+  blunt:  [{ name: 'Мёртвая сталь', qty: 12 }, { name: 'Обломок дубины', qty: 10 }],
+  ranged: [{ name: 'Выделанная мертвокожа', qty: 10 }, { name: 'Крепкая жила', qty: 12 }],
+  magic:  [{ name: 'Призрачное полотно', qty: 12 }, { name: 'Застывший вздох', qty: 10 }],
+};
+const T4_WEAPONS = [
+  { id: 'sword',      name: 'Меч Мертвеца',            category: 'swords',    mats: 'blade',  stats: { pAtk: 68, atbSpeedMod: 0.03, critChance: 2 } },
+  { id: 'greatsword', name: 'Двуручный меч Осады',     category: 'swords',    mats: 'blade',  stats: { pAtk: 92, atbSpeedMod: -0.03, critChance: 2 }, two: true },
+  { id: 'axe',        name: 'Топор Погоста',           category: 'axes',      mats: 'blade',  stats: { pAtk: 68 } },
+  { id: 'waraxe',     name: 'Секира Могильщика',       category: 'axes',      mats: 'blade',  stats: { pAtk: 92, atbSpeedMod: -0.03 }, two: true },
+  { id: 'dagger',     name: 'Кинжал Плача',            category: 'daggers',   mats: 'blade',  stats: { pAtk: 58, atbSpeedMod: 0.10, critChance: 8 } },
+  { id: 'spear',      name: 'Копьё Дозорного',         category: 'spears',    mats: 'blade',  stats: { pAtk: 66, atbSpeedMod: 0.02 } },
+  { id: 'pike',       name: 'Пика Ополчения',          category: 'spears',    mats: 'blade',  stats: { pAtk: 90, atbSpeedMod: -0.02 }, two: true },
+  { id: 'bow',        name: 'Лук Гончей',              category: 'bows',      mats: 'ranged', stats: { pAtk: 88 }, two: true },
+  { id: 'crossbow',   name: 'Арбалет Стен',            category: 'crossbows', mats: 'ranged', stats: { pAtk: 84, atbSpeedMod: -0.05 }, two: true },
+  { id: 'mace',       name: 'Булава Костолома',        category: 'maces',     mats: 'blunt',  stats: { pAtk: 66, atbSpeedMod: -0.02 } },
+  { id: 'maul',       name: 'Палица Колосса',          category: 'maces',     mats: 'blunt',  stats: { pAtk: 90, atbSpeedMod: -0.04 }, two: true },
+  { id: 'staff',      name: 'Посох Последнего Вздоха', category: 'staves',    mats: 'magic',  stats: { mAtk: 58, atbSpeedMod: -0.05 }, two: true },
+  { id: 'wand',       name: 'Жезл Вздоха',             category: 'staves',    mats: 'magic',  stats: { mAtk: 28, mpBonus: 120, mpRegenIn: 2 } },
+];
+T4_WEAPONS.forEach(w => {
+  const result = { name: w.name, icon: `img/weapons/T4/${w.id}.webp`, type: 'weapon', sellPrice: w.two ? 320 : 240, stats: w.stats };
+  if (w.two) result.twoHanded = true;
+  RECIPES.weapons.push({
+    id: 't4_' + w.id, name: w.name, category: w.category, price: CRAFT_PRICE_GEAR_T4, tier: 4, requiresIlgrad: true, result,
+    materials: [...T4_WEAPON_MATS[w.mats], { name: 'Едрёная железа', qty: w.two ? 3 : 2 }],
+  });
+});
+RECIPES.shields.push({
+  id: 't4_shield', name: 'Щит Погоста', price: CRAFT_PRICE_GEAR_T4, tier: 4, requiresIlgrad: true,
+  result: { name: 'Щит Погоста', icon: 'img/weapons/T4/shield.webp', type: 'shield', sellPrice: 120, stats: { pDef: 8, flatDamageReduce: 4, blockChance: 12 } },
+  materials: [...T4_WEAPON_MATS.blunt, { name: 'Едрёная железа', qty: 2 }],
+});
+
+// Бижутерия Т4: два вида, для бойца и для мага.
+const T4_JEWELRY = [
+  { id: 't4jewelWar', name: 'Гранатовый убор', key: 'war', bonus: { pAtkPercent: 6 }, bonusText: 'Физическая атака +6%',
+    pieces: { ring: 'Гранатовое кольцо', earring: 'Гранатовая серьга', necklace: 'Гранатовое ожерелье' },
+    stats: { ring: { mDef: 6, hpBonus: 35 }, earring: { mDef: 6, hpBonus: 35 }, necklace: { mDef: 7, hpBonus: 55 } } },
+  { id: 't4jewelMage', name: 'Убор Вздоха', key: 'mage', bonus: { mAtkPercent: 6 }, bonusText: 'Магическая атака +6%',
+    pieces: { ring: 'Кольцо Вздоха', earring: 'Серьга Вздоха', necklace: 'Ожерелье Вздоха' },
+    stats: { ring: { mDef: 6, hpBonus: 15, mpBonus: 35 }, earring: { mDef: 6, hpBonus: 15, mpBonus: 35 }, necklace: { mDef: 7, hpBonus: 25, mpBonus: 55 } } },
+];
+T4_JEWELRY.forEach(j => {
+  SETS[j.id] = {
+    name: j.name, bonus: j.bonus, bonusText: j.bonusText, pieces: [j.pieces.ring, j.pieces.earring, j.pieces.necklace],
+    isFullSetEquipped: function () {
+      const e = state.player.equipment;
+      return e.ring1?.name === j.pieces.ring && e.ring2?.name === j.pieces.ring &&
+             e.earring1?.name === j.pieces.earring && e.earring2?.name === j.pieces.earring &&
+             e.necklace?.name === j.pieces.necklace;
+    },
+  };
+  ['ring', 'earring', 'necklace'].forEach(type => {
+    const icon = `img/jewelry/T4/${type}_${j.key}.webp`;
+    const big = type === 'necklace';
+    RECIPES.jewelry.push({
+      id: `${j.id}_${type}`, name: j.pieces[type], icon, setId: j.id, price: CRAFT_PRICE_GEAR_T4, tier: 4, requiresIlgrad: true,
+      result: { name: j.pieces[type], icon, type, sellPrice: big ? 180 : 120, stats: j.stats[type], setId: j.id },
+      materials: [{ name: 'Чернёное серебро', qty: big ? 12 : 8 }, { name: 'Застывший вздох', qty: big ? 6 : 4 }, { name: 'Гранатовая нить', qty: big ? 2 : 1 }],
+    });
+  });
+});
 
 // ========================================================
 //  ТОВАРЫ ТОРГОВЦА

@@ -83,7 +83,7 @@ function renderEffectsPanel() {
     Object.keys(p.tavernBuffs).forEach(buffId => {
       const active = p.tavernBuffs[buffId];
       if (!active || active.timer <= 0) return;
-      const buff = TAVERN_BUFFS[buffId];
+      const buff = tavernBuffView(TAVERN_BUFFS[buffId]);   // v0.37: в Ильграде — названия Храма
       if (!buff) return;
 
       let icon = '🍺';

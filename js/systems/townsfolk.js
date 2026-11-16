@@ -120,7 +120,9 @@ function ownerTopics(npcId) {
   const chat = OWNER_CHATS[npcId];
   if (!chat) return [];
   const lvl = state.player.level || 1;
+  const fallen = !!state.player.underwoodFallen;   // после падения Андервуда — только темы с afterFall
   return chat.topics.filter(t =>
+    !!t.afterFall === fallen &&
     (!t.minLevel || lvl >= t.minLevel) &&
     (!t.after || ownerTopicAsked(npcId, t.after)) &&
     (!t.when || t.when()) &&
@@ -132,15 +134,22 @@ function ownerHasNews(npcId) {
   return ownerTopics(npcId).some(t => topicOpen(npcId, t) && !ownerTopicAsked(npcId, t.id));
 }
 
+// Кто сейчас за прилавком этого места: в Ильграде у части лавок новые владельцы.
+function ownerHere(npcId) {
+  const mapped = state.player.underwoodFallen && (typeof ilgradOwnerOf === 'function' ? ilgradOwnerOf(npcId) : ILGRAD_OWNERS[npcId]);   // v0.37: может зависеть от места
+  return mapped && OWNER_CHATS[mapped] ? mapped : npcId;
+}
+
 function talkToOwner(npcId) {
-  if (!DIALOGUES[npcId]) return;
-  openDialogue(npcId);
+  const id = ownerHere(npcId);
+  if (!DIALOGUES[id]) return;
+  openDialogue(id);
 }
 
 // Точка «есть о чём поговорить» на кнопках 💬. Зовётся при открытии окна и после разговора.
 function updateTalkButtons() {
   document.querySelectorAll('.talk-btn[data-npc]').forEach(b => {
-    b.classList.toggle('has-news', ownerHasNews(b.dataset.npc));
+    b.classList.toggle('has-news', ownerHasNews(ownerHere(b.dataset.npc)));
   });
 }
 
@@ -164,7 +173,12 @@ function buildOwnerChatNodes(npcId) {
   const helloAgain = () => { const st = raceVariant(chat, 'helloStages'); return st ? st[rapportStage(npcId)] : chat.helloAgain; };
   const nodes = {
     hello: {
-      text: () => val((helloAgain() && chat.topics.some(t => ownerTopicAsked(npcId, t.id))) ? helloAgain() : raceVariant(chat, 'hello')),
+      text: () => {
+        if (state.player.underwoodFallen && chat.fallHello) {
+          return val(chat.topics.some(t => t.afterFall && ownerTopicAsked(npcId, t.id)) ? chat.fallAgain : chat.fallHello);
+        }
+        return val((helloAgain() && chat.topics.some(t => ownerTopicAsked(npcId, t.id))) ? helloAgain() : raceVariant(chat, 'hello'));
+      },
       options: menu,
     },
     more: { text: chat.more, options: menu },
@@ -192,6 +206,9 @@ function buildOwnerChatNodes(npcId) {
   return nodes;
 }
 
-Object.keys(OWNER_CHATS).forEach(id => {
-  DIALOGUES[id] = { start: 'hello', nodes: buildOwnerChatNodes(id) };
-});
+function buildAllOwnerChats() {
+  Object.keys(OWNER_CHATS).forEach(id => {
+    DIALOGUES[id] = { start: 'hello', nodes: buildOwnerChatNodes(id) };
+  });
+}
+buildAllOwnerChats();

@@ -21,7 +21,6 @@
 
         if (oldVersion && oldVersion !== newVersion) {
           localStorage.setItem('l2browser_version', newVersion);
-          console.log('[version] Обновление:', oldVersion, '→', newVersion);
           var url = new URL(location.href);
           url.searchParams.set('_v', Date.now());
           location.replace(url.toString());
@@ -87,34 +86,35 @@ applyTextFont(getSavedTextFont());
 <!-- v0.36.2: библиотека облака (Supabase, 213 КБ) переехала вниз, к остальным скриптам:
      в шапке она задерживала показ страницы, пока не скачается целиком. -->
 
-<link rel="stylesheet" href="css/base.css?v=0.36.4">
-<link rel="stylesheet" href="css/effects.css?v=0.36.4">
-<link rel="stylesheet" href="css/monsters.css?v=0.36.4">
-<link rel="stylesheet" href="css/city-map.css?v=0.36.4">
-<link rel="stylesheet" href="css/battle.css?v=0.36.4">
-<link rel="stylesheet" href="css/debuffs.css?v=0.36.4">
-<link rel="stylesheet" href="css/battle-autostop.css?v=0.36.4">
-<link rel="stylesheet" href="css/battle-arena.css?v=0.36.4">
-<link rel="stylesheet" href="css/battle-session.css?v=0.36.4">
-<link rel="stylesheet" href="css/battle-rest.css?v=0.36.4">
-<link rel="stylesheet" href="css/inventory.css?v=0.36.4">
-<link rel="stylesheet" href="css/inventory-equip.css?v=0.36.4">
-<link rel="stylesheet" href="css/inventory-slots.css?v=0.36.4">
-<link rel="stylesheet" href="css/windows.css?v=0.36.4">
-<link rel="stylesheet" href="css/screens.css?v=0.36.4">
-<link rel="stylesheet" href="css/patches.css?v=0.36.4">
-<link rel="stylesheet" href="css/settings.css?v=0.36.4">
-<link rel="stylesheet" href="css/cheat.css?v=0.36.4">
-<link rel="stylesheet" href="css/overlays.css?v=0.36.4">
-<link rel="stylesheet" href="css/dialogue.css?v=0.36.4">
-<link rel="stylesheet" href="css/storage.css?v=0.36.4">
-<link rel="stylesheet" href="css/refine.css?v=0.36.4">
-<link rel="stylesheet" href="css/alchemist.css?v=0.36.4">
-<link rel="stylesheet" href="css/leaderboard.css?v=0.36.4">
-<link rel="stylesheet" href="css/hero-inspect.css?v=0.36.4">
-<link rel="stylesheet" href="css/chronicle.css?v=0.36.4">
-<link rel="stylesheet" href="css/daynight.css?v=0.36.4">
-<link rel="stylesheet" href="css/expeditions.css?v=0.36.4">
+<link rel="stylesheet" href="css/base.css?v=0.37">
+<link rel="stylesheet" href="css/effects.css?v=0.37">
+<link rel="stylesheet" href="css/monsters.css?v=0.37">
+<link rel="stylesheet" href="css/city-map.css?v=0.37">
+<link rel="stylesheet" href="css/battle.css?v=0.37">
+<link rel="stylesheet" href="css/debuffs.css?v=0.37">
+<link rel="stylesheet" href="css/battle-autostop.css?v=0.37">
+<link rel="stylesheet" href="css/battle-arena.css?v=0.37">
+<link rel="stylesheet" href="css/underwood-fall.css?v=0.37">
+<link rel="stylesheet" href="css/battle-session.css?v=0.37">
+<link rel="stylesheet" href="css/battle-rest.css?v=0.37">
+<link rel="stylesheet" href="css/inventory.css?v=0.37">
+<link rel="stylesheet" href="css/inventory-equip.css?v=0.37">
+<link rel="stylesheet" href="css/inventory-slots.css?v=0.37">
+<link rel="stylesheet" href="css/windows.css?v=0.37">
+<link rel="stylesheet" href="css/screens.css?v=0.37">
+<link rel="stylesheet" href="css/patches.css?v=0.37">
+<link rel="stylesheet" href="css/settings.css?v=0.37">
+<link rel="stylesheet" href="css/cheat.css?v=0.37">
+<link rel="stylesheet" href="css/overlays.css?v=0.37">
+<link rel="stylesheet" href="css/dialogue.css?v=0.37">
+<link rel="stylesheet" href="css/storage.css?v=0.37">
+<link rel="stylesheet" href="css/refine.css?v=0.37">
+<link rel="stylesheet" href="css/alchemist.css?v=0.37">
+<link rel="stylesheet" href="css/leaderboard.css?v=0.37">
+<link rel="stylesheet" href="css/hero-inspect.css?v=0.37">
+<link rel="stylesheet" href="css/chronicle.css?v=0.37">
+<link rel="stylesheet" href="css/daynight.css?v=0.37">
+<link rel="stylesheet" href="css/expeditions.css?v=0.37">
 </head>
 <body>
 
@@ -289,11 +289,11 @@ applyTextFont(getSavedTextFont());
           <div class="city-icon-img" style="background-image:url('img/city/ilgrad/forge.webp')"></div>
           <div class="city-card-label">Кузница</div>
         </div>
-        <div class="city-card city-card-wood city-card-stone" onclick="openMentor()">
+        <div class="city-card city-card-wood city-card-stone" onclick="openIlgradBarracks()">
           <div class="city-icon-img" style="background-image:url('img/city/ilgrad/barracks.webp')"></div>
           <div class="city-card-label">Казармы</div>
         </div>
-        <div class="city-card city-card-wood city-card-stone" onclick="openTavern()">
+        <div class="city-card city-card-wood city-card-stone" onclick="openIlgradTemple()">
           <div class="city-icon-img" style="background-image:url('img/city/ilgrad/temple.webp')"></div>
           <div class="city-card-label">Храм</div>
         </div>
@@ -309,10 +309,7 @@ applyTextFont(getSavedTextFont());
           <div class="city-icon-img" style="background-image:url('img/city/ilgrad/infirmary.webp')"></div>
           <div class="city-card-label">Лазарет</div>
         </div>
-        <div class="city-card city-card-wood city-card-stone" onclick="openIlgradWatch()">
-          <div class="city-icon-img" style="background-image:url('img/city/ilgrad/watchtower.webp')"></div>
-          <div class="city-card-label">Стена</div>
-        </div>
+        <!-- v0.37: карточку «Стена» (выход на Окраины) убрали — на Окраины ходят через карту -->
       </div>
     </div>
   </div>
@@ -1342,7 +1339,7 @@ applyTextFont(getSavedTextFont());
      v0.36.2: подключается здесь, а не в шапке (должна стоять раньше js/systems/cloud.js). -->
 <script src="js/vendor/supabase-2.118.0.js" defer></script>
 
-<script src="js/app.bundle.js?v=0.36.4" defer></script>
+<script src="js/app.bundle.js?v=0.37" defer></script>
 
 </body>
 </html>

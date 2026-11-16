@@ -4,7 +4,7 @@
 //
 //  НОВОЕ (v0.10, балансировка опыта):
 //  + getXpForLevel(level) — единая формула опыта.
-//  + MAX_PLAYER_LEVEL = 20 — кап уровня.
+//  + getMaxPlayerLevel() — кап уровня: 20, после открытия Ильграда 30.
 //  + XP_MONSTER_MULTIPLIER = 3 — множитель опыта с монстра.
 //
 //  НОВОЕ (v0.12b):
@@ -184,6 +184,9 @@ const ALL_RESOURCES = [
   'Медь', 'Олово', 'Хитин', 'Каменные пластины',
   // ---- v0.20: новые материалы Копи ----
   'Пещерный гриб', 'Паучий шёлк', 'Ядовитая железа', 'Ядро голема',
+  // ---- v0.37: материалы Окраин (тир 4) ----
+  'Ржавый доспех', 'Звонкая кость', 'Мёртвая шкура', 'Саван', 'Слеза плакальщицы', 'Сердце колосса',
+  'Потемневший медальон', 'Костяной клык', 'Крепкая жила', 'Застывший вздох', 'Обломок дубины',
   // ---- v0.33: рубин и сапфир — теперь камни душ (чит выдаёт их отдельно), вместо рубина у Гоблина — гранат ----
   'Сырой гранат',
 ];
@@ -206,15 +209,21 @@ const ALL_RESOURCES = [
 //    Голем ур.10   → 30 опыта.
 //    Кровавый голем ур.12 → 36 опыта.
 //
-//  Максимальный уровень: 20.
-//  Дальше — опыт не идёт, ждём новых локаций.
+//  Максимальный уровень: 20, а герою, открывшему Ильград, — 30.
+//  21 → 30 всего ~1 680 000 опыта. Кривая та же, без ступеньки на 20.
 // ========================================================
 
-const MAX_PLAYER_LEVEL = 20;
+const MAX_PLAYER_LEVEL = 30;
+const LEVEL_CAP_BEFORE_ILGRAD = 20;
 const XP_MONSTER_MULTIPLIER = 3;
 
+// Потолок конкретного героя. Пока Ильград закрыт — 20, чтобы ничего не менялось для остальных.
+function getMaxPlayerLevel() {
+  return (state.player && state.player.ilgradOpen) ? MAX_PLAYER_LEVEL : LEVEL_CAP_BEFORE_ILGRAD;
+}
+
 // Сколько опыта нужно, чтобы перейти с (level-1) на level.
-// level — целевой уровень (2, 3, ..., 20).
+// level — целевой уровень (2, 3, ..., 30).
 function getXpForLevel(level) {
   if (level <= 1) return 0;
   if (level > MAX_PLAYER_LEVEL) return Infinity;
@@ -335,10 +344,11 @@ const JEWELRY_MILESTONE_BY_TIER = {
   1: { necklace: 2, ring: 1,   earringXp: 1, earringProf: 0.5 },
   2: { necklace: 3, ring: 1.5, earringXp: 2, earringProf: 1 },
   3: { necklace: 5, ring: 2,   earringXp: 3, earringProf: 1 },
+  4: { necklace: 7, ring: 3,   earringXp: 4, earringProf: 1.5 },   // v0.37
 };
 
 function getJewelryMilestoneValues(item) {
-  const t = Math.min(3, Math.max(1, getItemTier(item)));
+  const t = Math.min(4, Math.max(1, getItemTier(item)));
   return JEWELRY_MILESTONE_BY_TIER[t];
 }
 
@@ -377,6 +387,7 @@ const JEWELRY_MINISET_MDEF = {
   1: [0, 0, 1, 2, 3, 4],
   2: [0, 0, 2, 3, 4, 6],
   3: [0, 0, 3, 4, 5, 7],
+  4: [0, 0, 4, 5, 7, 9],   // v0.37
 };
 
 function countJewelryOfTier(equipment, tier) {
@@ -403,7 +414,7 @@ function migrateJewelryList(list) {
 
 // v0.25: оружие из кузницы берёт базовые статы из текущего рецепта (после правок баланса
 // старые вещи обновляются). Редкость и подгонка лежат отдельно и не трогаются.
-const ITEM_BASE_STAT_KEYS = ['pAtk', 'pDef', 'mDef', 'mAtk', 'flatDamageReduce', 'blockChance', 'mpBonus', 'hpBonus', 'atbSpeedMod', 'critChance', 'mpRegenIn'];
+const ITEM_BASE_STAT_KEYS = ['pAtk', 'pDef', 'mDef', 'mAtk', 'flatDamageReduce', 'blockChance', 'mpBonus', 'hpBonus', 'atbSpeedMod', 'critChance', 'mpRegenIn', 'evasionMod'];
 // v0.27: и щиты тоже (блок по тиру).
 function migrateWeaponBaseStats(item) {
   if (!item || (item.type !== 'weapon' && item.type !== 'shield') || typeof RECIPES === 'undefined') return false;

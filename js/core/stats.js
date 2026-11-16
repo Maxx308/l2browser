@@ -140,6 +140,7 @@ function recalcStats() {
       if (item.stats.atbSpeedMod) bonusAtbMod += item.stats.atbSpeedMod;
       if (item.stats.critChance) p.critChance += item.stats.critChance;
       if (item.stats.mpRegenIn) itemMpRegenIn += item.stats.mpRegenIn;
+      if (item.stats.evasionMod) refineEvasionBonus += item.stats.evasionMod;   // v0.37: вес брони Т4
     }
 
     const rb = item.refineBonuses;
@@ -288,6 +289,22 @@ function recalcStats() {
     p.setBonuses.push({ name: `Бижутерия тира ${jewelryMiniSet.tier}+`, text: `${jewelryMiniSet.count} ${jewelryMiniSet.count >= 5 ? 'вещей' : 'вещи'}: +${jewelryMiniSet.bonus} маг. защиты` });
   }
   p.skillFlatDamage = 0;   // v0.25: ступени Т3-брони — плоский урон навыков и ДОТов
+  // v0.37: бонусы сетов Т4
+  p.critMultBonus = 0;
+  p.executeBonus = 0;
+  p.buffTurnsBonus = 0;   // сработает, когда у героя появятся усиления на ходы
+  let setAccuracyBonus = 0;
+  const applySetExtras = b => {
+    if (b.critPower) p.critMultBonus += b.critPower / 100;
+    if (b.accuracy) setAccuracyBonus += b.accuracy;
+    if (b.evasion) p.evasionBonus += b.evasion;
+    if (b.blockChance) p.blockChance += b.blockChance;
+    if (b.pAtkPercent) p.pAtk = Math.floor(p.pAtk * (1 + b.pAtkPercent / 100));
+    if (b.hpRegenIn) p.hpRegenIn += b.hpRegenIn;
+    if (b.mpRegenIn) { p.hasManaRegenPassive = true; p.mpRegenInBonus = (p.mpRegenInBonus || 0) + b.mpRegenIn; }
+    if (b.executePercent) p.executeBonus += b.executePercent;
+    if (b.buffTurns) p.buffTurnsBonus += b.buffTurns;
+  };
   Object.values(SETS).forEach(set => {
     const tier = getSetSkillFlatTier(set, countSetPiecesWorn(set, p.equipment));
     if (tier) {
@@ -310,6 +327,7 @@ function recalcStats() {
       // v0.21: тир 3
       if (set.bonus.flatDamageReduce) p.flatDamageReduce += set.bonus.flatDamageReduce;
       if (set.bonus.manaShield) p.manaShield += set.bonus.manaShield;
+      applySetExtras(set.bonus);
 
       p.setBonuses.push({ name: set.name, text: set.bonusText });
 
@@ -319,6 +337,8 @@ function recalcStats() {
         if (b.mAtkPercent) p.mAtk += Math.floor(p.mAtk * (b.mAtkPercent / 100));
         if (b.flatDamageReduce) p.flatDamageReduce += b.flatDamageReduce;
         if (b.manaShield) p.manaShield += b.manaShield;
+        if (b.critChance) p.critChance += b.critChance;
+        applySetExtras(b);
         p.setBonuses.push({ name: set.name + ' +10', text: set.bonus10Text });
       }
     }
@@ -340,7 +360,7 @@ function recalcStats() {
   // ========================================================
   //  БОНУСЫ ПОДГОНКИ (сохраняем в state для боя)
   // ========================================================
-  p.accuracyBonus = refineAccuracyBonus;
+  p.accuracyBonus = refineAccuracyBonus + setAccuracyBonus;
   p.evasionBonus += refineEvasionBonus;
   p.xpBonusFromRefine = refineXpBonus;
   p.profBonusFromRefine = refineProfBonus;

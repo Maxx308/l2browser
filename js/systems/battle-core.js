@@ -190,6 +190,7 @@ function startBattle(template, variantId) {
 
 function closeBattle() {
   const p = state.player;
+  if (state.battle.breakthrough && state.battle.breakthrough.real) { showToast('⚔', 'Обоз не остановить'); return; }
   if (state.battle.breakthrough) breakthroughAbort();   // v0.36
 
   // ---- НОВОЕ: при закрытии боя — выключаем автобой-повтор ----

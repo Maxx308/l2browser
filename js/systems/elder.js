@@ -40,6 +40,8 @@ function openElder() {
   // Помечаем, что диалог показан (чтобы автозапуск не сработал позже).
   __elderAutoShown = true;
 
+  if (fallElderCall()) return;   // с 20 уровня — зов на Собрание (js/systems/underwood-fall.js)
+
   openDialogue('elder');
 }
 

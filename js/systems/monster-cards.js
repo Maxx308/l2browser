@@ -516,14 +516,19 @@ function buildMonsterCard(template, variantId, fromMine = false) {
   const unlockedEvasion = unlockedGold;
 
   const goldStr = unlockedGold ? `${monster.goldMin}–${monster.goldMax}` : '???';
-  const goldChanceStr = unlockedGold ? `${monster.goldChance}%` : '???%';
+  // v0.36.4: с титулом шансы показываем уже с его множителем: «20% → 30%»
+  const titleMult = getTitleDropMultiplier(template.id, variantId);
+  const chanceHtml = (base, open) => {
+    if (!open) return `<span class="chance chance-hidden">???%</span>`;
+    if (titleMult <= 1) return `<span class="chance">${base}%</span>`;
+    return `<span class="chance titled" title="Без титула ${base}%, с титулом ×${titleMult}"><s>${base}%</s> ${titlePct(base * titleMult)}%</span>`;
+  };
 
-  let dropRows = `<div class="row">${SVG.gold}<span>Оболы: ${goldStr}</span><span class="chance ${unlockedGold ? '' : 'chance-hidden'}">${goldChanceStr}</span></div>`;
+  let dropRows = `<div class="row">${SVG.gold}<span>Оболы: ${goldStr}</span>${chanceHtml(monster.goldChance, unlockedGold)}</div>`;
 
   monster.drops.forEach(d => {
-    const chanceStr = unlockedDrop ? `${d.chance}%` : '???%';
     const iconHtml = getDropIconHtml(d);
-    dropRows += `<div class="row">${iconHtml}<span>${d.name}</span><span class="chance ${unlockedDrop ? '' : 'chance-hidden'}">${chanceStr}</span></div>`;
+    dropRows += `<div class="row">${iconHtml}<span>${d.name}</span>${chanceHtml(d.chance, unlockedDrop)}</div>`;
   });
 
   // ---- СТАТЫ: значок сверху, число снизу ----
@@ -548,7 +553,8 @@ function buildMonsterCard(template, variantId, fromMine = false) {
 
   // ---- ТИТУЛ: значок в левом нижнем углу, виден и на задних карточках стопки ----
   const titleDef = MONSTER_TITLE_ICONS[getMonsterTitle(template.id, variantId)];
-  const titleHtml = titleDef ? `<div class="monster-hunter ${titleDef.css}" title="${titleDef.name}"><img src="img/tags/${titleDef.img}.webp" alt="${titleDef.name}"></div>` : '';
+  // v0.36.4: нажатие на значок — окно титула (на телефоне подсказок нет)
+  const titleHtml = titleDef ? `<button type="button" class="monster-hunter ${titleDef.css}" title="${titleDef.name} — нажмите, что это даёт" data-title-info><img src="img/tags/${titleDef.img}.webp" alt="${titleDef.name}"></button>` : '';
 
   // ---- Счётчик: череп и «убито / до следующего открытия» ----
   const nextGoal = KILL_REVEAL_STEPS.find(n => kills < n);
@@ -556,7 +562,9 @@ function buildMonsterCard(template, variantId, fromMine = false) {
   // Строка под именем — только если есть что показать: подтип и «их время».
   const metaHtml = (variant.name ? `<span class="monster-variant-word">${variant.name}</span>` : '') +
     (typeof primeTimeLineHtml === 'function' ? primeTimeLineHtml(template) : '');
-  const killsHtml = `<div class="monster-kills" title="Убито. Следующая цифра — сколько нужно, чтобы узнать о твари больше"><img class="kills-ico" src="img/tags/kills.webp" alt=""><span>${killsText}</span></div>`;
+  // v0.36.4: на пути к «Охотнику» рядом со счётом — бледная корона, по нажатию — окно титула
+  const toTitle = nextGoal === KILL_THRESHOLDS.title;
+  const killsHtml = `<div class="monster-kills${toTitle ? ' to-title' : ''}"${toTitle ? ' data-title-info' : ''} title="${toTitle ? `До титула «Охотник» — ${KILL_THRESHOLDS.title} убийств. Нажмите, что он даёт` : 'Убито. Следующая цифра — сколько нужно, чтобы узнать о твари больше'}"><img class="kills-ico" src="img/tags/kills.webp" alt=""><span>${killsText}</span>${toTitle ? '<img class="kills-title-ico" src="img/tags/hunter.webp" alt="">' : ''}</div>`;
 
   card.innerHTML = `
     <div class="monster-portrait-img" style="background-image:url('${monster.art}')">${packBadgeHtml(template)}${monsterTagsHtml(monster)}</div>
@@ -571,7 +579,185 @@ function buildMonsterCard(template, variantId, fromMine = false) {
     ${titleHtml}
     ${killsHtml}
   `;
+  card.querySelectorAll('[data-title-info]').forEach(el => {
+    el.onclick = (e) => { e.stopPropagation(); openTitleInfo(template.id, variantId); };
+  });
   return card;
+}
+
+// ========================================================
+//  v0.36.4: ТИТУЛЫ ПОНЯТНО
+//  + Окно титула по нажатию на значок (и на счётчик по пути к «Охотнику»):
+//    что даёт — на примере добычи этой твари, и путь к следующему титулу.
+//  + Получение титула — окно-событие, запись в Летописи, реплика Заплечника.
+// ========================================================
+function titlePct(x) { return String(Math.round(x * 100) / 100); }
+
+// «у всех обычных / Древних / Кровавых тварей»
+const TITLE_VARIANT_GEN = { normal: 'обычных', ancient: 'Древних', bloody: 'Кровавых' };
+function titleVariantGen(v) { return TITLE_VARIANT_GEN[v] || getVariantDisplayName(v); }
+
+const TITLE_LADDER = ['hunter', 'glorious', 'magnificent'];
+
+// Имя твари с подтипом («Древний Волк»).
+function titleMonsterName(id, v) {
+  const t = getMonstersByLocation(getMonsterLocation(id)).find(m => m.id === id);
+  if (!t) return id;
+  try { return buildMonsterInstance(t, v).name; } catch (e) { return t.name; }
+}
+
+// Что даёт титул — на примере: Оболы и первая вещь из добычи этой твари.
+function titleExampleHtml(monsterId, variantId, mult) {
+  const t = getMonstersByLocation(getMonsterLocation(monsterId)).find(m => m.id === monsterId);
+  if (!t) return '';
+  const inst = buildMonsterInstance(t, variantId);
+  const rows = [{ name: 'Оболы', chance: inst.goldChance }].concat((inst.drops || []).slice(0, 2).map(d => ({ name: d.name, chance: d.chance })));
+  const over = rows.some(r => r.chance * mult > 100)
+    ? '<div class="title-example-note">Больше 100% — значит, иногда выпадает сразу две штуки.</div>' : '';
+  return `<div class="title-example">${rows.map(r =>
+    `<div><span>${r.name}</span><b><s>${titlePct(r.chance)}%</s> → ${titlePct(r.chance * mult)}%</b></div>`).join('')}${over}</div>`;
+}
+
+// Что нужно для титула tier: { done, text, missing: [..] }.
+function titleTierInfo(tier, pr, monsterId, variantId) {
+  const T = KILL_THRESHOLDS.title;
+  const locName = (pr.loc && LOCATION_NAMES[pr.loc]) || 'локация';
+  if (tier === 'hunter') {
+    return { done: pr.kills >= T, text: `${T} убийств этой твари`, count: `${Math.min(pr.kills, T)}/${T}`, missing: [] };
+  }
+  const list = tier === 'glorious' ? pr.same : pr.all;
+  const have = list.filter(r => r.done).length;
+  const text = tier === 'glorious'
+    ? `«Охотник» у всех ${titleVariantGen(variantId)} тварей — ${locName}`
+    : `«Охотник» у всех тварей всех подтипов — ${locName}`;
+  const missing = list.filter(r => !r.done).sort((a, b) => b.kills - a.kills)
+    .map(r => `${titleMonsterName(r.id, r.variantId)} ${r.kills}/${T}`);
+  return { done: have === list.length && list.length > 0, text, count: `${have}/${list.length}`, missing };
+}
+
+function titleOverlay(html) {
+  let el = document.getElementById('title-overlay');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'title-overlay';
+    el.onclick = (e) => { if (e.target === el) closeTitleInfo(); };
+    document.body.appendChild(el);
+  }
+  el.className = 'title-overlay';
+  el.innerHTML = `<div class="title-window">${html}</div>`;
+  return el;
+}
+
+function closeTitleInfo() {
+  const el = document.getElementById('title-overlay');
+  if (el) el.remove();
+}
+
+function titleLadderHtml(monsterId, variantId) {
+  const pr = getTitleProgress(monsterId, variantId);
+  return TITLE_LADDER.map(tier => {
+    const def = MONSTER_TITLE_ICONS[tier];
+    const info = titleTierInfo(tier, pr, monsterId, variantId);
+    const cur = pr.title === tier;
+    const miss = !info.done && info.missing.length
+      ? `<div class="title-miss">Ещё нужно: ${info.missing.slice(0, 4).join(' · ')}${info.missing.length > 4 ? ` и ещё ${info.missing.length - 4}` : ''}</div>`
+      : '';
+    return `<div class="title-step ${def.css}${info.done ? ' done' : ''}${cur ? ' cur' : ''}">
+      <img src="img/tags/${def.img}.webp" alt="">
+      <div class="title-step-body">
+        <div class="title-step-head"><b>${def.name}</b><span>×${TITLE_DROP_MULT[tier]}</span><em>${info.done ? '✓' : info.count}</em></div>
+        <div class="title-step-text">${info.text}</div>
+        ${miss}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// Окно титула: что даёт сейчас и как получить следующий.
+function openTitleInfo(monsterId, variantId) {
+  const title = getMonsterTitle(monsterId, variantId);
+  const def = MONSTER_TITLE_ICONS[title];
+  const mult = TITLE_DROP_MULT[title] || 1;
+  const name = titleMonsterName(monsterId, variantId);
+  let now;
+  if (def) {
+    now = `<div class="title-now">У вас титул <b>«${def.name}»</b>: шанс добычи и Оболов с этой твари <b>×${mult}</b>.</div>${titleExampleHtml(monsterId, variantId, mult)}`;
+  } else {
+    now = `<div class="title-now">Убейте эту тварь ${KILL_THRESHOLDS.title} раз — получите титул <b>«Охотник»</b>: шанс добычи и Оболов с неё <b>×${TITLE_DROP_MULT.hunter}</b>.</div>${titleExampleHtml(monsterId, variantId, TITLE_DROP_MULT.hunter)}`;
+  }
+  titleOverlay(`
+    <div class="title-head"><span>${def ? `<img src="img/tags/${def.img}.webp" alt="">` : '👑'} Титул: ${name}</span><button type="button" class="title-x" onclick="closeTitleInfo()" aria-label="Закрыть">×</button></div>
+    ${now}
+    <div class="title-sub">Лестница титулов</div>
+    ${titleLadderHtml(monsterId, variantId)}
+    <div class="title-note">Множители не складываются — действует лучший титул. Работают и в экспедициях.</div>
+    <div class="title-actions"><button type="button" class="title-btn" onclick="closeTitleInfo()">Понятно</button></div>
+  `);
+}
+
+// Реплики Заплечника при новом титуле — одна случайная, нигде не сохраняется.
+const TITLE_BAG_LINES = {
+  hunter: [
+    'Тысяча. Я считал. Твари, кажется, тоже — и теперь роняют добро охотнее.',
+    'Охотник, значит. Звучит. Главное — не зазнавайся: их ещё много.',
+    'Тысячу раз одно и то же. Я бы заскучал. А ты — молодец.',
+  ],
+  glorious: [
+    'Прославленный! Про тебя, наверное, уже шепчутся у костров. Хорошее шепчутся. Наверное.',
+    'Всех до единой. Я бы похлопал, будь у меня ладони.',
+  ],
+  magnificent: [
+    'Великолепный. Это слово я берёг для особого случая. Дождался.',
+    'Всю округу выучил наизусть. Твари, по-моему, уже сами несут тебе добычу.',
+  ],
+};
+
+// Новый титул — не тост, а событие: окно, Летопись, реплика сумки.
+function titleCelebrate(newTitle, m) {
+  const def = MONSTER_TITLE_ICONS[newTitle];
+  if (!def) return;
+  const loc = getMonsterLocation(m.id);
+  const locName = loc ? LOCATION_NAMES[loc] : '';
+  const variantName = getVariantDisplayName(m.variantId);
+  const mult = TITLE_DROP_MULT[newTitle];
+  if (typeof annalsFirst === 'function') annalsFirst('title.' + newTitle, { monster: m.name, loc: locName, variant: variantName });
+  if (typeof logCombat === 'function') logCombat(`👑 Новый титул: ${def.name} (${m.name}) — шанс добычи и Оболов ×${mult}`, 'log-entry levelup');
+
+  let what;
+  if (newTitle === 'hunter') what = `${KILL_THRESHOLDS.title} убийств — твари «${m.name}» узнают вас издалека. Шанс добычи и Оболов с неё <b>×${mult}</b>.`;
+  else if (newTitle === 'glorious') what = `«Охотник» у всех ${titleVariantGen(m.variantId)} тварей — ${locName}. Шанс добычи и Оболов с каждой из них <b>×${mult}</b>.`;
+  else what = `«Охотник» у всех тварей всех подтипов — ${locName}. Шанс добычи и Оболов со всей локации <b>×${mult}</b>.`;
+
+  const next = TITLE_LADDER[TITLE_LADDER.indexOf(newTitle) + 1];
+  let nextHtml = '';
+  if (next) {
+    const info = titleTierInfo(next, getTitleProgress(m.id, m.variantId), m.id, m.variantId);
+    nextHtml = `<div class="title-sub">Дальше — «${MONSTER_TITLE_ICONS[next].name}» (×${TITLE_DROP_MULT[next]})</div><div class="title-step-text">${info.text}: ${info.count}</div>`;
+  }
+
+  let bag = '';
+  if (typeof bagMet === 'function' && bagMet()) {
+    const pool = TITLE_BAG_LINES[newTitle] || [];
+    const line = pool[Math.floor(Math.random() * pool.length)];
+    if (line) bag = `<div class="title-bag"><div class="title-bag-ico">🎒</div><div><div class="title-bag-name">${bagSpeakerName()}</div><div class="title-bag-line">«${heroText(line)}»</div></div></div>`;
+  }
+
+  titleOverlay(`
+    <div class="title-unlock ${def.css}">
+      <img src="img/tags/${def.img}.webp" alt="">
+      <div class="title-unlock-kicker">Новый титул</div>
+      <div class="title-unlock-name">${def.name}</div>
+      <div class="title-unlock-who">${m.name}</div>
+    </div>
+    <div class="title-now">${what}</div>
+    ${titleExampleHtml(m.id, m.variantId, mult)}
+    ${nextHtml}
+    ${bag}
+    <div class="title-actions">
+      <button type="button" class="title-btn" onclick="openTitleInfo('${m.id}', '${m.variantId}')">Все титулы</button>
+      <button type="button" class="title-btn title-btn-main" onclick="closeTitleInfo()">Понятно</button>
+    </div>
+  `).classList.add('celebrate');
 }
 
 // ---------- СЧЁТЧИК УБИЙСТВ В ШАПКЕ БОЯ ----------

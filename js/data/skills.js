@@ -566,6 +566,12 @@ const TAVERN_BUFFS = {
     value: TAVERN_XP_BONUS_PERCENT,
     duration: TAVERN_BUFF_DURATION,
     tooltip: '+10% к получаемому опыту. Таймеры складываются (максимум 12 часов).',
+    // v0.37: в Ильграде тот же бафф даёт Храм (см. tavernBuffView)
+    ilgrad: {
+      place: 'temple',
+      name: 'Благословение пути',
+      desc: 'Мать Исмера кладёт тёплую ладонь тебе на лоб. Дорога запоминается лучше — опыт приходит быстрее.',
+    },
   },
   relax: {
     id: 'relax',
@@ -577,8 +583,38 @@ const TAVERN_BUFFS = {
     value: TAVERN_PROF_BONUS_PERCENT,
     duration: TAVERN_BUFF_DURATION,
     tooltip: '+10% шанс получить бонусный опыт владения за удар. Таймеры складываются (максимум 12 часов).',
+    // v0.37: в Ильграде — муштра в Казармах у Таэлина (решение пользователя 16.11)
+    ilgrad: {
+      place: 'barracks',
+      name: 'Муштра',
+      desc: 'Таэлин гоняет по уставу, пока рука не начнёт делать всё сама. Голова потом догонит.',
+    },
   },
 };
+
+// v0.37: после падения Андервуда таверны нет. Те же бафы в Ильграде дают разные места:
+// «Отдых» — Храм («Благословение пути»), «Расслабон» — Казармы («Муштра»). Механика та же,
+// меняются название и описание (поле ilgrad у бафа); в окне видны только бафы этого места.
+const ILGRAD_TAVERN_PLACES = {
+  temple:   { emoji: '🕯', where: 'Храм',    owner: 'ismera', title: '🕯 ХРАМ · БЛАГОСЛОВЕНИЕ' },
+  barracks: { emoji: '⚔', where: 'Казармы', owner: 'taelin', title: '⚔ КАЗАРМЫ · МУШТРА' },
+};
+let __ilgradTavernPlace = 'temple';   // какое место Ильграда сейчас открыло окно бафов (ilgrad.js)
+function tavernInIlgrad() {
+  const p = state.player;
+  return !!p && (!!p.underwoodFallen || p.currentLocation === 'ilgrad');
+}
+function tavernBuffView(buff) {
+  return (buff && buff.ilgrad && tavernInIlgrad()) ? Object.assign({}, buff, buff.ilgrad) : buff;
+}
+// Место Ильграда, где продаётся этот бафф (или null — в Андервуде).
+function tavernBuffPlace(buff) {
+  return (buff && buff.ilgrad && tavernInIlgrad()) ? ILGRAD_TAVERN_PLACES[buff.ilgrad.place] : null;
+}
+function tavernBuffName(buffId) {
+  const b = tavernBuffView(TAVERN_BUFFS[buffId]);
+  return b ? b.name : '';
+}
 
 // ========================================================
 //  SVG-ИКОНКИ ДЛЯ БАФФОВ ТАВЕРНЫ

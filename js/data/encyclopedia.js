@@ -364,10 +364,21 @@ function loreBeastKills(id) {
   return ['normal', 'ancient', 'bloody'].reduce((s, v) => s + (typeof getMonsterKills === 'function' ? getMonsterKills(id, v) : 0), 0);
 }
 function loreVariantKills(id, v) { return typeof getMonsterKills === 'function' ? getMonsterKills(id, v) : 0; }
-function loreLocKills(loc) {
-  const list = loc === 'field' ? MONSTERS : loc === 'mine' ? MINE_MONSTERS : [];
-  return list.reduce((s, m) => s + loreBeastKills(m.id), 0);
+// v0.37: и Окраины Ильграда
+function loreLocMonsters(loc) {
+  if (loc === 'field') return MONSTERS;
+  if (loc === 'mine') return MINE_MONSTERS;
+  if (loc === 'outskirts') return typeof OUTSKIRTS_MONSTERS !== 'undefined' ? OUTSKIRTS_MONSTERS : [];
+  return [];
 }
+function loreLocKills(loc) {
+  return loreLocMonsters(loc).reduce((s, m) => s + loreBeastKills(m.id), 0);
+}
+// Где живёт тварь: 'field' / 'mine' / 'outskirts'.
+function loreBeastLoc(id) {
+  return ['field', 'mine', 'outskirts'].find(loc => loreLocMonsters(loc).some(x => x.id === id)) || 'field';
+}
+const LORE_LOC_KIND = { field: 'Зелёная поляна', mine: 'Копи', outskirts: 'Окраины Ильграда' };
 function loreChronicle() { return (state.player && state.player.chronicle) || {}; }
 
 const LORE_BEAST_TRAITS = {
@@ -381,24 +392,31 @@ const LORE_BEAST_TRAITS = {
 
 function loreBeastRows(m) {
   const nature = { solo: 'Одиночка', pack: 'Стайный' }[m.pack] || 'Ходит по одному и по двое-трое';
-  const inMine = MINE_MONSTERS.some(x => x.id === m.id);
+  const loc = loreBeastLoc(m.id);
+  const attack = { magic: 'Магия', hybrid: 'То удар, то чары (полумагия)' }[m.attackType] || 'Физическая';   // v0.37: колосс
   const rows = [
     ['Уровень', `${m.level} (Древний — ${m.level + 1}, Кровавый — ${m.level + 2})`],
     ['Повадки', nature],
-    ['Атака', m.attackType === 'magic' ? 'Магия' : 'Физическая'],
+    ['Атака', attack],
   ];
+  // v0.37: твари Окраин бьются оружием и приёмами героев (battle-monster-kit.js)
+  if (m.weapon && m.skill && typeof WEAPON_SKILLS !== 'undefined' && WEAPON_SKILLS[m.weapon] && SKILLS[m.skill]) {
+    rows.push(['Оружие', `${WEAPON_SKILLS[m.weapon].name} · приём «${SKILLS[m.skill].name}»`]);
+  }
   if (LORE_BEAST_TRAITS[m.id] && m.traits) rows.push(['Особенность', LORE_BEAST_TRAITS[m.id](m.traits)]);
   if (m.poison) rows.push(['Особенность', `Яд: почти каждый укус отравляет на ${POISON_DURATION} хода, яд копится — до ${POISON_MAX_LEVEL} слоёв`]);
+  if (m.mp) rows.push(['Особенность', 'Щит маны: пока есть сила, половина урона уходит в пустоту']);
   if (m.night) rows.push(['Ночью', 'выходит на охоту в темноте']);
-  if (inMine) rows.push(['Душа', 'иногда носит в себе сырой самоцвет']);
+  if (loc === 'mine') rows.push(['Душа', 'иногда носит в себе сырой самоцвет']);
+  if (loc === 'outskirts') rows.push(['Душа', 'иногда носит в себе огранённый самоцвет']);
   rows.push(['Добыча', m.drops.map(d => d.name).join(', ')]);
   return rows;
 }
 
 // Статья о твари. text — основные куски по порядку: [основа, 10, 50, 150, 400, 1000], потом ancient / bloody.
 function loreBeastArticle(id, labels, texts, extra) {
-  const inMine = !MONSTERS.some(x => x.id === id);   // v0.34.1: и твари Копей
-  const m = (inMine ? MINE_MONSTERS : MONSTERS).find(x => x.id === id);
+  const loc = loreBeastLoc(id);   // v0.34.1: и твари Копей; v0.37: и Окраин
+  const m = loreLocMonsters(loc).find(x => x.id === id);
   const k = (n) => () => loreBeastKills(id) >= n;
   const steps = [1, 10, 50, 150, 400, 1000];
   const parts = texts.main.map((text, i) => ({
@@ -411,7 +429,7 @@ function loreBeastArticle(id, labels, texts, extra) {
   parts.push({ key: `beast.${id}.ancient`, label: 'Древний', text: texts.ancient, when: () => loreVariantKills(id, 'ancient') >= 1 });
   parts.push({ key: `beast.${id}.bloody`, label: 'Кровавый', text: texts.bloody, when: () => loreVariantKills(id, 'bloody') >= 1 });
   (extra || []).forEach(p => parts.splice(p.at, 0, p.part));
-  return { cat: 'beasts', order: m.level, title: m.name, kind: inMine ? 'Копи' : 'Зелёная поляна', portrait: m.art, parts };
+  return { cat: 'beasts', order: m.level, title: m.name, kind: LORE_LOC_KIND[loc], portrait: m.art, parts };
 }
 
 LORE_ARTICLES.field = {

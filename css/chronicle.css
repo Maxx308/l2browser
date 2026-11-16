@@ -88,6 +88,10 @@
 }
 .quest-card.offered { border-left-color: var(--gold-bright); border-left-style: dashed; }
 .quest-card.done { border-left-color: var(--border); opacity: .75; }
+/* v0.37: поручения Андервуда, которые не успели сдать до его падения */
+.quest-card.lost { border-left-color: var(--border); border-left-style: dotted; opacity: .6; }
+.quest-card.lost .quest-text { color: var(--text-dim); }
+.quest-lost-note { font-size: var(--fs-tiny); color: var(--text-dim); font-style: italic; margin-top: calc(4 * var(--u)); }
 .quest-head { display: flex; justify-content: space-between; align-items: baseline; gap: calc(8 * var(--u)); flex-wrap: wrap; margin-bottom: calc(4 * var(--u)); }
 .quest-name { font-family: 'Cinzel', serif; font-weight: 700; color: var(--gold-bright); }
 .quest-giver { color: var(--text-dim); font-size: var(--fs-tiny); }

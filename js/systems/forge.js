@@ -85,6 +85,7 @@ function renderArmorSubtabs() {
     { id: 'chain', label: 'КОЛЬЧУГА КОПЕЙ' },
     { id: 'silk', label: 'ШЁЛКОВАЯ МАНТИЯ' },
   ];
+  if (ilgradOpen()) T4_SETS.forEach(s => tabs.push({ id: s.id, label: s.name.toUpperCase() }));   // v0.37: тир 4
   tabs.forEach(t => {
     const el = document.createElement('div');
     el.className = 'window-subtab' + (state.currentArmorSetTab === t.id ? ' active' : '');
@@ -103,6 +104,7 @@ function renderJewelrySubtabs() {
     { id: 'novice', label: 'СЕТ НОВИЧКА' },
     { id: 'malachite', label: 'МАЛАХИТ' },
   ];
+  if (ilgradOpen()) T4_JEWELRY.forEach(j => tabs.push({ id: j.id, label: j.name.toUpperCase() }));   // v0.37: тир 4
   tabs.forEach(t => {
     const el = document.createElement('div');
     el.className = 'window-subtab' + (state.currentJewelrySetTab === t.id ? ' active' : '');
@@ -185,6 +187,24 @@ function getMatIcon(name) {
     'Паучий шёлк':     'img/materials/spider_silk.webp',
     'Ядовитая железа':   'img/materials/venom_gland.webp',
     'Ядро голема':       'img/materials/golem_core.webp',
+    // ---- v0.37: материалы тира 4 ----
+    'Ржавый доспех':     'img/materials/rust_armor.webp',
+    'Звонкая кость':     'img/materials/ringing_bone.webp',
+    'Мёртвая шкура':     'img/materials/dead_hide.webp',
+    'Саван':             'img/materials/shroud.webp',
+    'Слеза плакальщицы': 'img/materials/weeper_tear.webp',
+    'Сердце колосса':    'img/materials/colossus_heart.webp',
+    'Мёртвая сталь':     'img/materials/dead_steel.webp',
+    'Выделанная мертвокожа': 'img/materials/cured_deathhide.webp',
+    'Призрачное полотно':    'img/materials/ghost_cloth.webp',
+    'Потемневший медальон':  'img/materials/dark_medallion.webp',
+    'Костяной клык':     'img/materials/bone_fang.webp',
+    'Крепкая жила':      'img/materials/tough_sinew.webp',
+    'Застывший вздох':   'img/materials/frozen_sigh.webp',
+    'Обломок дубины':    'img/materials/club_shard.webp',
+    'Едрёная железа':    'img/materials/edrenaya_gland.webp',
+    'Гранатовая нить':   'img/materials/garnet_thread.webp',
+    'Чернёное серебро':  'img/materials/black_silver.webp',
     'Жаркое с грибами':      'img/materials/dish_mushroom_roast.webp',
     'Похлёбка из волчатины': 'img/materials/dish_wolf_stew.webp',
     'Грибной отвар':         'img/materials/dish_mushroom_brew.webp',
@@ -247,7 +267,7 @@ function renderForgePane(category) {
   const pane = document.getElementById('forge-pane-' + category);
   if (!pane) return;
   pane.innerHTML = '';
-  let recipes = RECIPES[category] || [];
+  let recipes = (RECIPES[category] || []).filter(r => !r.requiresIlgrad || ilgradOpen());   // v0.37: тир 4 — после открытия Ильграда
   if (recipes.length === 0) { pane.innerHTML = `<div class="trader-empty">Рецепты в разработке</div>`; return; }
 
   if (category === 'armor' && state.currentArmorSetTab !== 'all') recipes = recipes.filter(r => r.setId === state.currentArmorSetTab);

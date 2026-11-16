@@ -246,18 +246,10 @@ function onMonsterDeath(deadMonster) {
     if (typeof loreOnKill === 'function') loreOnKill(m);         // v0.34.1: Бестиарий и Поляна — куски за убийства
   }
 
-  if (newTitle !== oldTitle) {
-    const loc = getMonsterLocation(m.id);
-    const locName = loc ? LOCATION_NAMES[loc] : '';
-
-    if (newTitle === 'hunter') {
-      showToast('👑', `${m.name}: титул Охотник! ×1.5 к дропу`);
-    } else if (newTitle === 'glorious') {
-      const variantName = getVariantDisplayName(m.variantId);
-      showToast('👑', `Прославленный охотник! Все ${variantName} — ${locName}, ×2.0`);
-    } else if (newTitle === 'magnificent') {
-      showToast('🌟', `ВЕЛИКОЛЕПНЫЙ ОХОТНИК! Вся ${locName} — ×3.0!`);
-    }
+  // v0.36.4: новый титул — окно-событие с объяснением, запись в Летописи и реплика сумки (monster-cards.js)
+  if (newTitle !== oldTitle && newTitle !== 'none') {
+    if (typeof titleCelebrate === 'function') titleCelebrate(newTitle, m);
+    else showToast('👑', `${m.name}: новый титул!`);
   }
 
   updateBattleKillsCounter(m);
@@ -299,6 +291,7 @@ function onMonsterDeath(deadMonster) {
   //  ВСЕ МЕРТВЫ — КОНЕЦ БОЯ
   // ========================================================
   if (state.battle.breakthrough && breakthroughOnClear()) return;   // v0.36: волны прорыва
+  fallOmenOnClear();   // приметы 18–19: дрожь земли
 
   const deadMonsterId = m.id;
   const deadVariantId = m.variantId;
@@ -447,7 +440,7 @@ function onPlayerDeath() {
   p.xp = Math.max(0, p.xp - lostXp);
   logCombat(`☠ ${p.name} погиб. Потеряно ${lostXp} опыта (10%).`, 'log-entry loss');
   if (typeof bumpChronicleCounter === 'function') bumpChronicleCounter('deaths');   // v0.30: скрытый счётчик
-  if (typeof annalsFirst === 'function') annalsFirst('death', null, { loc: 'town' });   // v0.32: очнулся в Андервуде
+  if (typeof annalsFirst === 'function') annalsFirst('death', null, { loc: homeTown() });   // v0.32: очнулся в Андервуде
 
   p.foodTimer = 0;
   p.foodTickAccum = 0;
@@ -488,7 +481,7 @@ function onPlayerDeath() {
     // и чужое окно боя не закрываем (раньше бой оставался «активным», но невидимым).
     if (state.battle.active) return;
 
-    state.player.currentLocation = 'town';
+    state.player.currentLocation = homeTown();
     const battleWin = document.getElementById('battle-window');
     if (battleWin) battleWin.classList.remove('active');
     document.querySelectorAll('.monster-card').forEach(c => c.classList.remove('selected'));
@@ -515,9 +508,16 @@ function checkLevelUp() {
   if (!p.classId) return;
 
   // Достигли капа — не поднимаем выше.
-  if (p.level >= MAX_PLAYER_LEVEL) {
+  if (p.level >= getMaxPlayerLevel()) {
     p.xpNext = Infinity;
     return;
+  }
+
+  // Потолок поднялся (открыт Ильград): опыт, накопленный на старом потолке, не считаем —
+  // иначе герой разом перепрыгнет несколько уровней.
+  if (!isFinite(p.xpNext) || !(p.xpNext > 0)) {
+    p.xpNext = getXpForLevel(p.level + 1);
+    p.xp = 0;
   }
 
   while (p.xp >= p.xpNext) {
@@ -526,7 +526,7 @@ function checkLevelUp() {
 
     // Следующий уровень — по новой формуле.
     // Если дошли до капа — xpNext = Infinity.
-    if (p.level >= MAX_PLAYER_LEVEL) {
+    if (p.level >= getMaxPlayerLevel()) {
       p.xpNext = Infinity;
     } else {
       p.xpNext = getXpForLevel(p.level + 1);
@@ -540,10 +540,11 @@ function checkLevelUp() {
     logCombat(`✦ УРОВЕНЬ ${p.level}! +${gain} очков навыков.`, 'log-entry levelup');
     updateSkillPointsBadge();
     if (typeof questJournalChanged === 'function') questJournalChanged();   // v0.35.1: Заплечник мог захотеть поручение
+    fallOmensCheck();   // приметы 17–19 и зов на Собрание
 
-    if (p.level >= MAX_PLAYER_LEVEL) {
-      logCombat(`🏆 Достигнут максимальный уровень (${MAX_PLAYER_LEVEL}). Ждём новых земель!`, 'log-entry levelup');
-      showToast('🏆', `Максимальный уровень: ${MAX_PLAYER_LEVEL}!`);
+    if (p.level >= getMaxPlayerLevel()) {
+      logCombat(`🏆 Достигнут максимальный уровень (${getMaxPlayerLevel()}). Ждём новых земель!`, 'log-entry levelup');
+      showToast('🏆', `Максимальный уровень: ${getMaxPlayerLevel()}!`);
       break;
     }
   }

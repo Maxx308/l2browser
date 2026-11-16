@@ -95,7 +95,7 @@ function addToInventory(drop) {
   let stats = null;
   if (drop.stats) {
     stats = {};
-    for (const k of ['pAtk','pDef','mDef','mAtk','flatDamageReduce','blockChance','mpBonus','hpBonus','atbSpeedMod','critChance','mpRegenIn']) {
+    for (const k of ['pAtk','pDef','mDef','mAtk','flatDamageReduce','blockChance','mpBonus','hpBonus','atbSpeedMod','critChance','mpRegenIn','evasionMod']) {
       if (drop.stats[k] !== undefined) stats[k] = drop.stats[k];
     }
   }

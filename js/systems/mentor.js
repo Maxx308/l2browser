@@ -34,10 +34,11 @@ function openMentor() {
   }
 
   document.getElementById('mentor-overlay').classList.add('active');
+  if (typeof applyTownWindowTitles === 'function') applyTownWindowTitles();   // v0.37: Наставник / Храм · Таинство
   renderMentorSkills();
 
-  // v0.31: Энциклопедия — наставник; точка на «Поговорить»
-  if (typeof unlockLore === 'function') unlockLore('mentor');
+  // v0.31: Энциклопедия — наставник; точка на «Поговорить» (v0.37: только в Андервуде — в Ильграде это Храм)
+  if (state.player.currentLocation === 'town' && typeof unlockLore === 'function') unlockLore('mentor');
   if (typeof updateTalkButtons === 'function') updateTalkButtons();
 }
 

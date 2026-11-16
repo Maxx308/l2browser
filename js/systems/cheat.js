@@ -97,11 +97,11 @@ function renderCheatMenu() {
 
   // ---- v0.36: Блок УРОВЕНЬ ----
   let levelHtml = '<div class="cheat-block"><div class="cheat-block-title">УРОВЕНЬ</div>';
-  levelHtml += `<div class="cheat-block-desc">Сейчас ${p.level} из ${MAX_PLAYER_LEVEL}. Очки навыков начисляются как при обычной прокачке.</div>`;
+  levelHtml += `<div class="cheat-block-desc">Сейчас ${p.level} из ${getMaxPlayerLevel()}. Очки навыков начисляются как при обычной прокачке.</div>`;
   levelHtml += '<div class="cheat-btn-row">';
   levelHtml += `<button class="cheat-rate-btn" onclick="cheatAddLevels(1)">+1</button>`;
   levelHtml += `<button class="cheat-rate-btn" onclick="cheatAddLevels(5)">+5</button>`;
-  levelHtml += `<button class="cheat-rate-btn" onclick="cheatAddLevels(${MAX_PLAYER_LEVEL})">До ${MAX_PLAYER_LEVEL}</button>`;
+  levelHtml += `<button class="cheat-rate-btn" onclick="cheatAddLevels(${getMaxPlayerLevel()})">До ${getMaxPlayerLevel()}</button>`;
   levelHtml += '</div></div>';
 
   // ---- v0.36: Блок КОМПЛЕКТЫ ----
@@ -125,6 +125,8 @@ function renderCheatMenu() {
   ilgradHtml += '<div class="cheat-btn-row">';
   ilgradHtml += `<button class="cheat-rate-btn${p.ilgradOpen ? ' active' : ''}" onclick="cheatToggleIlgrad()">🏰 ${p.ilgradOpen ? 'Закрыть Ильград' : 'Открыть Ильград'}</button>`;
   ilgradHtml += `<button class="cheat-rate-btn" onclick="cheatStartBreakthrough()">⚔ Прорыв (проба)</button>`;
+  ilgradHtml += `<button class="cheat-rate-btn" onclick="cheatFallStart()">🕯 Падение Андервуда</button>`;
+  ilgradHtml += `<button class="cheat-rate-btn" onclick="cheatFallReset()">↩ Вернуть Андервуд</button>`;
   ilgradHtml += '</div></div>';
 
   cont.innerHTML = rateHtml + levelHtml + setsHtml + resHtml + goldHtml + titleHtml + ilgradHtml;
@@ -175,6 +177,11 @@ function cheatGrantResources(amount) {
   // v0.12d: для них появились PNG (copper, tin, chitin, stone_plates).
   //         SVG-иконки оставлены как резерв.
   const matPng = {
+    'Ржавый доспех': 'img/materials/rust_armor.webp', 'Звонкая кость': 'img/materials/ringing_bone.webp',   // v0.37: тир 4
+    'Мёртвая шкура': 'img/materials/dead_hide.webp', 'Саван': 'img/materials/shroud.webp',
+    'Слеза плакальщицы': 'img/materials/weeper_tear.webp', 'Сердце колосса': 'img/materials/colossus_heart.webp',
+    'Потемневший медальон': 'img/materials/dark_medallion.webp', 'Костяной клык': 'img/materials/bone_fang.webp',
+    'Крепкая жила': 'img/materials/tough_sinew.webp', 'Застывший вздох': 'img/materials/frozen_sigh.webp', 'Обломок дубины': 'img/materials/club_shard.webp',
     'Нить':        'img/materials/thread.webp',
     'Ткань':       'img/materials/fabric.webp',
     'Клей':        'img/materials/glue.webp',
@@ -271,9 +278,9 @@ function cheatGrantGold(amount) {
 function cheatAddLevels(n) {
   const p = state.player;
   if (!p.classId) { showToast('⚠', 'Сначала выберите героя'); return; }
-  if (p.level >= MAX_PLAYER_LEVEL) { showToast('🏆', `Уже максимальный уровень: ${MAX_PLAYER_LEVEL}`); return; }
+  if (p.level >= getMaxPlayerLevel()) { showToast('🏆', `Уже максимальный уровень: ${getMaxPlayerLevel()}`); return; }
   const from = p.level;
-  const target = Math.min(MAX_PLAYER_LEVEL, p.level + n);
+  const target = Math.min(getMaxPlayerLevel(), p.level + n);
   while (p.level < target) {
     p.xp = p.xpNext;
     checkLevelUp();

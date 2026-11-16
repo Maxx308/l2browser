@@ -45,24 +45,58 @@ const SOUL_LOCATIONS = {
     yellow: 'Сырой топаз',
     red:    'Сырой рубин',
   } },
-  // v0.36: Окраины — пока те же Сырые камни; «улучшенные» (тир 4) появятся вместе с тиром 4.
-  outskirts: { tier: 3, gems: {
-    green:  'Сырой изумруд',
-    blue:   'Сырой сапфир',
-    purple: 'Сырой аметист',
-    yellow: 'Сырой топаз',
-    red:    'Сырой рубин',
+  // v0.37: Окраины Ильграда — Огранённые камни (тир 4). Это не сырьё для пыли, а сама плата
+  // Алхимику за вещи тира 4: переролл, возвышение (см. ALCHEMY_GEM_TIER в alchemy.js).
+  outskirts: { tier: 4, gems: {
+    green:  'Огранённый изумруд',
+    blue:   'Огранённый сапфир',
+    purple: 'Огранённый аметист',
+    yellow: 'Огранённый топаз',
+    red:    'Огранённый рубин',
   } },
 };
 
-// Камни как предметы. tier — как вещь какого тира распыляется.
+// Камни как предметы. tier — как вещь какого тира распыляется (Сырые) или какой тир обслуживают (Огранённые).
+// Иконки Огранённых — свои (cut_*.webp, 15.11.2026). Т5+ должны выглядеть богаче: Т4 нарочно скромный.
 const SOUL_GEM_ITEMS = {
   'Сырой изумруд': { color: 'green',  tier: 3, icon: 'img/materials/raw_emerald.webp',  sellPrice: 50 },
   'Сырой сапфир':  { color: 'blue',   tier: 3, icon: 'img/materials/raw_sapphire.webp', sellPrice: 100 },
   'Сырой аметист': { color: 'purple', tier: 3, icon: 'img/materials/raw_amethyst.webp', sellPrice: 150 },
   'Сырой топаз':   { color: 'yellow', tier: 3, icon: 'img/materials/raw_topaz.webp',    sellPrice: 250 },
   'Сырой рубин':   { color: 'red',    tier: 3, icon: 'img/materials/raw_ruby.webp',     sellPrice: 500 },
+  // 15.11.2026: свои значки Т4 — последняя ступень листа самоцветов пользователя (C:\МояИграКлоуд\Самоцветы\нарезка_Т4)
+  'Огранённый изумруд': { color: 'green',  tier: 4, cut: true, icon: 'img/materials/cut_emerald.webp',  sellPrice: 150 },
+  'Огранённый сапфир':  { color: 'blue',   tier: 4, cut: true, icon: 'img/materials/cut_sapphire.webp', sellPrice: 300 },
+  'Огранённый аметист': { color: 'purple', tier: 4, cut: true, icon: 'img/materials/cut_amethyst.webp', sellPrice: 450 },
+  'Огранённый топаз':   { color: 'yellow', tier: 4, cut: true, icon: 'img/materials/cut_topaz.webp',    sellPrice: 750 },
+  'Огранённый рубин':   { color: 'red',    tier: 4, cut: true, icon: 'img/materials/cut_ruby.webp',     sellPrice: 1500 },
 };
+
+// Камень какого цвета обслуживает вещи этого тира (только тиры на камнях, сейчас 4).
+function getTierGemName(tier, color) {
+  return Object.keys(SOUL_GEM_ITEMS).find(n => SOUL_GEM_ITEMS[n].cut && SOUL_GEM_ITEMS[n].tier === tier && SOUL_GEM_ITEMS[n].color === color) || null;
+}
+
+// Сколько таких камней в сумке (тратятся только из сумки, как пыль).
+function getGemCount(name) {
+  return state.player.inventory.filter(i => i.name === name && i.soulGem).reduce((s, i) => s + (i.qty || 1), 0);
+}
+
+// Списать камни. true — хватило и списано.
+function spendGems(name, n) {
+  if (getGemCount(name) < n) return false;
+  const inv = state.player.inventory;
+  let need = n;
+  for (let i = inv.length - 1; i >= 0 && need > 0; i--) {
+    const it = inv[i];
+    if (it.name !== name || !it.soulGem) continue;
+    const take = Math.min(it.qty || 1, need);
+    it.qty = (it.qty || 1) - take;
+    need -= take;
+    if (it.qty <= 0) inv.splice(i, 1);
+  }
+  return need === 0;
+}
 
 // Сколько камней с монстра с душой — по подтипу.
 const SOUL_STONES_BY_VARIANT = { normal: 1, ancient: 2, bloody: 4 };

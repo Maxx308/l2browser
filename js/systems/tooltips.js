@@ -96,6 +96,12 @@ function showItemTooltip(e, item) {
     const dust = y && ALCHEMY_DUST[y.color];
     lines.push(`<div class="tt-line" style="color:${nameColor}; font-weight:600;">💎 Камень души</div>`);
     if (y && dust) lines.push(`<div class="tt-line" style="color:${dust.color};">У Алхимика: ${y.min}–${y.max} ${dust.name.toLowerCase()} за штуку</div>`);
+    // v0.37: Огранённый камень — плата Алхимику за вещи тира 4
+    if (soulGem.cut) {
+      const reroll = (typeof ALCHEMY_GEM_REROLL !== 'undefined' && ALCHEMY_GEM_REROLL[soulGem.color]) || 1;
+      const ascend = soulGem.color !== 'red' ? ` · возвышение — ${typeof ALCHEMY_GEM_ASCEND !== 'undefined' ? ALCHEMY_GEM_ASCEND : 5}` : '';
+      lines.push(`<div class="tt-line" style="color:${nameColor};">Плата Алхимику за вещи тира ${soulGem.tier} того же цвета: переролл — ${reroll}${ascend}</div>`);
+    }
   } else if (rarity && rarityId !== 'white') {
     const bonusText = formatRarityBonus(item.bonusStats);
     let rarityLine = `Редкость: ${rarity.name}`;
@@ -157,6 +163,7 @@ function showItemTooltip(e, item) {
       const pct = Math.round(item.stats.atbSpeedMod * 100);
       lines.push(`<div class="tt-line speed">Скорость атаки: ${pct >= 0 ? '+' : ''}${pct}%</div>`);
     }
+    if (item.stats.evasionMod) lines.push(`<div class="tt-line speed">Уворот: ${item.stats.evasionMod > 0 ? '+' : '−'}${Math.abs(item.stats.evasionMod)}</div>`);
   }
 
   // v0.24: оружие тира 3 — фишки типа сильнее.
@@ -219,7 +226,7 @@ function showItemTooltip(e, item) {
 
   // ---- v0.25: МИНИ-СЕТ БИЖУТЕРИИ (вещи этого тира и выше) ----
   if ((item.type === 'ring' || item.type === 'earring' || item.type === 'necklace') && typeof JEWELRY_MINISET_MDEF !== 'undefined') {
-    const t = Math.min(3, Math.max(1, getItemTier(item)));
+    const t = Math.min(4, Math.max(1, getItemTier(item)));
     const steps = JEWELRY_MINISET_MDEF[t];
     const n = countJewelryOfTier(state.player.equipment, t);
     const now = steps[n] || 0;

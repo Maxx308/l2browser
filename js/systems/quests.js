@@ -132,12 +132,26 @@ function takeQuestNeeds(questId) {
 // v0.32: «НАЙДИ» — находка в бою (find в QUESTS): пока поручение на стадии find.stage,
 // убитый монстр из find.monsters (или из локации find.loc) с шансом find.chance% даёт находку.
 // Предмета в сумке нет — находка живёт в стадии поручения (её не продать и не потерять).
+// v0.37: find.count — находок нужно несколько (счётчик pr.found); log и toast могут быть функциями от номера,
+//   lastLog / lastToast — для последней находки.
 function questFindRoll(m) {
   Object.values(QUESTS).forEach(q => {
     const f = q.find;
     if (!f || questStage(q.id) !== f.stage) return;
     const fits = f.monsters ? f.monsters.includes(m.id) : (typeof getMonsterLocation === 'function' && getMonsterLocation(m.id) === f.loc);
     if (!fits || Math.random() * 100 >= f.chance) return;
+    if (f.count) {
+      const pr = getQuestProgress(q.id);
+      pr.found = (pr.found || 0) + 1;
+      const last = pr.found >= f.count;
+      const val = v => (typeof v === 'function' ? v(pr.found) : v);
+      logLoot(heroText(val(f.log)), 'log-loot');
+      if (last && f.lastLog) logLoot(heroText(f.lastLog), 'log-loot');
+      if (typeof showToast === 'function') showToast(f.icon, (last && f.lastToast) ? f.lastToast : val(f.toast));
+      if (last) setQuestStage(q.id, f.next);
+      else { saveCurrentSlot(); questJournalChanged(); }
+      return;
+    }
     logLoot(heroText(f.log), 'log-loot');
     if (typeof showToast === 'function') showToast(f.icon, f.toast);
     setQuestStage(q.id, f.next);
@@ -203,10 +217,26 @@ function questJournalChanged() {
   if (typeof isChronicleOpen === 'function' && isChronicleOpen()) renderChronicle();
 }
 
+// v0.37: незакрытые поручения места — взятые и те, что житель уже предлагал (для предупреждения перед Собранием).
+function questsOpenAt(place) {
+  const active = [], offered = [];
+  Object.values(QUESTS).forEach(q => {
+    if (q.place !== place || isQuestDone(q.id)) return;
+    if (isQuestStarted(q.id)) active.push(q);
+    else if (q.offered && q.offered()) offered.push(q);
+  });
+  return { active, offered };
+}
+// v0.37: после падения Андервуда его поручения уже не сделать — в журнале они «не успели».
+function questLost(q) {
+  return !!(state.player && state.player.underwoodFallen) && !!q && q.place === 'Андервуд' && !isQuestDone(q.id);
+}
+
 // Можно взять: не взято, ещё доступно, с дающим уже знакомы.
 // v0.32: у поручений жителей — своё условие offered (житель уже попросил).
 function isQuestOffered(questId) {
   const q = QUESTS[questId];
+  if (questLost(q)) return false;   // v0.37
   if (q.offered) return !isQuestStarted(questId) && q.offered();
   return !isQuestStarted(questId) && isQuestAvailable(questId)
     && typeof knowsChronicleFact === 'function' && knowsChronicleFact('start_place');
@@ -216,6 +246,7 @@ function questNews() {
   const c = state.player.chronicle;
   const seen = (c && c.questsSeen) || {};
   return Object.keys(QUESTS).some(id => {
+    if (questLost(QUESTS[id])) return false;   // v0.37: не успели — новостью не считаем
     const pr = getQuestProgress(id);
     if (pr) return seen[id] !== pr.stage;
     return isQuestOffered(id) && seen[id] !== 'offered';
@@ -237,15 +268,16 @@ function markQuestsSeen() {
 
 function renderQuestJournal(box) {
   const esc = escChronicle;
-  const active = [], offered = [], done = [];
+  const active = [], offered = [], done = [], lost = [];
   Object.values(QUESTS).forEach(q => {
     const pr = getQuestProgress(q.id);
     if (pr && pr.stage === 'done') done.push(q);
+    else if (pr && questLost(q)) lost.push(q);   // v0.37: взято в Андервуде и не сдано до падения
     else if (pr) active.push(q);
     else if (isQuestOffered(q.id)) offered.push(q);
   });
 
-  if (!active.length && !offered.length && !done.length) {
+  if (!active.length && !offered.length && !done.length && !lost.length) {
     box.innerHTML = `<div class="chron-soon">Поручений пока нет. Поговори с жителями — кому-нибудь да понадобится помощь.</div>`;
     markQuestsSeen();
     return;
@@ -276,11 +308,17 @@ function renderQuestJournal(box) {
     offered.forEach(q => { html += `<div class="quest-card offered">${head(q)}<div class="quest-text">${esc(heroText(q.offer))}</div></div>`; });
   }
 
+  if (lost.length) {
+    html += `<div class="quest-group">Не успели</div>`;
+    lost.forEach(q => { html += `<div class="quest-card lost">${head(q)}<div class="quest-text">${esc(heroText(q.journal))}</div><div class="quest-lost-note">Андервуда больше нет.</div></div>`; });
+  }
+
   if (done.length) {
     html += `<div class="quest-group">Выполненные</div>`;
     // v0.32: у поручений жителей шаги со счётчиками — для выполненного пишем то, что было в журнале
     // v0.35.1: у поручений Заплечника «убей» шаги — функции; пишем журнал
-    done.forEach(q => { html += `<div class="quest-card done">${head(q)}<div class="quest-text">✓ ${esc(heroText((q.needs || q.bag) ? q.journal : q.steps.map(s => s.text).join(' · ')))}</div></div>`; });
+    // v0.37: и у любых других, где шаги — функции (счётчики убийств/находок)
+    done.forEach(q => { html += `<div class="quest-card done">${head(q)}<div class="quest-text">✓ ${esc(heroText((q.needs || q.bag || q.steps.some(s => typeof s.text === 'function')) ? q.journal : q.steps.map(s => s.text).join(' · ')))}</div></div>`; });
   }
 
   box.innerHTML = html;

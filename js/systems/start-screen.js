@@ -156,9 +156,8 @@ function renderSlots() {
         sourceBadge = '<div class="slot-cloud-badge local-only" title="Пока только на этом устройстве — уйдёт в облако само">💾</div>';
       }
 
-      const deleteBtn = hasLocal
-        ? `<button class="slot-delete" title="Удалить персонажа" data-slot="${i}">×</button>`
-        : '';
+      // v0.36.4: удалять можно и героя «только в облаке» — deleteSlot чистит и облако
+      const deleteBtn = `<button class="slot-delete" title="Удалить персонажа" data-slot="${i}">×</button>`;
 
       // v0.33: герой в экспедиции — подпись с таймером (expeditions.js)
       let expBadge = '';
@@ -184,15 +183,15 @@ function renderSlots() {
 
       if (hasLocal) {
         card.onclick = () => onSlotClick(i, true);
-        const delBtn = card.querySelector('.slot-delete');
-        if (delBtn) {
-          delBtn.onclick = (e) => {
-            e.stopPropagation();
-            onSlotDelete(i);
-          };
-        }
       } else {
         card.onclick = () => loadSlotFromCloudAndStart(i);
+      }
+      const delBtn = card.querySelector('.slot-delete');
+      if (delBtn) {
+        delBtn.onclick = (e) => {
+          e.stopPropagation();
+          onSlotDelete(i);
+        };
       }
     }
 
@@ -291,6 +290,7 @@ function loadSlotAndStart(slotIndex, opts) {
   state.player.gold = Math.max(0, Math.round(Number(state.player.gold) || 0));
   if (typeof ensureChronicle === 'function') ensureChronicle();
   if (saved.battle) Object.assign(state.battle, saved.battle);
+  state.battle.breakthrough = null;   // прорыв после загрузки запускает fallResume
 
   // v0.24: бой из сейва не продолжается — иначе герой «в бою» без окна боя и ничего нельзя сделать.
   const resumeTarget = takeSavedBattle(!!(opts && opts.resume));
@@ -339,7 +339,9 @@ function loadSlotAndStart(slotIndex, opts) {
   }
 
   if (typeof getXpForLevel === 'function') {
-    if (state.player.level >= MAX_PLAYER_LEVEL) {
+    // Infinity в сейве хранится как null: такой герой стоял на потолке, его опыт копился впустую.
+    // Оставляем Infinity — checkLevelUp сбросит накопленное, если потолок уже поднят.
+    if (state.player.level >= getMaxPlayerLevel() || !(state.player.xpNext > 0)) {
       state.player.xpNext = Infinity;
     } else {
       state.player.xpNext = getXpForLevel(state.player.level + 1);
@@ -362,6 +364,12 @@ function loadSlotAndStart(slotIndex, opts) {
   if (typeof expOnEnterGame === 'function') expOnEnterGame();
   // v0.34.1: Бестиарий и Поляна — открыть то, что герой уже заслужил убийствами (без всплывашек)
   if (typeof loreSyncBeasts === 'function') loreSyncBeasts(true);
+
+  fallOmensCheck();
+  if (state.player.fallStage) {   // обновили страницу посреди падения Андервуда — продолжаем с этого места
+    setTimeout(fallResume, 800);
+    return;
+  }
 
   if (opts && opts.resume) {
     showToast('🔄', 'Вы снова в игре');

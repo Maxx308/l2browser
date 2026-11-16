@@ -27,11 +27,17 @@ function buffShopDef(kind) {
       emoji: '🔮', listId: 'guild-list', barId: 'guild-setbar',
     };
   }
+  // v0.37: в Ильграде окно открывает Храм или Казармы — только их бафы и их названия
+  const place = tavernInIlgrad() ? ILGRAD_TAVERN_PLACES[__ilgradTavernPlace] : null;
+  const defs = Object.values(TAVERN_BUFFS)
+    .filter(b => !place || (b.ilgrad && b.ilgrad.place === __ilgradTavernPlace))
+    .map(tavernBuffView);
   return {
-    kind, defs: Object.values(TAVERN_BUFFS), store: p.tavernBuffs,
+    kind, defs, store: p.tavernBuffs,
     price: () => getTavernBuffPrice(),
     icon: (b) => (b.iconPng ? buffIconHtml(b) : TAVERN_SVG[b.iconKey] || ''),
-    emoji: '🍺', listId: 'tavern-list', barId: 'tavern-setbar',
+    emoji: place ? place.emoji : '🍺', listId: 'tavern-list', barId: 'tavern-setbar',
+    where: place ? place.where : 'Таверна', owner: place ? place.owner : 'hostess',
   };
 }
 
@@ -159,7 +165,7 @@ function buffShopApply(kind, items) {
   if (typeof markDeed === 'function') markDeed(kind + '.buff');   // v0.31: 'tavern.buff' / 'guild.buff' — темы разговоров
   if (typeof unlockLoreMany === 'function') unlockLoreMany(lore);
   if (typeof annalsFirst === 'function') lore.forEach(k => annalsFirst(k));   // v0.32: летопись — «впервые ощутил…»
-  if (typeof rapportService === 'function') rapportService(kind === 'guild' ? 'guildmage' : 'hostess');   // v0.32: отношения
+  if (typeof rapportService === 'function') rapportService(kind === 'guild' ? 'guildmage' : d.owner);   // v0.32: отношения (v0.37: в Храме — с Исмерой)
 
   recalcStats();
   updateTopStatus(); updateCharacterPanel();
@@ -169,7 +175,7 @@ function buffShopApply(kind, items) {
   if (typeof updateTraderGold === 'function') updateTraderGold();
   if (typeof updateForgeGold === 'function') updateForgeGold();
   buffShopRender(kind);
-  const where = kind === 'guild' ? 'Гильдия' : 'Таверна';
+  const where = kind === 'guild' ? 'Гильдия' : d.where;
   logCombat(`${d.emoji} ${where}: ${parts.join(', ')} (−${buffShopNum(spent)} Оболов)`, 'log-entry levelup');
   showToast(d.emoji, parts.length > 1 ? `Продлено: ${parts.length} ${buffShopWord(parts.length)} (−${buffShopNum(spent)})` : `${parts[0]} (−${buffShopNum(spent)})`);
   saveCurrentSlot();

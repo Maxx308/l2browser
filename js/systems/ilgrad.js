@@ -58,6 +58,18 @@ function renderMapLocks() {
     const lock = mapLockInfo(loc);
     const closed = !!(lock && !lock.ready);
     card.classList.toggle('map-locked', closed);
+    card.classList.toggle('map-fallen', loc === 'town' && !!state.player.underwoodFallen);
+
+    // Примета 19 уровня: по карточке Андервуда идёт трещина.
+    if (loc === 'town') {
+      const cracked = !!window.FALL_LINES && (state.player.level || 1) >= 19 && !state.player.underwoodFallen;
+      let crack = card.querySelector(':scope > .map-crack');
+      if (cracked && !crack) {
+        card.insertAdjacentHTML('afterbegin', '<svg class="map-crack" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><path vector-effect="non-scaling-stroke" d="M62 0 L58 14 L66 26 L55 38 L60 52 L48 63 L52 78 L44 100 M60 52 L71 60 L77 74 M55 38 L44 34"/></svg>');
+      } else if (!cracked && crack) {
+        crack.remove();
+      }
+    }
 
     let layer = card.querySelector(':scope > .map-lock');
     if (closed && !layer) {
@@ -84,10 +96,12 @@ function renderMapLocks() {
   });
 }
 
-// Прорыв к воротам (10 волн по 10) ещё не сделан.
+// Сам прорыв начинается после Собрания у Старейшины (js/systems/underwood-fall.js).
 function startIlgradBreakthrough() {
   if ((state.player.level || 1) < ILGRAD_MIN_LEVEL) return;
-  showSoon('ПРОРЫВ', 'Нежить стоит у самых ворот, и пробиться к ним пока нельзя. Скоро.');
+  showSoon('ПРОРЫВ', window.FALL_LINES
+    ? 'Одному к воротам не пробиться. Старейшина собирает всех в Андервуде: поговори с ним.'
+    : 'Нежить стоит у самых ворот, и пробиться к ним пока нельзя. Скоро.');
 }
 
 // Шапка города и какая сетка карточек видна.
@@ -115,13 +129,25 @@ function renderCityView() {
 const ILGRAD_WINDOW_TITLES = {
   '#trader-overlay .window-title':  '⚔ АРСЕНАЛ ИЛЬГРАДА',
   '#forge-overlay .window-title':   '⚒ КУЗНИЦА ИЛЬГРАДА',
-  '#mentor-overlay .window-title':  '⚔ КАЗАРМЫ · НАВЫКИ',
+  '#mentor-overlay .window-title':  '🕯 ХРАМ · ТАИНСТВО',   // v0.37: навыки — в Храме (решение пользователя 16.11)
   '#guild-overlay .window-title':   '🔮 БАШНЯ МАГОВ',
-  '#tavern-overlay .window-title':  '🕯 ХРАМ · БЛАГОСЛОВЕНИЯ',
+  '#tavern-overlay .window-title':  () => ILGRAD_TAVERN_PLACES[__ilgradTavernPlace].title,   // Храм или Казармы
   '.storage-title':                 '📦 СКЛАД СНАБЖЕНИЯ',
   '.refine-title':                  '🔧 КУЗНИЦА · ПОДГОНКА',
   '.alchemist-title':               '⚗ ЛАЗАРЕТ · АЛХИМИЯ',
 };
+
+const ILGRAD_SURVIVORS = ['smith', 'refiner', 'guildmage', 'keeper'];
+// Лавка Андервуда → кто стоит за этим прилавком в Ильграде (тексты — js/data/fall-lines.js).
+// v0.37: окно навыков (mentor) — в Храме у Исмеры; окно бафов (hostess) — Храм или Казармы (Таэлин).
+const ILGRAD_OWNERS = {
+  trader: 'garsha', mentor: 'ismera', alchemist: 'averyan',
+  hostess: () => ILGRAD_TAVERN_PLACES[__ilgradTavernPlace].owner,
+};
+function ilgradOwnerOf(npcId) {
+  const v = ILGRAD_OWNERS[npcId];
+  return typeof v === 'function' ? v() : v;
+}
 
 function applyTownWindowTitles() {
   const il = state.player.currentLocation === 'ilgrad';
@@ -129,10 +155,18 @@ function applyTownWindowTitles() {
     const el = document.querySelector(sel);
     if (!el) return;
     if (el.dataset.orig === undefined) el.dataset.orig = el.textContent;
-    el.textContent = il ? ILGRAD_WINDOW_TITLES[sel] : el.dataset.orig;
+    const t = ILGRAD_WINDOW_TITLES[sel];
+    el.textContent = il ? (typeof t === 'function' ? t() : t) : el.dataset.orig;
   });
-  // Жители Андервуда в Ильграде не стоят за прилавками — «Поговорить» прячем.
-  document.querySelectorAll('.talk-btn[data-npc]').forEach(b => { b.style.display = il ? 'none' : ''; });
+  // В Ильграде за прилавками те, кто дошёл с обозом, и новые владельцы.
+  const here = id => !il || (state.player.underwoodFallen && (ILGRAD_SURVIVORS.includes(id) || OWNER_CHATS[ilgradOwnerOf(id)]));
+  document.querySelectorAll('.talk-btn[data-npc]').forEach(b => {
+    b.style.display = here(b.dataset.npc) ? '' : 'none';
+    // v0.37: подсказка на кнопке — с кем говорим (в Ильграде за прилавком может быть другой житель)
+    if (b.dataset.origTitle === undefined) b.dataset.origTitle = b.title;
+    const who = il && typeof ownerHere === 'function' ? NPCS[ownerHere(b.dataset.npc)] : null;
+    b.title = who ? `Поговорить: ${who.name}` : b.dataset.origTitle;
+  });
 }
 
 // ---- Места, у которых нет своей лавки ----
@@ -140,10 +174,41 @@ function applyTownWindowTitles() {
 // Комендатура — поручения Ильграда появятся позже.
 function openIlgradCommand() {
   if (state.player.currentLocation !== 'ilgrad') return;
+  if (state.player.underwoodFallen && OWNER_CHATS.commander) { talkToOwner('commander'); return; }
   showSoon('КОМЕНДАТУРА', 'Над картой обороны склонились офицеры. Коменданту пока не до тебя — поручения Ильграда появятся позже.');
 }
 
-// Стена — выход на Окраины.
+// ---- v0.37: Казармы и Храм (решение пользователя 16.11) ----
+// Казармы — муштра у Таэлина (бывший «Расслабон»).
+function openIlgradBarracks() {
+  if (state.player.currentLocation !== 'ilgrad') return;
+  __ilgradTavernPlace = 'barracks';
+  openTavern();
+  applyTownWindowTitles();
+}
+// Храм — благословение (бывший «Отдых») и таинство: прокачка навыков, позже — подклассы.
+// Почему в храме «лучше учится», в игре не объясняем (там то, что держит барьер; знают ли горожане — не решено).
+NPCS.ilgrad_temple = { id: 'ilgrad_temple', name: 'Храм', fullName: 'Храм Ильграда', icon: 'ilgrad_temple', dialogueStart: null };
+NPC_SVG.ilgrad_temple = `<img src="img/city/ilgrad/temple.webp" alt="">`;
+DIALOGUES.ilgrad_temple = {
+  start: 'hello',
+  nodes: {
+    hello: {
+      text: '*Под сводами тихо, свечи горят ровно, без копоти. Безликая статуя в глубине кажется ближе, чем есть. Камень пола тёплый — в городе, где холодно всё.*',
+      options: [
+        { text: '🕯 Благословение', onSelect: () => { __ilgradTavernPlace = 'temple'; openTavern(); applyTownWindowTitles(); } },
+        { text: '✦ Таинство (навыки)', onSelect: () => { openMentor(); applyTownWindowTitles(); } },
+        { text: 'Уйти', action: 'close' },
+      ],
+    },
+  },
+};
+function openIlgradTemple() {
+  if (state.player.currentLocation !== 'ilgrad') return;
+  openDialogue('ilgrad_temple');
+}
+
+// Стена — выход на Окраины. v0.37: карточку в городе убрали (на Окраины — через карту), функция осталась про запас.
 function openIlgradWatch() {
   if (state.player.currentLocation !== 'ilgrad') return;
   tryTravel('outskirts');
@@ -174,11 +239,15 @@ function openIlgradForge() {
 function cheatToggleIlgrad() {
   const p = state.player;
   p.ilgradOpen = !p.ilgradOpen;
+  if (!p.ilgradOpen) p.underwoodFallen = false;   // в закрытый город возвращаться некуда
   if (!p.ilgradOpen && (p.currentLocation === 'ilgrad' || p.currentLocation === 'outskirts')) {
     p.currentLocation = 'town';
     switchTab('hunt');
   }
   showToast('🏰', p.ilgradOpen ? 'Ильград открыт — путь на карте' : 'Ильград закрыт');
+  checkLevelUp();   // потолок уровня зависит от Ильграда: 20 или 30
+  updateTopStatus();
+  updateCharacterPanel();
   updateMapUI();
   if (typeof renderCheatMenu === 'function') renderCheatMenu();
   saveCurrentSlot();

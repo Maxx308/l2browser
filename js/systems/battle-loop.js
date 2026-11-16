@@ -108,7 +108,8 @@ function gameLoop() {
         if (b.timer <= 0) {
           b.timer = 0;
           if (TAVERN_BUFFS[buffId]) {
-            logCombat(`🍺 Действие «${TAVERN_BUFFS[buffId].name}» закончилось.`, 'log-entry levelup');
+            const pl = tavernBuffPlace(TAVERN_BUFFS[buffId]);   // v0.37: Храм / Казармы Ильграда
+            logCombat(`${pl ? pl.emoji : '🍺'} Действие «${tavernBuffName(buffId)}» закончилось.`, 'log-entry levelup');
           }
         }
       }

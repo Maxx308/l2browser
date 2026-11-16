@@ -38,7 +38,8 @@ const BREAK_GNAW_PER_SECOND = 0.006; // людей в секунду с кажд
 const BREAK_DOWN_SECONDS = 5;
 const BREAK_DOWN_GNAW_MULT = 3;
 const BREAK_WAVE_PAUSE_MS = 1800;
-const BREAK_PLATE_MS = 5000;
+const BREAK_PLATE_MS = 8000;
+const BREAK_PLATE_LOCK_MS = 1500;   // v0.37: первые полторы секунды надпись не закрывается кликом (клики из диалога её проскакивали)
 const BREAK_LAST_WAVE_KILLS = 5;     // последняя волна: столько убито — и спутник остаётся держать дорогу
 const BREAK_LAST_WAVE_SECONDS = 120; // ...или столько секунд прошло
 
@@ -74,21 +75,30 @@ function breakthroughLoadLines() {
   });
 }
 
-function breakthroughStart() {
+// opts.real — настоящий прорыв из цепочки падения Андервуда: его нельзя бросить, волны сохраняются.
+// opts.resume — { wave, convoy, used, fireUsed }: продолжение после обновления страницы.
+function breakthroughStart(opts) {
   const p = state.player;
   if (!p.classId) { showToast('⚔', 'Сначала выберите класс у Наставника'); return; }
+  const real = !!(opts && opts.real), saved = opts && opts.resume;
   if (state.battle.active) closeBattle();
   if (p.hp < 1) p.hp = 1;
   state.battle.breakthrough = {
-    wave: 0, convoy: BREAK_CONVOY_START, gnaw: 0, queue: [], time: 0, down: 0, between: true,
+    real,
+    wave: saved ? saved.wave : 0, convoy: saved ? saved.convoy : BREAK_CONVOY_START,
+    gnaw: 0, queue: [], time: 0, down: 0, between: true,
     help: {
       cd: { supply: 0, healer: 0, bruiser: BREAK_HELP.bruiser.firstAt, pair: BREAK_HELP.pair.cooldown },
-      used: { supply: 0, healer: 0, bruiser: 0, pair: 0 },
-      fireUsed: false, regen: null, lastAtb: 0,
+      used: (saved && saved.used) || { supply: 0, healer: 0, bruiser: 0, pair: 0 },
+      fireUsed: !!(saved && saved.fireUsed), regen: null, lastAtb: 0,
     },
   };
+  if (saved) {
+    if (saved.wave >= BREAK_WAVES.length) breakFinish(); else breakNextWave();
+    return;
+  }
   const lines = window.BREAK_LINES;
-  breakPlate(lines && lines.intro, breakNextWave);
+  breakPlate(lines && lines.intro, breakNextWave, 'img/story/fall/convoy.webp');   // v0.37: за текстом — кадр обоза
 }
 
 function breakNextWave() {
@@ -457,9 +467,10 @@ function breakEndWave(timedOut) {
   clearAllDebuffs();
   breakLose((BREAK_LOSS_BY_WAVE[br.wave - 1] || 0) + leftovers);
   logCombat(timedOut
-    ? `⏳ Обоз не может ждать: волна ${br.wave} прорвалась к людям. Осталось людей: ${br.convoy}.`
-    : `🛡 Волна ${br.wave} позади. Осталось людей: ${br.convoy}.`, 'log-entry separator');
+    ? `⏳ Обоз не может ждать: волна ${br.wave} прорвалась к обозу. В обозе осталось: ${br.convoy}.`
+    : `🛡 Волна ${br.wave} позади. В обозе осталось: ${br.convoy}.`, 'log-entry separator');
   breakRender();
+  if (br.real) state.player.fallBattle = { wave: br.wave, convoy: br.convoy, used: br.help.used, fireUsed: br.help.fireUsed };
   saveCurrentSlot();
   setTimeout(() => {
     if (state.battle.breakthrough !== br) return;
@@ -473,15 +484,16 @@ function breakEndWave(timedOut) {
 function breakFinish() {
   const br = state.battle.breakthrough;
   if (!br) return;
-  const left = br.convoy;
+  const left = br.convoy, real = br.real;
   breakCleanup();
   state.player.breakthroughResult = left;
   document.getElementById('battle-window').classList.remove('active');
   document.getElementById('hunt-hint').style.display = 'block';
   renderMonsters();
   saveCurrentSlot();
+  if (real) { fallAfterBattle(left); return; }
   showSoon('ПРОРЫВ', left > 0
-    ? `Обоз дошёл до ворот. Из ${BREAK_CONVOY_START} человек осталось ${left}.`
+    ? `Обоз дошёл до ворот. Из ${BREAK_CONVOY_START} дошли ${left}.`
     : 'Из шестидесяти семи дошли только мы.');
 }
 
@@ -507,12 +519,16 @@ function breakHeroBack() {
 }
 
 // Чёрный экран с короткой надписью. Нажатие — пропустить. Нет текста — сразу дальше.
-function breakPlate(textLines, done) {
+// v0.37: bg — затемнённая картинка за текстом; кликом закрывается не раньше BREAK_PLATE_LOCK_MS,
+//   потом появляется подсказка «нажмите, чтобы продолжить».
+function breakPlate(textLines, done, bg) {
   if (!textLines || !textLines.length) { done(); return; }
   const el = document.createElement('div');
   el.id = 'bx-break-plate';
-  el.innerHTML = textLines.map(t => `<p>${t}</p>`).join('');
+  if (bg) { el.classList.add('has-bg'); el.style.setProperty('--plate-bg', `url('${bg}')`); }
+  el.innerHTML = textLines.map(t => `<p>${t}</p>`).join('') + '<div class="bx-plate-hint">нажмите, чтобы продолжить</div>';
   document.body.appendChild(el);
+  const shownAt = Date.now();
   let finished = false;
   const finish = () => {
     if (finished) return;
@@ -520,11 +536,12 @@ function breakPlate(textLines, done) {
     el.remove();
     done();
   };
-  el.addEventListener('click', finish);
+  setTimeout(() => el.classList.add('can-skip'), BREAK_PLATE_LOCK_MS);
+  el.addEventListener('click', () => { if (Date.now() - shownAt >= BREAK_PLATE_LOCK_MS) finish(); });
   setTimeout(finish, BREAK_PLATE_MS);
 }
 
-// Игрок закрыл окно боя (пока только в пробе из чит-меню).
+// Игрок закрыл окно боя (только в пробе из чит-меню: настоящий прорыв закрыть нельзя, см. closeBattle).
 function breakthroughAbort() {
   const p = state.player;
   if (p.hp <= 0) p.hp = Math.max(1, Math.floor(p.maxHp * 0.5));

@@ -80,6 +80,8 @@ function monsterTagDmg(m, dmg, kinds) {
   const final = monsterManaAbsorb(m, dmg);   // весь урон героя проходит здесь — и щит маны тоже
   if (m.undying && final >= m.hp) {          // Неупокоенный: первый смертельный удар
     m.undying = false;
+    // v0.37: не всегда, а с шансом (один бросок на тварь — на её первый смертельный удар)
+    if (Math.random() * 100 >= (MONSTER_TAGS.undying.undyingChance || 100)) return final;
     spawnFloatDamage('fighter-monster', 0, 'block', { mon: m, text: 'НЕ УПОКОЕН' });
     logCombat(`💀 ${m.name} не падает!`, 'log-entry monster');
     return Math.max(0, m.hp - 1);

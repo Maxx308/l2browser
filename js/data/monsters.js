@@ -381,7 +381,8 @@ const MONSTER_TAGS = {
   steadfast: { name: 'Непоколебимый', icon: 'img/tags/steadfast.webp', desc: 'нельзя оглушить, зато по нему легче попасть', stunImmune: true, evaPct: -25 },
   venomous:  { name: 'Ядовитый',   icon: 'img/tags/venomous.webp', desc: 'может отравить, но бьёт на 10% слабее', poison: true, atkPct: -10 },
   formation: { name: 'Строй',      icon: 'img/tags/formation.webp', desc: 'пока рядом свои, физический урон по нему −15%; один — +15%', formation: true },
-  undying:   { name: 'Неупокоенный', icon: 'img/tags/undying.webp', desc: 'один раз переживает смертельный удар, но здоровья на 10% меньше', undying: true, hpPct: -10 },
+  // v0.37: срабатывает с шансом (решение пользователя 15.11 — раньше всегда, у Ополченцев «1 HP» был в каждом бою)
+  undying:   { name: 'Неупокоенный', icon: 'img/tags/undying.webp', desc: 'с шансом 30% один раз переживает смертельный удар, но здоровья на 10% меньше', undying: true, undyingChance: 30, hpPct: -10 },
   grudge:    { name: 'Злопамятный', icon: 'img/tags/grudge.webp', desc: 'пал свой — атака +10% (до +30%), но поначалу бьёт на 10% слабее', grudge: true, atkPct: -10 },
   coward:    { name: 'Трус',       icon: 'img/tags/coward.webp', desc: 'ниже 20% здоровья может сбежать без награды, зато бьёт на 10% слабее', coward: true, atkPct: -10 },
   thief:     { name: 'Вор',        icon: 'img/tags/thief.webp', desc: 'может утащить Оболы; убьёшь — вернёт вдвое, сбежит — пропали', thief: true },
@@ -416,7 +417,10 @@ const OUTSKIRTS_MONSTERS = [
     pDef: 46, mDef: 22,   // кости: мечом плохо, магией легко
     goldMin: 210, goldMax: 250, goldChance: 85,
     art: 'img/monsters/undead_militia.webp',
-    drops: [],
+    drops: [
+      { name: 'Ржавый доспех', icon: 'img/materials/rust_armor.webp', chance: 5, type: 'material', sellPrice: 10 },
+      { name: 'Потемневший медальон', icon: 'img/materials/dark_medallion.webp', chance: 3, type: 'material', sellPrice: 14 },
+    ],
   },
   {
     id: 'boneHound', name: 'Костяная гончая', level: 21,
@@ -426,7 +430,10 @@ const OUTSKIRTS_MONSTERS = [
     pDef: 36, mDef: 26,
     goldMin: 220, goldMax: 270, goldChance: 85,
     art: 'img/monsters/bone_hound.webp',
-    drops: [],
+    drops: [
+      { name: 'Звонкая кость', icon: 'img/materials/ringing_bone.webp', chance: 5, type: 'material', sellPrice: 10 },
+      { name: 'Костяной клык', icon: 'img/materials/bone_fang.webp', chance: 4, type: 'material', sellPrice: 12 },
+    ],
   },
   {
     id: 'ghoul', name: 'Гуль', level: 22,
@@ -435,7 +442,10 @@ const OUTSKIRTS_MONSTERS = [
     pDef: 40, mDef: 28,
     goldMin: 270, goldMax: 340, goldChance: 85,
     art: 'img/monsters/ghoul.webp',
-    drops: [],
+    drops: [
+      { name: 'Мёртвая шкура', icon: 'img/materials/dead_hide.webp', chance: 5, type: 'material', sellPrice: 12 },
+      { name: 'Крепкая жила', icon: 'img/materials/tough_sinew.webp', chance: 4, type: 'material', sellPrice: 12 },
+    ],
   },
   {
     id: 'weeper', name: 'Плакальщица', level: 23,
@@ -445,7 +455,11 @@ const OUTSKIRTS_MONSTERS = [
     pDef: 30, mDef: 44,
     goldMin: 260, goldMax: 320, goldChance: 85,
     art: 'img/monsters/weeper.webp',
-    drops: [],
+    drops: [
+      { name: 'Саван', icon: 'img/materials/shroud.webp', chance: 7, type: 'material', sellPrice: 12 },
+      { name: 'Застывший вздох', icon: 'img/materials/frozen_sigh.webp', chance: 3, type: 'material', sellPrice: 16 },
+      { name: 'Слеза плакальщицы', icon: 'img/materials/weeper_tear.webp', chance: 0.7, type: 'material', sellPrice: 90, rare: true },
+    ],
   },
   {
     id: 'boneColossus', name: 'Костяной колосс', level: 25,
@@ -455,7 +469,12 @@ const OUTSKIRTS_MONSTERS = [
     pDef: 48, mDef: 34,
     goldMin: 410, goldMax: 510, goldChance: 85,
     art: 'img/monsters/bone_colossus.webp',
-    drops: [],
+    drops: [
+      { name: 'Звонкая кость', icon: 'img/materials/ringing_bone.webp', chance: 4, type: 'material', sellPrice: 10 },
+      { name: 'Ржавый доспех', icon: 'img/materials/rust_armor.webp', chance: 4, type: 'material', sellPrice: 10 },
+      { name: 'Обломок дубины', icon: 'img/materials/club_shard.webp', chance: 3, type: 'material', sellPrice: 14 },
+      { name: 'Сердце колосса', icon: 'img/materials/colossus_heart.webp', chance: 0.7, type: 'material', sellPrice: 100, rare: true },
+    ],
   },
 ];
 

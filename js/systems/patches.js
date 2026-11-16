@@ -35,7 +35,8 @@ const PATCH_VISIBLE_RECENT = 10;
 //  ОПРЕДЕЛЕНИЕ: МОБИЛЬНЫЙ ЛИ РЕЖИМ
 // --------------------------------------------------------
 function isPatchMobile() {
-  return window.matchMedia('(max-width: 700px)').matches;
+  // v0.36.4: телефон лёжа — тоже «мобильная» раскладка (тот же запрос, что в patches.css)
+  return window.matchMedia('(max-width: 700px), (max-height: 500px) and (orientation: landscape)').matches;
 }
 
 // --------------------------------------------------------

@@ -13,6 +13,10 @@
 //    (state.player.expeditionLoot): забрать в сумку / на склад, что не влезло — ждёт.
 //  + Зашёл раньше конца (или «Не ждать») — экспедиция закончилась сама по случайной
 //    причине, без бонуса. Дождался — +15%.
+//  + v0.36.4: уйти можно только из города. Сборы: замер копит и расход зелий/микстур
+//    (huntPace[..].use), окно само считает, сколько взять, и докупает у Торговца.
+//    Взятое уходит из сумки, остаток возвращается; кончилось — герой вернулся раньше.
+//    Таймеры бафов, сытости и блюда списываются за время в пути.
 //
 //  Данные — js/data/expeditions.js.
 // ========================================================
@@ -91,6 +95,26 @@ function expPaceStore() {
   return p.huntPace;
 }
 
+// v0.36.4: вместе с темпом копится расход припасов — use[shopId] = сколько штук ушло
+// (микстура — дробью: 1 заряд = 1/charges). Старые замеры (без v) начинаются заново,
+// иначе в них нет расхода и экспедиция снова шла бы «на бесплатных» зельях.
+const EXP_PACE_VER = 2;
+
+function expPaceEntry(key) {
+  const st = expPaceStore();
+  let e = st[key];
+  if (!e || e.v !== EXP_PACE_VER) e = st[key] = { k: 0, s: 0, v: EXP_PACE_VER, use: {} };
+  if (!e.use) e.use = {};
+  return e;
+}
+
+function expRecordUse(shopId, n) {
+  const key = expCurrentHuntKey();
+  if (!key || !shopId || !(n > 0) || !state.player.classId) return;
+  const e = expPaceEntry(key);
+  e.use[shopId] = (e.use[shopId] || 0) + n;
+}
+
 // Кого сейчас бьём (цель охоты), null — охоты нет.
 function expCurrentHuntKey() {
   const b = state.battle;
@@ -106,9 +130,13 @@ function expPaceStamp() {
   if (__expPace.key && __expPace.t) {
     const dt = (now - __expPace.t) / 1000;
     if (dt > 0 && dt <= HUNT_PACE_MAX_GAP_SEC) {
-      const e = expPaceStore()[__expPace.key] || (expPaceStore()[__expPace.key] = { k: 0, s: 0 });
+      const e = expPaceEntry(__expPace.key);
       e.s += dt;
-      if (e.s > HUNT_PACE_WINDOW_SEC) { const f = HUNT_PACE_WINDOW_SEC / e.s; e.s *= f; e.k *= f; }
+      if (e.s > HUNT_PACE_WINDOW_SEC) {
+        const f = HUNT_PACE_WINDOW_SEC / e.s;
+        e.s *= f; e.k *= f;
+        Object.keys(e.use).forEach(id => { e.use[id] *= f; });
+      }
     }
   }
   __expPace.key = expCurrentHuntKey();
@@ -119,15 +147,15 @@ function expPaceKill(m) {
   if (!m || !state.player.classId) return;
   expPaceStamp();
   const key = expPaceKey(m.templateId || m.id, m.variantId);
-  const e = expPaceStore()[key] || (expPaceStore()[key] = { k: 0, s: 0 });
-  e.k += 1;
+  expPaceEntry(key).k += 1;
 }
 
-// Темп на монстре: { kph, k, s } или null, если замера мало.
+// Темп на монстре: { ok, kph, k, s, use }. old — замер из прошлой версии (без расхода припасов).
 function expGetPace(id, variantId) {
   const e = (state.player.huntPace || {})[expPaceKey(id, variantId)];
+  if (e && e.v !== EXP_PACE_VER) return { ok: false, old: true, k: 0, s: 0 };
   if (!e || e.s < EXPEDITION_MIN_PACE_SEC || e.k < EXPEDITION_MIN_PACE_KILLS) return { ok: false, k: e ? e.k : 0, s: e ? e.s : 0 };
-  return { ok: true, kph: e.k / e.s * 3600, k: e.k, s: e.s };
+  return { ok: true, kph: e.k / e.s * 3600, k: e.k, s: e.s, use: e.use || {} };
 }
 
 // ---------- КОГО МОЖНО БИТЬ В ЭКСПЕДИЦИИ ----------
@@ -139,7 +167,8 @@ function expHuntOptions(loc) {
       const pace = expGetPace(t.id, v);
       let reason = '';
       if (kills < EXPEDITION_MIN_KILLS) reason = `нужно ${EXPEDITION_MIN_KILLS} убийств (сейчас ${kills})`;
-      else if (!pace.ok) reason = 'поохотьтесь на них хотя бы 5 минут — так прикинем темп';
+      else if (pace.old) reason = 'замерим заново, теперь и расход зелий: поохотьтесь на них 5 минут';
+      else if (!pace.ok) reason = 'поохотьтесь на них хотя бы 5 минут — так прикинем темп и расход зелий';
       const inst = buildMonsterInstance(t, v);
       list.push({ key: expPaceKey(t.id, v), template: t, variantId: v, name: inst.name, level: inst.level, kills, pace, ok: !reason, reason });
     });
@@ -160,6 +189,121 @@ function expEstimate(template, variantId, kph, hours) {
   return { kills, xp, gold };
 }
 
+// ---------- ПРИПАСЫ (v0.36.4) ----------
+// Зелья и микстуры герой берёт с собой из города: сколько уйдёт — по замеру на этом монстре.
+// Взятое сразу уходит из сумки, остаток возвращается. Кончились — герой приходит раньше.
+function expInvCount(shopId) {
+  return state.player.inventory.filter(i => i.shopId === shopId).reduce((s, i) => s + (i.qty || 0), 0);
+}
+
+function expInvTake(shopId, qty) {
+  const inv = state.player.inventory;
+  for (let i = inv.length - 1; i >= 0 && qty > 0; i--) {
+    const it = inv[i];
+    if (it.shopId !== shopId) continue;
+    const t = Math.min(it.qty || 0, qty);
+    it.qty -= t; qty -= t;
+    if (it.qty <= 0) inv.splice(i, 1);
+  }
+}
+
+// Вернуть припас: в стопку в сумке, в свободную ячейку, а если некуда — в добычу экспедиции.
+function expGiveSupply(shopId, qty) {
+  if (!(qty > 0)) return;
+  const p = state.player;
+  const shop = SHOP_ITEMS.find(s => s.id === shopId);
+  if (!shop) return;
+  const ex = p.inventory.find(i => i.shopId === shopId);
+  if (ex) { ex.qty = (ex.qty || 0) + qty; return; }
+  const item = {
+    name: shop.name, type: 'consumable', icon: SVG[shop.icon], shopId,
+    effect: shop.effect, sellPrice: Math.floor(shop.price * 0.3),
+  };
+  if (p.inventory.length < invMaxSlots()) {
+    p.inventory.push({ id: 'item_' + Date.now() + '_' + Math.random(), ...item, qty });
+  } else {
+    if (!Array.isArray(p.expeditionLoot)) p.expeditionLoot = [];
+    expPoolAdd(p.expeditionLoot, item, qty);
+  }
+}
+
+// Сколько каждого припаса уйдёт за hours часов на этом монстре.
+function expSupplyNeeds(opt, hours) {
+  const pace = opt.pace;
+  if (!pace || !pace.ok || !pace.k) return [];
+  const kills = pace.kph * EXPEDITION_RATE * hours;
+  return Object.keys(pace.use || {}).map(id => {
+    const shop = SHOP_ITEMS.find(s => s.id === id);
+    const perKill = (pace.use[id] || 0) / pace.k;
+    if (!shop || !(perKill > 0)) return null;
+    return { id, shop, perKill, need: Math.ceil(perKill * kills - 1e-6), have: expInvCount(id) };
+  }).filter(r => r && r.need > 0)
+    // без чего не воевать — первым: на него Оболы на докупку идут в первую очередь
+    .sort((a, b) => (expSupplyKind(a.id).kind === 'hard' ? 0 : 1) - (expSupplyKind(b.id).kind === 'hard' ? 0 : 1));
+}
+
+// Как припас влияет на экспедицию:
+//  'hard' — без него герой к тварям не суётся (зелья, Микстура крепости): кончился — вернулся раньше;
+//  'atk'  — Микстура атаки: кончилась — дальше бьёт медленнее (темп ÷ (1 + урон%));
+//  'luck' — Микстура удачи: пока есть — +шанс дропа, кончилась — просто без бонуса.
+function expSupplyKind(id) {
+  const m = (typeof MIXTURE_EFFECTS !== 'undefined') ? MIXTURE_EFFECTS[id] : null;
+  if (m && m.atkPercent) return { kind: 'atk', value: m.atkPercent };
+  if (m && m.luckPercent) return { kind: 'luck', value: m.luckPercent };
+  return { kind: 'hard', value: 0 };
+}
+
+// Прогон экспедиции по припасам: supplies [{ id, qty, perKill }], rate — убийств в мс
+// на полной силе, T — сколько мс прошло. Возвращает убийства (без бонуса +15%), сколько мс
+// герой на самом деле охотился, что кончилось первым (ranOut), сколько убийств шло с удачей.
+function expSimulate(supplies, rate, T) {
+  let atk = null, luck = null, hardCap = Infinity, hardBy = null;
+  (supplies || []).forEach(s => {
+    if (!(s.perKill > 0)) return;
+    const cap = (s.qty || 0) / s.perKill;   // на сколько убийств хватит
+    const k = expSupplyKind(s.id);
+    if (k.kind === 'atk') { if (!atk || cap < atk.cap) atk = { cap, value: k.value, s }; }
+    else if (k.kind === 'luck') { if (!luck || cap < luck.cap) luck = { cap, value: k.value, s }; }
+    else if (cap < hardCap) { hardCap = cap; hardBy = s; }
+  });
+  if (!(rate > 0)) return { kills: 0, ms: T, ranOut: null, luckKills: 0, luckValue: 0, atkOutMs: null };
+  const rate2 = atk ? rate / (1 + atk.value / 100) : rate;
+  const atkMs = atk ? atk.cap / rate : Infinity;
+  const killsAt = t => (t <= atkMs ? rate * t : atk.cap + rate2 * (t - atkMs));
+  const timeFor = K => (!atk || K <= atk.cap ? K / rate : atkMs + (K - atk.cap) / rate2);
+  let kills = killsAt(T), ms = T, ranOut = null;
+  if (kills > hardCap) { kills = hardCap; ms = timeFor(hardCap); ranOut = hardBy; }
+  return {
+    kills, ms, ranOut,
+    luckKills: luck ? Math.min(kills, luck.cap) : 0, luckValue: luck ? luck.value : 0,
+    atkOutMs: atk && atkMs < ms ? atkMs : null, atkName: atk ? atk.s.name : '',
+  };
+}
+
+// План сборов по окну: сколько берём, сколько докупаем, на сколько часов хватит.
+function expSupplyPlan(opt, hours) {
+  const d = __expDialog || {};
+  const take = d.take || {};
+  const rows = expSupplyNeeds(opt, hours);
+  const inTown = isTownLoc(state.player.currentLocation);
+  let gold = state.player.gold;
+  let cost = 0;
+  rows.forEach(r => {
+    r.take = Math.max(0, Math.min(99999, Math.floor(take[r.id] !== undefined ? take[r.id] : r.need)));
+    const want = Math.max(0, r.take - r.have);
+    r.buy = (inTown && d.buy !== false) ? Math.min(want, Math.floor(gold / r.shop.price)) : 0;
+    r.noGold = r.buy < want && inTown && d.buy !== false;
+    gold -= r.buy * r.shop.price;
+    cost += r.buy * r.shop.price;
+    r.got = Math.min(r.take, r.have + r.buy);
+    r.short = Math.max(0, r.take - r.got);
+    r.name = r.shop.name;
+  });
+  const T = hours * 3600000;
+  const sim = expSimulate(rows.map(r => ({ id: r.id, name: r.name, qty: r.got, perKill: r.perKill })), opt.pace.kph * EXPEDITION_RATE / 3600000, T);
+  return { rows, cost, sim, coverH: sim.ms / 3600000, enough: !sim.ranOut };
+}
+
 // ---------- ДОБЫЧА: БРОСКИ ПО НАСТОЯЩЕЙ ТАБЛИЦЕ ----------
 function expMakeItem(drop, qty) {
   let stats = null;
@@ -178,6 +322,7 @@ function expMakeItem(drop, qty) {
   };
   if (drop.rarity) item.rarity = drop.rarity;
   if (drop.bonusStats) item.bonusStats = drop.bonusStats;
+  if (drop.shopId) { item.shopId = drop.shopId; item.effect = drop.effect; }   // v0.36.4: вернувшиеся припасы
   return item;
 }
 
@@ -192,7 +337,8 @@ function expPoolAdd(pool, drop, qty) {
 function expPoolCount(pool) { return (pool || []).reduce((s, e) => s + (e.qty || 0), 0); }
 
 // Бросить добычу за kills убийств. Возвращает { xp, gold, items: [{drop, qty}] }.
-function expRollHunt(template, variantId, kills) {
+// luck = { kills, value } — первые luck.kills убийств шли под Микстурой удачи (+value% к шансу дропа).
+function expRollHunt(template, variantId, kills, luck) {
   const p = state.player;
   const inst = buildMonsterInstance(template, variantId);
   const m = mult();
@@ -219,8 +365,9 @@ function expRollHunt(template, variantId, kills) {
       if (isMine) g = Math.max(10, Math.round(g / 10) * 10);
       gold += g;
     }
+    const dm = (luck && k < luck.kills) ? dropMult + luck.value / 100 : dropMult;
     inst.drops.forEach(d => {
-      const n = rollDropCount(d.chance * m * dropMult);
+      const n = rollDropCount(d.chance * m * dm);
       for (let i = 0; i < n; i++) {
         if (EXP_RARITY_TYPES.includes(d.type)) {
           if (cap > 0 && copies(d.name) >= cap) continue;
@@ -251,6 +398,7 @@ function openExpeditionDialog(loc) {
     loc,
     key: (prev && opts.some(o => o.ok && o.key === prev.key)) ? prev.key : (firstOk ? firstOk.key : null),
     hours: prev ? prev.hours : 4,
+    take: {}, buy: prev ? prev.buy !== false : true,
   };
   expRenderDialog();
 }
@@ -301,23 +449,74 @@ function expRenderDialog() {
     </div>`;
   }
 
+  // v0.36.4: отправиться можно только из города — там же и сборы
+  const inTown = isTownLoc(state.player.currentLocation);
+  let pack = '';
+  if (sel) {
+    const plan = expSupplyPlan(sel, d.hours);
+    if (!plan.rows.length) {
+      pack = `<div class="exp-sub">Сборы</div><div class="exp-note">Припасы не нужны: на этой охоте вы не пили зелий и не брали микстур.</div>`;
+    } else {
+      const lines = plan.rows.map(r => {
+        const icon = SVG[r.shop.icon] || '🧪';
+        const tail = [];
+        tail.push(`в сумке ${expNum(r.have)}`);
+        if (r.buy > 0) tail.push(`<b>докупит ${expNum(r.buy)}</b>`);
+        if (r.short > 0) tail.push(`<span class="exp-pack-warn">не хватает ${expNum(r.short)}${r.noGold ? ' — мало Оболов' : ''}</span>`);
+        return `<div class="exp-pack-row">
+          <span class="exp-pack-ico">${icon}</span>
+          <span class="exp-pack-body"><span class="exp-pack-name">${r.shop.name}</span><span class="exp-pack-info">нужно ~${expNum(r.need)} · ${tail.join(' · ')}</span></span>
+          <input type="number" class="exp-pack-qty" min="0" step="1" value="${r.take}" data-id="${r.id}" aria-label="Сколько взять: ${r.shop.name}">
+        </div>`;
+      }).join('');
+      let sum = '';
+      if (plan.cost > 0) sum += `<div>Докупит у Торговца на <b>${expNum(plan.cost)}</b> Оболов (у вас ${expNum(state.player.gold)})</div>`;
+      const sim = plan.sim;
+      if (sim.atkOutMs !== null) {
+        sum += sim.atkOutMs < 60000
+          ? `<div class="exp-pack-warn">«${sim.atkName}» не взята — герой бьёт медленнее, чем на вашей охоте.</div>`
+          : `<div class="exp-pack-warn">«${sim.atkName}» кончится примерно через ${expFormatDuration(sim.atkOutMs)} — дальше герой бьёт медленнее.</div>`;
+      }
+      if (!plan.enough) sum += `<div class="exp-pack-warn">Хватит примерно на ${expFormatDuration(sim.ms)} из ${d.hours} ч: кончится «${sim.ranOut.name}», и герой вернётся раньше, без бонуса.</div>`;
+      else if (sim.atkOutMs === null) sum += `<div class="exp-pack-ok">Припасов хватит на всю экспедицию. Что останется — вернётся в сумку.</div>`;
+      else sum += `<div class="exp-pack-ok">Герой вернётся в срок. Остаток припасов — обратно в сумку.</div>`;
+      pack = `<div class="exp-sub">Сборы</div>
+        <div class="exp-pack">${lines}</div>
+        ${inTown ? `<label class="exp-pack-buy"><input type="checkbox" id="exp-pack-buy"${d.buy !== false ? ' checked' : ''}> Докупить недостающее у Торговца</label>` : ''}
+        <div class="exp-pack-sum">${sum}</div>`;
+    }
+  }
+  const townNote = inTown ? '' : `<div class="exp-pack-warn exp-town-note">Собраться в экспедицию можно только в городе: вернитесь туда — герой закупится и уйдёт.</div>`;
+
   expOverlay(`
     <div class="exp-head"><span>⛺ Экспедиция: ${place}</span><button type="button" class="exp-x" onclick="closeExpeditionDialog()" aria-label="Закрыть">×</button></div>
-    <div class="exp-note">Герой уйдёт охотиться сам — вдвое медленнее, чем с вами. Пока он в пути, им нельзя играть. Без душ самоцветов.</div>
+    <div class="exp-note">Герой уйдёт из города охотиться сам — вдвое медленнее, чем с вами. Пока он в пути, им нельзя играть. Зелья и микстуры берёт с собой, бафы и сытость тратятся как на обычной охоте. Без душ самоцветов.</div>
     <div class="exp-sub">На кого</div>
     <div class="exp-mons">${rows}</div>
     <div class="exp-sub">На сколько</div>
     <div class="exp-hours-row">${hours}</div>
     ${est}
-    <div class="exp-actions"><button type="button" class="exp-btn exp-btn-main"${sel ? '' : ' disabled'} onclick="expStartHunt()">Отправиться</button></div>
+    ${pack}
+    ${townNote}
+    <div class="exp-actions"><button type="button" class="exp-btn exp-btn-main"${sel && inTown ? '' : ' disabled'} onclick="expStartHunt()">Отправиться</button></div>
   `);
 
   document.querySelectorAll('#exp-overlay .exp-mon:not(.locked)').forEach(b => {
-    b.onclick = () => { __expDialog.key = b.dataset.key; expRenderDialog(); };
+    b.onclick = () => { __expDialog.key = b.dataset.key; __expDialog.take = {}; expRenderDialog(); };
   });
   document.querySelectorAll('#exp-overlay .exp-hours').forEach(b => {
-    b.onclick = () => { __expDialog.hours = +b.dataset.h; expRenderDialog(); };
+    b.onclick = () => { __expDialog.hours = +b.dataset.h; __expDialog.take = {}; expRenderDialog(); };
   });
+  document.querySelectorAll('#exp-overlay .exp-pack-qty').forEach(inp => {
+    inp.onchange = () => {
+      const v = Math.max(0, Math.floor(+inp.value || 0));
+      __expDialog.take = __expDialog.take || {};
+      __expDialog.take[inp.dataset.id] = v;
+      expRenderDialog();
+    };
+  });
+  const buyBox = document.getElementById('exp-pack-buy');
+  if (buyBox) buyBox.onchange = () => { __expDialog.buy = buyBox.checked; expRenderDialog(); };
 }
 
 async function expStartHunt() {
@@ -326,6 +525,7 @@ async function expStartHunt() {
   const o = expHuntOptions(d.loc).find(x => x.key === d.key && x.ok);
   if (!o) return;
   if (state.travel.active) { showToast('⛺', 'Сначала дойдите до места'); return; }
+  if (!isTownLoc(state.player.currentLocation)) { showToast('⛺', 'Собраться в экспедицию можно только в городе'); return; }
 
   const btn = document.querySelector('#exp-overlay .exp-btn-main');
   if (btn) { btn.disabled = true; btn.textContent = 'Собираемся…'; }
@@ -333,6 +533,23 @@ async function expStartHunt() {
   // Охота, если шла, заканчивается — герой уходит.
   const b = state.battle;
   if (b.active || b.repeatBattle || b.waitingForResume) closeBattle();
+
+  // v0.36.4: сборы — докупить недостающее у Торговца и забрать припасы из сумки
+  const plan = expSupplyPlan(o, d.hours);
+  plan.rows.forEach(r => { if (r.buy > 0) buyItem(r.id, r.buy); });
+  const supplies = [];
+  plan.rows.forEach(r => {
+    const got = Math.min(r.take, expInvCount(r.id));
+    if (got <= 0) { supplies.push({ id: r.id, name: r.shop.name, qty: 0, perKill: r.perKill }); return; }
+    expInvTake(r.id, got);
+    supplies.push({ id: r.id, name: r.shop.name, qty: got, perKill: r.perKill });
+  });
+  if (supplies.length) {
+    renderInventory();
+    if (typeof renderEquipSlots === 'function') renderEquipSlots();
+    if (typeof renderConsumablesPanel === 'function') renderConsumablesPanel();
+    if (typeof updateInventoryFooter === 'function') updateInventoryFooter();
+  }
 
   const srv = await expServerNow();
   state.player.expedition = {
@@ -346,6 +563,7 @@ async function expStartHunt() {
     startedAt: srv || Date.now(),
     startedLocal: Date.now(),
     serverTime: !!srv,
+    supplies,   // v0.36.4: [{ id, name, qty, perKill }] — кончатся раньше срока, герой вернётся раньше
   };
   logCombat(`⛺ ${state.player.name} уходит в экспедицию: ${LOCATION_NAMES[d.loc] || d.loc}, ${o.name}, ${d.hours} ч.`, 'log-entry levelup');
   saveCurrentSlot();
@@ -411,6 +629,34 @@ function expPickBagLine(rep) {
   return heroText(line.replace('%kills%', expNum(rep.kills)));
 }
 
+// v0.36.4: пока герой в пути, время бафов, сытости и блюда идёт, как на обычной охоте.
+// Возвращает true, если было что тратить (для строчки в отчёте).
+function expBurnTimers(sec) {
+  const p = state.player;
+  if (!(sec > 0)) return false;
+  let any = false, recalc = false;
+  if (p.foodTimer > 0) {
+    any = true;
+    p.foodTimer -= sec;
+    if (p.foodTimer <= 0) { p.foodTimer = 0; p.foodTickAccum = 0; p.foodKind = null; }
+  }
+  if (p.dish && p.dish.timer > 0) {
+    any = true;
+    p.dish.timer -= sec;
+    if (p.dish.timer <= 0) { p.dish = null; recalc = true; }
+  }
+  ['guildBuffs', 'tavernBuffs'].forEach(k => {
+    Object.values(p[k] || {}).forEach(b => {
+      if (!b || !(b.timer > 0)) return;
+      any = true;
+      b.timer = Math.max(0, b.timer - sec);
+      if (!b.timer) recalc = true;
+    });
+  });
+  if (recalc && typeof recalcStats === 'function') recalcStats();
+  return any;
+}
+
 // early = true — «Не ждать» (или вошли раньше). Финал — по времени сервера.
 async function expResolve(early) {
   const p = state.player;
@@ -420,19 +666,34 @@ async function expResolve(early) {
   try {
     clearInterval(__expAwayTimer); __expAwayTimer = null;
     const srv = await expServerNow();
-    const elapsed = expElapsedMs(exp, srv);
-    const full = elapsed >= expDurationMs(exp) - 1000;
+    let elapsed = expElapsedMs(exp, srv);
+    let full = elapsed >= expDurationMs(exp) - 1000;
     const template = ALL_HUNT_MONSTERS.find(t => t.id === exp.monsterId);
 
-    let killsRaw = (exp.kph || 0) * EXPEDITION_RATE * (elapsed / 3600000) * (full ? 1 + EXPEDITION_FULL_BONUS : 1);
+    // v0.36.4: припасы. Кончились зелья — герой вернулся в тот момент, без бонуса;
+    // кончилась Микстура атаки — дальше бил медленнее; Микстура удачи — пока была.
+    const sim = expSimulate(exp.supplies || [], (exp.kph || 0) * EXPEDITION_RATE / 3600000, elapsed);
+    const ranOut = sim.ranOut;
+    if (ranOut) { elapsed = sim.ms; full = false; }
+    const huntKills = sim.kills;   // без бонуса: столько раз герой на самом деле дрался
+    const supplyRep = (exp.supplies || []).map(s => {
+      const used = Math.min(s.qty || 0, Math.round((s.perKill || 0) * huntKills));
+      const left = (s.qty || 0) - used;
+      expGiveSupply(s.id, left);
+      return { name: s.name, used, left };
+    }).filter(s => s.used > 0 || s.left > 0);
+    const burned = expBurnTimers(elapsed / 1000);
+
+    let killsRaw = huntKills * (full ? 1 + EXPEDITION_FULL_BONUS : 1);
     let kills = Math.floor(killsRaw) + (Math.random() < killsRaw % 1 ? 1 : 0);
     if (!template) kills = 0;
 
     const levelBefore = p.level;
-    const loot = template && kills > 0 ? expRollHunt(template, exp.variantId, kills) : { xp: 0, gold: 0, items: [] };
+    const luck = { kills: Math.round(sim.luckKills), value: sim.luckValue };
+    const loot = template && kills > 0 ? expRollHunt(template, exp.variantId, kills, luck) : { xp: 0, gold: 0, items: [] };
 
     p.expedition = null;
-    p.currentLocation = 'town';
+    p.currentLocation = homeTown();
     p.xp += loot.xp;
     p.gold += loot.gold;
     if (template) { const key = killKey(template.id, exp.variantId); p.monsterKills[key] = (p.monsterKills[key] || 0) + kills; }
@@ -444,7 +705,8 @@ async function expResolve(early) {
     const rep = {
       loc: exp.loc, name: exp.name, hours: exp.hours, elapsed, full,
       kills, xp: loot.xp, gold: loot.gold, levels: p.level - levelBefore,
-      reason: full ? '' : expPickReason(),
+      reason: ranOut ? heroText(EXPEDITION_SUPPLY_OUT_REASON.replace('%name%', ranOut.name)) : (full ? '' : expPickReason()),
+      supplies: supplyRep, burned,
     };
     rep.bagLine = expPickBagLine(rep);
     if (typeof annalsFirst === 'function') annalsFirst('expedition.hunt');
@@ -483,6 +745,11 @@ function expShowReport(rep) {
     </div>`;
     if (rep.full) body += `<div class="exp-rep-bonus">+${Math.round(EXPEDITION_FULL_BONUS * 100)}% за полную экспедицию</div>`;
     if (rep.levels > 0) body += `<div class="exp-rep-bonus">✦ Новый уровень: ${p.level}!</div>`;
+    if (rep.supplies && rep.supplies.length) {
+      const s = rep.supplies.map(x => `${x.name}: ушло ${expNum(x.used)}${x.left > 0 ? `, вернулось ${expNum(x.left)}` : ''}`).join(' · ');
+      body += `<div class="exp-rep-supplies">🎒 ${s}</div>`;
+    }
+    if (rep.burned) body += `<div class="exp-rep-supplies">⏳ Бафы и сытость тоже потратили ${expFormatDuration(rep.elapsed)}</div>`;
   }
 
   const order = (typeof RARITY_ORDER !== 'undefined') ? RARITY_ORDER : [];
@@ -543,6 +810,7 @@ function openExpeditionDialogForce(loc) {
     loc,
     key: (prev && opts.some(o => o.ok && o.key === prev.key)) ? prev.key : (firstOk ? firstOk.key : null),
     hours: prev ? prev.hours : 4,
+    take: {}, buy: prev ? prev.buy !== false : true,
   };
   expRenderDialog();
 }
@@ -681,6 +949,28 @@ function expOnEnterGame() {
 
   const origClose = closeBattle;
   closeBattle = function () { expPaceStamp(); const r = origClose.apply(this, arguments); __expPace.key = null; return r; };
+
+  // v0.36.4: расход припасов на охоте — зелье (одно за бой) и заряды микстуры
+  const origPotion = checkHealPotion;
+  checkHealPotion = function () {
+    const eff = state.battle.activeEffects;
+    const before = !!(eff && eff.healPotionUsed);
+    const slot = state.player.potionSlot;
+    const r = origPotion.apply(this, arguments);
+    if (!before && eff && eff.healPotionUsed && slot) expRecordUse(slot, 1);
+    return r;
+  };
+
+  const origMix = tickMixtureCharge;
+  tickMixtureCharge = function (n) {
+    // n > 1 сам вызывает себя по одному заряду — считаем только одиночные, чтобы не задвоить
+    if ((n || 1) === 1) {
+      const m = getActiveMixture();
+      const d = m && MIXTURE_EFFECTS[m.id];
+      if (d && d.charges) expRecordUse(m.id, 1 / d.charges);
+    }
+    return origMix.apply(this, arguments);
+  };
 
   // Таймер: и замер (если охота идёт), и кнопка на карте с отсчётом,
   // и подпись «осталось …» на экране выбора героя (раз в полминуты).

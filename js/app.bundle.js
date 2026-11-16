@@ -1,4 +1,4 @@
-// L2 BROWSER — СБОРКА v0.36.4 (build.js; правки — в js/**, а не сюда). Файлов: 96
+// L2 BROWSER — СБОРКА v0.37 (build.js; правки — в js/**, а не сюда). Файлов: 98
 // ==== ФАЙЛ js/data/config.js ====
 const CHEAT_MULTIPLIER = 10;
 const MP_COST_PER_ATTACK = 5;
@@ -106,10 +106,16 @@ const ALL_RESOURCES = [
 'Кожа', 'Шкура', 'Уголь',
 'Медь', 'Олово', 'Хитин', 'Каменные пластины',
 'Пещерный гриб', 'Паучий шёлк', 'Ядовитая железа', 'Ядро голема',
+'Ржавый доспех', 'Звонкая кость', 'Мёртвая шкура', 'Саван', 'Слеза плакальщицы', 'Сердце колосса',
+'Потемневший медальон', 'Костяной клык', 'Крепкая жила', 'Застывший вздох', 'Обломок дубины',
 'Сырой гранат',
 ];
-const MAX_PLAYER_LEVEL = 20;
+const MAX_PLAYER_LEVEL = 30;
+const LEVEL_CAP_BEFORE_ILGRAD = 20;
 const XP_MONSTER_MULTIPLIER = 3;
+function getMaxPlayerLevel() {
+return (state.player && state.player.ilgradOpen) ? MAX_PLAYER_LEVEL : LEVEL_CAP_BEFORE_ILGRAD;
+}
 function getXpForLevel(level) {
 if (level <= 1) return 0;
 if (level > MAX_PLAYER_LEVEL) return Infinity;
@@ -195,9 +201,10 @@ const JEWELRY_MILESTONE_BY_TIER = {
 1: { necklace: 2, ring: 1,   earringXp: 1, earringProf: 0.5 },
 2: { necklace: 3, ring: 1.5, earringXp: 2, earringProf: 1 },
 3: { necklace: 5, ring: 2,   earringXp: 3, earringProf: 1 },
+4: { necklace: 7, ring: 3,   earringXp: 4, earringProf: 1.5 },
 };
 function getJewelryMilestoneValues(item) {
-const t = Math.min(3, Math.max(1, getItemTier(item)));
+const t = Math.min(4, Math.max(1, getItemTier(item)));
 return JEWELRY_MILESTONE_BY_TIER[t];
 }
 function getJewelryMilestoneBonus(item) {
@@ -226,6 +233,7 @@ const JEWELRY_MINISET_MDEF = {
 1: [0, 0, 1, 2, 3, 4],
 2: [0, 0, 2, 3, 4, 6],
 3: [0, 0, 3, 4, 5, 7],
+4: [0, 0, 4, 5, 7, 9],
 };
 function countJewelryOfTier(equipment, tier) {
 return JEWELRY_SLOTS.filter(k => equipment[k] && getItemTier(equipment[k]) >= tier).length;
@@ -245,7 +253,7 @@ let changed = false;
 (list || []).forEach(it => { if (migrateJewelryMilestones(it)) changed = true; });
 return changed;
 }
-const ITEM_BASE_STAT_KEYS = ['pAtk', 'pDef', 'mDef', 'mAtk', 'flatDamageReduce', 'blockChance', 'mpBonus', 'hpBonus', 'atbSpeedMod', 'critChance', 'mpRegenIn'];
+const ITEM_BASE_STAT_KEYS = ['pAtk', 'pDef', 'mDef', 'mAtk', 'flatDamageReduce', 'blockChance', 'mpBonus', 'hpBonus', 'atbSpeedMod', 'critChance', 'mpRegenIn', 'evasionMod'];
 function migrateWeaponBaseStats(item) {
 if (!item || (item.type !== 'weapon' && item.type !== 'shield') || typeof RECIPES === 'undefined') return false;
 const list = item.type === 'shield' ? RECIPES.shields : RECIPES.weapons;
@@ -1099,7 +1107,7 @@ roots:     { name: 'Корни',      icon: 'img/tags/roots.webp', desc: 'леч
 steadfast: { name: 'Непоколебимый', icon: 'img/tags/steadfast.webp', desc: 'нельзя оглушить, зато по нему легче попасть', stunImmune: true, evaPct: -25 },
 venomous:  { name: 'Ядовитый',   icon: 'img/tags/venomous.webp', desc: 'может отравить, но бьёт на 10% слабее', poison: true, atkPct: -10 },
 formation: { name: 'Строй',      icon: 'img/tags/formation.webp', desc: 'пока рядом свои, физический урон по нему −15%; один — +15%', formation: true },
-undying:   { name: 'Неупокоенный', icon: 'img/tags/undying.webp', desc: 'один раз переживает смертельный удар, но здоровья на 10% меньше', undying: true, hpPct: -10 },
+undying:   { name: 'Неупокоенный', icon: 'img/tags/undying.webp', desc: 'с шансом 30% один раз переживает смертельный удар, но здоровья на 10% меньше', undying: true, undyingChance: 30, hpPct: -10 },
 grudge:    { name: 'Злопамятный', icon: 'img/tags/grudge.webp', desc: 'пал свой — атака +10% (до +30%), но поначалу бьёт на 10% слабее', grudge: true, atkPct: -10 },
 coward:    { name: 'Трус',       icon: 'img/tags/coward.webp', desc: 'ниже 20% здоровья может сбежать без награды, зато бьёт на 10% слабее', coward: true, atkPct: -10 },
 thief:     { name: 'Вор',        icon: 'img/tags/thief.webp', desc: 'может утащить Оболы; убьёшь — вернёт вдвое, сбежит — пропали', thief: true },
@@ -1131,7 +1139,10 @@ hp: 660, atk: 38, xpReward: 2, attackType: 'physical',
 pDef: 46, mDef: 22,
 goldMin: 210, goldMax: 250, goldChance: 85,
 art: 'img/monsters/undead_militia.webp',
-drops: [],
+drops: [
+{ name: 'Ржавый доспех', icon: 'img/materials/rust_armor.webp', chance: 5, type: 'material', sellPrice: 10 },
+{ name: 'Потемневший медальон', icon: 'img/materials/dark_medallion.webp', chance: 3, type: 'material', sellPrice: 14 },
+],
 },
 {
 id: 'boneHound', name: 'Костяная гончая', level: 21,
@@ -1141,7 +1152,10 @@ hp: 680, atk: 42, xpReward: 2, attackType: 'physical',
 pDef: 36, mDef: 26,
 goldMin: 220, goldMax: 270, goldChance: 85,
 art: 'img/monsters/bone_hound.webp',
-drops: [],
+drops: [
+{ name: 'Звонкая кость', icon: 'img/materials/ringing_bone.webp', chance: 5, type: 'material', sellPrice: 10 },
+{ name: 'Костяной клык', icon: 'img/materials/bone_fang.webp', chance: 4, type: 'material', sellPrice: 12 },
+],
 },
 {
 id: 'ghoul', name: 'Гуль', level: 22,
@@ -1150,7 +1164,10 @@ hp: 820, atk: 44, xpReward: 2, attackType: 'physical',
 pDef: 40, mDef: 28,
 goldMin: 270, goldMax: 340, goldChance: 85,
 art: 'img/monsters/ghoul.webp',
-drops: [],
+drops: [
+{ name: 'Мёртвая шкура', icon: 'img/materials/dead_hide.webp', chance: 5, type: 'material', sellPrice: 12 },
+{ name: 'Крепкая жила', icon: 'img/materials/tough_sinew.webp', chance: 4, type: 'material', sellPrice: 12 },
+],
 },
 {
 id: 'weeper', name: 'Плакальщица', level: 23,
@@ -1160,7 +1177,11 @@ atk: 46, xpReward: 2, attackType: 'magic',
 pDef: 30, mDef: 44,
 goldMin: 260, goldMax: 320, goldChance: 85,
 art: 'img/monsters/weeper.webp',
-drops: [],
+drops: [
+{ name: 'Саван', icon: 'img/materials/shroud.webp', chance: 7, type: 'material', sellPrice: 12 },
+{ name: 'Застывший вздох', icon: 'img/materials/frozen_sigh.webp', chance: 3, type: 'material', sellPrice: 16 },
+{ name: 'Слеза плакальщицы', icon: 'img/materials/weeper_tear.webp', chance: 0.7, type: 'material', sellPrice: 90, rare: true },
+],
 },
 {
 id: 'boneColossus', name: 'Костяной колосс', level: 25,
@@ -1170,7 +1191,12 @@ hp: 1150, atk: 52, xpReward: 2, attackType: 'hybrid',
 pDef: 48, mDef: 34,
 goldMin: 410, goldMax: 510, goldChance: 85,
 art: 'img/monsters/bone_colossus.webp',
-drops: [],
+drops: [
+{ name: 'Звонкая кость', icon: 'img/materials/ringing_bone.webp', chance: 4, type: 'material', sellPrice: 10 },
+{ name: 'Ржавый доспех', icon: 'img/materials/rust_armor.webp', chance: 4, type: 'material', sellPrice: 10 },
+{ name: 'Обломок дубины', icon: 'img/materials/club_shard.webp', chance: 3, type: 'material', sellPrice: 14 },
+{ name: 'Сердце колосса', icon: 'img/materials/colossus_heart.webp', chance: 0.7, type: 'material', sellPrice: 100, rare: true },
+],
 },
 ];
 const ALL_HUNT_MONSTERS = [...MONSTERS, ...MINE_MONSTERS, ...OUTSKIRTS_MONSTERS];
@@ -1244,12 +1270,12 @@ purple: 'Сырой аметист',
 yellow: 'Сырой топаз',
 red:    'Сырой рубин',
 } },
-outskirts: { tier: 3, gems: {
-green:  'Сырой изумруд',
-blue:   'Сырой сапфир',
-purple: 'Сырой аметист',
-yellow: 'Сырой топаз',
-red:    'Сырой рубин',
+outskirts: { tier: 4, gems: {
+green:  'Огранённый изумруд',
+blue:   'Огранённый сапфир',
+purple: 'Огранённый аметист',
+yellow: 'Огранённый топаз',
+red:    'Огранённый рубин',
 } },
 };
 const SOUL_GEM_ITEMS = {
@@ -1258,7 +1284,32 @@ const SOUL_GEM_ITEMS = {
 'Сырой аметист': { color: 'purple', tier: 3, icon: 'img/materials/raw_amethyst.webp', sellPrice: 150 },
 'Сырой топаз':   { color: 'yellow', tier: 3, icon: 'img/materials/raw_topaz.webp',    sellPrice: 250 },
 'Сырой рубин':   { color: 'red',    tier: 3, icon: 'img/materials/raw_ruby.webp',     sellPrice: 500 },
+'Огранённый изумруд': { color: 'green',  tier: 4, cut: true, icon: 'img/materials/cut_emerald.webp',  sellPrice: 150 },
+'Огранённый сапфир':  { color: 'blue',   tier: 4, cut: true, icon: 'img/materials/cut_sapphire.webp', sellPrice: 300 },
+'Огранённый аметист': { color: 'purple', tier: 4, cut: true, icon: 'img/materials/cut_amethyst.webp', sellPrice: 450 },
+'Огранённый топаз':   { color: 'yellow', tier: 4, cut: true, icon: 'img/materials/cut_topaz.webp',    sellPrice: 750 },
+'Огранённый рубин':   { color: 'red',    tier: 4, cut: true, icon: 'img/materials/cut_ruby.webp',     sellPrice: 1500 },
 };
+function getTierGemName(tier, color) {
+return Object.keys(SOUL_GEM_ITEMS).find(n => SOUL_GEM_ITEMS[n].cut && SOUL_GEM_ITEMS[n].tier === tier && SOUL_GEM_ITEMS[n].color === color) || null;
+}
+function getGemCount(name) {
+return state.player.inventory.filter(i => i.name === name && i.soulGem).reduce((s, i) => s + (i.qty || 1), 0);
+}
+function spendGems(name, n) {
+if (getGemCount(name) < n) return false;
+const inv = state.player.inventory;
+let need = n;
+for (let i = inv.length - 1; i >= 0 && need > 0; i--) {
+const it = inv[i];
+if (it.name !== name || !it.soulGem) continue;
+const take = Math.min(it.qty || 1, need);
+it.qty = (it.qty || 1) - take;
+need -= take;
+if (it.qty <= 0) inv.splice(i, 1);
+}
+return need === 0;
+}
 const SOUL_STONES_BY_VARIANT = { normal: 1, ancient: 2, bloody: 4 };
 const SOUL_RETIRED_NAMES = ['Сырой рубин', 'Сырой сапфир'];
 function isRetiredGem(item) {
@@ -1299,6 +1350,7 @@ const EXPEDITION_EARLY_REASONS = [
 { text: 'Заплечник ныл всю дорогу. На третий час сдал{ся|ась} и повернул{|а} домой.', bag: true },
 { text: 'Стемнело, а ночевать среди тварей не хотелось.', night: true },
 ];
+const EXPEDITION_SUPPLY_OUT_REASON = 'Припасы подошли к концу: «%name%» больше не осталось. Соваться к тварям с пустыми руками не стал{|а} и повернул{|а} в город.';
 const EXPEDITION_BAG_LINES = {
 full: [
 'Вот это я понимаю — работа. Вернулись вовремя и с полным мной.',
@@ -1793,6 +1845,11 @@ effect: 'xpPercent',
 value: TAVERN_XP_BONUS_PERCENT,
 duration: TAVERN_BUFF_DURATION,
 tooltip: '+10% к получаемому опыту. Таймеры складываются (максимум 12 часов).',
+ilgrad: {
+place: 'temple',
+name: 'Благословение пути',
+desc: 'Мать Исмера кладёт тёплую ладонь тебе на лоб. Дорога запоминается лучше — опыт приходит быстрее.',
+},
 },
 relax: {
 id: 'relax',
@@ -1804,8 +1861,32 @@ effect: 'profPercent',
 value: TAVERN_PROF_BONUS_PERCENT,
 duration: TAVERN_BUFF_DURATION,
 tooltip: '+10% шанс получить бонусный опыт владения за удар. Таймеры складываются (максимум 12 часов).',
+ilgrad: {
+place: 'barracks',
+name: 'Муштра',
+desc: 'Таэлин гоняет по уставу, пока рука не начнёт делать всё сама. Голова потом догонит.',
+},
 },
 };
+const ILGRAD_TAVERN_PLACES = {
+temple:   { emoji: '🕯', where: 'Храм',    owner: 'ismera', title: '🕯 ХРАМ · БЛАГОСЛОВЕНИЕ' },
+barracks: { emoji: '⚔', where: 'Казармы', owner: 'taelin', title: '⚔ КАЗАРМЫ · МУШТРА' },
+};
+let __ilgradTavernPlace = 'temple';
+function tavernInIlgrad() {
+const p = state.player;
+return !!p && (!!p.underwoodFallen || p.currentLocation === 'ilgrad');
+}
+function tavernBuffView(buff) {
+return (buff && buff.ilgrad && tavernInIlgrad()) ? Object.assign({}, buff, buff.ilgrad) : buff;
+}
+function tavernBuffPlace(buff) {
+return (buff && buff.ilgrad && tavernInIlgrad()) ? ILGRAD_TAVERN_PLACES[buff.ilgrad.place] : null;
+}
+function tavernBuffName(buffId) {
+const b = tavernBuffView(TAVERN_BUFFS[buffId]);
+return b ? b.name : '';
+}
 const TAVERN_SVG = {
 tavernRest: `<svg viewBox="0 0 24 24" style="width:48px;height:48px;">
     <path d="M3 18 L3 14 Q3 12 5 12 L19 12 Q21 12 21 14 L21 18" fill="#5a3a1a" stroke="#e0be7a" stroke-width="1.5"/>
@@ -2050,6 +2131,8 @@ return Object.keys(set.skillFlatTiers).map(k => `${k} вещи: +${set.skillFlat
 const CRAFT_PRICE_RESOURCE = 100;
 const CRAFT_PRICE_GEAR = 1000;
 const CRAFT_PRICE_GEAR_T3 = 5000;
+const CRAFT_PRICE_GEAR_T4 = 12000;
+const CRAFT_PRICE_RESOURCE_T4 = 300;
 const CRAFT_PRICE_FOOD = 100;
 const CRAFT_PRICE_DISH = 150;
 const CRAFT_PRICE_HEARTY = 200;
@@ -2340,6 +2423,134 @@ food: { healPerSec: 1, duration: DISH_DURATION, dish: 'mushroomBrew' } },
 materials: [{ name: 'Пещерный гриб', qty: 3 }, { name: 'Нить', qty: 1 }] },
 ],
 };
+const T4_MATERIALS = {
+'Мёртвая сталь':          { icon: 'img/materials/dead_steel.webp', sellPrice: 60, from: [{ name: 'Ржавый доспех', qty: 3 }, { name: 'Каменные пластины', qty: 1 }, { name: 'Уголь', qty: 1 }] },
+'Выделанная мертвокожа':  { icon: 'img/materials/cured_deathhide.webp', sellPrice: 60, from: [{ name: 'Мёртвая шкура', qty: 3 }, { name: 'Хитин', qty: 1 }, { name: 'Клей', qty: 1 }] },
+'Призрачное полотно':     { icon: 'img/materials/ghost_cloth.webp', sellPrice: 60, from: [{ name: 'Саван', qty: 3 }, { name: 'Паучий шёлк', qty: 1 }, { name: 'Ткань', qty: 1 }] },
+'Чернёное серебро':       { icon: 'img/materials/black_silver.webp', sellPrice: 60, from: [{ name: 'Потемневший медальон', qty: 3 }, { name: 'Слиток олова', qty: 1 }, { name: 'Уголь', qty: 1 }] },
+'Едрёная железа':         { icon: 'img/materials/edrenaya_gland.webp', sellPrice: 400, from: [{ name: 'Ядро голема', qty: 5 }, { name: 'Ядовитая железа', qty: 5 }] },
+'Гранатовая нить':        { icon: 'img/materials/garnet_thread.webp', sellPrice: 200, from: [{ name: 'Сырой гранат', qty: 5 }, { name: 'Паучий шёлк', qty: 5 }] },
+};
+Object.entries(T4_MATERIALS).forEach(([name, m], i) => {
+RECIPES.resources.push({
+id: 't4Mat' + i, name, icon: m.icon, price: CRAFT_PRICE_RESOURCE_T4, requiresIlgrad: true,
+result: { name, icon: m.icon, type: 'material', sellPrice: m.sellPrice },
+materials: m.from,
+});
+});
+const T4_WEIGHTS = {
+light:  { pDef: [6, 6, 3, 3, 2],    mDef: [4, 4, 2, 2, 2], hpBonus: [33, 33, 15, 15, 14], atbSpeedMod: [0.02, 0.02, 0.01, 0.01, 0] },
+medium: { pDef: [10, 10, 4, 4, 4],  mDef: [2, 2, 1, 1, 1], hpBonus: [50, 50, 24, 23, 23] },
+heavy:  { pDef: [14, 14, 6, 6, 6],  hpBonus: [72, 72, 32, 32, 32], atbSpeedMod: [-0.02, -0.01, -0.01, -0.01, 0], evasionMod: [-3, -3, -1, -1, 0] },
+};
+const T4_PIECES = [
+{ key: 'top',    label: 'верх',     type: 'armorTop',    sellPrice: 240, qty: [16, 8, 3] },
+{ key: 'bottom', label: 'низ',      type: 'armorBottom', sellPrice: 240, qty: [13, 6, 2] },
+{ key: 'helm',   label: 'шлем',     type: 'helmet',      sellPrice: 120, qty: [7, 3, 1] },
+{ key: 'boots',  label: 'ботинки',  type: 'boots',       sellPrice: 120, qty: [7, 3, 0] },
+{ key: 'gloves', label: 'перчатки', type: 'gloves',      sellPrice: 120, qty: [7, 3, 0] },
+];
+const T4_SETS = [
+{ id: 'shroud', name: 'Саван', weight: 'light', material: 'Призрачное полотно', rare: 'Слеза плакальщицы', skillFlatTiers: { 2: 15, 3: 22, 4: 30 },
+bonus: { mAtkPercent: 12, maxMpFlat: 280 }, bonusText: 'Магическая атака +12%, мана +280',
+bonus10: { manaShield: 50 }, bonus10Text: 'Мана-щит: 50% урона по вам списывается с MP' },
+{ id: 'shadow', name: 'Тень', weight: 'light', material: 'Призрачное полотно', rare: 'Сердце колосса', skillFlatTiers: { 2: 30, 3: 45, 4: 60 },
+bonus: { critPower: 8, critChance: 6 }, bonusText: 'Сила крита +8%, шанс крита +6%',
+bonus10: { critPower: 6 }, bonus10Text: 'ещё сила крита +6%' },
+{ id: 'stalker', name: 'Ловчий', weight: 'medium', material: 'Выделанная мертвокожа', rare: 'Сердце колосса', skillFlatTiers: { 2: 30, 3: 45, 4: 60 },
+bonus: { atbSpeed: 0.08, accuracy: 8 }, bonusText: 'Скорость атаки +8%, точность +8',
+bonus10: { critChance: 5 }, bonus10Text: 'Шанс крита +5%' },
+{ id: 'herbalist', name: 'Знахарь', weight: 'medium', material: 'Выделанная мертвокожа', rare: 'Слеза плакальщицы', skillFlatTiers: { 2: 15, 3: 22, 4: 30 },
+bonus: { hpRegenIn: 2, mpRegenIn: 2 }, bonusText: '+2 HP и +2 MP в секунду в бою',
+bonus10: { buffTurns: 1 }, bonus10Text: 'Длительность усилений +1 ход' },
+{ id: 'bulwark', name: 'Оплот', weight: 'heavy', material: 'Мёртвая сталь', rare: 'Сердце колосса', skillFlatTiers: { 2: 30, 3: 45, 4: 60 },
+bonus: { flatDamageReduce: 5, blockChance: 8 }, bonusText: 'Поглощение урона +5, шанс блока +8%',
+bonus10: { flatDamageReduce: 5 }, bonus10Text: 'ещё поглощение +5 (всего +10)' },
+{ id: 'executioner', name: 'Палач', weight: 'heavy', material: 'Мёртвая сталь', rare: 'Слеза плакальщицы', skillFlatTiers: { 2: 30, 3: 45, 4: 60 },
+bonus: { pAtkPercent: 10, evasion: -4 }, bonusText: 'Физическая атака +10%, уворот −4',
+bonus10: { executePercent: 20 }, bonus10Text: 'Урон по цели ниже 30% здоровья +20%' },
+];
+T4_SETS.forEach(s => {
+const pieceName = p => `${s.name} (${p.label})`;
+SETS[s.id] = {
+name: s.name, bonus: s.bonus, bonusText: s.bonusText, bonus10: s.bonus10, bonus10Text: s.bonus10Text,
+skillFlatTiers: s.skillFlatTiers, pieces: T4_PIECES.map(pieceName),
+};
+T4_PIECES.forEach((p, i) => {
+const icon = `img/armor/t4_${s.id}_${p.key}.webp`;
+const stats = {};
+Object.entries(T4_WEIGHTS[s.weight]).forEach(([k, arr]) => { if (arr[i]) stats[k] = arr[i]; });
+const materials = [{ name: s.material, qty: p.qty[0] }, { name: 'Звонкая кость', qty: p.qty[1] }];
+if (p.qty[2]) materials.push({ name: s.rare, qty: p.qty[2] });
+RECIPES.armor.push({
+id: `t4_${s.id}_${p.key}`, name: pieceName(p), icon, setId: s.id, price: CRAFT_PRICE_GEAR_T4, tier: 4, requiresIlgrad: true,
+result: { name: pieceName(p), icon, type: p.type, sellPrice: p.sellPrice, stats, setId: s.id },
+materials,
+});
+});
+});
+const T4_WEAPON_MATS = {
+blade:  [{ name: 'Мёртвая сталь', qty: 16 }, { name: 'Костяной клык', qty: 10 }],
+blunt:  [{ name: 'Мёртвая сталь', qty: 12 }, { name: 'Обломок дубины', qty: 10 }],
+ranged: [{ name: 'Выделанная мертвокожа', qty: 10 }, { name: 'Крепкая жила', qty: 12 }],
+magic:  [{ name: 'Призрачное полотно', qty: 12 }, { name: 'Застывший вздох', qty: 10 }],
+};
+const T4_WEAPONS = [
+{ id: 'sword',      name: 'Меч Мертвеца',            category: 'swords',    mats: 'blade',  stats: { pAtk: 68, atbSpeedMod: 0.03, critChance: 2 } },
+{ id: 'greatsword', name: 'Двуручный меч Осады',     category: 'swords',    mats: 'blade',  stats: { pAtk: 92, atbSpeedMod: -0.03, critChance: 2 }, two: true },
+{ id: 'axe',        name: 'Топор Погоста',           category: 'axes',      mats: 'blade',  stats: { pAtk: 68 } },
+{ id: 'waraxe',     name: 'Секира Могильщика',       category: 'axes',      mats: 'blade',  stats: { pAtk: 92, atbSpeedMod: -0.03 }, two: true },
+{ id: 'dagger',     name: 'Кинжал Плача',            category: 'daggers',   mats: 'blade',  stats: { pAtk: 58, atbSpeedMod: 0.10, critChance: 8 } },
+{ id: 'spear',      name: 'Копьё Дозорного',         category: 'spears',    mats: 'blade',  stats: { pAtk: 66, atbSpeedMod: 0.02 } },
+{ id: 'pike',       name: 'Пика Ополчения',          category: 'spears',    mats: 'blade',  stats: { pAtk: 90, atbSpeedMod: -0.02 }, two: true },
+{ id: 'bow',        name: 'Лук Гончей',              category: 'bows',      mats: 'ranged', stats: { pAtk: 88 }, two: true },
+{ id: 'crossbow',   name: 'Арбалет Стен',            category: 'crossbows', mats: 'ranged', stats: { pAtk: 84, atbSpeedMod: -0.05 }, two: true },
+{ id: 'mace',       name: 'Булава Костолома',        category: 'maces',     mats: 'blunt',  stats: { pAtk: 66, atbSpeedMod: -0.02 } },
+{ id: 'maul',       name: 'Палица Колосса',          category: 'maces',     mats: 'blunt',  stats: { pAtk: 90, atbSpeedMod: -0.04 }, two: true },
+{ id: 'staff',      name: 'Посох Последнего Вздоха', category: 'staves',    mats: 'magic',  stats: { mAtk: 58, atbSpeedMod: -0.05 }, two: true },
+{ id: 'wand',       name: 'Жезл Вздоха',             category: 'staves',    mats: 'magic',  stats: { mAtk: 28, mpBonus: 120, mpRegenIn: 2 } },
+];
+T4_WEAPONS.forEach(w => {
+const result = { name: w.name, icon: `img/weapons/T4/${w.id}.webp`, type: 'weapon', sellPrice: w.two ? 320 : 240, stats: w.stats };
+if (w.two) result.twoHanded = true;
+RECIPES.weapons.push({
+id: 't4_' + w.id, name: w.name, category: w.category, price: CRAFT_PRICE_GEAR_T4, tier: 4, requiresIlgrad: true, result,
+materials: [...T4_WEAPON_MATS[w.mats], { name: 'Едрёная железа', qty: w.two ? 3 : 2 }],
+});
+});
+RECIPES.shields.push({
+id: 't4_shield', name: 'Щит Погоста', price: CRAFT_PRICE_GEAR_T4, tier: 4, requiresIlgrad: true,
+result: { name: 'Щит Погоста', icon: 'img/weapons/T4/shield.webp', type: 'shield', sellPrice: 120, stats: { pDef: 8, flatDamageReduce: 4, blockChance: 12 } },
+materials: [...T4_WEAPON_MATS.blunt, { name: 'Едрёная железа', qty: 2 }],
+});
+const T4_JEWELRY = [
+{ id: 't4jewelWar', name: 'Гранатовый убор', key: 'war', bonus: { pAtkPercent: 6 }, bonusText: 'Физическая атака +6%',
+pieces: { ring: 'Гранатовое кольцо', earring: 'Гранатовая серьга', necklace: 'Гранатовое ожерелье' },
+stats: { ring: { mDef: 6, hpBonus: 35 }, earring: { mDef: 6, hpBonus: 35 }, necklace: { mDef: 7, hpBonus: 55 } } },
+{ id: 't4jewelMage', name: 'Убор Вздоха', key: 'mage', bonus: { mAtkPercent: 6 }, bonusText: 'Магическая атака +6%',
+pieces: { ring: 'Кольцо Вздоха', earring: 'Серьга Вздоха', necklace: 'Ожерелье Вздоха' },
+stats: { ring: { mDef: 6, hpBonus: 15, mpBonus: 35 }, earring: { mDef: 6, hpBonus: 15, mpBonus: 35 }, necklace: { mDef: 7, hpBonus: 25, mpBonus: 55 } } },
+];
+T4_JEWELRY.forEach(j => {
+SETS[j.id] = {
+name: j.name, bonus: j.bonus, bonusText: j.bonusText, pieces: [j.pieces.ring, j.pieces.earring, j.pieces.necklace],
+isFullSetEquipped: function () {
+const e = state.player.equipment;
+return e.ring1?.name === j.pieces.ring && e.ring2?.name === j.pieces.ring &&
+e.earring1?.name === j.pieces.earring && e.earring2?.name === j.pieces.earring &&
+e.necklace?.name === j.pieces.necklace;
+},
+};
+['ring', 'earring', 'necklace'].forEach(type => {
+const icon = `img/jewelry/T4/${type}_${j.key}.webp`;
+const big = type === 'necklace';
+RECIPES.jewelry.push({
+id: `${j.id}_${type}`, name: j.pieces[type], icon, setId: j.id, price: CRAFT_PRICE_GEAR_T4, tier: 4, requiresIlgrad: true,
+result: { name: j.pieces[type], icon, type, sellPrice: big ? 180 : 120, stats: j.stats[type], setId: j.id },
+materials: [{ name: 'Чернёное серебро', qty: big ? 12 : 8 }, { name: 'Застывший вздох', qty: big ? 6 : 4 }, { name: 'Гранатовая нить', qty: big ? 2 : 1 }],
+});
+});
+});
 const SHOP_ITEMS = [
 { id: 'healPotion', name: 'Зелье малого лечения', price: 20, icon: 'potionHeal',
 slotType: 'potion',
@@ -2582,6 +2793,34 @@ return Math.min(50, total);
 
 // ==== ФАЙЛ js/data/changelog.js ====
 const CHANGELOG = [
+{
+version: 'v0.37',
+date: '15.11.2026',
+title: '🏰 Падение Андервуда и Ильград',
+changes: [
+{ icon: '🕯', text: 'Сюжет: с 17-го уровня в Андервуде становится неспокойно, а на 20-м Старейшина собирает всех, кто остался. Обратной дороги не будет — перед Собранием он напомнит, какие дела в деревне ещё не закончены' },
+{ icon: '⚔', text: 'Прорыв к Ильграду: долгий бой из десяти волн, в котором вы не одни. Сколько людей дойдёт до ворот — зависит от вас, и Летопись это запомнит' },
+{ icon: '🏰', text: 'Ильград — город в кольце нежити. Свои Комендатура, Арсенал, Казармы, Лазарет, Храм, Кузница, Башня магов и Склад. Сюда герой возвращается после смерти и из экспедиций' },
+{ icon: '👥', text: 'Новые жители: Комендант Всеслав, сержант Гарша, мастер Казарм Таэлин, алхимик Аверьян и Мать Исмера — у каждого свои темы для разговора и свои отношения с героем' },
+{ icon: '📜', text: 'Три поручения Коменданта: он считает всё, что можно посчитать, и ему нужен тот, кто ходит за стены' },
+{ icon: '🕯', text: 'Храм: «Благословение пути» (+10% опыта) и Таинство — здесь в Ильграде учат навыки. В Казармах — «Муштра» (+10% к шансу опыта владения)' },
+{ icon: '🌫', text: 'Новая охота — Окраины Ильграда, уровни 20–27: Ополченец, Костяная гончая, Гуль, Плакальщица и Костяной колосс. Твари Окраин бьются оружием и приёмами героев, а некоторые с шансом 30% переживают смертельный удар' },
+{ icon: '📈', text: 'Максимальный уровень — 30 (после прихода в Ильград)' },
+{ icon: '🛡', text: 'Тир 4: шесть комплектов доспехов (лёгкие, средние и тяжёлые), оружие, щит и бижутерия из добычи Окраин' },
+{ icon: '💎', text: 'Огранённые самоцветы: твари Окраин носят их в себе. Вещи тира 4 распыляются, перебрасываются и возвышаются за Огранённые камни, а не за пыль' },
+{ icon: '📖', text: 'Бестиарий: статьи о тварях Окраин и о самих Окраинах, открываются охотой' },
+{ icon: '📋', text: 'Журнал поручений: дела, которые уже не закончить, уходят в отдельный раздел «Не успели»' },
+{ icon: '⛺', text: 'Экспедиции честнее: герой уходит в них только из города и берёт припасы с собой. Окно само считает, сколько зелий и микстур уйдёт (по вашей охоте на этого монстра), и докупает недостающее у Торговца. Что останется — вернётся в сумку. Кончились зелья или Микстура крепости — герой возвращается раньше, без бонуса. Кончилась Микстура атаки — дальше бьёт медленнее. Микстура удачи в экспедиции теперь тоже работает, пока не кончится' },
+{ icon: '⏳', text: 'Пока герой в экспедиции, время бафов, сытости и блюда идёт, как на обычной охоте' },
+{ icon: '📏', text: 'Темп для экспедиций замеряется заново (теперь вместе с расходом зелий): перед первой экспедицией на монстра поохотьтесь на него минут 5' },
+{ icon: '👑', text: 'Титулы стали понятнее. Нажмите на значок титула на карточке твари — откроется окно: что он даёт на примере её добычи и что нужно для следующего титула, вплоть до списка тварей, которых осталось добить. На телефоне тоже работает' },
+{ icon: '📈', text: 'С титулом шансы на карточке показываются уже с его множителем: «20% → 30%». По пути к «Охотнику» рядом со счётчиком убийств — бледная корона, нажатие на счётчик открывает то же окно' },
+{ icon: '🎉', text: 'Новый титул — теперь событие, а не мелькнувшая надпись: окно с объяснением, что он даёт и что дальше, запись в Летописи и, если вы знакомы с сумкой, её реплика' },
+{ icon: '🖼', text: 'Картинки: эмблемы Воина и Мага при создании героя видны целиком, а не узкой полоской из середины. Портреты тварей на карточках и в окне экспедиции больше не срезают головы высоким тварям (Энт, Бандит, Голем), особенно на телефоне, повёрнутом боком' },
+{ icon: '🗑', text: 'Удалить героя можно и тогда, когда он сохранён только в облаке: крестик «×» есть на каждой карточке' },
+{ icon: '📱', text: 'Телефон, повёрнутый боком: список версий на стартовом экране больше не налезает на окно входа — версии стоят строкой сверху, как на телефоне в обычном положении' },
+],
+},
 {
 version: 'v0.36.4',
 date: '12.11.2026',
@@ -4175,6 +4414,9 @@ death: 'Очнул{ся|ась} в Андервуде. Как вернул{ся|
 'loc.field': 'Выш{ел|ла} за ворота, на Зелёную поляну. Трава по пояс, и в ней всё время кто-то шуршит.',
 'loc.mine':  'Спустил{ся|ась} в Копи. Темно, сыро, и камни здесь, кажется, умеют ходить.',
 camp:        'Пришлось встать на привал прямо посреди охоты. Костёр, тишина, твари где-то рядом. Отдышаться — и снова в бой.',
+'title.hunter':      'Тысячный раз — %monster%. Сбил{ся|ась} со счёта где-то на шестой сотне, но меня теперь зовут Охотником. Добыча с них валится охотнее — или это я научил{ся|ась} её находить.',
+'title.glorious':    '%loc%: каждая тварь, что там водится, — по тысяче раз. Прославленный охотник. Звучит громко, а руки просто болят.',
+'title.magnificent': '%loc%: до последней твари, всех мастей, по тысяче раз. Великолепный охотник. Кажется, здешние твари теперь сами отдают всё, что у них есть.',
 'expedition.hunt': 'Ушёл{|ла} охотиться надолго — на несколько часов, без спешки и без города за спиной. Вернул{ся|ась} с полной сумкой и гудящими руками.',
 'soul.seen':  'В твари мерцал камень — %gem%. Будто у неё вместо сердца самоцвет. Билась она за него злее обычного.',
 'soul.taken': 'Вынул{|а} камень из убитой твари — %gem%. Тёплый и мерцает, будто ещё живой. Алхимик, наверное, знает, что с таким делать.',
@@ -4552,10 +4794,19 @@ function loreBeastKills(id) {
 return ['normal', 'ancient', 'bloody'].reduce((s, v) => s + (typeof getMonsterKills === 'function' ? getMonsterKills(id, v) : 0), 0);
 }
 function loreVariantKills(id, v) { return typeof getMonsterKills === 'function' ? getMonsterKills(id, v) : 0; }
-function loreLocKills(loc) {
-const list = loc === 'field' ? MONSTERS : loc === 'mine' ? MINE_MONSTERS : [];
-return list.reduce((s, m) => s + loreBeastKills(m.id), 0);
+function loreLocMonsters(loc) {
+if (loc === 'field') return MONSTERS;
+if (loc === 'mine') return MINE_MONSTERS;
+if (loc === 'outskirts') return typeof OUTSKIRTS_MONSTERS !== 'undefined' ? OUTSKIRTS_MONSTERS : [];
+return [];
 }
+function loreLocKills(loc) {
+return loreLocMonsters(loc).reduce((s, m) => s + loreBeastKills(m.id), 0);
+}
+function loreBeastLoc(id) {
+return ['field', 'mine', 'outskirts'].find(loc => loreLocMonsters(loc).some(x => x.id === id)) || 'field';
+}
+const LORE_LOC_KIND = { field: 'Зелёная поляна', mine: 'Копи', outskirts: 'Окраины Ильграда' };
 function loreChronicle() { return (state.player && state.player.chronicle) || {}; }
 const LORE_BEAST_TRAITS = {
 silkworm: t => `Липкая нить: может опутать на ${t.webTurns} хода — герой действует медленнее`,
@@ -4567,22 +4818,28 @@ caveBat:  t => `Жвала: кровотечение на ${t.bleedTurns} ход
 };
 function loreBeastRows(m) {
 const nature = { solo: 'Одиночка', pack: 'Стайный' }[m.pack] || 'Ходит по одному и по двое-трое';
-const inMine = MINE_MONSTERS.some(x => x.id === m.id);
+const loc = loreBeastLoc(m.id);
+const attack = { magic: 'Магия', hybrid: 'То удар, то чары (полумагия)' }[m.attackType] || 'Физическая';
 const rows = [
 ['Уровень', `${m.level} (Древний — ${m.level + 1}, Кровавый — ${m.level + 2})`],
 ['Повадки', nature],
-['Атака', m.attackType === 'magic' ? 'Магия' : 'Физическая'],
+['Атака', attack],
 ];
+if (m.weapon && m.skill && typeof WEAPON_SKILLS !== 'undefined' && WEAPON_SKILLS[m.weapon] && SKILLS[m.skill]) {
+rows.push(['Оружие', `${WEAPON_SKILLS[m.weapon].name} · приём «${SKILLS[m.skill].name}»`]);
+}
 if (LORE_BEAST_TRAITS[m.id] && m.traits) rows.push(['Особенность', LORE_BEAST_TRAITS[m.id](m.traits)]);
 if (m.poison) rows.push(['Особенность', `Яд: почти каждый укус отравляет на ${POISON_DURATION} хода, яд копится — до ${POISON_MAX_LEVEL} слоёв`]);
+if (m.mp) rows.push(['Особенность', 'Щит маны: пока есть сила, половина урона уходит в пустоту']);
 if (m.night) rows.push(['Ночью', 'выходит на охоту в темноте']);
-if (inMine) rows.push(['Душа', 'иногда носит в себе сырой самоцвет']);
+if (loc === 'mine') rows.push(['Душа', 'иногда носит в себе сырой самоцвет']);
+if (loc === 'outskirts') rows.push(['Душа', 'иногда носит в себе огранённый самоцвет']);
 rows.push(['Добыча', m.drops.map(d => d.name).join(', ')]);
 return rows;
 }
 function loreBeastArticle(id, labels, texts, extra) {
-const inMine = !MONSTERS.some(x => x.id === id);
-const m = (inMine ? MINE_MONSTERS : MONSTERS).find(x => x.id === id);
+const loc = loreBeastLoc(id);
+const m = loreLocMonsters(loc).find(x => x.id === id);
 const k = (n) => () => loreBeastKills(id) >= n;
 const steps = [1, 10, 50, 150, 400, 1000];
 const parts = texts.main.map((text, i) => ({
@@ -4595,7 +4852,7 @@ rows: i === 0 ? loreBeastRows(m) : undefined,
 parts.push({ key: `beast.${id}.ancient`, label: 'Древний', text: texts.ancient, when: () => loreVariantKills(id, 'ancient') >= 1 });
 parts.push({ key: `beast.${id}.bloody`, label: 'Кровавый', text: texts.bloody, when: () => loreVariantKills(id, 'bloody') >= 1 });
 (extra || []).forEach(p => parts.splice(p.at, 0, p.part));
-return { cat: 'beasts', order: m.level, title: m.name, kind: inMine ? 'Копи' : 'Зелёная поляна', portrait: m.art, parts };
+return { cat: 'beasts', order: m.level, title: m.name, kind: LORE_LOC_KIND[loc], portrait: m.art, parts };
 }
 LORE_ARTICLES.field = {
 cat: 'places', order: 1, title: 'Зелёная поляна', kind: 'Дикие земли у Андервуда',
@@ -5702,6 +5959,7 @@ if (item.stats.hpBonus) bonusMaxHp += getItemStat(item, 'hpBonus');
 if (item.stats.atbSpeedMod) bonusAtbMod += item.stats.atbSpeedMod;
 if (item.stats.critChance) p.critChance += item.stats.critChance;
 if (item.stats.mpRegenIn) itemMpRegenIn += item.stats.mpRegenIn;
+if (item.stats.evasionMod) refineEvasionBonus += item.stats.evasionMod;
 }
 const rb = item.refineBonuses;
 if (rb) {
@@ -5833,6 +6091,21 @@ if (jewelryMiniSet) {
 p.setBonuses.push({ name: `Бижутерия тира ${jewelryMiniSet.tier}+`, text: `${jewelryMiniSet.count} ${jewelryMiniSet.count >= 5 ? 'вещей' : 'вещи'}: +${jewelryMiniSet.bonus} маг. защиты` });
 }
 p.skillFlatDamage = 0;
+p.critMultBonus = 0;
+p.executeBonus = 0;
+p.buffTurnsBonus = 0;
+let setAccuracyBonus = 0;
+const applySetExtras = b => {
+if (b.critPower) p.critMultBonus += b.critPower / 100;
+if (b.accuracy) setAccuracyBonus += b.accuracy;
+if (b.evasion) p.evasionBonus += b.evasion;
+if (b.blockChance) p.blockChance += b.blockChance;
+if (b.pAtkPercent) p.pAtk = Math.floor(p.pAtk * (1 + b.pAtkPercent / 100));
+if (b.hpRegenIn) p.hpRegenIn += b.hpRegenIn;
+if (b.mpRegenIn) { p.hasManaRegenPassive = true; p.mpRegenInBonus = (p.mpRegenInBonus || 0) + b.mpRegenIn; }
+if (b.executePercent) p.executeBonus += b.executePercent;
+if (b.buffTurns) p.buffTurnsBonus += b.buffTurns;
+};
 Object.values(SETS).forEach(set => {
 const tier = getSetSkillFlatTier(set, countSetPiecesWorn(set, p.equipment));
 if (tier) {
@@ -5853,12 +6126,15 @@ if (set.bonus.campHpRegen) p.campHpRegen += set.bonus.campHpRegen;
 if (set.bonus.campMpRegen) p.campMpRegen += set.bonus.campMpRegen;
 if (set.bonus.flatDamageReduce) p.flatDamageReduce += set.bonus.flatDamageReduce;
 if (set.bonus.manaShield) p.manaShield += set.bonus.manaShield;
+applySetExtras(set.bonus);
 p.setBonuses.push({ name: set.name, text: set.bonusText });
 if (set.bonus10 && isSetRefinedTo(set, 10)) {
 const b = set.bonus10;
 if (b.mAtkPercent) p.mAtk += Math.floor(p.mAtk * (b.mAtkPercent / 100));
 if (b.flatDamageReduce) p.flatDamageReduce += b.flatDamageReduce;
 if (b.manaShield) p.manaShield += b.manaShield;
+if (b.critChance) p.critChance += b.critChance;
+applySetExtras(b);
 p.setBonuses.push({ name: set.name + ' +10', text: set.bonus10Text });
 }
 }
@@ -5870,7 +6146,7 @@ p.pDef = Math.floor(p.pDef * (1 + passivePDefPercent / 100));
 if (passiveMDefPercent > 0) {
 p.mDef = Math.floor(p.mDef * (1 + passiveMDefPercent / 100));
 }
-p.accuracyBonus = refineAccuracyBonus;
+p.accuracyBonus = refineAccuracyBonus + setAccuracyBonus;
 p.evasionBonus += refineEvasionBonus;
 p.xpBonusFromRefine = refineXpBonus;
 p.profBonusFromRefine = refineProfBonus;
@@ -6088,7 +6364,7 @@ if (p.tavernBuffs) {
 Object.keys(p.tavernBuffs).forEach(buffId => {
 const active = p.tavernBuffs[buffId];
 if (!active || active.timer <= 0) return;
-const buff = TAVERN_BUFFS[buffId];
+const buff = tavernBuffView(TAVERN_BUFFS[buffId]);
 if (!buff) return;
 let icon = '🍺';
 if (buffId === 'rest')  icon = '🛏';
@@ -8101,9 +8377,7 @@ sourceBadge = '<div class="slot-cloud-badge cloud-only" title="Только в �
 } else if (source === 'local') {
 sourceBadge = '<div class="slot-cloud-badge local-only" title="Пока только на этом устройстве — уйдёт в облако само">💾</div>';
 }
-const deleteBtn = hasLocal
-? `<button class="slot-delete" title="Удалить персонажа" data-slot="${i}">×</button>`
-: '';
+const deleteBtn = `<button class="slot-delete" title="Удалить персонажа" data-slot="${i}">×</button>`;
 let expBadge = '';
 if (typeof expSlotBadgeHtml === 'function') {
 try {
@@ -8125,15 +8399,15 @@ card.innerHTML = `
       `;
 if (hasLocal) {
 card.onclick = () => onSlotClick(i, true);
+} else {
+card.onclick = () => loadSlotFromCloudAndStart(i);
+}
 const delBtn = card.querySelector('.slot-delete');
 if (delBtn) {
 delBtn.onclick = (e) => {
 e.stopPropagation();
 onSlotDelete(i);
 };
-}
-} else {
-card.onclick = () => loadSlotFromCloudAndStart(i);
 }
 }
 grid.appendChild(card);
@@ -8208,6 +8482,7 @@ Object.assign(state.player, saved.player);
 state.player.gold = Math.max(0, Math.round(Number(state.player.gold) || 0));
 if (typeof ensureChronicle === 'function') ensureChronicle();
 if (saved.battle) Object.assign(state.battle, saved.battle);
+state.battle.breakthrough = null;
 const resumeTarget = takeSavedBattle(!!(opts && opts.resume));
 state.cheat = saved.cheat || false;
 state.activeSlotIndex = slotIndex;
@@ -8242,7 +8517,7 @@ if (typeof migrateSkillSlots === 'function') {
 migrateSkillSlots();
 }
 if (typeof getXpForLevel === 'function') {
-if (state.player.level >= MAX_PLAYER_LEVEL) {
+if (state.player.level >= getMaxPlayerLevel() || !(state.player.xpNext > 0)) {
 state.player.xpNext = Infinity;
 } else {
 state.player.xpNext = getXpForLevel(state.player.level + 1);
@@ -8258,6 +8533,11 @@ hideStartScreen();
 initGame();
 if (typeof expOnEnterGame === 'function') expOnEnterGame();
 if (typeof loreSyncBeasts === 'function') loreSyncBeasts(true);
+fallOmensCheck();
+if (state.player.fallStage) {
+setTimeout(fallResume, 800);
+return;
+}
 if (opts && opts.resume) {
 showToast('🔄', 'Вы снова в игре');
 if (resumeTarget) setTimeout(() => resumeBattleAfterReload(resumeTarget), 800);
@@ -8680,7 +8960,7 @@ let __patchOpenVersion = null;
 let __patchOpenGroup = null;
 const PATCH_VISIBLE_RECENT = 10;
 function isPatchMobile() {
-return window.matchMedia('(max-width: 700px)').matches;
+return window.matchMedia('(max-width: 700px), (max-height: 500px) and (orientation: landscape)').matches;
 }
 function getPatchLayout() {
 if (typeof CHANGELOG === 'undefined' || !CHANGELOG.length) {
@@ -8982,11 +9262,11 @@ goldHtml += `<button class="cheat-rate-btn" onclick="cheatGrantGold(100000)">+10
 goldHtml += `<button class="cheat-rate-btn" onclick="cheatGrantGold(1000000)">+1М</button>`;
 goldHtml += '</div></div>';
 let levelHtml = '<div class="cheat-block"><div class="cheat-block-title">УРОВЕНЬ</div>';
-levelHtml += `<div class="cheat-block-desc">Сейчас ${p.level} из ${MAX_PLAYER_LEVEL}. Очки навыков начисляются как при обычной прокачке.</div>`;
+levelHtml += `<div class="cheat-block-desc">Сейчас ${p.level} из ${getMaxPlayerLevel()}. Очки навыков начисляются как при обычной прокачке.</div>`;
 levelHtml += '<div class="cheat-btn-row">';
 levelHtml += `<button class="cheat-rate-btn" onclick="cheatAddLevels(1)">+1</button>`;
 levelHtml += `<button class="cheat-rate-btn" onclick="cheatAddLevels(5)">+5</button>`;
-levelHtml += `<button class="cheat-rate-btn" onclick="cheatAddLevels(${MAX_PLAYER_LEVEL})">До ${MAX_PLAYER_LEVEL}</button>`;
+levelHtml += `<button class="cheat-rate-btn" onclick="cheatAddLevels(${getMaxPlayerLevel()})">До ${getMaxPlayerLevel()}</button>`;
 levelHtml += '</div></div>';
 let setsHtml = '<div class="cheat-block"><div class="cheat-block-title">КОМПЛЕКТЫ</div>';
 setsHtml += '<div class="cheat-block-desc">Эпическое качество, кладётся в сумку. Статы редкости — случайные, под класс героя.</div>';
@@ -9004,6 +9284,8 @@ ilgradHtml += '<div class="cheat-block-desc">Второй город (в раз�
 ilgradHtml += '<div class="cheat-btn-row">';
 ilgradHtml += `<button class="cheat-rate-btn${p.ilgradOpen ? ' active' : ''}" onclick="cheatToggleIlgrad()">🏰 ${p.ilgradOpen ? 'Закрыть Ильград' : 'Открыть Ильград'}</button>`;
 ilgradHtml += `<button class="cheat-rate-btn" onclick="cheatStartBreakthrough()">⚔ Прорыв (проба)</button>`;
+ilgradHtml += `<button class="cheat-rate-btn" onclick="cheatFallStart()">🕯 Падение Андервуда</button>`;
+ilgradHtml += `<button class="cheat-rate-btn" onclick="cheatFallReset()">↩ Вернуть Андервуд</button>`;
 ilgradHtml += '</div></div>';
 cont.innerHTML = rateHtml + levelHtml + setsHtml + resHtml + goldHtml + titleHtml + ilgradHtml;
 }
@@ -9031,6 +9313,11 @@ btn.textContent = 'ЧИТ ×1';
 function cheatGrantResources(amount) {
 const p = state.player;
 const matPng = {
+'Ржавый доспех': 'img/materials/rust_armor.webp', 'Звонкая кость': 'img/materials/ringing_bone.webp',
+'Мёртвая шкура': 'img/materials/dead_hide.webp', 'Саван': 'img/materials/shroud.webp',
+'Слеза плакальщицы': 'img/materials/weeper_tear.webp', 'Сердце колосса': 'img/materials/colossus_heart.webp',
+'Потемневший медальон': 'img/materials/dark_medallion.webp', 'Костяной клык': 'img/materials/bone_fang.webp',
+'Крепкая жила': 'img/materials/tough_sinew.webp', 'Застывший вздох': 'img/materials/frozen_sigh.webp', 'Обломок дубины': 'img/materials/club_shard.webp',
 'Нить':        'img/materials/thread.webp',
 'Ткань':       'img/materials/fabric.webp',
 'Клей':        'img/materials/glue.webp',
@@ -9104,9 +9391,9 @@ saveCurrentSlot();
 function cheatAddLevels(n) {
 const p = state.player;
 if (!p.classId) { showToast('⚠', 'Сначала выберите героя'); return; }
-if (p.level >= MAX_PLAYER_LEVEL) { showToast('🏆', `Уже максимальный уровень: ${MAX_PLAYER_LEVEL}`); return; }
+if (p.level >= getMaxPlayerLevel()) { showToast('🏆', `Уже максимальный уровень: ${getMaxPlayerLevel()}`); return; }
 const from = p.level;
-const target = Math.min(MAX_PLAYER_LEVEL, p.level + n);
+const target = Math.min(getMaxPlayerLevel(), p.level + n);
 while (p.level < target) {
 p.xp = p.xpNext;
 checkLevelUp();
@@ -9262,6 +9549,11 @@ const y = getDisenchantYield(item);
 const dust = y && ALCHEMY_DUST[y.color];
 lines.push(`<div class="tt-line" style="color:${nameColor}; font-weight:600;">💎 Камень души</div>`);
 if (y && dust) lines.push(`<div class="tt-line" style="color:${dust.color};">У Алхимика: ${y.min}–${y.max} ${dust.name.toLowerCase()} за штуку</div>`);
+if (soulGem.cut) {
+const reroll = (typeof ALCHEMY_GEM_REROLL !== 'undefined' && ALCHEMY_GEM_REROLL[soulGem.color]) || 1;
+const ascend = soulGem.color !== 'red' ? ` · возвышение — ${typeof ALCHEMY_GEM_ASCEND !== 'undefined' ? ALCHEMY_GEM_ASCEND : 5}` : '';
+lines.push(`<div class="tt-line" style="color:${nameColor};">Плата Алхимику за вещи тира ${soulGem.tier} того же цвета: переролл — ${reroll}${ascend}</div>`);
+}
 } else if (rarity && rarityId !== 'white') {
 const bonusText = formatRarityBonus(item.bonusStats);
 let rarityLine = `Редкость: ${rarity.name}`;
@@ -9313,6 +9605,7 @@ if (item.stats.atbSpeedMod) {
 const pct = Math.round(item.stats.atbSpeedMod * 100);
 lines.push(`<div class="tt-line speed">Скорость атаки: ${pct >= 0 ? '+' : ''}${pct}%</div>`);
 }
+if (item.stats.evasionMod) lines.push(`<div class="tt-line speed">Уворот: ${item.stats.evasionMod > 0 ? '+' : '−'}${Math.abs(item.stats.evasionMod)}</div>`);
 }
 if (item.type === 'weapon' && typeof getTierTraitBonusText === 'function') {
 const t3Text = getTierTraitBonusText(item);
@@ -9357,7 +9650,7 @@ if (item.shopId === 'teleportScroll') {
 lines.push(`<div class="tt-line type" style="color: #c0a0ff;">Больше не используется — теперь магические тропы. Заберите со склада: +${(item.qty || 1) * TELEPORT_SCROLL_REFUND} Оболов.</div>`);
 }
 if ((item.type === 'ring' || item.type === 'earring' || item.type === 'necklace') && typeof JEWELRY_MINISET_MDEF !== 'undefined') {
-const t = Math.min(3, Math.max(1, getItemTier(item)));
+const t = Math.min(4, Math.max(1, getItemTier(item)));
 const steps = JEWELRY_MINISET_MDEF[t];
 const n = countJewelryOfTier(state.player.equipment, t);
 const now = steps[n] || 0;
@@ -9816,6 +10109,7 @@ if (typeof cancelWaitingForResume === 'function') {
 cancelWaitingForResume('открыт старшина');
 }
 __elderAutoShown = true;
+if (fallElderCall()) return;
 openDialogue('elder');
 }
 function tryAutoStartElderDialogue() {
@@ -10066,7 +10360,9 @@ function ownerTopics(npcId) {
 const chat = OWNER_CHATS[npcId];
 if (!chat) return [];
 const lvl = state.player.level || 1;
+const fallen = !!state.player.underwoodFallen;
 return chat.topics.filter(t =>
+!!t.afterFall === fallen &&
 (!t.minLevel || lvl >= t.minLevel) &&
 (!t.after || ownerTopicAsked(npcId, t.after)) &&
 (!t.when || t.when()) &&
@@ -10075,13 +10371,18 @@ return chat.topics.filter(t =>
 function ownerHasNews(npcId) {
 return ownerTopics(npcId).some(t => topicOpen(npcId, t) && !ownerTopicAsked(npcId, t.id));
 }
+function ownerHere(npcId) {
+const mapped = state.player.underwoodFallen && (typeof ilgradOwnerOf === 'function' ? ilgradOwnerOf(npcId) : ILGRAD_OWNERS[npcId]);
+return mapped && OWNER_CHATS[mapped] ? mapped : npcId;
+}
 function talkToOwner(npcId) {
-if (!DIALOGUES[npcId]) return;
-openDialogue(npcId);
+const id = ownerHere(npcId);
+if (!DIALOGUES[id]) return;
+openDialogue(id);
 }
 function updateTalkButtons() {
 document.querySelectorAll('.talk-btn[data-npc]').forEach(b => {
-b.classList.toggle('has-news', ownerHasNews(b.dataset.npc));
+b.classList.toggle('has-news', ownerHasNews(ownerHere(b.dataset.npc)));
 });
 }
 function raceVariant(obj, field) {
@@ -10096,7 +10397,12 @@ const val = v => String(typeof v === 'function' ? v() : v).replace(/%name%/g, st
 const helloAgain = () => { const st = raceVariant(chat, 'helloStages'); return st ? st[rapportStage(npcId)] : chat.helloAgain; };
 const nodes = {
 hello: {
-text: () => val((helloAgain() && chat.topics.some(t => ownerTopicAsked(npcId, t.id))) ? helloAgain() : raceVariant(chat, 'hello')),
+text: () => {
+if (state.player.underwoodFallen && chat.fallHello) {
+return val(chat.topics.some(t => t.afterFall && ownerTopicAsked(npcId, t.id)) ? chat.fallAgain : chat.fallHello);
+}
+return val((helloAgain() && chat.topics.some(t => ownerTopicAsked(npcId, t.id))) ? helloAgain() : raceVariant(chat, 'hello'));
+},
 options: menu,
 },
 more: { text: chat.more, options: menu },
@@ -10118,9 +10424,12 @@ options: () => ownerTopics(npcId).filter(x => x.after === t.id).map(ask).concat(
 });
 return nodes;
 }
+function buildAllOwnerChats() {
 Object.keys(OWNER_CHATS).forEach(id => {
 DIALOGUES[id] = { start: 'hello', nodes: buildOwnerChatNodes(id) };
 });
+}
+buildAllOwnerChats();
 
 ;
 
@@ -10211,6 +10520,18 @@ const f = q.find;
 if (!f || questStage(q.id) !== f.stage) return;
 const fits = f.monsters ? f.monsters.includes(m.id) : (typeof getMonsterLocation === 'function' && getMonsterLocation(m.id) === f.loc);
 if (!fits || Math.random() * 100 >= f.chance) return;
+if (f.count) {
+const pr = getQuestProgress(q.id);
+pr.found = (pr.found || 0) + 1;
+const last = pr.found >= f.count;
+const val = v => (typeof v === 'function' ? v(pr.found) : v);
+logLoot(heroText(val(f.log)), 'log-loot');
+if (last && f.lastLog) logLoot(heroText(f.lastLog), 'log-loot');
+if (typeof showToast === 'function') showToast(f.icon, (last && f.lastToast) ? f.lastToast : val(f.toast));
+if (last) setQuestStage(q.id, f.next);
+else { saveCurrentSlot(); questJournalChanged(); }
+return;
+}
 logLoot(heroText(f.log), 'log-loot');
 if (typeof showToast === 'function') showToast(f.icon, f.toast);
 setQuestStage(q.id, f.next);
@@ -10257,8 +10578,21 @@ function questJournalChanged() {
 if (typeof updateChronicleDot === 'function') updateChronicleDot();
 if (typeof isChronicleOpen === 'function' && isChronicleOpen()) renderChronicle();
 }
+function questsOpenAt(place) {
+const active = [], offered = [];
+Object.values(QUESTS).forEach(q => {
+if (q.place !== place || isQuestDone(q.id)) return;
+if (isQuestStarted(q.id)) active.push(q);
+else if (q.offered && q.offered()) offered.push(q);
+});
+return { active, offered };
+}
+function questLost(q) {
+return !!(state.player && state.player.underwoodFallen) && !!q && q.place === 'Андервуд' && !isQuestDone(q.id);
+}
 function isQuestOffered(questId) {
 const q = QUESTS[questId];
+if (questLost(q)) return false;
 if (q.offered) return !isQuestStarted(questId) && q.offered();
 return !isQuestStarted(questId) && isQuestAvailable(questId)
 && typeof knowsChronicleFact === 'function' && knowsChronicleFact('start_place');
@@ -10267,6 +10601,7 @@ function questNews() {
 const c = state.player.chronicle;
 const seen = (c && c.questsSeen) || {};
 return Object.keys(QUESTS).some(id => {
+if (questLost(QUESTS[id])) return false;
 const pr = getQuestProgress(id);
 if (pr) return seen[id] !== pr.stage;
 return isQuestOffered(id) && seen[id] !== 'offered';
@@ -10286,14 +10621,15 @@ if (changed && typeof saveCurrentSlotSoon === 'function') saveCurrentSlotSoon();
 }
 function renderQuestJournal(box) {
 const esc = escChronicle;
-const active = [], offered = [], done = [];
+const active = [], offered = [], done = [], lost = [];
 Object.values(QUESTS).forEach(q => {
 const pr = getQuestProgress(q.id);
 if (pr && pr.stage === 'done') done.push(q);
+else if (pr && questLost(q)) lost.push(q);
 else if (pr) active.push(q);
 else if (isQuestOffered(q.id)) offered.push(q);
 });
-if (!active.length && !offered.length && !done.length) {
+if (!active.length && !offered.length && !done.length && !lost.length) {
 box.innerHTML = `<div class="chron-soon">Поручений пока нет. Поговори с жителями — кому-нибудь да понадобится помощь.</div>`;
 markQuestsSeen();
 return;
@@ -10320,9 +10656,13 @@ if (offered.length) {
 html += `<div class="quest-group">Можно взять</div>`;
 offered.forEach(q => { html += `<div class="quest-card offered">${head(q)}<div class="quest-text">${esc(heroText(q.offer))}</div></div>`; });
 }
+if (lost.length) {
+html += `<div class="quest-group">Не успели</div>`;
+lost.forEach(q => { html += `<div class="quest-card lost">${head(q)}<div class="quest-text">${esc(heroText(q.journal))}</div><div class="quest-lost-note">Андервуда больше нет.</div></div>`; });
+}
 if (done.length) {
 html += `<div class="quest-group">Выполненные</div>`;
-done.forEach(q => { html += `<div class="quest-card done">${head(q)}<div class="quest-text">✓ ${esc(heroText((q.needs || q.bag) ? q.journal : q.steps.map(s => s.text).join(' · ')))}</div></div>`; });
+done.forEach(q => { html += `<div class="quest-card done">${head(q)}<div class="quest-text">✓ ${esc(heroText((q.needs || q.bag || q.steps.some(s => typeof s.text === 'function')) ? q.journal : q.steps.map(s => s.text).join(' · ')))}</div></div>`; });
 }
 box.innerHTML = html;
 markQuestsSeen();
@@ -10348,8 +10688,9 @@ if (typeof cancelWaitingForResume === 'function') {
 cancelWaitingForResume('открыт наставник');
 }
 document.getElementById('mentor-overlay').classList.add('active');
+if (typeof applyTownWindowTitles === 'function') applyTownWindowTitles();
 renderMentorSkills();
-if (typeof unlockLore === 'function') unlockLore('mentor');
+if (state.player.currentLocation === 'town' && typeof unlockLore === 'function') unlockLore('mentor');
 if (typeof updateTalkButtons === 'function') updateTalkButtons();
 }
 function closeMentor() { document.getElementById('mentor-overlay').classList.remove('active'); }
@@ -10924,9 +11265,10 @@ if (typeof cancelWaitingForResume === 'function') {
 cancelWaitingForResume('открыта таверна');
 }
 document.getElementById('tavern-overlay').classList.add('active');
+if (typeof applyTownWindowTitles === 'function') applyTownWindowTitles();
 renderTavernBuffs();
 updateTavernGold();
-if (typeof unlockLore === 'function') unlockLore('hostess');
+if (state.player.currentLocation === 'town' && typeof unlockLore === 'function') unlockLore('hostess');
 if (typeof updateTalkButtons === 'function') updateTalkButtons();
 }
 function closeTavern() {
@@ -10941,7 +11283,7 @@ buffShopRender('tavern');
 }
 function buyTavernBuff(buffId) {
 const p = state.player;
-const buff = TAVERN_BUFFS[buffId];
+const buff = tavernBuffView(TAVERN_BUFFS[buffId]);
 if (!buff) return;
 if (!p.classId) {
 showToast('🍺', 'Сначала выберите класс');
@@ -10975,7 +11317,8 @@ updateTopStatus(); updateCharacterPanel();
 renderEffectsPanel();
 renderTavernBuffs();
 updateTavernGold(); updateTraderGold(); updateForgeGold(); updateGuildGold();
-logCombat(`🍺 Таверна: активировано «${buff.name}» (+${buffShopDur(buff.duration)})`, 'log-entry levelup');
+const pl = tavernBuffPlace(TAVERN_BUFFS[buffId]);
+logCombat(`${pl ? pl.emoji + ' ' + pl.where : '🍺 Таверна'}: активировано «${buff.name}» (+${buffShopDur(buff.duration)})`, 'log-entry levelup');
 showToast('🍺', `${buff.name} активирован (+${buffShopDur(buff.duration)})`);
 const card = document.querySelector(`.tavern-card[data-buff-id="${buffId}"]`);
 flashCard(card);
@@ -10996,11 +11339,16 @@ icon: (b) => b.icon || '',
 emoji: '🔮', listId: 'guild-list', barId: 'guild-setbar',
 };
 }
+const place = tavernInIlgrad() ? ILGRAD_TAVERN_PLACES[__ilgradTavernPlace] : null;
+const defs = Object.values(TAVERN_BUFFS)
+.filter(b => !place || (b.ilgrad && b.ilgrad.place === __ilgradTavernPlace))
+.map(tavernBuffView);
 return {
-kind, defs: Object.values(TAVERN_BUFFS), store: p.tavernBuffs,
+kind, defs, store: p.tavernBuffs,
 price: () => getTavernBuffPrice(),
 icon: (b) => (b.iconPng ? buffIconHtml(b) : TAVERN_SVG[b.iconKey] || ''),
-emoji: '🍺', listId: 'tavern-list', barId: 'tavern-setbar',
+emoji: place ? place.emoji : '🍺', listId: 'tavern-list', barId: 'tavern-setbar',
+where: place ? place.where : 'Таверна', owner: place ? place.owner : 'hostess',
 };
 }
 function buffShopAllowed(buff) {
@@ -11105,7 +11453,7 @@ if (!parts.length) { showToast('🪙', 'Нечего покупать или м�
 if (typeof markDeed === 'function') markDeed(kind + '.buff');
 if (typeof unlockLoreMany === 'function') unlockLoreMany(lore);
 if (typeof annalsFirst === 'function') lore.forEach(k => annalsFirst(k));
-if (typeof rapportService === 'function') rapportService(kind === 'guild' ? 'guildmage' : 'hostess');
+if (typeof rapportService === 'function') rapportService(kind === 'guild' ? 'guildmage' : d.owner);
 recalcStats();
 updateTopStatus(); updateCharacterPanel();
 renderEffectsPanel();
@@ -11114,7 +11462,7 @@ if (typeof updateTavernGold === 'function') updateTavernGold();
 if (typeof updateTraderGold === 'function') updateTraderGold();
 if (typeof updateForgeGold === 'function') updateForgeGold();
 buffShopRender(kind);
-const where = kind === 'guild' ? 'Гильдия' : 'Таверна';
+const where = kind === 'guild' ? 'Гильдия' : d.where;
 logCombat(`${d.emoji} ${where}: ${parts.join(', ')} (−${buffShopNum(spent)} Оболов)`, 'log-entry levelup');
 showToast(d.emoji, parts.length > 1 ? `Продлено: ${parts.length} ${buffShopWord(parts.length)} (−${buffShopNum(spent)})` : `${parts[0]} (−${buffShopNum(spent)})`);
 saveCurrentSlot();
@@ -11513,7 +11861,7 @@ return false;
 let stats = null;
 if (drop.stats) {
 stats = {};
-for (const k of ['pAtk','pDef','mDef','mAtk','flatDamageReduce','blockChance','mpBonus','hpBonus','atbSpeedMod','critChance','mpRegenIn']) {
+for (const k of ['pAtk','pDef','mDef','mAtk','flatDamageReduce','blockChance','mpBonus','hpBonus','atbSpeedMod','critChance','mpRegenIn','evasionMod']) {
 if (drop.stats[k] !== undefined) stats[k] = drop.stats[k];
 }
 }
@@ -12675,6 +13023,7 @@ const tabs = [
 { id: 'chain', label: 'КОЛЬЧУГА КОПЕЙ' },
 { id: 'silk', label: 'ШЁЛКОВАЯ МАНТИЯ' },
 ];
+if (ilgradOpen()) T4_SETS.forEach(s => tabs.push({ id: s.id, label: s.name.toUpperCase() }));
 tabs.forEach(t => {
 const el = document.createElement('div');
 el.className = 'window-subtab' + (state.currentArmorSetTab === t.id ? ' active' : '');
@@ -12691,6 +13040,7 @@ const tabs = [
 { id: 'novice', label: 'СЕТ НОВИЧКА' },
 { id: 'malachite', label: 'МАЛАХИТ' },
 ];
+if (ilgradOpen()) T4_JEWELRY.forEach(j => tabs.push({ id: j.id, label: j.name.toUpperCase() }));
 tabs.forEach(t => {
 const el = document.createElement('div');
 el.className = 'window-subtab' + (state.currentJewelrySetTab === t.id ? ' active' : '');
@@ -12763,6 +13113,23 @@ const pngMap = {
 'Паучий шёлк':     'img/materials/spider_silk.webp',
 'Ядовитая железа':   'img/materials/venom_gland.webp',
 'Ядро голема':       'img/materials/golem_core.webp',
+'Ржавый доспех':     'img/materials/rust_armor.webp',
+'Звонкая кость':     'img/materials/ringing_bone.webp',
+'Мёртвая шкура':     'img/materials/dead_hide.webp',
+'Саван':             'img/materials/shroud.webp',
+'Слеза плакальщицы': 'img/materials/weeper_tear.webp',
+'Сердце колосса':    'img/materials/colossus_heart.webp',
+'Мёртвая сталь':     'img/materials/dead_steel.webp',
+'Выделанная мертвокожа': 'img/materials/cured_deathhide.webp',
+'Призрачное полотно':    'img/materials/ghost_cloth.webp',
+'Потемневший медальон':  'img/materials/dark_medallion.webp',
+'Костяной клык':     'img/materials/bone_fang.webp',
+'Крепкая жила':      'img/materials/tough_sinew.webp',
+'Застывший вздох':   'img/materials/frozen_sigh.webp',
+'Обломок дубины':    'img/materials/club_shard.webp',
+'Едрёная железа':    'img/materials/edrenaya_gland.webp',
+'Гранатовая нить':   'img/materials/garnet_thread.webp',
+'Чернёное серебро':  'img/materials/black_silver.webp',
 'Жаркое с грибами':      'img/materials/dish_mushroom_roast.webp',
 'Похлёбка из волчатины': 'img/materials/dish_wolf_stew.webp',
 'Грибной отвар':         'img/materials/dish_mushroom_brew.webp',
@@ -12817,7 +13184,7 @@ function renderForgePane(category) {
 const pane = document.getElementById('forge-pane-' + category);
 if (!pane) return;
 pane.innerHTML = '';
-let recipes = RECIPES[category] || [];
+let recipes = (RECIPES[category] || []).filter(r => !r.requiresIlgrad || ilgradOpen());
 if (recipes.length === 0) { pane.innerHTML = `<div class="trader-empty">Рецепты в разработке</div>`; return; }
 if (category === 'armor' && state.currentArmorSetTab !== 'all') recipes = recipes.filter(r => r.setId === state.currentArmorSetTab);
 if (category === 'jewelry' && state.currentJewelrySetTab !== 'all') recipes = recipes.filter(r => r.setId === state.currentJewelrySetTab);
@@ -15611,6 +15978,16 @@ if (!card) return;
 const lock = mapLockInfo(loc);
 const closed = !!(lock && !lock.ready);
 card.classList.toggle('map-locked', closed);
+card.classList.toggle('map-fallen', loc === 'town' && !!state.player.underwoodFallen);
+if (loc === 'town') {
+const cracked = !!window.FALL_LINES && (state.player.level || 1) >= 19 && !state.player.underwoodFallen;
+let crack = card.querySelector(':scope > .map-crack');
+if (cracked && !crack) {
+card.insertAdjacentHTML('afterbegin', '<svg class="map-crack" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><path vector-effect="non-scaling-stroke" d="M62 0 L58 14 L66 26 L55 38 L60 52 L48 63 L52 78 L44 100 M60 52 L71 60 L77 74 M55 38 L44 34"/></svg>');
+} else if (!cracked && crack) {
+crack.remove();
+}
+}
 let layer = card.querySelector(':scope > .map-lock');
 if (closed && !layer) {
 layer = document.createElement('div');
@@ -15636,7 +16013,9 @@ slot.innerHTML = `<div class="map-travel-btns"><button class="map-travel-btn" on
 }
 function startIlgradBreakthrough() {
 if ((state.player.level || 1) < ILGRAD_MIN_LEVEL) return;
-showSoon('ПРОРЫВ', 'Нежить стоит у самых ворот, и пробиться к ним пока нельзя. Скоро.');
+showSoon('ПРОРЫВ', window.FALL_LINES
+? 'Одному к воротам не пробиться. Старейшина собирает всех в Андервуде: поговори с ним.'
+: 'Нежить стоит у самых ворот, и пробиться к ним пока нельзя. Скоро.');
 }
 const CITY_HEADERS = {
 town:   { title: 'АНДЕРВУД', subtitle: 'Последний оплот живых на краю земель' },
@@ -15659,26 +16038,68 @@ applyTownWindowTitles();
 const ILGRAD_WINDOW_TITLES = {
 '#trader-overlay .window-title':  '⚔ АРСЕНАЛ ИЛЬГРАДА',
 '#forge-overlay .window-title':   '⚒ КУЗНИЦА ИЛЬГРАДА',
-'#mentor-overlay .window-title':  '⚔ КАЗАРМЫ · НАВЫКИ',
+'#mentor-overlay .window-title':  '🕯 ХРАМ · ТАИНСТВО',
 '#guild-overlay .window-title':   '🔮 БАШНЯ МАГОВ',
-'#tavern-overlay .window-title':  '🕯 ХРАМ · БЛАГОСЛОВЕНИЯ',
+'#tavern-overlay .window-title':  () => ILGRAD_TAVERN_PLACES[__ilgradTavernPlace].title,
 '.storage-title':                 '📦 СКЛАД СНАБЖЕНИЯ',
 '.refine-title':                  '🔧 КУЗНИЦА · ПОДГОНКА',
 '.alchemist-title':               '⚗ ЛАЗАРЕТ · АЛХИМИЯ',
 };
+const ILGRAD_SURVIVORS = ['smith', 'refiner', 'guildmage', 'keeper'];
+const ILGRAD_OWNERS = {
+trader: 'garsha', mentor: 'ismera', alchemist: 'averyan',
+hostess: () => ILGRAD_TAVERN_PLACES[__ilgradTavernPlace].owner,
+};
+function ilgradOwnerOf(npcId) {
+const v = ILGRAD_OWNERS[npcId];
+return typeof v === 'function' ? v() : v;
+}
 function applyTownWindowTitles() {
 const il = state.player.currentLocation === 'ilgrad';
 Object.keys(ILGRAD_WINDOW_TITLES).forEach(sel => {
 const el = document.querySelector(sel);
 if (!el) return;
 if (el.dataset.orig === undefined) el.dataset.orig = el.textContent;
-el.textContent = il ? ILGRAD_WINDOW_TITLES[sel] : el.dataset.orig;
+const t = ILGRAD_WINDOW_TITLES[sel];
+el.textContent = il ? (typeof t === 'function' ? t() : t) : el.dataset.orig;
 });
-document.querySelectorAll('.talk-btn[data-npc]').forEach(b => { b.style.display = il ? 'none' : ''; });
+const here = id => !il || (state.player.underwoodFallen && (ILGRAD_SURVIVORS.includes(id) || OWNER_CHATS[ilgradOwnerOf(id)]));
+document.querySelectorAll('.talk-btn[data-npc]').forEach(b => {
+b.style.display = here(b.dataset.npc) ? '' : 'none';
+if (b.dataset.origTitle === undefined) b.dataset.origTitle = b.title;
+const who = il && typeof ownerHere === 'function' ? NPCS[ownerHere(b.dataset.npc)] : null;
+b.title = who ? `Поговорить: ${who.name}` : b.dataset.origTitle;
+});
 }
 function openIlgradCommand() {
 if (state.player.currentLocation !== 'ilgrad') return;
+if (state.player.underwoodFallen && OWNER_CHATS.commander) { talkToOwner('commander'); return; }
 showSoon('КОМЕНДАТУРА', 'Над картой обороны склонились офицеры. Коменданту пока не до тебя — поручения Ильграда появятся позже.');
+}
+function openIlgradBarracks() {
+if (state.player.currentLocation !== 'ilgrad') return;
+__ilgradTavernPlace = 'barracks';
+openTavern();
+applyTownWindowTitles();
+}
+NPCS.ilgrad_temple = { id: 'ilgrad_temple', name: 'Храм', fullName: 'Храм Ильграда', icon: 'ilgrad_temple', dialogueStart: null };
+NPC_SVG.ilgrad_temple = `<img src="img/city/ilgrad/temple.webp" alt="">`;
+DIALOGUES.ilgrad_temple = {
+start: 'hello',
+nodes: {
+hello: {
+text: '*Под сводами тихо, свечи горят ровно, без копоти. Безликая статуя в глубине кажется ближе, чем есть. Камень пола тёплый — в городе, где холодно всё.*',
+options: [
+{ text: '🕯 Благословение', onSelect: () => { __ilgradTavernPlace = 'temple'; openTavern(); applyTownWindowTitles(); } },
+{ text: '✦ Таинство (навыки)', onSelect: () => { openMentor(); applyTownWindowTitles(); } },
+{ text: 'Уйти', action: 'close' },
+],
+},
+},
+};
+function openIlgradTemple() {
+if (state.player.currentLocation !== 'ilgrad') return;
+openDialogue('ilgrad_temple');
 }
 function openIlgradWatch() {
 if (state.player.currentLocation !== 'ilgrad') return;
@@ -15706,11 +16127,15 @@ openDialogue('ilgrad_forge');
 function cheatToggleIlgrad() {
 const p = state.player;
 p.ilgradOpen = !p.ilgradOpen;
+if (!p.ilgradOpen) p.underwoodFallen = false;
 if (!p.ilgradOpen && (p.currentLocation === 'ilgrad' || p.currentLocation === 'outskirts')) {
 p.currentLocation = 'town';
 switchTab('hunt');
 }
 showToast('🏰', p.ilgradOpen ? 'Ильград открыт — путь на карте' : 'Ильград закрыт');
+checkLevelUp();
+updateTopStatus();
+updateCharacterPanel();
 updateMapUI();
 if (typeof renderCheatMenu === 'function') renderCheatMenu();
 saveCurrentSlot();
@@ -16023,14 +16448,23 @@ getMonsterKills(m.id, variantId) >= KILL_THRESHOLDS.title
 if (allSameVariant) return 'glorious';
 return 'hunter';
 }
+const TITLE_DROP_MULT = { none: 1.0, hunter: 1.5, glorious: 2.0, magnificent: 3.0 };
 function getTitleDropMultiplier(monsterId, variantId) {
-const title = getMonsterTitle(monsterId, variantId);
-switch (title) {
-case 'hunter':      return 1.5;
-case 'glorious':    return 2.0;
-case 'magnificent': return 3.0;
-default:            return 1.0;
+return TITLE_DROP_MULT[getMonsterTitle(monsterId, variantId)] || 1.0;
 }
+function getTitleProgress(monsterId, variantId) {
+const loc = getMonsterLocation(monsterId);
+const list = loc ? getMonstersByLocation(loc) : [];
+const T = KILL_THRESHOLDS.title;
+const row = (m, v) => ({ id: m.id, variantId: v, kills: getMonsterKills(m.id, v), done: getMonsterKills(m.id, v) >= T });
+const same = list.map(m => row(m, variantId));
+const all = [];
+list.forEach(m => ALL_VARIANTS.forEach(v => all.push(row(m, v))));
+return {
+title: getMonsterTitle(monsterId, variantId),
+kills: getMonsterKills(monsterId, variantId),
+loc, same, all,
+};
 }
 function hasMonsterTitle(monsterId, variantId) {
 return getMonsterTitle(monsterId, variantId) !== 'none';
@@ -16434,12 +16868,16 @@ const unlockedPDef   = unlockedAtk;
 const unlockedMDef   = unlockedDrop;
 const unlockedEvasion = unlockedGold;
 const goldStr = unlockedGold ? `${monster.goldMin}–${monster.goldMax}` : '???';
-const goldChanceStr = unlockedGold ? `${monster.goldChance}%` : '???%';
-let dropRows = `<div class="row">${SVG.gold}<span>Оболы: ${goldStr}</span><span class="chance ${unlockedGold ? '' : 'chance-hidden'}">${goldChanceStr}</span></div>`;
+const titleMult = getTitleDropMultiplier(template.id, variantId);
+const chanceHtml = (base, open) => {
+if (!open) return `<span class="chance chance-hidden">???%</span>`;
+if (titleMult <= 1) return `<span class="chance">${base}%</span>`;
+return `<span class="chance titled" title="Без титула ${base}%, с титулом ×${titleMult}"><s>${base}%</s> ${titlePct(base * titleMult)}%</span>`;
+};
+let dropRows = `<div class="row">${SVG.gold}<span>Оболы: ${goldStr}</span>${chanceHtml(monster.goldChance, unlockedGold)}</div>`;
 monster.drops.forEach(d => {
-const chanceStr = unlockedDrop ? `${d.chance}%` : '???%';
 const iconHtml = getDropIconHtml(d);
-dropRows += `<div class="row">${iconHtml}<span>${d.name}</span><span class="chance ${unlockedDrop ? '' : 'chance-hidden'}">${chanceStr}</span></div>`;
+dropRows += `<div class="row">${iconHtml}<span>${d.name}</span>${chanceHtml(d.chance, unlockedDrop)}</div>`;
 });
 const statHtml = (key, open, val, dataStat) => {
 const def = MONSTER_STAT_ICONS[key];
@@ -16458,12 +16896,13 @@ const statsHtml = `<div class="monster-stats">${[
     statHtml('eva', unlockedEvasion, evasionValue, null),
   ].join('')}</div>`;
 const titleDef = MONSTER_TITLE_ICONS[getMonsterTitle(template.id, variantId)];
-const titleHtml = titleDef ? `<div class="monster-hunter ${titleDef.css}" title="${titleDef.name}"><img src="img/tags/${titleDef.img}.webp" alt="${titleDef.name}"></div>` : '';
+const titleHtml = titleDef ? `<button type="button" class="monster-hunter ${titleDef.css}" title="${titleDef.name} — нажмите, что это даёт" data-title-info><img src="img/tags/${titleDef.img}.webp" alt="${titleDef.name}"></button>` : '';
 const nextGoal = KILL_REVEAL_STEPS.find(n => kills < n);
 const killsText = nextGoal ? `${kills}/${nextGoal}` : `${kills}`;
 const metaHtml = (variant.name ? `<span class="monster-variant-word">${variant.name}</span>` : '') +
 (typeof primeTimeLineHtml === 'function' ? primeTimeLineHtml(template) : '');
-const killsHtml = `<div class="monster-kills" title="Убито. Следующая цифра — сколько нужно, чтобы узнать о твари больше"><img class="kills-ico" src="img/tags/kills.webp" alt=""><span>${killsText}</span></div>`;
+const toTitle = nextGoal === KILL_THRESHOLDS.title;
+const killsHtml = `<div class="monster-kills${toTitle ? ' to-title' : ''}"${toTitle ? ' data-title-info' : ''} title="${toTitle ? `До титула «Охотник» — ${KILL_THRESHOLDS.title} убийств. Нажмите, что он даёт` : 'Убито. Следующая цифра — сколько нужно, чтобы узнать о твари больше'}"><img class="kills-ico" src="img/tags/kills.webp" alt=""><span>${killsText}</span>${toTitle ? '<img class="kills-title-ico" src="img/tags/hunter.webp" alt="">' : ''}</div>`;
 card.innerHTML = `
     <div class="monster-portrait-img" style="background-image:url('${monster.art}')">${packBadgeHtml(template)}${monsterTagsHtml(monster)}</div>
     <div class="monster-head">
@@ -16477,7 +16916,156 @@ card.innerHTML = `
     ${titleHtml}
     ${killsHtml}
   `;
+card.querySelectorAll('[data-title-info]').forEach(el => {
+el.onclick = (e) => { e.stopPropagation(); openTitleInfo(template.id, variantId); };
+});
 return card;
+}
+function titlePct(x) { return String(Math.round(x * 100) / 100); }
+const TITLE_VARIANT_GEN = { normal: 'обычных', ancient: 'Древних', bloody: 'Кровавых' };
+function titleVariantGen(v) { return TITLE_VARIANT_GEN[v] || getVariantDisplayName(v); }
+const TITLE_LADDER = ['hunter', 'glorious', 'magnificent'];
+function titleMonsterName(id, v) {
+const t = getMonstersByLocation(getMonsterLocation(id)).find(m => m.id === id);
+if (!t) return id;
+try { return buildMonsterInstance(t, v).name; } catch (e) { return t.name; }
+}
+function titleExampleHtml(monsterId, variantId, mult) {
+const t = getMonstersByLocation(getMonsterLocation(monsterId)).find(m => m.id === monsterId);
+if (!t) return '';
+const inst = buildMonsterInstance(t, variantId);
+const rows = [{ name: 'Оболы', chance: inst.goldChance }].concat((inst.drops || []).slice(0, 2).map(d => ({ name: d.name, chance: d.chance })));
+const over = rows.some(r => r.chance * mult > 100)
+? '<div class="title-example-note">Больше 100% — значит, иногда выпадает сразу две штуки.</div>' : '';
+return `<div class="title-example">${rows.map(r =>
+    `<div><span>${r.name}</span><b><s>${titlePct(r.chance)}%</s> → ${titlePct(r.chance * mult)}%</b></div>`).join('')}${over}</div>`;
+}
+function titleTierInfo(tier, pr, monsterId, variantId) {
+const T = KILL_THRESHOLDS.title;
+const locName = (pr.loc && LOCATION_NAMES[pr.loc]) || 'локация';
+if (tier === 'hunter') {
+return { done: pr.kills >= T, text: `${T} убийств этой твари`, count: `${Math.min(pr.kills, T)}/${T}`, missing: [] };
+}
+const list = tier === 'glorious' ? pr.same : pr.all;
+const have = list.filter(r => r.done).length;
+const text = tier === 'glorious'
+? `«Охотник» у всех ${titleVariantGen(variantId)} тварей — ${locName}`
+: `«Охотник» у всех тварей всех подтипов — ${locName}`;
+const missing = list.filter(r => !r.done).sort((a, b) => b.kills - a.kills)
+.map(r => `${titleMonsterName(r.id, r.variantId)} ${r.kills}/${T}`);
+return { done: have === list.length && list.length > 0, text, count: `${have}/${list.length}`, missing };
+}
+function titleOverlay(html) {
+let el = document.getElementById('title-overlay');
+if (!el) {
+el = document.createElement('div');
+el.id = 'title-overlay';
+el.onclick = (e) => { if (e.target === el) closeTitleInfo(); };
+document.body.appendChild(el);
+}
+el.className = 'title-overlay';
+el.innerHTML = `<div class="title-window">${html}</div>`;
+return el;
+}
+function closeTitleInfo() {
+const el = document.getElementById('title-overlay');
+if (el) el.remove();
+}
+function titleLadderHtml(monsterId, variantId) {
+const pr = getTitleProgress(monsterId, variantId);
+return TITLE_LADDER.map(tier => {
+const def = MONSTER_TITLE_ICONS[tier];
+const info = titleTierInfo(tier, pr, monsterId, variantId);
+const cur = pr.title === tier;
+const miss = !info.done && info.missing.length
+? `<div class="title-miss">Ещё нужно: ${info.missing.slice(0, 4).join(' · ')}${info.missing.length > 4 ? ` и ещё ${info.missing.length - 4}` : ''}</div>`
+: '';
+return `<div class="title-step ${def.css}${info.done ? ' done' : ''}${cur ? ' cur' : ''}">
+      <img src="img/tags/${def.img}.webp" alt="">
+      <div class="title-step-body">
+        <div class="title-step-head"><b>${def.name}</b><span>×${TITLE_DROP_MULT[tier]}</span><em>${info.done ? '✓' : info.count}</em></div>
+        <div class="title-step-text">${info.text}</div>
+        ${miss}
+      </div>
+    </div>`;
+}).join('');
+}
+function openTitleInfo(monsterId, variantId) {
+const title = getMonsterTitle(monsterId, variantId);
+const def = MONSTER_TITLE_ICONS[title];
+const mult = TITLE_DROP_MULT[title] || 1;
+const name = titleMonsterName(monsterId, variantId);
+let now;
+if (def) {
+now = `<div class="title-now">У вас титул <b>«${def.name}»</b>: шанс добычи и Оболов с этой твари <b>×${mult}</b>.</div>${titleExampleHtml(monsterId, variantId, mult)}`;
+} else {
+now = `<div class="title-now">Убейте эту тварь ${KILL_THRESHOLDS.title} раз — получите титул <b>«Охотник»</b>: шанс добычи и Оболов с неё <b>×${TITLE_DROP_MULT.hunter}</b>.</div>${titleExampleHtml(monsterId, variantId, TITLE_DROP_MULT.hunter)}`;
+}
+titleOverlay(`
+    <div class="title-head"><span>${def ? `<img src="img/tags/${def.img}.webp" alt="">` : '👑'} Титул: ${name}</span><button type="button" class="title-x" onclick="closeTitleInfo()" aria-label="Закрыть">×</button></div>
+    ${now}
+    <div class="title-sub">Лестница титулов</div>
+    ${titleLadderHtml(monsterId, variantId)}
+    <div class="title-note">Множители не складываются — действует лучший титул. Работают и в экспедициях.</div>
+    <div class="title-actions"><button type="button" class="title-btn" onclick="closeTitleInfo()">Понятно</button></div>
+  `);
+}
+const TITLE_BAG_LINES = {
+hunter: [
+'Тысяча. Я считал. Твари, кажется, тоже — и теперь роняют добро охотнее.',
+'Охотник, значит. Звучит. Главное — не зазнавайся: их ещё много.',
+'Тысячу раз одно и то же. Я бы заскучал. А ты — молодец.',
+],
+glorious: [
+'Прославленный! Про тебя, наверное, уже шепчутся у костров. Хорошее шепчутся. Наверное.',
+'Всех до единой. Я бы похлопал, будь у меня ладони.',
+],
+magnificent: [
+'Великолепный. Это слово я берёг для особого случая. Дождался.',
+'Всю округу выучил наизусть. Твари, по-моему, уже сами несут тебе добычу.',
+],
+};
+function titleCelebrate(newTitle, m) {
+const def = MONSTER_TITLE_ICONS[newTitle];
+if (!def) return;
+const loc = getMonsterLocation(m.id);
+const locName = loc ? LOCATION_NAMES[loc] : '';
+const variantName = getVariantDisplayName(m.variantId);
+const mult = TITLE_DROP_MULT[newTitle];
+if (typeof annalsFirst === 'function') annalsFirst('title.' + newTitle, { monster: m.name, loc: locName, variant: variantName });
+if (typeof logCombat === 'function') logCombat(`👑 Новый титул: ${def.name} (${m.name}) — шанс добычи и Оболов ×${mult}`, 'log-entry levelup');
+let what;
+if (newTitle === 'hunter') what = `${KILL_THRESHOLDS.title} убийств — твари «${m.name}» узнают вас издалека. Шанс добычи и Оболов с неё <b>×${mult}</b>.`;
+else if (newTitle === 'glorious') what = `«Охотник» у всех ${titleVariantGen(m.variantId)} тварей — ${locName}. Шанс добычи и Оболов с каждой из них <b>×${mult}</b>.`;
+else what = `«Охотник» у всех тварей всех подтипов — ${locName}. Шанс добычи и Оболов со всей локации <b>×${mult}</b>.`;
+const next = TITLE_LADDER[TITLE_LADDER.indexOf(newTitle) + 1];
+let nextHtml = '';
+if (next) {
+const info = titleTierInfo(next, getTitleProgress(m.id, m.variantId), m.id, m.variantId);
+nextHtml = `<div class="title-sub">Дальше — «${MONSTER_TITLE_ICONS[next].name}» (×${TITLE_DROP_MULT[next]})</div><div class="title-step-text">${info.text}: ${info.count}</div>`;
+}
+let bag = '';
+if (typeof bagMet === 'function' && bagMet()) {
+const pool = TITLE_BAG_LINES[newTitle] || [];
+const line = pool[Math.floor(Math.random() * pool.length)];
+if (line) bag = `<div class="title-bag"><div class="title-bag-ico">🎒</div><div><div class="title-bag-name">${bagSpeakerName()}</div><div class="title-bag-line">«${heroText(line)}»</div></div></div>`;
+}
+titleOverlay(`
+    <div class="title-unlock ${def.css}">
+      <img src="img/tags/${def.img}.webp" alt="">
+      <div class="title-unlock-kicker">Новый титул</div>
+      <div class="title-unlock-name">${def.name}</div>
+      <div class="title-unlock-who">${m.name}</div>
+    </div>
+    <div class="title-now">${what}</div>
+    ${titleExampleHtml(m.id, m.variantId, mult)}
+    ${nextHtml}
+    ${bag}
+    <div class="title-actions">
+      <button type="button" class="title-btn" onclick="openTitleInfo('${m.id}', '${m.variantId}')">Все титулы</button>
+      <button type="button" class="title-btn title-btn-main" onclick="closeTitleInfo()">Понятно</button>
+    </div>
+  `).classList.add('celebrate');
 }
 function updateBattleKillsCounter(m) {
 const el = document.getElementById('battle-kills');
@@ -18135,6 +18723,7 @@ if (list.includes('fire') && monsterHasTagFlag(m, 'roots')) m.rootBlock = 3;
 const final = monsterManaAbsorb(m, dmg);
 if (m.undying && final >= m.hp) {
 m.undying = false;
+if (Math.random() * 100 >= (MONSTER_TAGS.undying.undyingChance || 100)) return final;
 spawnFloatDamage('fighter-monster', 0, 'block', { mon: m, text: 'НЕ УПОКОЕН' });
 logCombat(`💀 ${m.name} не падает!`, 'log-entry monster');
 return Math.max(0, m.hp - 1);
@@ -18747,17 +19336,9 @@ if (typeof questFindRoll === 'function') questFindRoll(m);
 if (typeof bagOnKill === 'function') bagOnKill(m);
 if (typeof loreOnKill === 'function') loreOnKill(m);
 }
-if (newTitle !== oldTitle) {
-const loc = getMonsterLocation(m.id);
-const locName = loc ? LOCATION_NAMES[loc] : '';
-if (newTitle === 'hunter') {
-showToast('👑', `${m.name}: титул Охотник! ×1.5 к дропу`);
-} else if (newTitle === 'glorious') {
-const variantName = getVariantDisplayName(m.variantId);
-showToast('👑', `Прославленный охотник! Все ${variantName} — ${locName}, ×2.0`);
-} else if (newTitle === 'magnificent') {
-showToast('🌟', `ВЕЛИКОЛЕПНЫЙ ОХОТНИК! Вся ${locName} — ×3.0!`);
-}
+if (newTitle !== oldTitle && newTitle !== 'none') {
+if (typeof titleCelebrate === 'function') titleCelebrate(newTitle, m);
+else showToast('👑', `${m.name}: новый титул!`);
 }
 updateBattleKillsCounter(m);
 updateTopStatus();
@@ -18783,6 +19364,7 @@ updateBattleUI();
 return;
 }
 if (state.battle.breakthrough && breakthroughOnClear()) return;
+fallOmenOnClear();
 const deadMonsterId = m.id;
 const deadVariantId = m.variantId;
 const deadTemplateId = m.templateId || m.id;
@@ -18893,7 +19475,7 @@ const lostXp = Math.floor(p.xp * 0.1);
 p.xp = Math.max(0, p.xp - lostXp);
 logCombat(`☠ ${p.name} погиб. Потеряно ${lostXp} опыта (10%).`, 'log-entry loss');
 if (typeof bumpChronicleCounter === 'function') bumpChronicleCounter('deaths');
-if (typeof annalsFirst === 'function') annalsFirst('death', null, { loc: 'town' });
+if (typeof annalsFirst === 'function') annalsFirst('death', null, { loc: homeTown() });
 p.foodTimer = 0;
 p.foodTickAccum = 0;
 p.foodKind = null;
@@ -18917,7 +19499,7 @@ if (deathReturnTimer !== null) clearTimeout(deathReturnTimer);
 deathReturnTimer = setTimeout(() => {
 deathReturnTimer = null;
 if (state.battle.active) return;
-state.player.currentLocation = 'town';
+state.player.currentLocation = homeTown();
 const battleWin = document.getElementById('battle-window');
 if (battleWin) battleWin.classList.remove('active');
 document.querySelectorAll('.monster-card').forEach(c => c.classList.remove('selected'));
@@ -18935,14 +19517,18 @@ tryAutoStartElderDialogue();
 function checkLevelUp() {
 const p = state.player;
 if (!p.classId) return;
-if (p.level >= MAX_PLAYER_LEVEL) {
+if (p.level >= getMaxPlayerLevel()) {
 p.xpNext = Infinity;
 return;
+}
+if (!isFinite(p.xpNext) || !(p.xpNext > 0)) {
+p.xpNext = getXpForLevel(p.level + 1);
+p.xp = 0;
 }
 while (p.xp >= p.xpNext) {
 p.xp -= p.xpNext;
 p.level++;
-if (p.level >= MAX_PLAYER_LEVEL) {
+if (p.level >= getMaxPlayerLevel()) {
 p.xpNext = Infinity;
 } else {
 p.xpNext = getXpForLevel(p.level + 1);
@@ -18955,9 +19541,10 @@ p.mp = p.maxMp;
 logCombat(`✦ УРОВЕНЬ ${p.level}! +${gain} очков навыков.`, 'log-entry levelup');
 updateSkillPointsBadge();
 if (typeof questJournalChanged === 'function') questJournalChanged();
-if (p.level >= MAX_PLAYER_LEVEL) {
-logCombat(`🏆 Достигнут максимальный уровень (${MAX_PLAYER_LEVEL}). Ждём новых земель!`, 'log-entry levelup');
-showToast('🏆', `Максимальный уровень: ${MAX_PLAYER_LEVEL}!`);
+fallOmensCheck();
+if (p.level >= getMaxPlayerLevel()) {
+logCombat(`🏆 Достигнут максимальный уровень (${getMaxPlayerLevel()}). Ждём новых земель!`, 'log-entry levelup');
+showToast('🏆', `Максимальный уровень: ${getMaxPlayerLevel()}!`);
 break;
 }
 }
@@ -19286,6 +19873,7 @@ btnRepeat.classList.toggle('active', state.battle.repeatBattle);
 }
 function closeBattle() {
 const p = state.player;
+if (state.battle.breakthrough && state.battle.breakthrough.real) { showToast('⚔', 'Обоз не остановить'); return; }
 if (state.battle.breakthrough) breakthroughAbort();
 if (state.battle.repeatBattle) {
 state.battle.repeatBattle = false;
@@ -19413,7 +20001,8 @@ b.timer -= dt;
 if (b.timer <= 0) {
 b.timer = 0;
 if (TAVERN_BUFFS[buffId]) {
-logCombat(`🍺 Действие «${TAVERN_BUFFS[buffId].name}» закончилось.`, 'log-entry levelup');
+const pl = tavernBuffPlace(TAVERN_BUFFS[buffId]);
+logCombat(`${pl ? pl.emoji : '🍺'} Действие «${tavernBuffName(buffId)}» закончилось.`, 'log-entry levelup');
 }
 }
 }
@@ -20064,7 +20653,8 @@ const BREAK_GNAW_PER_SECOND = 0.006;
 const BREAK_DOWN_SECONDS = 5;
 const BREAK_DOWN_GNAW_MULT = 3;
 const BREAK_WAVE_PAUSE_MS = 1800;
-const BREAK_PLATE_MS = 5000;
+const BREAK_PLATE_MS = 8000;
+const BREAK_PLATE_LOCK_MS = 1500;
 const BREAK_LAST_WAVE_KILLS = 5;
 const BREAK_LAST_WAVE_SECONDS = 120;
 const BREAK_HELP = {
@@ -20094,21 +20684,28 @@ s.onerror = () => resolve();
 document.body.appendChild(s);
 });
 }
-function breakthroughStart() {
+function breakthroughStart(opts) {
 const p = state.player;
 if (!p.classId) { showToast('⚔', 'Сначала выберите класс у Наставника'); return; }
+const real = !!(opts && opts.real), saved = opts && opts.resume;
 if (state.battle.active) closeBattle();
 if (p.hp < 1) p.hp = 1;
 state.battle.breakthrough = {
-wave: 0, convoy: BREAK_CONVOY_START, gnaw: 0, queue: [], time: 0, down: 0, between: true,
+real,
+wave: saved ? saved.wave : 0, convoy: saved ? saved.convoy : BREAK_CONVOY_START,
+gnaw: 0, queue: [], time: 0, down: 0, between: true,
 help: {
 cd: { supply: 0, healer: 0, bruiser: BREAK_HELP.bruiser.firstAt, pair: BREAK_HELP.pair.cooldown },
-used: { supply: 0, healer: 0, bruiser: 0, pair: 0 },
-fireUsed: false, regen: null, lastAtb: 0,
+used: (saved && saved.used) || { supply: 0, healer: 0, bruiser: 0, pair: 0 },
+fireUsed: !!(saved && saved.fireUsed), regen: null, lastAtb: 0,
 },
 };
+if (saved) {
+if (saved.wave >= BREAK_WAVES.length) breakFinish(); else breakNextWave();
+return;
+}
 const lines = window.BREAK_LINES;
-breakPlate(lines && lines.intro, breakNextWave);
+breakPlate(lines && lines.intro, breakNextWave, 'img/story/fall/convoy.webp');
 }
 function breakNextWave() {
 const br = state.battle.breakthrough;
@@ -20437,9 +21034,10 @@ br.help.regen = null;
 clearAllDebuffs();
 breakLose((BREAK_LOSS_BY_WAVE[br.wave - 1] || 0) + leftovers);
 logCombat(timedOut
-? `⏳ Обоз не может ждать: волна ${br.wave} прорвалась к людям. Осталось людей: ${br.convoy}.`
-: `🛡 Волна ${br.wave} позади. Осталось людей: ${br.convoy}.`, 'log-entry separator');
+? `⏳ Обоз не может ждать: волна ${br.wave} прорвалась к обозу. В обозе осталось: ${br.convoy}.`
+: `🛡 Волна ${br.wave} позади. В обозе осталось: ${br.convoy}.`, 'log-entry separator');
 breakRender();
+if (br.real) state.player.fallBattle = { wave: br.wave, convoy: br.convoy, used: br.help.used, fireUsed: br.help.fireUsed };
 saveCurrentSlot();
 setTimeout(() => {
 if (state.battle.breakthrough !== br) return;
@@ -20452,15 +21050,16 @@ breakPlate(lines && lines.last, breakFinish);
 function breakFinish() {
 const br = state.battle.breakthrough;
 if (!br) return;
-const left = br.convoy;
+const left = br.convoy, real = br.real;
 breakCleanup();
 state.player.breakthroughResult = left;
 document.getElementById('battle-window').classList.remove('active');
 document.getElementById('hunt-hint').style.display = 'block';
 renderMonsters();
 saveCurrentSlot();
+if (real) { fallAfterBattle(left); return; }
 showSoon('ПРОРЫВ', left > 0
-? `Обоз дошёл до ворот. Из ${BREAK_CONVOY_START} человек осталось ${left}.`
+? `Обоз дошёл до ворот. Из ${BREAK_CONVOY_START} дошли ${left}.`
 : 'Из шестидесяти семи дошли только мы.');
 }
 function breakthroughOnHeroDown() {
@@ -20481,12 +21080,14 @@ logCombat(heroText('👣 Ты снова идёшь впереди. Не пом�
 updateTopStatus();
 updateBattleUI();
 }
-function breakPlate(textLines, done) {
+function breakPlate(textLines, done, bg) {
 if (!textLines || !textLines.length) { done(); return; }
 const el = document.createElement('div');
 el.id = 'bx-break-plate';
-el.innerHTML = textLines.map(t => `<p>${t}</p>`).join('');
+if (bg) { el.classList.add('has-bg'); el.style.setProperty('--plate-bg', `url('${bg}')`); }
+el.innerHTML = textLines.map(t => `<p>${t}</p>`).join('') + '<div class="bx-plate-hint">нажмите, чтобы продолжить</div>';
 document.body.appendChild(el);
+const shownAt = Date.now();
 let finished = false;
 const finish = () => {
 if (finished) return;
@@ -20494,7 +21095,8 @@ finished = true;
 el.remove();
 done();
 };
-el.addEventListener('click', finish);
+setTimeout(() => el.classList.add('can-skip'), BREAK_PLATE_LOCK_MS);
+el.addEventListener('click', () => { if (Date.now() - shownAt >= BREAK_PLATE_LOCK_MS) finish(); });
 setTimeout(finish, BREAK_PLATE_MS);
 }
 function breakthroughAbort() {
@@ -22034,6 +22636,20 @@ const p = state.player;
 if (!p.huntPace || typeof p.huntPace !== 'object') p.huntPace = {};
 return p.huntPace;
 }
+const EXP_PACE_VER = 2;
+function expPaceEntry(key) {
+const st = expPaceStore();
+let e = st[key];
+if (!e || e.v !== EXP_PACE_VER) e = st[key] = { k: 0, s: 0, v: EXP_PACE_VER, use: {} };
+if (!e.use) e.use = {};
+return e;
+}
+function expRecordUse(shopId, n) {
+const key = expCurrentHuntKey();
+if (!key || !shopId || !(n > 0) || !state.player.classId) return;
+const e = expPaceEntry(key);
+e.use[shopId] = (e.use[shopId] || 0) + n;
+}
 function expCurrentHuntKey() {
 const b = state.battle;
 const win = document.getElementById('battle-window');
@@ -22046,9 +22662,13 @@ const now = performance.now();
 if (__expPace.key && __expPace.t) {
 const dt = (now - __expPace.t) / 1000;
 if (dt > 0 && dt <= HUNT_PACE_MAX_GAP_SEC) {
-const e = expPaceStore()[__expPace.key] || (expPaceStore()[__expPace.key] = { k: 0, s: 0 });
+const e = expPaceEntry(__expPace.key);
 e.s += dt;
-if (e.s > HUNT_PACE_WINDOW_SEC) { const f = HUNT_PACE_WINDOW_SEC / e.s; e.s *= f; e.k *= f; }
+if (e.s > HUNT_PACE_WINDOW_SEC) {
+const f = HUNT_PACE_WINDOW_SEC / e.s;
+e.s *= f; e.k *= f;
+Object.keys(e.use).forEach(id => { e.use[id] *= f; });
+}
 }
 }
 __expPace.key = expCurrentHuntKey();
@@ -22058,13 +22678,13 @@ function expPaceKill(m) {
 if (!m || !state.player.classId) return;
 expPaceStamp();
 const key = expPaceKey(m.templateId || m.id, m.variantId);
-const e = expPaceStore()[key] || (expPaceStore()[key] = { k: 0, s: 0 });
-e.k += 1;
+expPaceEntry(key).k += 1;
 }
 function expGetPace(id, variantId) {
 const e = (state.player.huntPace || {})[expPaceKey(id, variantId)];
+if (e && e.v !== EXP_PACE_VER) return { ok: false, old: true, k: 0, s: 0 };
 if (!e || e.s < EXPEDITION_MIN_PACE_SEC || e.k < EXPEDITION_MIN_PACE_KILLS) return { ok: false, k: e ? e.k : 0, s: e ? e.s : 0 };
-return { ok: true, kph: e.k / e.s * 3600, k: e.k, s: e.s };
+return { ok: true, kph: e.k / e.s * 3600, k: e.k, s: e.s, use: e.use || {} };
 }
 function expHuntOptions(loc) {
 const list = [];
@@ -22074,7 +22694,8 @@ const kills = getMonsterKills(t.id, v);
 const pace = expGetPace(t.id, v);
 let reason = '';
 if (kills < EXPEDITION_MIN_KILLS) reason = `нужно ${EXPEDITION_MIN_KILLS} убийств (сейчас ${kills})`;
-else if (!pace.ok) reason = 'поохотьтесь на них хотя бы 5 минут — так прикинем темп';
+else if (pace.old) reason = 'замерим заново, теперь и расход зелий: поохотьтесь на них 5 минут';
+else if (!pace.ok) reason = 'поохотьтесь на них хотя бы 5 минут — так прикинем темп и расход зелий';
 const inst = buildMonsterInstance(t, v);
 list.push({ key: expPaceKey(t.id, v), template: t, variantId: v, name: inst.name, level: inst.level, kills, pace, ok: !reason, reason });
 });
@@ -22091,6 +22712,100 @@ const titleMult = getTitleDropMultiplier(template.id, variantId);
 const goldAvg = (inst.goldMin + inst.goldMax) / 2 * (1 + (p.goldBonusFromRefine || 0) / 100) * mult();
 const gold = kills * Math.min(100, inst.goldChance * mult() * titleMult) / 100 * goldAvg;
 return { kills, xp, gold };
+}
+function expInvCount(shopId) {
+return state.player.inventory.filter(i => i.shopId === shopId).reduce((s, i) => s + (i.qty || 0), 0);
+}
+function expInvTake(shopId, qty) {
+const inv = state.player.inventory;
+for (let i = inv.length - 1; i >= 0 && qty > 0; i--) {
+const it = inv[i];
+if (it.shopId !== shopId) continue;
+const t = Math.min(it.qty || 0, qty);
+it.qty -= t; qty -= t;
+if (it.qty <= 0) inv.splice(i, 1);
+}
+}
+function expGiveSupply(shopId, qty) {
+if (!(qty > 0)) return;
+const p = state.player;
+const shop = SHOP_ITEMS.find(s => s.id === shopId);
+if (!shop) return;
+const ex = p.inventory.find(i => i.shopId === shopId);
+if (ex) { ex.qty = (ex.qty || 0) + qty; return; }
+const item = {
+name: shop.name, type: 'consumable', icon: SVG[shop.icon], shopId,
+effect: shop.effect, sellPrice: Math.floor(shop.price * 0.3),
+};
+if (p.inventory.length < invMaxSlots()) {
+p.inventory.push({ id: 'item_' + Date.now() + '_' + Math.random(), ...item, qty });
+} else {
+if (!Array.isArray(p.expeditionLoot)) p.expeditionLoot = [];
+expPoolAdd(p.expeditionLoot, item, qty);
+}
+}
+function expSupplyNeeds(opt, hours) {
+const pace = opt.pace;
+if (!pace || !pace.ok || !pace.k) return [];
+const kills = pace.kph * EXPEDITION_RATE * hours;
+return Object.keys(pace.use || {}).map(id => {
+const shop = SHOP_ITEMS.find(s => s.id === id);
+const perKill = (pace.use[id] || 0) / pace.k;
+if (!shop || !(perKill > 0)) return null;
+return { id, shop, perKill, need: Math.ceil(perKill * kills - 1e-6), have: expInvCount(id) };
+}).filter(r => r && r.need > 0)
+.sort((a, b) => (expSupplyKind(a.id).kind === 'hard' ? 0 : 1) - (expSupplyKind(b.id).kind === 'hard' ? 0 : 1));
+}
+function expSupplyKind(id) {
+const m = (typeof MIXTURE_EFFECTS !== 'undefined') ? MIXTURE_EFFECTS[id] : null;
+if (m && m.atkPercent) return { kind: 'atk', value: m.atkPercent };
+if (m && m.luckPercent) return { kind: 'luck', value: m.luckPercent };
+return { kind: 'hard', value: 0 };
+}
+function expSimulate(supplies, rate, T) {
+let atk = null, luck = null, hardCap = Infinity, hardBy = null;
+(supplies || []).forEach(s => {
+if (!(s.perKill > 0)) return;
+const cap = (s.qty || 0) / s.perKill;
+const k = expSupplyKind(s.id);
+if (k.kind === 'atk') { if (!atk || cap < atk.cap) atk = { cap, value: k.value, s }; }
+else if (k.kind === 'luck') { if (!luck || cap < luck.cap) luck = { cap, value: k.value, s }; }
+else if (cap < hardCap) { hardCap = cap; hardBy = s; }
+});
+if (!(rate > 0)) return { kills: 0, ms: T, ranOut: null, luckKills: 0, luckValue: 0, atkOutMs: null };
+const rate2 = atk ? rate / (1 + atk.value / 100) : rate;
+const atkMs = atk ? atk.cap / rate : Infinity;
+const killsAt = t => (t <= atkMs ? rate * t : atk.cap + rate2 * (t - atkMs));
+const timeFor = K => (!atk || K <= atk.cap ? K / rate : atkMs + (K - atk.cap) / rate2);
+let kills = killsAt(T), ms = T, ranOut = null;
+if (kills > hardCap) { kills = hardCap; ms = timeFor(hardCap); ranOut = hardBy; }
+return {
+kills, ms, ranOut,
+luckKills: luck ? Math.min(kills, luck.cap) : 0, luckValue: luck ? luck.value : 0,
+atkOutMs: atk && atkMs < ms ? atkMs : null, atkName: atk ? atk.s.name : '',
+};
+}
+function expSupplyPlan(opt, hours) {
+const d = __expDialog || {};
+const take = d.take || {};
+const rows = expSupplyNeeds(opt, hours);
+const inTown = isTownLoc(state.player.currentLocation);
+let gold = state.player.gold;
+let cost = 0;
+rows.forEach(r => {
+r.take = Math.max(0, Math.min(99999, Math.floor(take[r.id] !== undefined ? take[r.id] : r.need)));
+const want = Math.max(0, r.take - r.have);
+r.buy = (inTown && d.buy !== false) ? Math.min(want, Math.floor(gold / r.shop.price)) : 0;
+r.noGold = r.buy < want && inTown && d.buy !== false;
+gold -= r.buy * r.shop.price;
+cost += r.buy * r.shop.price;
+r.got = Math.min(r.take, r.have + r.buy);
+r.short = Math.max(0, r.take - r.got);
+r.name = r.shop.name;
+});
+const T = hours * 3600000;
+const sim = expSimulate(rows.map(r => ({ id: r.id, name: r.name, qty: r.got, perKill: r.perKill })), opt.pace.kph * EXPEDITION_RATE / 3600000, T);
+return { rows, cost, sim, coverH: sim.ms / 3600000, enough: !sim.ranOut };
 }
 function expMakeItem(drop, qty) {
 let stats = null;
@@ -22109,6 +22824,7 @@ tier: drop.tier || null, refineLevel: 0, refineBonuses: null,
 };
 if (drop.rarity) item.rarity = drop.rarity;
 if (drop.bonusStats) item.bonusStats = drop.bonusStats;
+if (drop.shopId) { item.shopId = drop.shopId; item.effect = drop.effect; }
 return item;
 }
 function expPoolAdd(pool, drop, qty) {
@@ -22119,7 +22835,7 @@ if (e) { e.qty += qty; return; }
 pool.push({ drop, qty });
 }
 function expPoolCount(pool) { return (pool || []).reduce((s, e) => s + (e.qty || 0), 0); }
-function expRollHunt(template, variantId, kills) {
+function expRollHunt(template, variantId, kills, luck) {
 const p = state.player;
 const inst = buildMonsterInstance(template, variantId);
 const m = mult();
@@ -22144,8 +22860,9 @@ let g = Math.floor(raw) + (Math.random() < raw % 1 ? 1 : 0);
 if (isMine) g = Math.max(10, Math.round(g / 10) * 10);
 gold += g;
 }
+const dm = (luck && k < luck.kills) ? dropMult + luck.value / 100 : dropMult;
 inst.drops.forEach(d => {
-const n = rollDropCount(d.chance * m * dropMult);
+const n = rollDropCount(d.chance * m * dm);
 for (let i = 0; i < n; i++) {
 if (EXP_RARITY_TYPES.includes(d.type)) {
 if (cap > 0 && copies(d.name) >= cap) continue;
@@ -22173,6 +22890,7 @@ __expDialog = {
 loc,
 key: (prev && opts.some(o => o.ok && o.key === prev.key)) ? prev.key : (firstOk ? firstOk.key : null),
 hours: prev ? prev.hours : 4,
+take: {}, buy: prev ? prev.buy !== false : true,
 };
 expRenderDialog();
 }
@@ -22216,22 +22934,71 @@ est = `<div class="exp-est">
       <div class="exp-est-bonus">Дождётесь конца — ещё +${Math.round(EXPEDITION_FULL_BONUS * 100)}% ко всему</div>
     </div>`;
 }
+const inTown = isTownLoc(state.player.currentLocation);
+let pack = '';
+if (sel) {
+const plan = expSupplyPlan(sel, d.hours);
+if (!plan.rows.length) {
+pack = `<div class="exp-sub">Сборы</div><div class="exp-note">Припасы не нужны: на этой охоте вы не пили зелий и не брали микстур.</div>`;
+} else {
+const lines = plan.rows.map(r => {
+const icon = SVG[r.shop.icon] || '🧪';
+const tail = [];
+tail.push(`в сумке ${expNum(r.have)}`);
+if (r.buy > 0) tail.push(`<b>докупит ${expNum(r.buy)}</b>`);
+if (r.short > 0) tail.push(`<span class="exp-pack-warn">не хватает ${expNum(r.short)}${r.noGold ? ' — мало Оболов' : ''}</span>`);
+return `<div class="exp-pack-row">
+          <span class="exp-pack-ico">${icon}</span>
+          <span class="exp-pack-body"><span class="exp-pack-name">${r.shop.name}</span><span class="exp-pack-info">нужно ~${expNum(r.need)} · ${tail.join(' · ')}</span></span>
+          <input type="number" class="exp-pack-qty" min="0" step="1" value="${r.take}" data-id="${r.id}" aria-label="Сколько взять: ${r.shop.name}">
+        </div>`;
+}).join('');
+let sum = '';
+if (plan.cost > 0) sum += `<div>Докупит у Торговца на <b>${expNum(plan.cost)}</b> Оболов (у вас ${expNum(state.player.gold)})</div>`;
+const sim = plan.sim;
+if (sim.atkOutMs !== null) {
+sum += sim.atkOutMs < 60000
+? `<div class="exp-pack-warn">«${sim.atkName}» не взята — герой бьёт медленнее, чем на вашей охоте.</div>`
+: `<div class="exp-pack-warn">«${sim.atkName}» кончится примерно через ${expFormatDuration(sim.atkOutMs)} — дальше герой бьёт медленнее.</div>`;
+}
+if (!plan.enough) sum += `<div class="exp-pack-warn">Хватит примерно на ${expFormatDuration(sim.ms)} из ${d.hours} ч: кончится «${sim.ranOut.name}», и герой вернётся раньше, без бонуса.</div>`;
+else if (sim.atkOutMs === null) sum += `<div class="exp-pack-ok">Припасов хватит на всю экспедицию. Что останется — вернётся в сумку.</div>`;
+else sum += `<div class="exp-pack-ok">Герой вернётся в срок. Остаток припасов — обратно в сумку.</div>`;
+pack = `<div class="exp-sub">Сборы</div>
+        <div class="exp-pack">${lines}</div>
+        ${inTown ? `<label class="exp-pack-buy"><input type="checkbox" id="exp-pack-buy"${d.buy !== false ? ' checked' : ''}> Докупить недостающее у Торговца</label>` : ''}
+        <div class="exp-pack-sum">${sum}</div>`;
+}
+}
+const townNote = inTown ? '' : `<div class="exp-pack-warn exp-town-note">Собраться в экспедицию можно только в городе: вернитесь туда — герой закупится и уйдёт.</div>`;
 expOverlay(`
     <div class="exp-head"><span>⛺ Экспедиция: ${place}</span><button type="button" class="exp-x" onclick="closeExpeditionDialog()" aria-label="Закрыть">×</button></div>
-    <div class="exp-note">Герой уйдёт охотиться сам — вдвое медленнее, чем с вами. Пока он в пути, им нельзя играть. Без душ самоцветов.</div>
+    <div class="exp-note">Герой уйдёт из города охотиться сам — вдвое медленнее, чем с вами. Пока он в пути, им нельзя играть. Зелья и микстуры берёт с собой, бафы и сытость тратятся как на обычной охоте. Без душ самоцветов.</div>
     <div class="exp-sub">На кого</div>
     <div class="exp-mons">${rows}</div>
     <div class="exp-sub">На сколько</div>
     <div class="exp-hours-row">${hours}</div>
     ${est}
-    <div class="exp-actions"><button type="button" class="exp-btn exp-btn-main"${sel ? '' : ' disabled'} onclick="expStartHunt()">Отправиться</button></div>
+    ${pack}
+    ${townNote}
+    <div class="exp-actions"><button type="button" class="exp-btn exp-btn-main"${sel && inTown ? '' : ' disabled'} onclick="expStartHunt()">Отправиться</button></div>
   `);
 document.querySelectorAll('#exp-overlay .exp-mon:not(.locked)').forEach(b => {
-b.onclick = () => { __expDialog.key = b.dataset.key; expRenderDialog(); };
+b.onclick = () => { __expDialog.key = b.dataset.key; __expDialog.take = {}; expRenderDialog(); };
 });
 document.querySelectorAll('#exp-overlay .exp-hours').forEach(b => {
-b.onclick = () => { __expDialog.hours = +b.dataset.h; expRenderDialog(); };
+b.onclick = () => { __expDialog.hours = +b.dataset.h; __expDialog.take = {}; expRenderDialog(); };
 });
+document.querySelectorAll('#exp-overlay .exp-pack-qty').forEach(inp => {
+inp.onchange = () => {
+const v = Math.max(0, Math.floor(+inp.value || 0));
+__expDialog.take = __expDialog.take || {};
+__expDialog.take[inp.dataset.id] = v;
+expRenderDialog();
+};
+});
+const buyBox = document.getElementById('exp-pack-buy');
+if (buyBox) buyBox.onchange = () => { __expDialog.buy = buyBox.checked; expRenderDialog(); };
 }
 async function expStartHunt() {
 const d = __expDialog;
@@ -22239,10 +23006,26 @@ if (!d || expIsAway()) return;
 const o = expHuntOptions(d.loc).find(x => x.key === d.key && x.ok);
 if (!o) return;
 if (state.travel.active) { showToast('⛺', 'Сначала дойдите до места'); return; }
+if (!isTownLoc(state.player.currentLocation)) { showToast('⛺', 'Собраться в экспедицию можно только в городе'); return; }
 const btn = document.querySelector('#exp-overlay .exp-btn-main');
 if (btn) { btn.disabled = true; btn.textContent = 'Собираемся…'; }
 const b = state.battle;
 if (b.active || b.repeatBattle || b.waitingForResume) closeBattle();
+const plan = expSupplyPlan(o, d.hours);
+plan.rows.forEach(r => { if (r.buy > 0) buyItem(r.id, r.buy); });
+const supplies = [];
+plan.rows.forEach(r => {
+const got = Math.min(r.take, expInvCount(r.id));
+if (got <= 0) { supplies.push({ id: r.id, name: r.shop.name, qty: 0, perKill: r.perKill }); return; }
+expInvTake(r.id, got);
+supplies.push({ id: r.id, name: r.shop.name, qty: got, perKill: r.perKill });
+});
+if (supplies.length) {
+renderInventory();
+if (typeof renderEquipSlots === 'function') renderEquipSlots();
+if (typeof renderConsumablesPanel === 'function') renderConsumablesPanel();
+if (typeof updateInventoryFooter === 'function') updateInventoryFooter();
+}
 const srv = await expServerNow();
 state.player.expedition = {
 type: 'hunt',
@@ -22255,6 +23038,7 @@ hours: d.hours,
 startedAt: srv || Date.now(),
 startedLocal: Date.now(),
 serverTime: !!srv,
+supplies,
 };
 logCombat(`⛺ ${state.player.name} уходит в экспедицию: ${LOCATION_NAMES[d.loc] || d.loc}, ${o.name}, ${d.hours} ч.`, 'log-entry levelup');
 saveCurrentSlot();
@@ -22312,6 +23096,31 @@ else if (rep.kills >= 500 && Math.random() < 0.5) pool = EXPEDITION_BAG_LINES.bi
 const line = pool[Math.floor(Math.random() * pool.length)] || '';
 return heroText(line.replace('%kills%', expNum(rep.kills)));
 }
+function expBurnTimers(sec) {
+const p = state.player;
+if (!(sec > 0)) return false;
+let any = false, recalc = false;
+if (p.foodTimer > 0) {
+any = true;
+p.foodTimer -= sec;
+if (p.foodTimer <= 0) { p.foodTimer = 0; p.foodTickAccum = 0; p.foodKind = null; }
+}
+if (p.dish && p.dish.timer > 0) {
+any = true;
+p.dish.timer -= sec;
+if (p.dish.timer <= 0) { p.dish = null; recalc = true; }
+}
+['guildBuffs', 'tavernBuffs'].forEach(k => {
+Object.values(p[k] || {}).forEach(b => {
+if (!b || !(b.timer > 0)) return;
+any = true;
+b.timer = Math.max(0, b.timer - sec);
+if (!b.timer) recalc = true;
+});
+});
+if (recalc && typeof recalcStats === 'function') recalcStats();
+return any;
+}
 async function expResolve(early) {
 const p = state.player;
 const exp = p.expedition;
@@ -22320,16 +23129,28 @@ __expResolving = true;
 try {
 clearInterval(__expAwayTimer); __expAwayTimer = null;
 const srv = await expServerNow();
-const elapsed = expElapsedMs(exp, srv);
-const full = elapsed >= expDurationMs(exp) - 1000;
+let elapsed = expElapsedMs(exp, srv);
+let full = elapsed >= expDurationMs(exp) - 1000;
 const template = ALL_HUNT_MONSTERS.find(t => t.id === exp.monsterId);
-let killsRaw = (exp.kph || 0) * EXPEDITION_RATE * (elapsed / 3600000) * (full ? 1 + EXPEDITION_FULL_BONUS : 1);
+const sim = expSimulate(exp.supplies || [], (exp.kph || 0) * EXPEDITION_RATE / 3600000, elapsed);
+const ranOut = sim.ranOut;
+if (ranOut) { elapsed = sim.ms; full = false; }
+const huntKills = sim.kills;
+const supplyRep = (exp.supplies || []).map(s => {
+const used = Math.min(s.qty || 0, Math.round((s.perKill || 0) * huntKills));
+const left = (s.qty || 0) - used;
+expGiveSupply(s.id, left);
+return { name: s.name, used, left };
+}).filter(s => s.used > 0 || s.left > 0);
+const burned = expBurnTimers(elapsed / 1000);
+let killsRaw = huntKills * (full ? 1 + EXPEDITION_FULL_BONUS : 1);
 let kills = Math.floor(killsRaw) + (Math.random() < killsRaw % 1 ? 1 : 0);
 if (!template) kills = 0;
 const levelBefore = p.level;
-const loot = template && kills > 0 ? expRollHunt(template, exp.variantId, kills) : { xp: 0, gold: 0, items: [] };
+const luck = { kills: Math.round(sim.luckKills), value: sim.luckValue };
+const loot = template && kills > 0 ? expRollHunt(template, exp.variantId, kills, luck) : { xp: 0, gold: 0, items: [] };
 p.expedition = null;
-p.currentLocation = 'town';
+p.currentLocation = homeTown();
 p.xp += loot.xp;
 p.gold += loot.gold;
 if (template) { const key = killKey(template.id, exp.variantId); p.monsterKills[key] = (p.monsterKills[key] || 0) + kills; }
@@ -22340,7 +23161,8 @@ if (typeof loreSyncBeasts === 'function') loreSyncBeasts(false);
 const rep = {
 loc: exp.loc, name: exp.name, hours: exp.hours, elapsed, full,
 kills, xp: loot.xp, gold: loot.gold, levels: p.level - levelBefore,
-reason: full ? '' : expPickReason(),
+reason: ranOut ? heroText(EXPEDITION_SUPPLY_OUT_REASON.replace('%name%', ranOut.name)) : (full ? '' : expPickReason()),
+supplies: supplyRep, burned,
 };
 rep.bagLine = expPickBagLine(rep);
 if (typeof annalsFirst === 'function') annalsFirst('expedition.hunt');
@@ -22374,6 +23196,11 @@ body += `<div class="exp-rep-stats">
     </div>`;
 if (rep.full) body += `<div class="exp-rep-bonus">+${Math.round(EXPEDITION_FULL_BONUS * 100)}% за полную экспедицию</div>`;
 if (rep.levels > 0) body += `<div class="exp-rep-bonus">✦ Новый уровень: ${p.level}!</div>`;
+if (rep.supplies && rep.supplies.length) {
+const s = rep.supplies.map(x => `${x.name}: ушло ${expNum(x.used)}${x.left > 0 ? `, вернулось ${expNum(x.left)}` : ''}`).join(' · ');
+body += `<div class="exp-rep-supplies">🎒 ${s}</div>`;
+}
+if (rep.burned) body += `<div class="exp-rep-supplies">⏳ Бафы и сытость тоже потратили ${expFormatDuration(rep.elapsed)}</div>`;
 }
 const order = (typeof RARITY_ORDER !== 'undefined') ? RARITY_ORDER : [];
 const chips = pool.slice().sort((a, b) => (order.indexOf(b.drop.rarity) - order.indexOf(a.drop.rarity)) || (b.qty - a.qty)).map(e => {
@@ -22427,6 +23254,7 @@ __expDialog = {
 loc,
 key: (prev && opts.some(o => o.ok && o.key === prev.key)) ? prev.key : (firstOk ? firstOk.key : null),
 hours: prev ? prev.hours : 4,
+take: {}, buy: prev ? prev.buy !== false : true,
 };
 expRenderDialog();
 }
@@ -22545,6 +23373,24 @@ return r;
 };
 const origClose = closeBattle;
 closeBattle = function () { expPaceStamp(); const r = origClose.apply(this, arguments); __expPace.key = null; return r; };
+const origPotion = checkHealPotion;
+checkHealPotion = function () {
+const eff = state.battle.activeEffects;
+const before = !!(eff && eff.healPotionUsed);
+const slot = state.player.potionSlot;
+const r = origPotion.apply(this, arguments);
+if (!before && eff && eff.healPotionUsed && slot) expRecordUse(slot, 1);
+return r;
+};
+const origMix = tickMixtureCharge;
+tickMixtureCharge = function (n) {
+if ((n || 1) === 1) {
+const m = getActiveMixture();
+const d = m && MIXTURE_EFFECTS[m.id];
+if (d && d.charges) expRecordUse(m.id, 1 / d.charges);
+}
+return origMix.apply(this, arguments);
+};
 let slotTick = 0;
 setInterval(() => {
 if (__expPace.key || expCurrentHuntKey()) expPaceStamp();
@@ -22644,6 +23490,1063 @@ renderTodButtons();
 }
 applyDayNight();
 setInterval(applyDayNight, TOD_TICK_MS);
+
+;
+
+// ==== ФАЙЛ js/systems/underwood-fall.js ====
+const FALL_IMG = 'img/story/fall/';
+const FALL_MIN_LEVEL = 20;
+const FALL_TREMOR_MINUTES = { 18: [20, 30], 19: [8, 12] };
+function homeTown() {
+return state.player.underwoodFallen ? 'ilgrad' : 'town';
+}
+function fallReady() {
+const p = state.player;
+return !!window.FALL_LINES && !!p.classId && (p.level || 1) >= FALL_MIN_LEVEL
+&& !p.fallStage && !p.underwoodFallen && !p.ilgradOpen;
+}
+function fallElderCall() {
+if (!fallReady()) return false;
+openDialogue('elder', 'fall_call');
+return true;
+}
+function fallStart() {
+if (!fallReady()) return;
+state.player.fallStage = 'assembly';
+fallRun();
+}
+function fallNext(stage) {
+state.player.fallStage = stage;
+saveCurrentSlot();
+fallRun();
+}
+function fallRun() {
+const p = state.player, L = window.FALL_LINES;
+if (!L) return;
+[...L.cinematic.map(f => f.img), L.assembly.bg, L.council.bg].forEach(n => { if (n) new Image().src = FALL_IMG + n; });
+if (p.fallStage === 'assembly') {
+fallDialogue(L.assembly, () => {
+p.underwoodFallen = true;
+fallNext('cinematic');
+});
+} else if (p.fallStage === 'cinematic') {
+fallCinematic(L.cinematic, () => {
+annalsFirst('fall.gone');
+fallNext('council');
+});
+} else if (p.fallStage === 'council') {
+fallDialogue(L.council, () => fallNext('battle'));
+} else if (p.fallStage === 'battle') {
+p.currentLocation = 'outskirts';
+breakthroughLoadLines().then(() => breakthroughStart({ real: true, resume: p.fallBattle }));
+} else if (p.fallStage === 'gates') {
+fallDialogue(L.gates, fallOpenCity);
+}
+}
+function fallAfterBattle(left) {
+const p = state.player;
+p.breakthroughResult = left;
+p.fallBattle = null;
+fallNext('gates');
+}
+function fallOpenCity() {
+const p = state.player, left = p.breakthroughResult || 0;
+if (left > 0) annalsFirst('fall.gates', { n: left });
+else annalsFirst('fall.gates0');
+p.fallStage = null;
+p.ilgradOpen = true;
+p.underwoodFallen = true;
+p.currentLocation = 'ilgrad';
+annalsFirst('loc.ilgrad');
+if (typeof loreSyncBeasts === 'function') loreSyncBeasts(false);
+checkLevelUp();
+recalcStats();
+updateTopStatus();
+updateCharacterPanel();
+updateMapUI();
+switchTab('hunt');
+renderMonsters();
+saveCurrentSlot();
+logCombat('🏰 Ильград открыт. Максимальный уровень теперь 30.', 'log-entry levelup');
+showToast('🏰', 'Ильград открыт · уровень до 30');
+}
+function fallResume() {
+if (state.player.fallStage) fallRun();
+}
+function fallOmensCheck() {
+const p = state.player, L = window.FALL_LINES;
+if (!L || !p.classId || p.underwoodFallen || !p.chronicle) return;
+const firsts = p.chronicle.firsts || {};
+[17, 18, 19].forEach(lvl => {
+const key = 'fall.' + lvl;
+if (p.level < lvl || firsts[key]) return;
+annalsFirst(key);
+const bag = L.bagAtLevel[lvl];
+if (bag) { logCombat(`🎒 Заплечник: «${heroText(bag)}»`, 'log-entry'); showToast('🎒', heroText(bag)); }
+});
+if (p.level >= FALL_MIN_LEVEL && !firsts['fall.call'] && fallReady()) {
+annalsFirst('fall.call');
+logCombat('🕯 ' + L.callLog, 'log-entry levelup');
+showToast('🕯', L.callLog);
+}
+}
+let __fallNextTremor = 0;
+function fallOmenOnClear() {
+const p = state.player, L = window.FALL_LINES;
+if (!L || p.underwoodFallen || state.battle.breakthrough) return;
+const range = FALL_TREMOR_MINUTES[Math.min(p.level, 19)];
+if (!range) return;
+const now = Date.now(), next = () => now + 60000 * (range[0] + Math.random() * (range[1] - range[0]));
+if (!__fallNextTremor) { __fallNextTremor = next(); return; }
+if (now < __fallNextTremor) return;
+__fallNextTremor = next();
+const inMine = p.currentLocation === 'mine' && Math.random() < 0.4;
+logCombat(inMine ? L.knock : L.tremor, 'log-entry');
+if (!inMine && document.getElementById('bx-stage')) breakShake();
+}
+function fallRain(canvas, host, isOn) {
+if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return () => {};
+const ctx = canvas.getContext('2d');
+const drops = Array.from({ length: 140 }, () => ({ x: Math.random(), y: Math.random(), v: 0.9 + Math.random() * 0.8, l: 14 + Math.random() * 18 }));
+let w = 0, h = 0, last = performance.now(), alive = true;
+const size = () => { w = canvas.width = host.clientWidth; h = canvas.height = host.clientHeight; };
+window.addEventListener('resize', size);
+size();
+const tick = now => {
+if (!alive) return;
+const dt = Math.min(50, now - last);
+last = now;
+ctx.clearRect(0, 0, w, h);
+if (isOn()) {
+ctx.strokeStyle = 'rgba(205,215,235,.75)';
+ctx.lineWidth = 1;
+ctx.beginPath();
+drops.forEach(d => {
+d.y += d.v * dt / 620;
+d.x -= d.v * dt / 5200;
+if (d.y > 1.05) { d.y = -0.05; d.x = Math.random() * 1.1; }
+const x = d.x * w, y = d.y * h;
+ctx.moveTo(x, y);
+ctx.lineTo(x - d.l * 0.12, y + d.l);
+});
+ctx.stroke();
+}
+requestAnimationFrame(tick);
+};
+requestAnimationFrame(tick);
+return () => { alive = false; window.removeEventListener('resize', size); };
+}
+function fallText(t) {
+const raw = typeof t === 'function' ? t() : t;
+return heroText(raw).replace(/%name%/g, state.player.name).replace(/\*([^*]+)\*/g, '<em>$1</em>');
+}
+function fallMount(html) {
+const old = document.getElementById('fall-scene');
+if (old) old.remove();
+const el = document.createElement('div');
+el.id = 'fall-scene';
+el.innerHTML = html;
+document.body.appendChild(el);
+return el;
+}
+function fallCinematic(frames, done) {
+const LINE_MS = 1700, HOLD_MS = 3000;
+const el = fallMount(`
+    <div class="fs-stage" id="fs-stage">
+      <div class="fs-back" id="fs-back"></div>
+      <img class="fs-pic" id="fs-pic" alt="">
+      <canvas class="fs-rain" id="fs-rain"></canvas>
+      <div class="fs-bolt" id="fs-bolt"></div>
+      <div class="fs-veil" id="fs-veil"></div>
+      <button class="fs-skip" id="fs-skip" type="button">Пропустить</button>
+    </div>
+    <div class="fs-caption">
+      <div class="fs-lines" id="fs-lines" aria-live="polite"></div>
+      <button class="fs-next" id="fs-next" type="button">Дальше</button>
+    </div>`);
+const $ = id => el.querySelector('#' + id);
+const stage = $('fs-stage'), pic = $('fs-pic'), back = $('fs-back'), veil = $('fs-veil'), linesEl = $('fs-lines'), nextBtn = $('fs-next'), bolt = $('fs-bolt'), skipBtn = $('fs-skip');
+let idx = -1, timers = [], busy = false, rainOn = true, ended = false;
+const stopRain = fallRain($('fs-rain'), stage, () => rainOn);
+const clear = () => { timers.forEach(clearTimeout); timers = []; };
+const later = (fn, ms) => timers.push(setTimeout(fn, ms));
+const finishFrame = () => {
+const f = frames[idx];
+linesEl.querySelectorAll('p').forEach(p => p.classList.add('on'));
+nextBtn.classList.add('on');
+if (!f.last) later(() => show(idx + 1), HOLD_MS);
+};
+const show = i => {
+busy = true;
+clear();
+nextBtn.classList.remove('on');
+veil.classList.remove('off');
+linesEl.querySelectorAll('p').forEach(p => p.classList.remove('on'));
+later(() => {
+const f = frames[i];
+idx = i;
+stage.className = 'fs-stage' + (f.stage ? ' ' + f.stage : '');
+bolt.classList.remove('on');
+pic.className = 'fs-pic';
+void pic.offsetWidth;
+if (f.img) {
+pic.src = FALL_IMG + f.img;
+pic.style.visibility = 'visible';
+pic.className = 'fs-pic' + (f.fx ? ' ' + f.fx : '');
+back.style.backgroundImage = `url('${FALL_IMG}${f.img}')`;
+} else {
+pic.style.visibility = 'hidden';
+back.style.backgroundImage = 'none';
+}
+rainOn = !f.rainOff;
+skipBtn.style.display = f.last ? 'none' : '';
+linesEl.innerHTML = f.lines.map(l => typeof l === 'string' ? `<p>${fallText(l)}</p>` : `<p class="say">${fallText(l.say)}</p>`).join('');
+veil.classList.add('off');
+if (f.bolt) later(() => bolt.classList.add('on'), f.bolt);
+const ps = [...linesEl.children];
+ps.forEach((p, n) => later(() => p.classList.add('on'), 800 + n * LINE_MS));
+later(finishFrame, 800 + ps.length * LINE_MS);
+busy = false;
+}, 750);
+};
+const finish = () => {
+if (ended) return;
+ended = true;
+clear();
+stopRain();
+document.removeEventListener('keydown', onKey);
+el.remove();
+done();
+};
+const advance = () => {
+if (busy || ended || idx < 0) return;
+if (!nextBtn.classList.contains('on')) { clear(); finishFrame(); return; }
+if (frames[idx].last) { finish(); return; }
+show(idx + 1);
+};
+const onKey = e => { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); advance(); } };
+el.addEventListener('click', advance);
+skipBtn.addEventListener('click', e => { e.stopPropagation(); if (!busy) show(frames.length - 1); });
+document.addEventListener('keydown', onKey);
+show(0);
+}
+function fallNoFace(img) {
+img.onerror = null;
+img.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='-6 -6 36 36'%3E%3Crect x='-6' y='-6' width='36' height='36' fill='%2316130f'/%3E%3Ccircle cx='12' cy='8' r='5' fill='%2357504a'/%3E%3Cpath d='M3 24c0-6 4-9 9-9s9 3 9 9z' fill='%2357504a'/%3E%3C/svg%3E";
+}
+const FALL_SILHOUETTE ='<svg class="fs-face" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="5"/><path d="M3 24c0-6 4-9 9-9s9 3 9 9z"/></svg>';
+function fallDialogue(scene, done) {
+const el = fallMount(`
+    <div class="fs-stage" id="fs-stage">
+      <img class="fs-bg" id="fs-bg" alt="">
+      <canvas class="fs-rain" id="fs-rain"></canvas>
+      <div class="fs-shade"></div>
+      <div class="fs-row" id="fs-row"></div>
+      <div class="fs-veil" id="fs-veil"></div>
+    </div>
+    <div class="fs-panel">
+      <div class="fs-speech" id="fs-speech">
+        <img class="fs-solo" id="fs-solo" src="${FALL_IMG}bag.webp" alt="">
+        <div class="fs-body">
+          <div class="fs-name" id="fs-name"></div>
+          <div class="fs-text" id="fs-text" aria-live="polite"></div>
+        </div>
+      </div>
+      <div class="fs-choices" id="fs-choices"></div>
+      <div class="fs-hint" id="fs-hint">нажми, чтобы продолжить</div>
+    </div>`);
+const $ = id => el.querySelector('#' + id);
+const stage = $('fs-stage'), bg = $('fs-bg'), row = $('fs-row'), veil = $('fs-veil'), nameEl = $('fs-name'), textEl = $('fs-text'), solo = $('fs-solo'), speech = $('fs-speech'), choices = $('fs-choices'), hint = $('fs-hint');
+const CAST = window.FALL_LINES.cast;
+let queue = scene.lines, pos = -1, waiting = false, ended = false, swap = 0, cards = {};
+const stopRain = fallRain($('fs-rain'), stage, () => true);
+const setCast = ids => {
+row.innerHTML = '';
+row.classList.remove('hide');
+cards = {};
+ids.forEach(id => {
+const c = CAST[id];
+const card = document.createElement('div');
+card.className = 'fs-who';
+card.innerHTML = (c.img ? `<img class="fs-face" src="${c.img}" alt="" onerror="fallNoFace(this)">` : FALL_SILHOUETTE) + `<span>${c.short || c.name}</span>`;
+row.appendChild(card);
+cards[id] = card;
+});
+};
+const setBg = name => { bg.src = name.startsWith('img/') ? name : FALL_IMG + name; };
+const showLine = l => {
+Object.values(cards).forEach(c => c.classList.remove('on'));
+textEl.classList.remove('on');
+clearTimeout(swap);
+if (l.bg) setBg(l.bg);
+if (l.cast) setCast(l.cast);
+if (l.fx === 'look') {
+bg.classList.add('look');
+stage.classList.add('rumble');
+setTimeout(() => stage.classList.remove('rumble'), 2100);
+}
+if (l.fx === 'back') bg.classList.remove('look');
+if (l.hideRow) row.classList.add('hide');
+solo.classList.toggle('on', !!l.bag);
+if (l.who && cards[l.who]) cards[l.who].classList.add('on');
+swap = setTimeout(() => {
+nameEl.textContent = l.bag ? 'Заплечник' : (l.who ? CAST[l.who].name : '');
+textEl.className = 'fs-text' + (l.who || l.bag ? '' : ' narr');
+textEl.innerHTML = fallText(l.t);
+void textEl.offsetWidth;
+textEl.classList.add('on');
+}, 160);
+};
+const pick = opt => {
+choices.classList.remove('on');
+speech.style.display = '';
+hint.style.display = '';
+waiting = false;
+queue = (opt.reply || []).concat(queue.slice(pos + 1));
+pos = -1;
+next();
+};
+const ask = l => {
+waiting = true;
+speech.style.display = 'none';
+hint.style.display = 'none';
+Object.values(cards).forEach(c => c.classList.remove('on'));
+choices.innerHTML = '';
+l.choice.forEach(opt => {
+const b = document.createElement('button');
+b.type = 'button';
+b.innerHTML = fallText(opt.text);
+b.addEventListener('click', e => { e.stopPropagation(); pick(opt); });
+choices.appendChild(b);
+});
+choices.classList.add('on');
+};
+const finish = () => {
+ended = true;
+clearTimeout(swap);
+stopRain();
+document.removeEventListener('keydown', onKey);
+veil.classList.remove('off');
+setTimeout(() => { el.remove(); done(); }, 700);
+};
+function next() {
+if (waiting || ended) return;
+pos++;
+if (pos >= queue.length) { finish(); return; }
+const l = queue[pos];
+if (l.choice) ask(l); else showLine(l);
+}
+const onKey = e => {
+if (waiting) {
+const i = Number(e.key) - 1;
+const opts = queue[pos] && queue[pos].choice;
+if (opts && opts[i]) pick(opts[i]);
+return;
+}
+if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); next(); }
+};
+el.addEventListener('click', next);
+document.addEventListener('keydown', onKey);
+setBg(scene.bg);
+setCast(scene.cast);
+setTimeout(() => { veil.classList.add('off'); next(); }, 300);
+}
+function cheatFallReset() {
+const p = state.player;
+p.underwoodFallen = false;
+p.fallStage = null;
+p.fallBattle = null;
+p.breakthroughResult = undefined;
+p.ilgradOpen = false;
+if (p.chronicle && p.chronicle.firsts) ['fall.gone', 'fall.gates', 'fall.gates0'].forEach(k => delete p.chronicle.firsts[k]);
+if (p.currentLocation === 'ilgrad' || p.currentLocation === 'outskirts') p.currentLocation = 'town';
+checkLevelUp();
+updateTopStatus();
+updateCharacterPanel();
+updateMapUI();
+if (typeof renderCheatMenu === 'function') renderCheatMenu();
+saveCurrentSlot();
+showToast('🕯', 'Андервуд снова стоит');
+}
+function cheatFallStart() {
+closeCheatMenu();
+if (!window.FALL_LINES) { showToast('⚠', 'Нет файла сюжета'); return; }
+cheatFallReset();
+const p = state.player;
+if (p.level < FALL_MIN_LEVEL) cheatAddLevels(FALL_MIN_LEVEL - p.level);
+fallStart();
+}
+
+;
+
+// ==== ФАЙЛ js/data/fall-lines.js ====
+window.FALL_LINES = {
+cast: {
+elder:     { name: 'Старейшина', img: 'img/npc/elder.webp' },
+trader:    { name: 'Торговец',   img: 'img/npc/trader.webp' },
+urdah:     { name: 'Урдах',      img: 'img/npc/mentor.webp' },
+gundar:    { name: 'Гундар',     img: 'img/npc/smith.webp' },
+hilda:     { name: 'Хильда',     img: 'img/npc/refiner.webp' },
+liel:      { name: 'Лиэль',      img: 'img/npc/guildmage.webp' },
+virna:     { name: 'Вирна',      img: 'img/npc/keeper.webp' },
+efim:      { name: 'Ефим',       img: 'img/npc/alchemist.webp' },
+driver:    { name: 'Возница' },
+woman:     { name: 'Женщина с ребёнком', short: 'Женщина' },
+commander: { name: 'Комендант', img: 'img/npc/commander.webp' },
+},
+tremor: '🌑 Земля дрогнула под ногами.',
+knock: '🌑 Тук. Тук. Тук.',
+callLog: 'Старейшина созывает всех. Зайди к нему в Андервуде.',
+bagAtLevel: {
+17: 'Хорошо тут стало. Тихо. …Сыто как-то.',
+19: 'Слышишь? Кто-то глотает. …Нет? Ну и не слушай. Это не тебя.',
+},
+bagIdle: {
+17: ['Хорошо тут стало. Тихо. *Пауза.* Сыто как-то.'],
+19: ['Ты чего мрачн{ый|ая}? Мне — прекрасно. Никогда так хорошо не было.', 'Слышишь? Кто-то глотает. …Нет? Ну и не слушай. Это не тебя.'],
+},
+assembly: {
+bg: 'village.webp',
+cast: ['elder', 'trader', 'hilda', 'gundar', 'virna', 'urdah', 'liel'],
+lines: [
+{ t: 'Площадь. Народу меньше, чем на любой ярмарке, а стоят все тесно.' },
+{ who: 'elder',  t: 'Колодец ушёл. Стены ходят. Кто хотел уехать — уехал. С остальными решаем сегодня.' },
+{ who: 'trader', t: 'А что решать? Крыши нынче почти даром. Я уже скупил полдеревни.' },
+{ who: 'hilda',  t: 'И на чём спать собрался? На расписках?' },
+{ who: 'trader', t: 'Вернутся — продам обратно. Втридорога. *Хлопает по счётам.* Кто-то должен приглядеть за имуществом.' },
+{ who: 'elder',  t: 'Уходим обозом. На рассвете. Ненадолго: переждём у старой заставы и вернёмся.' },
+{ who: 'elder',  t: '*Протягивает тебе письмо с печатью.* Коменданту Ильграда. Если дорога откроется.' },
+{ who: 'elder',  t: 'Сам я останусь. Сорок лет записываю, кто к нам пришёл. Кто-то должен записать, кто ушёл.' },
+{ t: 'На крыльцо склада выходит Вирна. Закрывает дверь. Поворачивает ключ.' },
+{ t: 'За все эти годы склад не запирали ни разу.' },
+{ t: 'Вирна вешает ключ на шею и ни на кого не смотрит.' },
+{ who: 'gundar', t: '*Тихо.* Вот теперь всё.' },
+{ t: 'Больше никто не говорит «ненадолго».' },
+{ t: 'За сараем — Ефим. Рукава закатаны, бочки укрыты мешковиной.', bg: 'shed.webp', cast: ['efim'] },
+{ who: 'efim', t: 'Вы идите, идите! Учитель вернётся — спросит, кто бочки стерёг.' },
+{ choice: [
+{ text: '«Пойдём с нами, Ефим».', reply: [
+{ who: 'efim', t: 'Не могу! Он сказал: «ни крупинки». Значит, ни крупинки. *Улыбается шире, чем надо.* Он никогда не ошибается.' },
+] },
+{ text: '«Береги себя».', reply: [
+{ who: 'efim', t: 'Да что со мной станется! *Улыбается шире, чем надо.* Учитель никогда не ошибается.' },
+] },
+] },
+{ t: 'Он машет, пока тебя видно. Всё ещё улыбается.' },
+],
+},
+cinematic: [
+{ img: 'convoy.webp', fx: 'pan', lines: [
+'Мы вышли на рассвете. «Ненадолго», — сказал Старейшина.',
+'За поворотом Марфа вдруг обернулась.',
+{ say: '— Борька!..' },
+'Окликнуть её мы не успели.',
+] },
+{ img: 'funnel.webp', fx: 'funnel', stage: 'shake', lines: [
+'Стало тихо. Замолчали даже птицы.',
+'Потом земля под сараем Ефима пошла вниз. Медленно, как вода в воронку.',
+] },
+{ img: 'colossus.webp', fx: 'colossus', stage: 'rumble', bolt: 1400, lines: [
+'Оно поднялось над крышами.',
+'Никто не закричал. Никто не понимал, на что смотрит.',
+] },
+{ img: 'maw.webp', fx: 'maw', lines: [
+'В глубине пасти что-то шевелилось.',
+'Оттуда кто-то выходил.',
+'Мёртвые.',
+] },
+{ img: null, rainOff: true, last: true, lines: [
+{ say: '— Не смотри, — сказал Урдах.' },
+{ say: '— Иди.' },
+] },
+],
+council: {
+bg: 'camp.webp',
+cast: ['urdah', 'gundar', 'hilda', 'liel', 'virna', 'driver', 'woman'],
+lines: [
+{ t: 'Привал у телег. Дождь. Внизу, в долине, среди домов — оно.' },
+{ who: 'driver', t: 'Шестьдесят семь душ. Куда теперь?' },
+{ who: 'hilda',  t: 'Назад. Там Марфа. И этот безбровый.' },
+{ who: 'urdah',  t: 'Кто остался — остался.' },
+{ t: 'Хильда открывает рот и закрывает. Такого с ней ещё не было.' },
+{ who: 'gundar', t: 'В горы. Камень червя удержит. *Пауза.* Родня примет. Может быть.' },
+{ who: 'hilda',  t: 'Дядя всё ещё ищет топор.' },
+{ who: 'urdah',  t: 'Две недели пути. Обоз не дойдёт.' },
+{ who: 'driver', t: 'А под землёй? Ваши-то, дроу, там живут…' },
+{ who: 'virna',  t: 'Нет.' },
+{ who: 'liel',   t: '*Закрывает книгу.* Ильград.' },
+{ who: 'hilda',  t: 'В осаждённый город. Спрятаться в капкане. Прекрасно.' },
+{ who: 'liel',   t: 'Его третий год осаждают и третий год не могут взять. Вопрос не в том, почему он в осаде. Вопрос в том, почему он ещё стоит.' },
+{ t: 'Земля вздрагивает. Все смотрят на червя.', fx: 'look' },
+{ who: 'woman',  t: '*Тебе.* Ты же Появленец. Упадёшь — встанешь. А мы нет.', fx: 'back' },
+{ t: 'Тишина.' },
+{ who: 'urdah',  t: 'Потому и пойдёт первым.' },
+{ choice: [
+{ text: '«Я пойду первым»', reply: [{ who: 'driver', t: 'Ну. Хоть кто-то.' }] },
+{ text: '«Письмо Старейшины надо донести»', reply: [{ who: 'driver', t: 'Письмо. Шестьдесят семь душ, а тут про письмо. *Сплёвывает.* Ладно.' }] },
+{ text: 'Промолчать', reply: [{ who: 'driver', t: '*Смотрит на тебя и отворачивается.* И правильно.' }] },
+] },
+{ t: 'Когда все разошлись к телегам, сумка за спиной шевельнулась.', hideRow: true },
+{ bag: true, t: 'В Ильград? Правильно. Там что-то есть… Не знаю почему, но нам туда надо.' },
+],
+},
+gates: {
+bg: 'img/city/ilgrad/watchtower.webp',
+cast: ['commander', 'virna', 'liel', 'gundar', 'hilda'],
+lines: [
+{ t: 'Ворота приоткрыли ровно настолько, чтобы прошла телега. Со стены смотрят арбалеты.' },
+{ who: 'commander', t: () => {
+const n = state.player.breakthroughResult || 0;
+if (n === 0) return '*Смотрит за твою спину. Там только те, с кем ты стоишь. Ничего не спрашивает о других.*';
+if (n >= 35) return `${n} живых. Столько сквозь кольцо не проходило ни разу.`;
+if (n >= 15) return `${n}. *Смотрит на телеги.* Мало. Но дошли.`;
+return `${n}. *Пауза.* Это все?`;
+} },
+{ who: 'commander', t: 'Шесть разведчиков я отправил за кольцо. Ни один не вернулся. А ты приш{ёл|ла} с обозом и сух{ой|ая} под ливнем. Кто ты такой, что тебя не тронули?' },
+{ choice: [
+{ text: '«Я видел{|а}, откуда они выходят. Из пасти. Там, где был Андервуд».', reply: [
+{ t: 'На стене перестают переговариваться.' },
+{ who: 'commander', t: '*Долго молчит. Поднимает руку, и арбалеты опускаются.* Покажешь на карте. Завтра.' },
+{ who: 'commander', t: 'Сегодня — спать. Откройте им ворота.' },
+] },
+] },
+],
+},
+};
+Object.assign(OWNER_CHATS.smith, {
+fallHello: '*Гундар стучит молотом, не оборачиваясь. Наковальня чужая, звук не тот.*\n\nЖелезо тут дрянь. Работать можно.',
+fallAgain: 'А. Жив{ой|ая}. Хорошо. Железо стынет.',
+});
+OWNER_CHATS.smith.topics.push(
+{ id: 'ilg_forge', afterFall: true, q: 'Как тебе здешняя кузница?',
+a: 'Мехи дырявые, уголь сырой. Подмастерья держат молот, как ложку.\n\n*Бьёт.*\n\nТридцать лет свою наковальню ровнял. Она там так и стоит. *Пауза.* Тяжёлая. Её не унесёшь.' },
+{ id: 'ilg_mountains', afterFall: true, q: 'В горы не передумал?',
+a: 'Там дядя. И топор. *Хмыкает.*\n\nСюда дошли, и ладно. Ворота крепче родни.' },
+{ id: 'ilg_sister', afterFall: true, q: 'Как Хильда?',
+a: 'Шутит. *Бьёт мимо, чего с ним не бывает.*\n\nА глаза молчат. Ей не говори, что я заметил.' },
+{ id: 'ilg_urdah', afterFall: true, q: 'Вспоминаешь Урдаха?',
+a: 'Марфа про его земляка сто раз байку травила. При нём. Ни разу не обиделся.\n\n*Долго молчит.*\n\nХороший был орк. Всё. Железо стынет.' },
+);
+Object.assign(OWNER_CHATS.refiner, {
+fallHello: 'Руками ничего не трогай. Тут всё чужое и всё равно острое.\n\n*Сдвигает лупу на лоб.* А, это ты. Жив{ой|ая}. Как неожиданно.',
+fallAgain: 'Опять ты. Выкладывай, что {принёс|принесла}, пока я добрая. Это ненадолго.',
+});
+OWNER_CHATS.refiner.topics.push(
+{ id: 'ilg_city', afterFall: true, q: 'Как тебе Ильград?',
+a: 'Стены толстые, гарнизон тонкий. Подгоняют тут, как хоронят: молча и без души.\n\n*Крутит винт.*\n\nКаждое утро раскладываю инструмент. И знаешь что? Лежит, где положила.\n\n*Пауза.*\n\nНикогда бы не подумала, что буду скучать по кривому столу.' },
+{ id: 'ilg_efim', afterFall: true, q: 'Ты про Ефима не спрашиваешь.',
+a: 'Безбровый дурак.\n\n*Лупа запотела. Она протирает её дольше, чем надо.*\n\nСпрашивать надо, когда есть кому ответить.' },
+{ id: 'ilg_marfa', afterFall: true, q: 'Думаешь, Марфа могла выжить?',
+a: 'Марфа? С козлом? *Фыркает.*\n\nЯ бы на козла поставила.\n\n*Пауза.*\n\nПоставила, если что.' },
+);
+Object.assign(OWNER_CHATS.guildmage, {
+fallHello: '*Книга открыта, но страницы Лиэль не переворачивает.*\n\nТы вовремя. Или поздно. Я ещё не решила.',
+fallAgain: '*Не поднимая глаз.* Только не говори, что ты тоже с цветами.',
+});
+OWNER_CHATS.guildmage.topics.push(
+{ id: 'ilg_worm', afterFall: true, q: 'Что это было там, в долине?',
+a: 'Тоннель.\n\n*Пауза.*\n\nЗверь ест. Это не ело. Это дорога, которая ходит сама. Вопрос не в том, откуда она пришла, а зачем именно к нам.\n\n*Взгляд скользит по твоей сумке и задерживается.*' },
+{ id: 'ilg_stands', afterFall: true, q: 'Ты узнала, почему Ильград ещё стоит?',
+a: 'Говорят — скала. Говорят — стены.\n\nЯ прошлась вдоль стен. Мёртвые останавливаются, не дойдя до них шагов двести. Будто упираются.\n\n*Закрывает книгу на пальце и смотрит в сторону Храма.*\n\nЯ попросила меня туда пустить. Мне отказали. Вежливо. Это самое интересное, что случилось со мной за неделю.' },
+{ id: 'ilg_stone', afterFall: true, q: 'Ты помнишь камень Урдаха?', when: () => isQuestDone('mentorStone'),
+a: 'Он просил не говорить, чей это камень.\n\n*Снимает очки и долго их протирает.*\n\nТеперь, наверное, можно. Никто больше не спросит.' },
+);
+Object.assign(OWNER_CHATS.keeper, {
+fallHello: '*Вирна расставляет ящики. В списке ни одной помарки.*\n\nВсё на месте. Я считала.',
+fallAgain: 'Твоё — на месте.',
+});
+OWNER_CHATS.keeper.topics.push(
+{ id: 'ilg_store', afterFall: true, q: 'Как ты перевезла весь склад?',
+a: 'Не перевозила.\n\n*Касается ключа на шее.*\n\nДверь здешняя. Ключ мой. Внутри то же, что было.\n\nЯ не спрашиваю, что ты кладёшь. Ты не спрашивай, как оно тут.' },
+{ id: 'ilg_door', afterFall: true, after: 'ilg_store', q: 'А та дверь, в Андервуде?',
+a: 'Её больше нет.\n\n*Пауза.*\n\nЯ всем говорила: ключ от двери, которой больше нет. Думала, это про другую дверь.' },
+{ id: 'ilg_spoons', afterFall: true, q: 'Что с ложками Марфы?',
+a: 'Три ложки. Записаны.\n\n*Пауза.*\n\nЧислятся на хранении, пока не заберёт владелица. Списывать не буду.' },
+{ id: 'ilg_bag', afterFall: true, q: 'Сумка шевелится. Это нормально?', rapport: 1, refuse: 'Я не спрашиваю, что ты носишь.',
+a: 'Я держала такие вещи. Они не злые и не добрые. Они помнят, чьи они.\n\n*Смотрит на сумку ровно столько, сколько нужно, чтобы сосчитать.*\n\nЖивое туда не клади. Пока.' },
+);
+Object.assign(ANNALS_FIRSTS, {
+'fall.17': 'Крысы ушли из погреба Марфы. Все разом и в одну сторону. Марфа говорит — к холодной зиме.',
+'fall.18': 'Земля дрожит. Несильно. Марфа придерживает кружку, Гундар делает вид, что не замечает.',
+'fall.19': 'Колодец опустел за ночь. Соседи уезжают. Сумка за спиной тёплая, как живая.',
+'fall.call': 'Старейшина собирает всех, кто остался. Говорит, обратной дороги может не быть.',
+'fall.gone': 'Андервуда больше нет. Я видел{|а}, откуда они выходят. Мы идём в Ильград. Там должны об этом узнать.',
+'fall.gates': 'Из шестидесяти семи до ворот Ильграда дошли %n%.',
+'fall.gates0': 'Из шестидесяти семи дошли только мы.',
+});
+Object.assign(DIALOGUES.elder.nodes, {
+fall_call: {
+text: '*Старейшина не сидит, как обычно, а стоит посреди площади, обеими руками держась за посох.*\n\nСегодня собираю всех, кто остался. Что решим, не знаю. Но обратной дороги может не быть, {парень|дочка}. Собери всё, что нужно, и приходи.',
+options: [
+{ text: 'Я готов{|а}', next: 'fall_confirm' },
+{ text: 'Поговорить о другом', onSelect: () => openDialogue('elder') },
+{ text: 'Мне ещё надо кое-что сделать', action: 'close' },
+],
+},
+fall_confirm: {
+text: () => {
+const { active, offered } = questsOpenAt('Андервуд');
+const line = q => `• «${q.name}» — ${q.giver}`;
+let warn = '';
+if (active.length) warn += '*Обещано и не сделано:*\n' + active.map(line).join('\n') + '\n\n';
+if (offered.length) warn += '*Просили, но ты не взял{ся|ась}:*\n' + offered.map(line).join('\n') + '\n\n';
+if (warn) warn += '*После Собрания этого уже не сделать.*\n\n';
+return warn + '*Вернуться в Андервуд будет нельзя. Сумка и склад останутся при тебе'
++ (warn ? '' : ', поручения жителей — нет') + '. Впереди долгий бой, которого нельзя отменить: около 10 минут.*\n\nНу что, идём?';
+},
+options: () => {
+const { active, offered } = questsOpenAt('Андервуд');
+return [
+{ text: 'Идём', onSelect: () => fallStart() },
+{ text: (active.length || offered.length) ? 'Сначала закончу дела' : 'Не сейчас', action: 'close' },
+];
+},
+},
+fall_village: {
+text: 'Колодец ушёл. За одну ночь. Сорок лет брали воду — а теперь бросишь камень и не слышно дна.\n\nДве семьи вчера уехали. Сегодня — ещё одна. *Опирается на посох.*\n\nПожары были, мор был. Такого не было.',
+options: [{ text: 'Можно ещё спросить?', next: 'chat' }, { text: 'Ладно, пойду', action: 'close' }],
+},
+});
+(function () {
+const base = DIALOGUES.elder.nodes.chat.options;
+DIALOGUES.elder.nodes.chat.options = () => ((state.player.level || 1) >= 19
+? [{ text: 'Что происходит в деревне?', next: 'fall_village' }, ...base]
+: base);
+})();
+(function () {
+const hello = DIALOGUES.bagtalk.nodes.hello, base = hello.text;
+hello.text = () => {
+const lvl = state.player.level || 1, status = bagQuestState().status;
+if (lvl < 17 || state.player.underwoodFallen || ['offer', 'active', 'ready'].includes(status)) return base();
+const list = window.FALL_LINES.bagIdle[lvl >= 19 ? 19 : 17];
+return bagTalkHead() + list[Math.floor(Math.random() * list.length)];
+};
+})();
+OWNER_CHATS.hostess.topics.push(
+{ id: 'fall17_cat', q: 'Ты чего кота гоняешь?', minLevel: 17,
+a: 'Не гоняю, он сам не уходит. Двадцать лет в погребе ни одной крысы не оставлял.\n\nА тут спустилась — пусто. Ни крысы, ни писка. *Поджимает губы.* Сами ушли.\n\nИ, знаешь, не врассыпную. Цепочкой. Все в одну сторону — от деревни.' },
+{ id: 'fall18_mug', q: 'У тебя кружка на полке звенит.', minLevel: 18,
+a: '*Снимает кружку мужа, прижимает к фартуку.*\n\nДвадцать лет стоит — не звенела. *Вытирает чистую кружку.* Ешь давай, не смотри.' },
+{ id: 'fall19_tavern', q: 'Как дела в таверне?', minLevel: 19,
+a: 'Какие дела. Половина столов пустая. Борька третью ночь орёт, и только в сторону сарая.\n\n*Машет рукой.* Ешь давай. Пока есть кому готовить.' },
+);
+OWNER_CHATS.trader.topics.push(
+{ id: 'fall17_price', q: 'Почём сегодня добыча?', minLevel: 17,
+a: 'Как обычно — дёшево. *Стучит по ящику.* Камни из Копей тёплые стали. Днём, ночью — тёплые.\n\nПокупатели в Ильграде жалуются. Те, что ещё остались.\n\nСкидку, что ли, делать — «за свежесть»?' },
+{ id: 'fall19_houses', q: 'Говорят, ты скупаешь дома?', minLevel: 19,
+a: 'А что? Народ бежит, цены падают. *Довольно.* Кому беда, кому сезон.\n\nВернутся — продам обратно. Втридорога. Имя — тоже товар, а уж крыша-то!' },
+);
+OWNER_CHATS.alchemist.topics.push(
+{ id: 'fall17_rustle', q: 'Что за шорох за сараем?', minLevel: 17,
+a: 'А, это бочки. *Машет рукой.* Шелестят по ночам. Учитель говорил — пыль живая.\n\nЯ думал, это он для красоты. Кошки туда больше не ходят. Ну и ладно, меньше растащат!' },
+{ id: 'fall18_pale', q: 'Ты чего такой бледный?', minLevel: 18,
+a: 'Крышка на одной бочке сдвинулась. Сама. *Понижает голос.* А пыль внутри — воронкой.\n\nБудто снизу кто-то вдыхает. *Пауза.* Учитель велел — не выбрасывать. Я и не выбрасываю.' },
+{ id: 'fall19_barrels', q: 'Может, увезём бочки?', minLevel: 19,
+a: 'Я пробовал. Ни одну не сдвинуть, будто приросли.\n\nИ вообще! Учитель вернётся — спросит. Сказал «ни крупинки», значит, ни крупинки.\n\n*Улыбается шире, чем надо.* Он никогда не ошибается.' },
+);
+OWNER_CHATS.smith.topics.push(
+{ id: 'fall18_anvil', q: 'Ты сегодня какой-то хмурый.', minLevel: 18,
+a: 'Наковальня гудит. *Бьёт молотом.* Ночью. Сама. Так порода гудит перед обвалом.\n\nТолько тут не штольня. *Не поднимая глаз.* Сестре не говори. Раскудахчется.' },
+);
+OWNER_CHATS.refiner.topics.push(
+{ id: 'fall18_screws', q: 'Что у тебя всё на один край сползло?', minLevel: 18,
+a: 'Не трогай. Каждое утро раскладываю — винт к винту. Каждое утро всё у одного края.\n\nВ сторону сарая этого безбрового. *Фыркает.* Странные вкусы у винтов.\n\n*Ехидства в голосе почти нет.* Брат говорит — стол кривой. Брат этот стол и делал.' },
+);
+OWNER_CHATS.mentor.topics.push(
+{ id: 'fall18_stone', q: 'Что с твоим камнем?', minLevel: 18,
+a: () => (isQuestDone('mentorStone')
+? '*Камень горит неровно, рывками.*\n\nРаньше он светил ровно.'
+: '*Рунный камень, давно угасший, слабо светится. Урдах накрывает его ладонью.*\n\nМолчал много лет. Сегодня тёплый. Сам.')
++ '\n\nНа войне земля так дрожала, когда подходила осада. Тогда было видно откуда.\n\n*Смотрит на тебя дольше, чем нужно.* Иди. Тренируйся.' },
+);
+OWNER_CHATS.keeper.topics.push(
+{ id: 'fall18_count', q: 'Ты что-то считаешь?', minLevel: 18,
+a: 'Твоя пыль светится по ночам. Я накрываю мешковиной. *Пауза.* Не помогает.' },
+{ id: 'fall19_know', q: 'Ты знаешь, что это?', minLevel: 19,
+a: 'В Подземье тоже сперва уходили крысы. *Пауза.* Потом мы считали, кто остался.\n\nЕсть те, кто роет. Мы их не называли. Мы уходили.\n\n*Трогает ключ на шее.* Забери своё. Или не забирай. Я просто сказала.' },
+);
+OWNER_CHATS.guildmage.topics.push(
+{ id: 'fall19_ink', q: 'Ты сегодня не читаешь.', minLevel: 19,
+a: 'Наблюдаю. *Показывает на чернильницу. По чернилам расходятся круги.* Как от брошенного камня.\n\nТолько камень — внизу. И он ходит.\n\nОбычно что-то зовёт, чтобы такое пришло. *Взгляд скользит по твоей сумке и задерживается.*\n\nЗдесь зовут очень громко.' },
+);
+(function () {
+[
+['commander', 'Комендант', 'Всеслав, Комендант Ильграда', 'Сухой человек лет пятидесяти пяти. Считает всё, что можно посчитать.', 'Комендатура', 'Человек',
+'Комендант Ильграда, держит оборону. Верит только тому, что можно посчитать.'],
+['garsha', 'Гарша', 'Гарша, сержант Арсенала', 'Орчиха в очках для чтения. Цена — на бирке.', 'Арсенал', 'Орчиха',
+'Бывший сержант обоза, заведует Арсеналом. Выдаёт под роспись и не торгуется.'],
+['taelin', 'Таэлин', 'Таэлин, мастер Казарм', 'Хромой эльф с тростью, безупречно вежлив.', 'Казармы', 'Эльф',
+'Учит в Казармах строго по уставу, который написал сам. Когда-то воевал против Урдаха.'],
+['averyan', 'Аверьян', 'Мастер Аверьян, Лазарет', 'Седой алхимик. Руки дрожат только без дела.', 'Лазарет', 'Человек',
+'Алхимик, учитель Ефима. Два года назад приехал в Ильград за солями на месяц.'],
+['ismera', 'Мать Исмера', 'Мать Исмера, настоятельница', 'Очень старая дроу в белом. Ласковая и непроницаемая.', 'Храм', 'Дроу',
+'Настоятельница храма Ильграда. Никто в городе не помнит, как дроу стала здесь главной.'],
+].forEach(([id, name, fullName, desc, place, race, text]) => {
+NPCS[id] = { id, name, fullName, desc, icon: id };
+NPC_SVG[id] = `<img src="img/npc/${id}.webp" alt="" onerror="fallNoFace(this)">`;
+LORE_ARTICLES[id] = {
+cat: 'people', title: name, kind: 'Ильград · ' + place, race, portrait: `img/npc/${id}.webp`,
+parts: [{ key: id, byTalk: true, text }],
+};
+});
+})();
+OWNER_CHATS.commander = {
+hello: '*Комендант не поднимает глаз от карты. На ней флажки, и флажков меньше, чем вчера.*\n\nГовори. Коротко. До полудня у меня сорок дел и тридцать стрелков.',
+helloStages: [
+'Говори. Коротко.',
+'А, {сухой|сухая} из-под ливня. Слушаю.',
+'*Отодвигает карту на два пальца.* Слушаю.',
+'*Откладывает перо. Такого за ним раньше не замечали.* Садись. Стул один, но он твой.',
+],
+rapportWords: ['Учитывает как расход', 'Помнит по имени', 'Считает {своим|своей}', 'Откладывает перо'],
+more: '*Смотрит на песочные часы.* Ещё?',
+bye: 'Не буду отвлекать',
+topics: [
+{ id: 'letter', afterFall: true, q: 'Письмо от Старейшины Андервуда.', lore: ['commander'],
+a: () => {
+const n = state.player.breakthroughResult || 0;
+return '*Ломает печать. Читает дважды. Складывает вчетверо.*\n\nСорок лет он записывал, кто к нему пришёл. Теперь просит записать тех, кто дошёл.\n\n*Берёт перо.*\n\n'
++ (n > 0 ? `Вышло шестьдесят семь. Дошло ${n}. Записано.` : 'Вышло шестьдесят семь.\n\n*Перо останавливается.*\n\nДальше писать нечего.');
+} },
+{ id: 'map', afterFall: true, q: 'Покажу на карте, откуда идут мёртвые.',
+a: '*Сдвигает флажки. Ты ставишь палец туда, где была деревня.*\n\nОдна пасть. Сколько их всего?\n\n*Молчание.*\n\nВот это я и хочу знать. Разведчиков у меня больше нет. Есть ты. Тот, кого не жалко — уж извини, арифметика.\n\nБудет что посчитать — придёшь.' },
+{ id: 'supply', afterFall: true, q: 'Сколько город ещё продержится?',
+a: 'Стрел на восемь месяцев. Еды на шесть. Защитников…\n\n*Смотрит в окно.*\n\nЗащитников — сколько получится.' },
+{ id: 'stands', afterFall: true, q: 'Почему Ильград до сих пор не взяли?',
+a: 'Скала. Стены. Дисциплина. Так написано в рапорте.\n\n*Пауза.*\n\nА что они не подходят ближе двухсот шагов, в рапорт не входит. Это нельзя посчитать.' },
+{ id: 'flag', afterFall: true, q: 'А этот флажок почему стоит отдельно?', rapport: 2, refuse: 'Не твоё довольствие.',
+a: 'Дочь. Сотник. Третий год.\n\nФлажок не снимают, пока нет тела.\n\n*Поправляет его на волос. Он и так стоял ровно.*\n\nЕщё вопросы.' },
+],
+};
+OWNER_CHATS.garsha = {
+hello: '*Орчиха в очках для чтения не отрывается от ведомости.*\n\nОружие — под роспись. Цена — на бирке. Торговаться — к мёртвым, они за воротами.',
+race: { orc: { hello: '*Орчиха снимает очки и смотрит на тебя поверх клыков.*\n\nНаш. А стоишь, как человек. Не помнишь, как стоят? *Надевает очки.* Цена та же. Родня у меня кончилась.' } },
+helloStages: [
+'Роспись здесь.',
+'А, ты. Роспись здесь. Сам{|а} знаешь где.',
+'Тебе отложила. Не радуйся: цена та же.',
+'*Подвигает табурет сапогом.* Садись. Цена та же, зато чай свой.',
+],
+rapportWords: ['Ждёт роспись', 'Помнит твою подпись', 'Считает {своим|своей}', 'Наливает свой чай'],
+more: 'Ещё? Очередь.\n\n*В очереди двое, и оба её боятся.*',
+bye: 'Распишусь',
+topics: [
+{ id: 'name', afterFall: true, q: 'Кто ты такая?', lore: ['garsha'],
+a: 'Гарша. Сержант обоза, двадцать два года. Считать выучилась там же: кто не считал, тот не ел.\n\n*Стучит по ведомости.*\n\nЗдесь записано всё. Даже то, чего нет.' },
+{ id: 'price', afterFall: true, q: 'Почему не торгуешься?',
+a: 'Цена — приказ. Приказы не торгуются.\n\nБыл тут один, торговался с приказами. Двадцать лет водил обозы. Обсчитал весь гарнизон и ни разу не соврал.\n\n*Что-то похожее на улыбку.*' },
+{ id: 'trader', afterFall: true, after: 'price', q: 'Это ты про Торговца из Андервуда?',
+a: '*Снимает очки.*\n\n«Имя — тоже товар». Его любимое. А было у него имя. И долг был. Мне.\n\n*Надевает очки.*\n\nОстался при домах, значит. Вот дурак. Сумму всё равно запишу на него.' },
+{ id: 'realname', afterFall: true, after: 'trader', q: 'Как его звали?', rapport: 3, refuse: 'Имя — тоже товар. Роспись здесь.',
+a: 'Не скажу.\n\n*Долго смотрит в ведомость. Там нечего читать.*\n\nВот помрёт окончательно — тогда спишу. А пока долг за ним.' },
+{ id: 'glasses', afterFall: true, q: 'Зачем орку очки?',
+a: 'Видеть, кто врёт в ведомости. Глаз у орка зоркий, пока ему не шестьдесят.\n\n*Пауза.*\n\nСкажешь кому — спишу как потерю.' },
+],
+};
+OWNER_CHATS.taelin = {
+hello: '*Эльф с тростью приветствует тебя полупоклоном — ровно настолько, насколько предписано.*\n\nТаэлин, мастер Казарм. Устав на стене. Писал его я, так что ошибок там нет. Чем могу служить?',
+race: { elf: { hello: '*Таэлин кланяется чуть ниже, чем положено, и это выглядит как упрёк.*\n\nСоплеменник. И не помнит ни песен, ни долга. Какая досада. Устав на стене.' } },
+helloStages: [
+'Устав на стене. Чем могу служить?',
+'*Полупоклон.* Вы всё ещё живы. Отмечено.',
+'*Поклон — на палец глубже предписанного.* Рад вас видеть. Это не в уставе.',
+'*Откладывает трость.* Садитесь. Сегодня без устава.',
+],
+rapportWords: ['Соблюдает приличия', 'Отмечает твои успехи', 'Считает {своим|своей}', 'Откладывает трость'],
+more: 'Извольте.',
+bye: 'Благодарю, мастер',
+topics: [
+{ id: 'charter', afterFall: true, q: 'Ты говоришь как учебник.', lore: ['taelin'],
+a: 'Устав писан кровью. Часть её моя. Вы удивитесь, сколько крови в эльфе, если достаточно долго воевать.' },
+{ id: 'leg', afterFall: true, q: 'Что с твоей ногой?',
+a: 'Память об одном орке. С рунным камнем на шее.\n\n*Постукивает тростью.*\n\nОн отнял у меня ногу, я у него глаз. Лучший поединок в моей жизни. Мы воевали по разные стороны и, кажется, оба проиграли.' },
+{ id: 'urdah', afterFall: true, after: 'leg', q: 'Его звали Урдах. Он остался на дороге, один.',
+a: '*Таэлин молчит. Потом снимает перчатку и кладёт её на устав.*\n\n«Орки учат один раз». Он сказал мне это, когда я лежал без ноги. Я тогда не понял.\n\n*Пауза.*\n\nБлагодарю за сведения.' },
+{ id: 'teach', afterFall: true, q: 'Чему ты учишь?',
+a: 'Тому же, чему вас учил он, полагаю. Только дольше и с примечаниями.' },
+],
+};
+OWNER_CHATS.averyan = {
+hello: '*Седой алхимик моет руки — долго, как те, кто много видел.*\n\nАверьян. Простите, руки не подаю: в лазарете это запрещено. Мною.',
+helloStages: [
+'Да? Простите, руки не подаю.',
+'*Вытирает руки.* А, это вы. Садитесь, если есть куда.',
+'*Кивает на табурет.* Ваш. Его больше никто не занимает.',
+'*Подаёт руку. Она дрожит, и он не прячет её.* Здравствуй.',
+],
+rapportWords: ['Не подаёт руки', 'Узнаёт тебя', 'Считает {своим|своей}', 'Подаёт руку'],
+more: 'Что-то ещё? Я слушаю. Этого здесь пока хватает.',
+bye: 'Не буду отвлекать',
+topics: [
+{ id: 'fimka', afterFall: true, q: 'Ты учитель Ефима?', lore: ['averyan'],
+a: '*Руки перестают двигаться. Вода течёт.*\n\nФимка. Вы знаете Фимку?\n\nЯ уехал за солями. На месяц. Два года назад.\n\n*Пауза.*\n\nКак он там? Брови ещё есть?' },
+{ id: 'stayed', afterFall: true, after: 'fimka', q: 'Он остался. С бочками.',
+a: '*Аверьян садится. Сам, не спрашивая, как садятся старики.*\n\nЯ велел ему ни крупинки не выбрасывать.\n\n*Долгая пауза.*\n\nОн всегда делал, что я скажу. В этом был весь его талант.\n\n*Руки начинают дрожать. Он убирает их за спину.*' },
+{ id: 'ward', afterFall: true, q: 'Как дела в лазарете?',
+a: 'Носят двух сортов. Живых лечу, мёртвых запираю.\n\n*Снова моет руки.*\n\nРазницу важно заметить вовремя.' },
+{ id: 'memory', afterFall: true, q: 'Ефим говорил, ты запретил отвар для памяти. Почему?', rapport: 2, refuse: 'Не сегодня.',
+a: '*Долго вытирает руки.*\n\nОдин уже пробовал. Имени не спрашивайте. Рецепт я сжёг.\n\nПамять — не то, что хочется получить обратно целиком.' },
+],
+};
+OWNER_CHATS.ismera = {
+hello: '*Старая дроу в белом берёт твою руку раньше, чем ты успеваешь её убрать. Ладонь у неё тёплая.*\n\n{Пришёл|Пришла}. Садись, дитя. Здесь благословляют всех, кто может заплатить.',
+race: { drow: { hello: '*Исмера гладит тебя по щеке, как слепая.*\n\nНаша кровь. И ничего не помнит. Какое счастье, дитя. Какое счастье.' } },
+helloStages: [
+'Садись, дитя.',
+'Опять ты, дитя. Устал{|а}.',
+'*Поправляет тебе ворот.* Садись, дитя. Ближе.',
+'*Держит твою руку и не отпускает.* Ты всегда возвращаешься. Мне это нравится, дитя.',
+],
+rapportWords: ['Называет дитятей', 'Запомнила тебя', 'Считает {своим|своей}', 'Не отпускает твою руку'],
+more: '*Улыбается и ждёт.*',
+bye: 'Спасибо, матушка',
+topics: [
+{ id: 'how', afterFall: true, q: 'Как дроу стала настоятельницей людского храма?', lore: ['ismera'],
+a: '*Улыбается.*\n\nА кто тебе сказал, что я стала? Спроси горожан, кто был до меня. Спроси их дедов.\n\n*Поправляет тебе ворот.* Устал{|а}, дитя.' },
+{ id: 'gods', afterFall: true, q: 'Кому здесь молятся?',
+a: 'Тем, кто давно сюда не заглядывал, дитя. Потому здесь так тихо.' },
+{ id: 'liel', afterFall: true, q: 'Почему Лиэль нельзя в храм?',
+a: 'Эльфийской девочке? Какая умница.\n\nУмным нельзя. Они трогают.\n\n*Ласково.* Ты ведь не будешь трогать, дитя?' },
+{ id: 'virna', afterFall: true, q: 'Вирна с тобой не здоровается.',
+a: 'Вирна?\n\n*Улыбка не меняется ни на волос.*\n\nКакое красивое имя она выбрала.' },
+{ id: 'stares', afterFall: true, q: 'Почему на меня так смотрят?',
+a: 'Ты {пришёл|пришла} сквозь кольцо и {сухой|сухая} под ливнем. Живые боятся того, что не умирает.\n\n*Гладит твою руку.*\n\nА я нет, дитя. Я тут давно.' },
+],
+};
+function ilgradKillsTotal(monsterId) {
+const mk = state.player.monsterKills || {};
+return Object.keys(mk).reduce((s, k) => (k.indexOf(monsterId + '_') === 0 ? s + mk[k] : s), 0);
+}
+const ILGRAD_COUNT = [
+['undeadMilitia', 'Ополченцы', 30],
+['boneHound',     'Костяные гончие', 30],
+['ghoul',         'Гули', 30],
+['weeper',        'Плакальщицы', 20],
+['boneColossus',  'Костяные колоссы', 5],
+];
+function ilgradCountGot(monsterId) {
+const pr = getQuestProgress('ilgradCount');
+if (!pr) return 0;
+const base = (pr.base && pr.base[monsterId]) || 0;
+return Math.max(0, ilgradKillsTotal(monsterId) - base);
+}
+function ilgradCountReady() {
+return questStage('ilgradCount') === 'count' && ILGRAD_COUNT.every(([id, , n]) => ilgradCountGot(id) >= n);
+}
+function startIlgradCount() {
+if (isQuestStarted('ilgradCount')) return;
+startQuest('ilgradCount');
+const pr = getQuestProgress('ilgradCount');
+pr.base = {};
+ILGRAD_COUNT.forEach(([id]) => { pr.base[id] = ilgradKillsTotal(id); });
+saveCurrentSlot();
+}
+Object.assign(QUESTS, {
+ilgradCount: {
+id: 'ilgradCount',
+name: 'Перепись мёртвых',
+desc: 'Комендант хочет знать, сколько мёртвых ходит у стен.',
+stages: ['count', 'done'],
+giver: 'Комендант', place: 'Ильград',
+journal: 'Комендант Всеслав хочет знать, сколько мёртвых ходит у стен. Числом, а не «тьма». Убитых, а не увиденных.',
+offer: 'Комендант считает всё, что можно посчитать. Мёртвых у стен он пока посчитать не может. Поговори с ним.',
+offered: () => !!state.player.underwoodFallen && ownerTopicAsked('commander', 'map'),
+rapport: { commander: 10 },
+steps: ILGRAD_COUNT.map(([id, label, n]) => ({
+stage: 'count',
+text: () => `${label}: ${Math.min(n, ilgradCountGot(id))} из ${n} — на Окраинах`,
+done: () => ilgradCountGot(id) >= n,
+})).concat([{ stage: 'count', text: 'Доложить Коменданту' }]),
+reward: 'Комендант сведёт баланс. Для него это много.',
+},
+ilgradArmor: {
+id: 'ilgradArmor',
+name: 'Перековать ополчение',
+desc: 'Железо мёртвой стражи — в дело.',
+stages: ['need_items', 'done'],
+giver: 'Комендант', place: 'Ильград',
+journal: 'Ополченцы у стен — бывшая стража Ильграда. Железо на них городское, под клеймом. Комендант велел принести десять доспехов и сдать Гарше в Арсенал.',
+offer: 'Городу не хватает железа, а на мёртвой страже его полно. Комендант об этом говорил.',
+offered: () => ownerTopicAsked('commander', 'armor'),
+rapport: { commander: 5, garsha: 8 },
+needs: [
+{ name: 'Ржавый доспех', qty: 10, where: 'с Ополченцев и Костяных колоссов на Окраинах' },
+],
+steps: [
+{ stage: 'need_items', text: () => questNeedText('ilgradArmor', 0), done: () => questNeedMet('ilgradArmor', 0) },
+{ stage: 'need_items', text: 'Сдать доспехи Гарше в Арсенале' },
+],
+reward: 'Гарша распишется. Это больше, чем кажется.',
+},
+ilgradScouts: {
+id: 'ilgradScouts',
+name: 'Жетоны разведчиков',
+desc: 'Шестеро ушли за кольцо и не вернулись.',
+stages: ['find', 'return', 'done'],
+giver: 'Комендант', place: 'Ильград',
+journal: 'Шестеро разведчиков ушли за кольцо и не вернулись. Нет тела — нет записи. Комендант просит не тела, а жетоны: чтобы закрыть строки. Гули тащат всё, что блестит.',
+offer: 'У Коменданта шесть строк, напротив которых пусто. Спроси его о разведчиках.',
+offered: () => ownerTopicAsked('commander', 'scouts'),
+rapport: { commander: 12 },
+find: { stage: 'find', next: 'return', monsters: ['ghoul'], chance: 6, count: 6, icon: '🏷',
+toast: n => `Жетон разведчика: ${n} из 6`,
+log: n => `🏷 Среди того, что гуль тащил с собой, — медный жетон с номером. Жетон разведчика Ильграда. ${n} из 6.`,
+lastToast: 'Шестой жетон… и ещё один',
+lastLog: '🏷 Рядом с шестым — ещё один жетон. Старый, тяжелее медных, офицерский. Надпись затёрта, читается одно слово: «Сотник».' },
+steps: [
+{ stage: 'find', text: () => { const pr = getQuestProgress('ilgradScouts'); return `Найти жетоны разведчиков: ${Math.min(6, (pr && pr.found) || 0)} из 6 — у Гулей на Окраинах`; } },
+{ stage: 'return', text: 'Отнести жетоны Коменданту' },
+],
+reward: 'Комендант закроет шесть строк.',
+},
+});
+Object.assign(ANNALS_FIRSTS, {
+'quest.ilgradCount':  'Посчитал{|а} мёртвых у стен Ильграда — для Коменданта, числом. Он сказал, что знать хуже, чем не знать. Теперь я тоже знаю.',
+'quest.ilgradArmor':  'Принёс{|ла} Гарше десять ржавых доспехов ополчения. Она вычеркнула десять строк по линейке. Железо пойдёт в дело, имена останутся в ведомости.',
+'quest.ilgradScouts': 'Наш{ёл|ла} жетоны шестерых разведчиков. Комендант снял с карты шесть флажков. Седьмой жетон, офицерский, он накрыл ладонью и ничего не сказал. Его флажок остался на карте.',
+});
+OWNER_CHATS.commander.topics.push(
+{ id: 'count_yes', afterFall: true, after: 'map', q: 'Хочешь, я их посчитаю? Тех, кто ходит у стен.', when: () => !isQuestStarted('ilgradCount'),
+act: () => startIlgradCount(),
+a: '*Комендант впервые поднимает глаза от карты.*\n\nПосчитаешь. Не «много» и не «тьма». Числом.\n\n*Пишет на клочке бумаги.*\n\nОполченцев тридцать. Гончих тридцать. Гулей тридцать. Плакальщиц двадцать. Колоссов пять. Убитых, а не увиденных.\n\nВернёшься — сведу баланс.' },
+{ id: 'count_done', afterFall: true, q: 'Посчитал{|а}. Всех, сколько ты просил.', when: () => ilgradCountReady(),
+act: () => { if (ilgradCountReady()) finishOwnerQuest('ilgradCount'); },
+a: '*Слушает, не перебивая. Переставляет флажки. Считает на полях, зачёркивает, считает снова.*\n\nЗа то же время со стены упало бы втрое меньше. И всё равно…\n\n*Откладывает перо.*\n\nОни приходят быстрее, чем мы их убиваем. На сколько — я теперь знаю.\n\nЭто хуже, чем не знать. Записано.' },
+{ id: 'count_after', afterFall: true, q: 'Ты сказал: «хуже, чем не знать». Сколько у города времени?', when: () => isQuestDone('ilgradCount'),
+a: 'Стрел было на восемь месяцев. Это до твоего счёта.\n\n*Стучит пером по столу.*\n\nТеперь на пять. Еды хватит дольше, чем людей, которые будут её есть.\n\nНикому не говори. Это не секрет, это арифметика. Её не любят.' },
+{ id: 'armor', afterFall: true, q: 'Что делать с мёртвыми, которых я убиваю?', when: () => isQuestDone('ilgradCount'),
+a: '*Кивает на окно. Внизу, у кузни, свалены кости в ржавом железе.*\n\nОполченцы — наша стража. Те, кто так и не сменился с поста. Железо на них городское, под клеймом.\n\nГороду не хватает железа. Мёртвым оно больше не нужно.\n\nПринесёшь десять доспехов — сдай Гарше. Она знает, что с ними делать. И с клеймами тоже.' },
+{ id: 'armor_yes', afterFall: true, after: 'armor', q: 'Принесу. Десять доспехов — Гарше.', when: () => !isQuestStarted('ilgradArmor'),
+act: () => { if (!isQuestStarted('ilgradArmor')) startQuest('ilgradArmor'); },
+a: 'Под роспись. Она не любит, когда приносят без счёта.' },
+{ id: 'scouts', afterFall: true, q: 'Те шестеро разведчиков. Что с ними?', when: () => isQuestDone('ilgradCount') && rapportStage('commander') >= 1,
+a: '*Комендант достаёт из ящика лист. Шесть имён, напротив каждого пусто.*\n\nУшли за кольцо в разное время. Ни один не вернулся. Ни один не числится мёртвым: нет тела — нет записи.\n\nГули тащат всё, что блестит. Если жетоны где-то и есть, то у них.\n\n*Пауза.*\n\nЯ не прошу тела. Жетоны. Чтобы закрыть строки.' },
+{ id: 'scouts_yes', afterFall: true, after: 'scouts', q: 'Я найду жетоны.', when: () => !isQuestStarted('ilgradScouts'),
+act: () => { if (!isQuestStarted('ilgradScouts')) startQuest('ilgradScouts'); },
+a: 'Шесть. Медные, с номером.\n\n*Пауза.*\n\nЕсли найдёшь больше — неси всё.' },
+{ id: 'scouts_give', afterFall: true, q: 'Вот жетоны. Все шесть.', when: () => questStage('ilgradScouts') === 'return',
+act: () => { if (questStage('ilgradScouts') === 'return') finishOwnerQuest('ilgradScouts'); },
+a: '*Комендант раскладывает жетоны по карте — туда, где ты их наш{ёл|ла}. Снимает шесть флажков, один за другим. Против каждого имени вписывает одно и то же слово.*\n\nЗакрыто.\n\n*Ты кладёшь на стол седьмой. Старый, офицерский, потемневший.*\n\n*Комендант не берёт его. Долго смотрит. Потом накрывает ладонью.*\n\n«Сотник». Третий год.\n\n*Отдельный флажок стоит на карте. Он его не трогает.*\n\nТела нет. Флажок остаётся.\n\n*Голос ровный. Перо — нет.*\n\nСвобод{ен|на}.' },
+{ id: 'scouts_after', afterFall: true, q: 'Седьмой жетон. Она могла остаться в живых?', when: () => isQuestDone('ilgradScouts'),
+a: 'Жетон снимают с мёртвых. Или отдают сами, когда уходят туда, где он больше не нужен.\n\n*Пауза.*\n\nЯ считаю всё. Это — не считаю.\n\nНе спрашивай больше.' },
+);
+OWNER_CHATS.garsha.topics.push(
+{ id: 'armor_give', afterFall: true, q: 'Комендант прислал. Десять доспехов ополчения.', when: () => questNeedsReady('ilgradArmor'),
+act: () => finishNeedsQuest('ilgradArmor'),
+a: '*Гарша надевает очки. Переворачивает каждый нагрудник, ищет клеймо, ведёт пальцем по ведомости.*\n\nПятый пост. Северная башня. Ворота.\n\n*Против каждого клейма вычёркивает строку. Аккуратно, по линейке.*\n\nДесять. Сдано, принято. Железо пойдёт в дело.\n\n*Не поднимая глаз.* Имена я сохраню. Железо — не человек. А ведомость — да.' },
+);
+LORE_ARTICLES.outskirts = {
+cat: 'places', order: 3, title: 'Окраины Ильграда', kind: 'Кольцо вокруг осаждённого города',
+parts: [
+{ key: 'place.outskirts', when: () => !!(loreChronicle().firsts && loreChronicle().firsts['loc.outskirts']) || loreLocKills('outskirts') > 0,
+text: 'Всё, что лежит за стенами Ильграда на день пути, горожане зовут Окраинами. Когда-то здесь были слободы, огороды, мельницы и дорога, по которой в город везли зерно. Теперь здесь туман. Он не поднимается ни утром, ни в полдень, и дождь в нём идёт почти всегда — мелкий, холодный, такой, что вымокаешь раньше, чем замечаешь. В тумане ходят мёртвые. Их много, и они никуда не спешат.',
+rows: [
+['Обитатели', loreLocMonsters('outskirts').map(m => m.name).join(', ')],
+['Уровни', `${Math.min(...loreLocMonsters('outskirts').map(m => m.level))}–${Math.max(...loreLocMonsters('outskirts').map(m => m.level)) + 2}`],
+['Души', 'в тварях встречаются огранённые самоцветы'],
+['Дорога', `из Ильграда пешком — ${TRAVEL_TIMES['ilgrad->outskirts']} сек`],
+] },
+{ key: 'place.outskirts.ring', label: 'Кольцо', when: () => loreLocKills('outskirts') >= 50,
+text: 'Мёртвые стоят вокруг города кольцом — не плотным, не ровным, но без единой прорехи. Со стен их видно хорошо: серые фигуры в тумане, неподвижные, как вехи. Днём и ночью, в дождь и в редкое солнце. Кто уходит за кольцо, возвращается редко. Кто возвращается — молчит о том, что видел дальше, или говорит так, что лучше бы молчал.' },
+{ key: 'place.outskirts.slobody', label: 'Слободы', when: () => loreLocKills('outskirts') >= 200,
+text: 'Слободы за стенами брошены так, будто люди вышли на минуту. На столах миски, в хлевах сбруя, на верёвках бельё, сгнившее до ниток. Уходили, надеясь вернуться, и потому ничего не взяли. Двери не заперты: запирать было не от кого — мёртвые в дома не заходят. Им там нечего делать. Им нужно что-то другое.' },
+{ key: 'place.outskirts.pyres', label: 'Костры', when: () => loreLocKills('outskirts') >= 800,
+text: 'Огонь на Окраинах только один — на стенах. Каждый вечер с северной башни поднимается дым: горожане жгут своих мёртвых, чтобы те не встали. Жгут всех — стариков, детей, павших на стене, умерших в лазарете. Пепел ветер сносит за кольцо, на тех, кого сжечь не успели. От этого запаха в городе никуда не деться. Привыкнуть к нему за три года так никто и не смог.' },
+{ key: 'place.outskirts.fog', label: 'Туман', when: () => loreLocKills('outskirts') >= 2000,
+text: 'Туман на Окраинах не похож на обычный. Он не рассеивается от ветра, не садится росой и пахнет мокрой землёй — свежей, будто её только что вывернули. Охотники, уходившие далеко, рассказывают, что туман гуще всего в низинах, и что иногда из глубины его доносится звук, похожий на долгий вдох. А потом земля под ногами едва заметно дрожит.' },
+{ key: 'place.outskirts.line', label: 'Двести шагов', when: () => loreLocKills('outskirts') >= 4000,
+text: 'Есть вещь, которую не пишут в рапортах. Мёртвые не подходят к стенам Ильграда ближе двухсот шагов. Ни один — ни ополченец, ни гончая, ни колосс. Дойдя до незримой черты, они останавливаются, поворачиваются и уходят обратно в туман, будто наткнулись на то, чего не видно. Стрелки на стенах давно отметили эту черту вешками. Спрашивать, почему так, в городе не принято. Это нельзя посчитать.' },
+],
+};
+LORE_ARTICLES['beast.undeadMilitia'] = loreBeastArticle('undeadMilitia',
+['', 'Строй', 'Клейма', 'Пост', 'Медальоны', 'Легенда'],
+{
+main: [
+'Скелет в ржавой броне городского ополчения — шлем, нагрудник, щит, короткий меч. Ополченцы ходят по Окраинам строем, по трое-четверо, шаг в шаг, и бьют так, как их учили при жизни: дважды подряд, быстро и без замаха. Кости у них крепкие, под железом мечу работы много, а вот чары ломают их легко — будто держит их вместе что-то, что магию не любит.',
+'Ополченец не бывает один. Где один — там и десяток: они держат строй, прикрывают друг другу спину и смыкаются, когда кто-то падает. Охотники говорят, что это самое страшное в них: не мечи, а порядок. Мёртвые не помнят имён, не помнят города, не помнят, за что сражались, — а строй помнят.',
+'Броня на ополченцах городская, под клеймом Ильграда: номер поста, год, знак мастерской. Гарша в Арсенале по клеймам знает, чьё это железо было, и ведёт ведомость — сданные доспехи против списка павших. Медальоны с ополченцев приносят реже: потемневшие, со стёртым лицом внутри. Их не продают. Их несут в храм.',
+'Ополченцы — стража Ильграда, павшая в первые месяцы осады. Их не успели сжечь: тела остались за стеной, а через неделю ушли сами. С тех пор ополченцы ходят дозором вокруг города — теми же тропами, что ходили при жизни. Говорят, они до сих пор ждут смены. Смена не придёт: в Ильграде больше нет тех, кто мог бы их сменить.',
+'У каждого ополченца Ильграда был медальон — жестяной, с вытравленным именем и лицом того, кто ждёт дома. Когда ополченца приносят мёртвым, медальон отдают семье. Когда не приносят, семья ждёт. Медальоны, снятые с костей на Окраинах, Мать Исмера принимает в храме молча и кладёт в ларец у алтаря. Ларец давно полон. Новые она кладёт рядом.',
+'Стрелки на стенах рассказывают о Знаменосце — ополченце с городским знаменем, истлевшим до лоскута. Каждый рассвет он обходит Ильград по кругу, ровно по черте двухсот шагов, и стражники на башнях невольно встают навытяжку, когда он проходит мимо. Комендант запретил в него стрелять. Говорят, его однажды сбили, но к утру знамя было уже у другого ополченца, и обход продолжился.',
+],
+ancient: 'Древний ополченец пал ещё до осады — в стычке, в дозоре, в давней войне, о которой в городе уже не помнят. Броня на нём старинного образца, клейма не читаются, а кости потемнели до цвета мокрого дерева. Такие ходят не в строю, а впереди него. И остальные, говорят, держат шаг по нему.',
+bloody: 'Кровавый ополченец уже убивал живых — горожан, вышедших за водой, разведчиков, Появленцев. Ржавчина на его клинке бурее, чем должна быть, а строй, которым он верховодит, нападает первым. Стрелки на стенах знают кровавых в лицо — если у черепа бывает лицо — и бьют по ним в первую очередь.',
+});
+LORE_ARTICLES['beast.boneHound'] = loreBeastArticle('boneHound',
+['', 'Стая', 'Звон', 'Псарня', 'Чутьё', 'Легенда'],
+{
+main: [
+'Пёс из одних костей — крупный, длинноногий, с рёбрами, проросшими наружу, как шипы. Глаз нет, только тусклый свет в глазницах. Гончие рыщут по Окраинам стаями и чуют живое за сотни шагов. Хватают того, кто ближе, рвут, бросают и бегут к следующему: им не нужна еда, им нужна погоня. Кто бьёт гончую голой рукой, в кровь обдирается о её шипы.',
+'Гончие охотятся стаей и не отстают. Одну отогнал — вторая заходит сбоку, третья уже за спиной, а издалека, сквозь туман, бегут ещё. Они не лают: лаять нечем. Вместо лая — сухой стук костей о кости и звон, от которого ноют зубы. Охотники говорят, по звону можно сосчитать стаю. Если успеешь.',
+'Кости гончих звенят, если по ним ударить, — чисто и высоко, как хорошая сталь. Эту «звонкую кость» берут в кузнице: Гундар кладёт её в рукояти и в обкладку щитов и уверяет, что она гасит удар. Клыки идут на наконечники. Хильда, говорят, однажды положила звонкую кость брату под подушку, и Гундар полночи не мог уснуть: кость пела.',
+'До осады в Ильграде была городская псарня — гончие для охоты и сторожевые псы для стен. Когда пришли мёртвые, псов выпустили за ворота: кормить их было нечем. Псы не вернулись. Через месяц вернулись гончие. Псари клянутся, что узнают своих по стати и по повадке — и что лучше бы не узнавали.',
+'Гончие чуют не запах, а тепло. Мёртвых они не трогают, камни тоже, а живое находят даже в тумане, даже за стеной сарая. Охотники пробовали прятаться в холодной воде — помогает, пока не замёрзнешь. Появленцев гончие находят хуже прочих: говорят, Появленец для них «холоднее». Что это значит, лучше не думать.',
+'Рассказывают о Псаре — мёртвом смотрителе городской псарни, что бродит по Окраинам со свистком на шее. Его самого никто не видел, но свист слышали многие: короткий, два раза. После него гончие разом поворачивают головы в одну сторону и уходят туда, куда позвали. Вернувшиеся из-за кольца говорят только, что свист всегда доносится из тумана, со стороны старой дороги на Андервуд.',
+],
+ancient: 'Древняя гончая — из первых, что вернулись к стенам. Кости у неё потемнели и отполированы бегом до блеска, шипов больше, чем рёбер, а свет в глазницах не жёлтый, а белый. Она водит стаю. Если убить её первой, стая на миг теряется. На миг.',
+bloody: 'Кровавая гончая однажды догнала живого — и запомнила. Кости у неё бурые, а звон не чистый, а надтреснутый, будто кость трескается изнутри. Охотники говорят: если кровавая гончая взяла твой след, не беги к воротам. Она придёт следом, а стража не любит, когда к воротам приводят гончих.',
+});
+LORE_ARTICLES['beast.ghoul'] = loreBeastArticle('ghoul',
+['', 'Падальщик', 'Шкура и жилы', 'Корни', 'Блестящее', 'Легенда'],
+{
+main: [
+'Мертвец, который не истлел, а иссох: кожа натянута на кости, как на барабан, пальцы вытянулись в когти, рот раскрыт шире, чем бывает у людей. Гули ходят по одному и прячутся там, где мёртвых больше всего, — в канавах, в погребах, на старых погостах. Бьют быстро и подло, а каждая рана от них будто вытягивает из тебя тепло — и это тепло гуль забирает себе.',
+'Гули — падальщики. Они подбирают то, что осталось после других: после ополченцев, после гончих, после боя на стене. Едят ли они — никто не знает, но рыться в павших любят. Охотники говорят, гуля легко найти: иди туда, где пахнет хуже всего. И легко узнать: он единственный не уходит с поля боя, когда бой кончился.',
+'С гулей снимают мёртвую шкуру — тонкую, жёсткую, почти не гниющую. Кожевники выделывают из неё мертвокожу и шьют доспехи для тех, кому некуда деваться. Жилы у гулей крепкие, как тетива, и лучники Ильграда берут их охотно. Запах выделанной кожи не отбить никакими травами. В городе говорят: кто носит мертвокожу, того мёртвые принимают за своего. Проверять не советуют.',
+'Днём, когда редкий свет пробивается сквозь туман, гули уходят в землю — не прячутся, а именно уходят, как корни. Если наступить на такое место, земля под ногой мягкая и тёплая. Охотники обходят свежие холмики на огородах стороной. Иногда из холмика торчат пальцы. Иногда они шевелятся.',
+'Гули тащат всё, что блестит: пуговицы, пряжки, кольца, монеты, жетоны. Таскают с собой в лохмотьях, а лишнее закапывают в норах, как сороки. В норах гулей находили обручальные кольца, ладанки и медные жетоны разведчиков. Комендант просил приносить ему всё, на чём есть номер. Он ведёт счёт тем, кто не вернулся из-за кольца.',
+'Говорят, где-то на Окраинах есть нора, куда гули годами сносят всё, что нашли, слой за слоем. Видевшие её издали рассказывают о холме блестящего хлама высотой с дом и о том, что наверху лежит что-то, что светится в тумане. Гули к холму подходят, но наверх не лезут. Будто боятся. Или ждут, кто полезет первым.',
+],
+ancient: 'Древний гуль высох до того, что его можно спутать с корягой. Он почти не двигается, зато, если двинется, — быстрее любого живого. Древние, говорят, помнят, кем были: иногда они бормочут обрывки слов, имена, названия улиц Ильграда, которых давно нет.',
+bloody: 'Кровавый гуль перестал довольствоваться падалью. Он охотится на живых, и когти у него темны от свежей крови, а не от старой. Такого не отпугнёшь ни огнём, ни шумом. Охотники говорят: если гуль идёт на тебя, а не от тебя, — это кровавый.',
+});
+LORE_ARTICLES['beast.weeper'] = loreBeastArticle('weeper',
+['', 'Плач', 'Саван', 'Сила', 'Слёзы', 'Легенда'],
+{
+main: [
+'Призрак в истлевшем саване — высокий, полупрозрачный, с длинными спутанными волосами, что шевелятся без ветра. Плакальщица не ходит, а плывёт над землёй, и вокруг неё всегда холоднее. В руках у неё копьё из бледного света, а бьёт она чарами: разряд от её удара проходит сквозь любые латы. И пока в ней есть сила, половина ударов оружием уходит в пустоту.',
+'Плакальщицы плачут. Тихо, почти шёпотом, но плач слышно далеко в тумане, и от него опускаются руки. Стражники на стенах затыкают уши паклей. Говорят, тот, кто долго слушает, начинает разбирать слова, и это хуже всего: в плаче Плакальщицы всегда есть чьё-то имя.',
+'С Плакальщиц остаются саваны — лёгкие, холодные, будто сотканные из тумана. Из них шьют призрачное полотно, лёгкое, как дыхание, и прочное, как кольчуга. Изредка находят «застывший вздох» — каплю мутного стекла, внутри которой, если присмотреться, что-то движется. Маги Башни берут их без вопросов и платят хорошо.',
+'Плакальщица — единственная тварь Окраин, что бьёт чарами. Сила в ней кончается, как в жабах Поляны и пауках Копей, и тогда её щит гаснет, а удары становятся слабыми и неумелыми, почти человеческими. Маги Башни советуют одно: измотать. Говорят, Плакальщица, растратившая силу, перестаёт плакать — и на миг у неё становится обычное, усталое женское лицо.',
+'Очень редко с Плакальщицы остаётся слеза — прозрачная, тяжёлая, тёплая на ощупь. Она не тает и не высыхает. Мастера Ильграда платят за неё дороже, чем за серебро, и вставляют в самые ценные вещи. Мать Исмера, говорят, скупает все, какие найдёт, а куда девает — не говорит.',
+'Рассказывают о Плакальщице у Северных ворот. Каждую ночь она приходит к одному и тому же месту на черте двухсот шагов и плачет, повторяя одно имя. Стражники давно выучили его наизусть и спрашивали по всему городу. Человека с таким именем в Ильграде нет. Есть только запись в старой храмовой книге, сделанная почерком, которого никто не узнаёт. Показывать книгу Мать Исмера отказывается.',
+],
+ancient: 'Древняя Плакальщица плачет так давно, что голос у неё сорвался: плача не слышно, только видно, как шевелятся губы. Саван истончился до паутины, а холод вокруг такой, что на траве выступает иней. Сила в ней не кончается дольше, чем в других: говорят, древние копили её годами.',
+bloody: 'Кровавая Плакальщица выплакала имя — и нашла того, чьё оно было. Саван у неё в бурых пятнах, а плач сменился смехом, тихим и ровным, от которого хуже, чем от плача. Маги Башни говорят: кровавая уже никого не ищет. Ей просто нравится.',
+});
+LORE_ARTICLES['beast.boneColossus'] = loreBeastArticle('boneColossus',
+['', 'Шаг', 'Сердцевина', 'Из чего', 'Осада', 'Легенда'],
+{
+main: [
+'Великан, собранный из костей — сотен, тысяч костей: черепа, рёбра, позвонки, спаянные в одно тело выше любого дома в слободе. В руке дубина из целого бревна, оплетённая цепями. Колосс ходит один, медленно и неотвратимо, и бьёт так, что достаётся всем вокруг. В груди у него тлеет сердцевина, и порой вместо кулака он бьёт её разрядом. Угадать, чем ударит, нельзя.',
+'Колосса слышно издалека: каждый шаг отдаётся в земле, как удар тарана в ворота. Он неповоротлив, зато ничто не может сдвинуть его с места — ни удар, ни чары, ни строй. Охотники говорят: от колосса не бегут, его обходят. И стараются, чтобы он не заметил, что его обходят.',
+'За рёбрами колосса светится сердцевина — тусклая, неровная, как угли. Когда колосс падает, она гаснет, и изредка от неё остаётся сердце — тяжёлый тёмный ком, тёплый и едва заметно пульсирующий. Кузнецы берут его для лучших вещей, маги Башни спорят, живое оно или нет. Гундар, впервые взяв его в руки, долго молчал и сказал только: «Это не кость. Это кто-то».',
+'Горожане говорят, что колоссы собираются сами. Где на Окраинах лежит много непогребённых костей — на месте давней битвы, у разорённого погоста, у рва, куда в первый год осады сбрасывали павших, — там однажды встаёт колосс. Кости в нём разные: людские, конские, гномьи, орочьи. Гарша как-то нашла в обломке колосса пряжку с клеймом своего обоза и ничего не сказала.',
+'Колоссы — осадные твари. Они идут к стенам напрямик, ничего не обходя, и останавливаются там же, где все мёртвые: на черте двухсот шагов. Там колосс бьёт дубиной в пустоту — раз за разом, будто в ворота, которых нет. Земля в этих местах изрыта ямами в рост человека. Стрелки на стенах говорят, что в тихую ночь слышно, как воздух там гудит от ударов.',
+'Говорят, далеко за кольцом, в тумане, стоит колосс, который не двигается. Он собран не из сотен костей, а из целого войска — с оружием, со знамёнами, с бляхами одного полка. Он стоит лицом к Ильграду, а в груди у него вместо сердцевины пустота размером с дверь. Разведчики, видевшие его, рассказывали, что в эту пустоту можно войти. Те, кто вошёл, не рассказывали ничего.',
+],
+ancient: 'Древний колосс встал ещё в первые месяцы осады. Кости в нём срослись так, что швов не видно, а сердцевина светится ровно и ярко. Он ходит медленнее прочих, но бьёт так, что после него в стене осталась бы вмятина. Если бы было до чего достать.',
+bloody: 'Кровавый колосс однажды дошёл до живых — до обоза, до слободы, до вылазки. В нём новые кости, ещё не побелевшие, а на дубине висят обрывки чужих плащей. Кровавых колоссов на стенах считают отдельно. Комендант велел докладывать о каждом.',
+});
+LORE_ARTICLES['beast.worms'] = {
+cat: 'beasts', order: 100, title: 'Черви', kind: 'Пришли из-под земли', portrait: 'img/story/fall/maw.webp',
+parts: [
+{ key: 'beast.worms', when: () => !!state.player.underwoodFallen,
+text: 'Черви вышли из-под земли в тот день, когда Андервуд опустел. Огромные — каждый длиной с улицу и толщиной с башню, — они разорвали землю под деревней и поднялись над крышами, как поваленные колокольни. Драться с ними бессмысленно: их не берёт ни меч, ни чары. Они и не дерутся. Они просто есть — и открывают пасти.',
+rows: [
+['Размер', 'с улицу в длину, с башню в обхвате'],
+['Где видели', 'Андервуд, дорога на Ильград'],
+['Опасность', 'сами не нападают — из пасти выходят мёртвые'],
+] },
+{ key: 'beast.worms.maw', label: 'Пасть', when: () => ownerTopicAsked('commander', 'map'),
+text: 'Черви не пожирают. Червь — это ход, тоннель из глубины, и пасть у него — выход. Из пасти выходят мёртвые: ополченцы, гончие, гули — всё то, что потом бредёт к стенам Ильграда. В городе этого не знали три года. Знали, что мёртвые приходят из тумана, но откуда — разведчики не доносили: не возвращались. Комендант, услышав про пасть, долго смотрел на карту и спросил одно: сколько их всего.' },
+{ key: 'beast.worms.count', label: 'Сколько', when: () => typeof isQuestDone === 'function' && isQuestDone('ilgradCount'),
+text: 'Если мёртвые приходят быстрее, чем их убивают, значит, ход открыт не один. Комендант посчитал это по-своему — убитых против пришедших — и вышло, что пастей больше, чем видели. Где остальные, неизвестно. Где-то в тумане, далеко, там, где земля дрожит, а туман пахнет свежевывороченной землёй.' },
+{ key: 'beast.worms.tremor', label: 'Дрожь', when: () => loreLocKills('outskirts') >= 1000,
+text: 'Иногда, глубокой ночью, земля на Окраинах вздрагивает — едва-едва, как вздрагивает спящий. Кружки на столах в Ильграде звенят, а мёртвые за кольцом на миг замирают и поворачиваются все в одну сторону. Горожане говорят, что это оседает скала. Те, кто был в Андервуде в последний день, ничего не говорят. Они узнают эту дрожь.' },
+],
+};
+buildAllOwnerChats();
 
 ;
 
@@ -22972,7 +24875,7 @@ setCsText('cs-hp', has ? `${Math.floor(p.hp)} / ${p.maxHp}` : '—');
 setCsText('cs-mp', has ? `${Math.floor(p.mp)} / ${p.maxMp}` : '—');
 document.getElementById('cs-hp-fill').style.width = has ? pct(p.hp, p.maxHp) : '0%';
 document.getElementById('cs-mp-fill').style.width = has ? pct(p.mp, p.maxMp) : '0%';
-const maxLevel = p.level >= MAX_PLAYER_LEVEL || !isFinite(p.xpNext);
+const maxLevel = p.level >= getMaxPlayerLevel() || !isFinite(p.xpNext);
 setCsText('cs-xp', maxLevel ? 'максимальный уровень' : `${p.xp} / ${p.xpNext}`);
 document.getElementById('cs-xp-fill').style.width = maxLevel ? '100%' : pct(p.xp, p.xpNext);
 ['STR', 'DEX', 'CON', 'INT', 'WIT', 'MEN'].forEach(k => {
@@ -23031,7 +24934,7 @@ Object.keys(p.tavernBuffs).forEach(id => {
 const b = p.tavernBuffs[id], def = TAVERN_BUFFS[id];
 if (!b || !def || b.timer <= 0) return;
 const what = def.effect === 'xpPercent' ? `+${def.value}% опыта` : `+${def.value}% шанс опыта владения`;
-buffs.push(csChip('buff', `${def.name}: ${what}`));
+buffs.push(csChip('buff', `${tavernBuffName(id)}: ${what}`));
 });
 }
 fillCsChips('cs-buff', 'cs-buff-count', buffs, 'Нет активных усилений');

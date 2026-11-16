@@ -963,6 +963,16 @@
   display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 16px; text-align: center;
   font: 20px/1.6 'PT Serif', Georgia, serif; color: #d8d0c0; animation: bxbPlate .8s ease;
 }
-#bx-break-plate p { max-width: 640px; margin: 0 0 10px; }
+#bx-break-plate p { max-width: 640px; margin: 0 0 10px; position: relative; text-shadow: 0 2px 6px #000; }
+/* v0.37: заставка с кадром за текстом и подсказкой, когда её уже можно закрыть */
+#bx-break-plate.has-bg::before {
+  content: ''; position: absolute; inset: 0; background: var(--plate-bg) center / cover no-repeat;
+  opacity: .35; filter: saturate(.7);
+}
+#bx-break-plate .bx-plate-hint {
+  position: absolute; bottom: 24px; left: 0; right: 0; font-size: 13px; letter-spacing: .05em;
+  color: #9a917f; opacity: 0; transition: opacity .6s ease;
+}
+#bx-break-plate.can-skip .bx-plate-hint { opacity: 1; }
 @keyframes bxbPlate { from { opacity: 0; } to { opacity: 1; } }
 @media (prefers-reduced-motion: reduce) { #bx-action, .bxa-card, .bxa-slash, .bxa-ring, .bx-stage.bxa-shake, #bx-break-plate, #bx-break-veil.fire { animation: none; } }

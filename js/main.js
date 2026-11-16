@@ -408,7 +408,7 @@ function updateCharacterPanel() {
   setCsText('cs-mp', has ? `${Math.floor(p.mp)} / ${p.maxMp}` : '—');
   document.getElementById('cs-hp-fill').style.width = has ? pct(p.hp, p.maxHp) : '0%';
   document.getElementById('cs-mp-fill').style.width = has ? pct(p.mp, p.maxMp) : '0%';
-  const maxLevel = p.level >= MAX_PLAYER_LEVEL || !isFinite(p.xpNext);
+  const maxLevel = p.level >= getMaxPlayerLevel() || !isFinite(p.xpNext);
   setCsText('cs-xp', maxLevel ? 'максимальный уровень' : `${p.xp} / ${p.xpNext}`);
   document.getElementById('cs-xp-fill').style.width = maxLevel ? '100%' : pct(p.xp, p.xpNext);
 
@@ -479,7 +479,7 @@ function updateCharacterPanel() {
       const b = p.tavernBuffs[id], def = TAVERN_BUFFS[id];
       if (!b || !def || b.timer <= 0) return;
       const what = def.effect === 'xpPercent' ? `+${def.value}% опыта` : `+${def.value}% шанс опыта владения`;
-      buffs.push(csChip('buff', `${def.name}: ${what}`));
+      buffs.push(csChip('buff', `${tavernBuffName(id)}: ${what}`));   // v0.37: в Ильграде — названия Храма
     });
   }
   fillCsChips('cs-buff', 'cs-buff-count', buffs, 'Нет активных усилений');

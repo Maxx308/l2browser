@@ -118,14 +118,26 @@ function getMonsterTitle(monsterId, variantId) {
 }
 
 // Множитель шанса дропа и золота по титулу.
+const TITLE_DROP_MULT = { none: 1.0, hunter: 1.5, glorious: 2.0, magnificent: 3.0 };
 function getTitleDropMultiplier(monsterId, variantId) {
-  const title = getMonsterTitle(monsterId, variantId);
-  switch (title) {
-    case 'hunter':      return 1.5;
-    case 'glorious':    return 2.0;
-    case 'magnificent': return 3.0;
-    default:            return 1.0;
-  }
+  return TITLE_DROP_MULT[getMonsterTitle(monsterId, variantId)] || 1.0;
+}
+
+// v0.36.4: прогресс к титулам — для окна титула (monster-cards.js).
+// same — «Охотник» у тварей этого подтипа на локации, all — у всех тварей всех подтипов.
+function getTitleProgress(monsterId, variantId) {
+  const loc = getMonsterLocation(monsterId);
+  const list = loc ? getMonstersByLocation(loc) : [];
+  const T = KILL_THRESHOLDS.title;
+  const row = (m, v) => ({ id: m.id, variantId: v, kills: getMonsterKills(m.id, v), done: getMonsterKills(m.id, v) >= T });
+  const same = list.map(m => row(m, variantId));
+  const all = [];
+  list.forEach(m => ALL_VARIANTS.forEach(v => all.push(row(m, v))));
+  return {
+    title: getMonsterTitle(monsterId, variantId),
+    kills: getMonsterKills(monsterId, variantId),
+    loc, same, all,
+  };
 }
 
 // Старая функция — для совместимости.

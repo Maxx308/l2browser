@@ -16,11 +16,12 @@ function openTavern() {
   }
 
   document.getElementById('tavern-overlay').classList.add('active');
+  if (typeof applyTownWindowTitles === 'function') applyTownWindowTitles();   // v0.37: Таверна / Храм / Казармы
   renderTavernBuffs();
   updateTavernGold();
 
-  // v0.31: Энциклопедия — хозяйка таверны; точка на «Поговорить»
-  if (typeof unlockLore === 'function') unlockLore('hostess');
+  // v0.31: Энциклопедия — хозяйка таверны; точка на «Поговорить» (v0.37: только в Андервуде)
+  if (state.player.currentLocation === 'town' && typeof unlockLore === 'function') unlockLore('hostess');
   if (typeof updateTalkButtons === 'function') updateTalkButtons();
 }
 
@@ -42,7 +43,7 @@ function renderTavernBuffs() {
 // ---------- ПОКУПКА БАФФА ----------
 function buyTavernBuff(buffId) {
   const p = state.player;
-  const buff = TAVERN_BUFFS[buffId];
+  const buff = tavernBuffView(TAVERN_BUFFS[buffId]);   // v0.37: в Ильграде — названия Храма
   if (!buff) return;
 
   if (!p.classId) {
@@ -85,7 +86,8 @@ function buyTavernBuff(buffId) {
   renderEffectsPanel();
   renderTavernBuffs();
   updateTavernGold(); updateTraderGold(); updateForgeGold(); updateGuildGold();
-  logCombat(`🍺 Таверна: активировано «${buff.name}» (+${buffShopDur(buff.duration)})`, 'log-entry levelup');
+  const pl = tavernBuffPlace(TAVERN_BUFFS[buffId]);   // v0.37: Храм / Казармы Ильграда
+  logCombat(`${pl ? pl.emoji + ' ' + pl.where : '🍺 Таверна'}: активировано «${buff.name}» (+${buffShopDur(buff.duration)})`, 'log-entry levelup');
 
   showToast('🍺', `${buff.name} активирован (+${buffShopDur(buff.duration)})`);
   const card = document.querySelector(`.tavern-card[data-buff-id="${buffId}"]`);

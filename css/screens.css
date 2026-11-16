@@ -610,6 +610,39 @@
   justify-content: center;
 }
 
+/* v0.36.4: эмблема класса — вертикальная (3:4); в широкой полосе от неё оставалась узкая середина.
+   Показываем целиком, а по бокам — та же картинка, размытая и затемнённая, чтобы не было шва. */
+#classes-list .create-portrait {
+  position: relative;
+  overflow: hidden;
+  height: calc(150 * var(--u));
+  min-height: 0;
+  max-height: none;
+  background-size: 0 0;   /* сама картинка — в ::after, здесь только источник для inherit */
+  background-repeat: no-repeat;
+}
+#classes-list .create-portrait::before,
+#classes-list .create-portrait::after {
+  content: '';
+  position: absolute;
+  background-image: inherit;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+#classes-list .create-portrait::before {
+  inset: calc(-24 * var(--u));
+  background-size: cover;
+  filter: blur(calc(18 * var(--u))) brightness(.3);
+}
+#classes-list .create-portrait::after {
+  top: 0; bottom: 0; left: 50%;
+  width: calc(150 * var(--u) * 0.75);   /* ширина эмблемы при высоте рамки (3:4) */
+  transform: translateX(-50%);
+  background-size: cover;
+  -webkit-mask-image: linear-gradient(90deg, transparent 0%, #000 22%, #000 78%, transparent 100%);
+          mask-image: linear-gradient(90deg, transparent 0%, #000 22%, #000 78%, transparent 100%);
+}
+
 @media (max-width: 900px) {
   #classes-list { grid-template-columns: 1fr; }
 }
@@ -1105,6 +1138,17 @@
   .slot-delete { opacity: 1; }
   .slot-portrait { width: calc(84 * var(--u)); height: calc(84 * var(--u)); }
   .slot-name { font-size: calc(14 * var(--u)); }
+}
+
+/* v0.36.4: телефон лёжа — закладки версий теперь строкой сверху (patches.css), под них отступ */
+@media (min-width: 701px) and (max-height: 500px) and (orientation: landscape) {
+  #start-screen { overflow-y: auto; }
+  .start-content {
+    height: auto;
+    min-height: 100%;
+    justify-content: flex-start;
+    padding-top: calc(56 * var(--u));
+  }
 }
 
 /* ---------- v0.34: АВТОРСТВО ВНИЗУ СТАРТОВОГО ЭКРАНА (подробно — файл LICENSE) ---------- */
