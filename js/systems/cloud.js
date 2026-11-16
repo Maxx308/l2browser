@@ -129,7 +129,133 @@ function cloudSetMasterUnlocked(value) {
 function cloudIsAllowedToPlay() {
   if (cloudUser) return true;
   if (cloudIsMasterUnlocked()) return true;
+  if (cloudIsGuest()) return true;
   return false;
+}
+
+// --------------------------------------------------------
+//  v0.37: ГОСТЕВОЙ РЕЖИМ («Попробовать без регистрации»)
+//  Без облака и без ограничений: герои и склад гостя живут только в этом браузере
+//  (слоты помечены uid 'guest' — slotOwnerId в slots.js, склад под своим ключом —
+//  storageKey в storage.js, чтобы гость не видел склад прежнего игрока устройства).
+//  Вошёл в аккаунт из гостевого режима — гостевые герои и склад переходят в аккаунт
+//  (guestAdoptIntoAccount), дальше их сам заливает cloudAutoSyncLocalSlots.
+// --------------------------------------------------------
+const GUEST_FLAG_KEY = 'l2browser_guest';
+const GUEST_UID = 'guest';
+
+function cloudIsGuest() {
+  if (cloudUser) return false;
+  try { return localStorage.getItem(GUEST_FLAG_KEY) === '1'; } catch (e) { return false; }
+}
+
+function cloudRefreshStartAccess() {
+  if (typeof slotsClaimForAccount === 'function') slotsClaimForAccount();
+  if (typeof renderCloudAuth === 'function') renderCloudAuth();
+  if (typeof updateCloudAccessGate === 'function') updateCloudAccessGate();
+  if (typeof renderSlots === 'function') renderSlots();
+  if (typeof updateLeaderboardButtonVisibility === 'function') updateLeaderboardButtonVisibility();
+  if (typeof updateGuestChip === 'function') updateGuestChip();
+}
+
+function cloudStartGuest() {
+  try { localStorage.setItem(GUEST_FLAG_KEY, '1'); } catch (e) {
+    if (typeof showToast === 'function') showToast('⚠', 'Браузер не даёт сохранять — гостевой режим здесь не сработает (режим инкогнито?)');
+    return;
+  }
+  cloudRefreshStartAccess();
+  if (typeof showToast === 'function') showToast('🎮', 'Гостевой режим: создайте героя. Он сохранится только в этом браузере');
+}
+
+function cloudStopGuest() {
+  try { localStorage.removeItem(GUEST_FLAG_KEY); } catch (e) {}
+  cloudRefreshStartAccess();
+}
+
+// Напоминания гостю (без навязчивости): кнопка «ГОСТЬ» в шапке всегда, а тост и строка
+// в журнале — через 15 минут игры, потом раз в 45 минут. Считается только время в игре
+// при открытой вкладке.
+const GUEST_REMIND_FIRST_MIN = 15;
+const GUEST_REMIND_EVERY_MIN = 45;
+let __guestPlayMin = 0;
+let __guestNextRemindMin = GUEST_REMIND_FIRST_MIN;
+
+function updateGuestChip() {
+  const el = document.getElementById('top-guest');
+  if (el) el.style.display = cloudIsGuest() ? '' : 'none';
+}
+
+function guestRemind() {
+  if (typeof showToast === 'function') {
+    showToast('💾', 'Вы играете как гость — герой хранится только в этом браузере. Зарегистрируйтесь, чтобы не потерять его');
+  }
+  if (typeof logLoot === 'function') {
+    logLoot('💾 Гостевой режим: герой хранится только в этом браузере — очистка браузера его сотрёт. Зарегистрируйтесь (кнопка «ГОСТЬ» вверху), и герой перейдёт в аккаунт.', 'log-info');
+  }
+}
+
+function guestChipClick() {
+  const ok = confirm('Вы играете как гость: герой хранится только в этом браузере.\n\n'
+    + 'Перейти к регистрации? Герой сохранится, а после входа в аккаунт перейдёт туда.');
+  if (ok && typeof exitToCharacterSelect === 'function') exitToCharacterSelect(false);
+}
+
+setInterval(() => {
+  updateGuestChip();
+  if (!cloudIsGuest() || document.hidden) return;
+  const start = document.getElementById('start-screen');
+  const inGame = !(start && start.classList.contains('active'))
+    && typeof state !== 'undefined' && state.activeSlotIndex !== null && state.activeSlotIndex !== undefined;
+  if (!inGame) return;
+  __guestPlayMin++;
+  if (__guestPlayMin >= __guestNextRemindMin) {
+    __guestNextRemindMin = __guestPlayMin + GUEST_REMIND_EVERY_MIN;
+    guestRemind();
+  }
+}, 60000);
+
+// Вход в аккаунт, пока включён гостевой режим: гостевые герои и склад переходят в аккаунт.
+// Ячейку, где у этого аккаунта на устройстве отложен свой герой, не занимаем — гостевой
+// там остаётся отложенным (вернётся, если снова зайти гостем).
+function guestAdoptIntoAccount() {
+  let flag = null;
+  try { flag = localStorage.getItem(GUEST_FLAG_KEY); } catch (e) {}
+  if (flag !== '1' || !cloudUser || !cloudUser.id || typeof SLOT_COUNT === 'undefined') return;
+  const uid = cloudUser.id;
+  let moved = 0;
+  try {
+    for (let i = 0; i < SLOT_COUNT; i++) {
+      const key = SLOT_KEY_PREFIX + i;
+      const ownParked = localStorage.getItem(slotParkKey(uid, i));
+      let raw = localStorage.getItem(key);
+      let data = null;
+      try { data = raw ? JSON.parse(raw) : null; } catch (e) { data = null; }
+      if (!data) {   // ячейка пустая — может, тут отложенный гостевой герой
+        const gp = localStorage.getItem(slotParkKey(GUEST_UID, i));
+        if (!gp || ownParked) continue;
+        try { data = JSON.parse(gp); } catch (e) { continue; }
+        localStorage.removeItem(slotParkKey(GUEST_UID, i));
+        const gbak = localStorage.getItem(slotParkKey(GUEST_UID, i) + '_bak');
+        if (gbak) { localStorage.setItem(slotBackupKey(i), gbak); localStorage.removeItem(slotParkKey(GUEST_UID, i) + '_bak'); }
+      } else if (data.uid !== GUEST_UID) {
+        continue;
+      } else if (ownParked) {
+        slotPark(GUEST_UID, i);
+        continue;
+      }
+      data.uid = uid;
+      delete data.cloudSeen;
+      localStorage.setItem(key, JSON.stringify(data));
+      moved++;
+    }
+    // Склад гостя → склад аккаунта: «первая синхронизация» в pullStorageFromCloud объединит его с облачным.
+    if (typeof storageAdoptGuest === 'function') storageAdoptGuest();
+    localStorage.removeItem(GUEST_FLAG_KEY);
+  } catch (e) {
+    console.warn('[guest] перенос в аккаунт не удался:', e);
+    return;
+  }
+  if (moved && typeof showToast === 'function') showToast('☁️', `Гостевые герои перенесены в аккаунт: ${moved}`);
 }
 
 // --------------------------------------------------------
@@ -181,6 +307,7 @@ function initCloud() {
         cloudUser = null;
         cloudSlotsCache = {};
       }
+      if (session && session.user) guestAdoptIntoAccount();   // v0.37: гостевые герои → в аккаунт (до облака)
       if (typeof renderCloudAuth === 'function') renderCloudAuth();
 
       if (session && session.user) {
@@ -210,6 +337,7 @@ function initCloud() {
     supabaseClient.auth.getSession().then(({ data }) => {
       if (data && data.session && data.session.user) {
         cloudUser = data.session.user;
+        guestAdoptIntoAccount();   // v0.37
       } else {
         cloudUser = null;
       }
@@ -301,6 +429,7 @@ function renderCloudAuth() {
       <div class="cloud-auth-buttons">
         <button class="btn" onclick="location.reload()">Обновить</button>
       </div>
+      ${cloudIsMasterUnlocked() ? '' : cloudGuestBlockHtml()}
     `;
     return;
   }
@@ -324,12 +453,12 @@ function renderCloudAuth() {
   const masterHint = masterOn
     ? `<div class="cloud-auth-status ok" style="margin-top:8px;">🛠 Мастер-режим: игра доступна без входа</div>`
     : '';
+  const guestHtml = masterOn ? '' : cloudGuestBlockHtml();
 
   box.innerHTML = `
     <div class="cloud-auth-title">ВХОД В АККАУНТ</div>
     <div class="cloud-auth-hint">
-      Игра доступна только с аккаунтом.<br>
-      Прогресс хранится в облаке и защищён от потери.
+      ☁️ Прогресс хранится в облаке: играйте с телефона и компьютера, ничего не потеряется.
     </div>
     <div class="cloud-auth-form">
       <input type="email" id="cloud-email" class="cloud-auth-input" placeholder="email" autocomplete="email">
@@ -341,7 +470,26 @@ function renderCloudAuth() {
     </div>
     <div class="cloud-auth-status" id="cloud-auth-status"></div>
     ${masterHint}
+    ${guestHtml}
   `;
+}
+
+// v0.37: «Попробовать без регистрации» / строка гостевого режима под формой входа
+function cloudGuestBlockHtml() {
+  if (cloudIsGuest()) {
+    return `
+      <div class="cloud-guest cloud-guest-on">
+        <div class="cloud-guest-text">🎮 Вы играете как гость: герои хранятся только в этом браузере.
+          Зарегистрируйтесь — и они перейдут в аккаунт.</div>
+        <button type="button" class="cloud-guest-exit" onclick="cloudStopGuest()">Выйти из гостевого режима</button>
+      </div>`;
+  }
+  return `
+    <div class="cloud-guest">
+      <div class="cloud-guest-or"><span>или</span></div>
+      <button type="button" class="btn cloud-guest-btn" onclick="cloudStartGuest()">▶ Попробовать без регистрации</button>
+      <div class="cloud-guest-note">Герой сохранится только в этом браузере. Зарегистрироваться можно потом — он перейдёт в аккаунт.</div>
+    </div>`;
 }
 
 function setCloudStatus(text, kind) {

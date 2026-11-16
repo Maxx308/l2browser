@@ -66,6 +66,14 @@ function updateCloudAccessGate() {
   const allowed = (typeof cloudIsAllowedToPlay === 'function')
     ? cloudIsAllowedToPlay()
     : true;
+  // v0.37: до входа экран — «лаунчер»: название, строки о игре и вход слева, скриншоты справа,
+  // версии строкой по низу (screens.css, patches.css). После входа — прежний вид со слотами.
+  if (typeof updateGuestChip === 'function') updateGuestChip();   // v0.37: кнопка «ГОСТЬ» в шапке
+  const startScreen = document.getElementById('start-screen');
+  if (startScreen && startScreen.classList.contains('launcher') !== !allowed) {
+    startScreen.classList.toggle('launcher', !allowed);
+    if (typeof closePatchPanel === 'function') { closePatchPanel(); closePatchGroup(); }
+  }
 
   if (allowed) {
     gate.style.display = 'none';
@@ -78,15 +86,14 @@ function updateCloudAccessGate() {
     return;
   }
 
+  // v0.37: вместо второго «войдите в аккаунт» (это уже пишет форма входа) — листалка
+  // скриншотов. Уже нарисована — не трогаем, иначе повторный вызов (после префетча облака)
+  // сбросит её посреди просмотра.
   gate.style.display = 'block';
-  gate.innerHTML = `
-    <div class="cloud-gate-icon">🔒</div>
-    <div class="cloud-gate-title">ВОЙДИТЕ В АККАУНТ</div>
-    <div class="cloud-gate-text">
-      Игра доступна только с аккаунтом.<br>
-      Так прогресс сохраняется в облаке и защищён от потери.
-    </div>
-  `;
+  if (!gate.querySelector('.start-shots')) {
+    gate.innerHTML = startShotsHtml();
+    initStartShots(gate);
+  }
   slotsGrid.style.display = 'none';
 
   // ---- НОВОЕ (v0.15): обновить видимость кнопки рейтинга ----
@@ -95,8 +102,119 @@ function updateCloudAccessGate() {
   }
 }
 
+// ========================================================
+//  v0.37: СКРИНШОТЫ НА ЭКРАНЕ ДО ВХОДА
+//  Листалка (свайп / стрелки / точки), по нажатию — на весь экран.
+// ========================================================
+const START_SHOTS = [
+  { src: 'img/start/battle.webp', w: 1171, h: 689, cap: 'Бой со стаей: навыки, криты, кровотечение' },
+  { src: 'img/start/beasts.webp', w: 1210, h: 422, cap: 'У каждой твари свои приёмы и добыча' },
+  { src: 'img/start/gear.webp',   w: 704,  h: 651, cap: 'Снаряжение: редкость, подгонка до +15, фишки тиров' },
+  { src: 'img/start/forge.webp',  w: 989,  h: 925, cap: 'Кузница: добыча превращается в ресурсы' },
+  { src: 'img/start/craft.webp',  w: 944,  h: 653, cap: 'Комплекты доспехов из редких материалов' },
+];
+
+function startShotsHtml() {
+  const slides = START_SHOTS.map((s, i) => `
+    <figure class="start-shot">
+      <button type="button" class="start-shot-open" data-shot="${i}" aria-label="Открыть на весь экран: ${s.cap}">
+        <img src="${s.src}" width="${s.w}" height="${s.h}" alt="${s.cap}" ${i ? 'loading="lazy"' : ''} decoding="async">
+      </button>
+    </figure>`).join('');
+  const dots = START_SHOTS.map((s, i) =>
+    `<button type="button" class="start-shots-dot${i ? '' : ' active'}" data-dot="${i}" aria-label="Скриншот ${i + 1}"></button>`).join('');
+  // Подпись одна, под картинкой (меняется при листании) — стрелки и точки стоят по самой картинке.
+  return `
+    <div class="start-shots">
+      <div class="start-shots-view">
+        <div class="start-shots-track">${slides}</div>
+        <button type="button" class="start-shots-nav prev" aria-label="Предыдущий скриншот">‹</button>
+        <button type="button" class="start-shots-nav next" aria-label="Следующий скриншот">›</button>
+        <div class="start-shots-dots">${dots}</div>
+      </div>
+      <div class="start-shots-cap">${START_SHOTS[0].cap}</div>
+    </div>`;
+}
+
+function initStartShots(root) {
+  const track = root.querySelector('.start-shots-track');
+  if (!track) return;
+  const n = START_SHOTS.length;
+  const cur = () => Math.round(track.scrollLeft / Math.max(1, track.clientWidth));
+  // Пока идёт плавная прокрутка, следующее нажатие считаем от цели, а не от текущего места —
+  // иначе два быстрых нажатия листали только на один кадр.
+  let target = null, targetTimer = 0;
+  const base = () => (target !== null ? target : cur());
+  const go = (i) => {
+    target = (i + n) % n;
+    clearTimeout(targetTimer);
+    targetTimer = setTimeout(() => { target = null; }, 700);
+    track.scrollTo({ left: target * track.clientWidth, behavior: 'smooth' });
+  };
+  root.querySelector('.start-shots-nav.prev').onclick = () => go(base() - 1);
+  root.querySelector('.start-shots-nav.next').onclick = () => go(base() + 1);
+  const dots = root.querySelectorAll('.start-shots-dot');
+  const cap = root.querySelector('.start-shots-cap');
+  dots.forEach(d => { d.onclick = () => go(+d.dataset.dot); });
+  track.addEventListener('scroll', () => {
+    const i = Math.min(n - 1, Math.max(0, cur()));
+    dots.forEach((d, k) => d.classList.toggle('active', k === i));
+    if (cap) cap.textContent = START_SHOTS[i].cap;
+  }, { passive: true });
+  root.querySelectorAll('.start-shot-open').forEach(b => { b.onclick = () => openStartShot(+b.dataset.shot); });
+}
+
+function openStartShot(i) {
+  let box = document.getElementById('start-shot-view');
+  if (!box) {
+    box = document.createElement('div');
+    box.id = 'start-shot-view';
+    box.className = 'start-shot-view';
+    box.innerHTML = `
+      <img alt="">
+      <div class="start-shot-view-cap"></div>
+      <button type="button" class="start-shot-view-btn prev" aria-label="Предыдущий скриншот">‹</button>
+      <button type="button" class="start-shot-view-btn next" aria-label="Следующий скриншот">›</button>
+      <button type="button" class="start-shot-view-close" aria-label="Закрыть">×</button>`;
+    document.body.appendChild(box);
+    // Стрелки листают, нажатие в любое другое место (и на сам скриншот) закрывает.
+    box.addEventListener('click', (e) => {
+      const b = e.target.closest('.start-shot-view-btn');
+      if (b) showStartShot(box.__i + (b.classList.contains('prev') ? -1 : 1));
+      else closeStartShot();
+    });
+    document.addEventListener('keydown', (e) => {
+      if (!box.classList.contains('active')) return;
+      if (e.key === 'Escape') closeStartShot();
+      else if (e.key === 'ArrowLeft') showStartShot(box.__i - 1);
+      else if (e.key === 'ArrowRight') showStartShot(box.__i + 1);
+    });
+  }
+  showStartShot(i);
+  box.classList.add('active');
+}
+
+function showStartShot(i) {
+  const box = document.getElementById('start-shot-view');
+  if (!box) return;
+  const n = START_SHOTS.length;
+  i = (i + n) % n;
+  box.__i = i;
+  const s = START_SHOTS[i];
+  const img = box.querySelector('img');
+  img.src = s.src;
+  img.alt = s.cap;
+  box.querySelector('.start-shot-view-cap').textContent = `${s.cap} · ${i + 1} из ${n}`;
+}
+
+function closeStartShot() {
+  const box = document.getElementById('start-shot-view');
+  if (box) box.classList.remove('active');
+}
+
 function hideStartScreen() {
   document.getElementById('start-screen').classList.remove('active');
+  closeStartShot();
 }
 
 function renderSlots() {

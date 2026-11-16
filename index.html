@@ -86,35 +86,35 @@ applyTextFont(getSavedTextFont());
 <!-- v0.36.2: библиотека облака (Supabase, 213 КБ) переехала вниз, к остальным скриптам:
      в шапке она задерживала показ страницы, пока не скачается целиком. -->
 
-<link rel="stylesheet" href="css/base.css?v=0.37">
-<link rel="stylesheet" href="css/effects.css?v=0.37">
-<link rel="stylesheet" href="css/monsters.css?v=0.37">
-<link rel="stylesheet" href="css/city-map.css?v=0.37">
-<link rel="stylesheet" href="css/battle.css?v=0.37">
-<link rel="stylesheet" href="css/debuffs.css?v=0.37">
-<link rel="stylesheet" href="css/battle-autostop.css?v=0.37">
-<link rel="stylesheet" href="css/battle-arena.css?v=0.37">
-<link rel="stylesheet" href="css/underwood-fall.css?v=0.37">
-<link rel="stylesheet" href="css/battle-session.css?v=0.37">
-<link rel="stylesheet" href="css/battle-rest.css?v=0.37">
-<link rel="stylesheet" href="css/inventory.css?v=0.37">
-<link rel="stylesheet" href="css/inventory-equip.css?v=0.37">
-<link rel="stylesheet" href="css/inventory-slots.css?v=0.37">
-<link rel="stylesheet" href="css/windows.css?v=0.37">
-<link rel="stylesheet" href="css/screens.css?v=0.37">
-<link rel="stylesheet" href="css/patches.css?v=0.37">
-<link rel="stylesheet" href="css/settings.css?v=0.37">
-<link rel="stylesheet" href="css/cheat.css?v=0.37">
-<link rel="stylesheet" href="css/overlays.css?v=0.37">
-<link rel="stylesheet" href="css/dialogue.css?v=0.37">
-<link rel="stylesheet" href="css/storage.css?v=0.37">
-<link rel="stylesheet" href="css/refine.css?v=0.37">
-<link rel="stylesheet" href="css/alchemist.css?v=0.37">
-<link rel="stylesheet" href="css/leaderboard.css?v=0.37">
-<link rel="stylesheet" href="css/hero-inspect.css?v=0.37">
-<link rel="stylesheet" href="css/chronicle.css?v=0.37">
-<link rel="stylesheet" href="css/daynight.css?v=0.37">
-<link rel="stylesheet" href="css/expeditions.css?v=0.37">
+<link rel="stylesheet" href="css/base.css?v=0.37.1">
+<link rel="stylesheet" href="css/effects.css?v=0.37.1">
+<link rel="stylesheet" href="css/monsters.css?v=0.37.1">
+<link rel="stylesheet" href="css/city-map.css?v=0.37.1">
+<link rel="stylesheet" href="css/battle.css?v=0.37.1">
+<link rel="stylesheet" href="css/debuffs.css?v=0.37.1">
+<link rel="stylesheet" href="css/battle-autostop.css?v=0.37.1">
+<link rel="stylesheet" href="css/battle-arena.css?v=0.37.1">
+<link rel="stylesheet" href="css/underwood-fall.css?v=0.37.1">
+<link rel="stylesheet" href="css/battle-session.css?v=0.37.1">
+<link rel="stylesheet" href="css/battle-rest.css?v=0.37.1">
+<link rel="stylesheet" href="css/inventory.css?v=0.37.1">
+<link rel="stylesheet" href="css/inventory-equip.css?v=0.37.1">
+<link rel="stylesheet" href="css/inventory-slots.css?v=0.37.1">
+<link rel="stylesheet" href="css/windows.css?v=0.37.1">
+<link rel="stylesheet" href="css/screens.css?v=0.37.1">
+<link rel="stylesheet" href="css/patches.css?v=0.37.1">
+<link rel="stylesheet" href="css/settings.css?v=0.37.1">
+<link rel="stylesheet" href="css/cheat.css?v=0.37.1">
+<link rel="stylesheet" href="css/overlays.css?v=0.37.1">
+<link rel="stylesheet" href="css/dialogue.css?v=0.37.1">
+<link rel="stylesheet" href="css/storage.css?v=0.37.1">
+<link rel="stylesheet" href="css/refine.css?v=0.37.1">
+<link rel="stylesheet" href="css/alchemist.css?v=0.37.1">
+<link rel="stylesheet" href="css/leaderboard.css?v=0.37.1">
+<link rel="stylesheet" href="css/hero-inspect.css?v=0.37.1">
+<link rel="stylesheet" href="css/chronicle.css?v=0.37.1">
+<link rel="stylesheet" href="css/daynight.css?v=0.37.1">
+<link rel="stylesheet" href="css/expeditions.css?v=0.37.1">
 </head>
 <body>
 
@@ -127,13 +127,19 @@ applyTextFont(getSavedTextFont());
   <div class="patch-tabs" id="patch-tabs"></div>
 
   <div class="start-content">
-    <h1 class="start-title">L2 BROWSER</h1>
-    <div class="start-subtitle">Андервуд</div>
+    <!-- v0.37: до входа экран — «лаунчер» (#start-screen.launcher, screens.css):
+         слева название, пара строк о игре и вход, справа скриншоты, версии строкой по низу -->
+    <div class="start-side">
+      <h1 class="start-title">L2 BROWSER</h1>
+      <div class="start-subtitle">Андервуд</div>
+      <div class="start-lead">
+        Браузерная RPG: выбери расу и класс, охоться на тварей, собирай добычу,
+        куй снаряжение и помогай жителям. Герой ходит в экспедиции, даже пока вас нет в игре.
+      </div>
+      <div class="cloud-auth" id="cloud-auth" style="display:none;"></div>
+    </div>
 
-    <!-- Блок входа в аккаунт -->
-    <div class="cloud-auth" id="cloud-auth" style="display:none;"></div>
-
-    <!-- Замок: показать, если играть нельзя -->
+    <!-- Скриншоты (бывший замок): показать, если играть нельзя -->
     <div class="cloud-access-gate" id="cloud-access-gate" style="display:none;"></div>
 
     <div class="slots-grid" id="slots-grid"></div>
@@ -188,6 +194,8 @@ applyTextFont(getSavedTextFont());
       <div class="xp-mini-bar"><div class="xp-mini-fill" id="top-xp-fill" style="width:0%"></div></div>
       <div class="stat-mini">🪙 <b id="top-gold">0</b></div>
       <div class="skill-points-badge" id="top-skill-points" style="display:none;">НАВЫКИ <b>0</b></div>
+      <!-- v0.37: гостевой режим (cloud.js) — напоминание о регистрации -->
+      <button class="guest-chip" id="top-guest" onclick="guestChipClick()" title="Вы играете как гость — герой хранится только в этом браузере" style="display:none;">ГОСТЬ</button>
       <button class="btn-cheat" id="btn-cheat" onclick="toggleCheat()" style="display:none;">ЧИТ ×1</button>
       <button class="btn-settings" id="btn-settings" onclick="openSettings()" title="Настройки">⚙</button>
       <button class="btn-settings btn-exit" id="btn-exit" onclick="exitToCharacterSelect(true)" title="Выйти к выбору персонажа">🚪</button>
@@ -1339,7 +1347,7 @@ applyTextFont(getSavedTextFont());
      v0.36.2: подключается здесь, а не в шапке (должна стоять раньше js/systems/cloud.js). -->
 <script src="js/vendor/supabase-2.118.0.js" defer></script>
 
-<script src="js/app.bundle.js?v=0.37" defer></script>
+<script src="js/app.bundle.js?v=0.37.1" defer></script>
 
 </body>
 </html>

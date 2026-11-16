@@ -443,15 +443,34 @@
    Столбик из 11 закладок закрывал слоты персонажей.
    Теперь это компактные «чипы» с номером версии в 1–2 ряда.
    ======================================================== */
+/* v0.37: и не сверху, а внизу страницы, под героями. Сверху они стояли раньше названия
+   игры, а новичку номера версий ничего не говорят. Экран старта — колонка: содержимое,
+   потом версии (order). */
 @media (max-width: 700px), (max-height: 500px) and (orientation: landscape) {
+  #start-screen.active { display: flex; flex-direction: column; }
+  #start-screen > .start-content { flex: 1 0 auto; }
   .patch-tabs {
-    left: calc(10 * var(--u));
-    right: calc(10 * var(--u));
-    top: calc(10 * var(--u));
+    position: relative;
+    z-index: 3;
+    order: 2;
+    top: auto; left: auto; right: auto;
+    margin: 0 calc(16 * var(--u)) calc(24 * var(--u));
+    padding-top: calc(12 * var(--u));
+    border-top: 1px solid var(--border);
     flex-direction: row;
     flex-wrap: wrap;
     justify-content: center;
     gap: calc(5 * var(--u));
+  }
+  .patch-tabs::before {
+    content: 'История обновлений';
+    flex-basis: 100%;
+    text-align: center;
+    font-family: 'Cinzel', serif;
+    font-size: calc(12 * var(--u));
+    letter-spacing: calc(1.5 * var(--u));
+    color: var(--gold);
+    margin-bottom: calc(4 * var(--u));
   }
   .patch-tab {
     min-width: 0;
@@ -465,3 +484,48 @@
   .patch-tab:hover,
   .patch-tab.active { transform: translateY(calc(-1 * var(--u))); }
 }
+
+/* ========================================================
+   v0.37: ЭКРАН ДО ВХОДА («лаунчер», screens.css) — версии строкой по низу
+   и на компьютере. Наведение работает как раньше, панель выезжает над строкой
+   (место считает openPatchPanel в patches.js).
+   ======================================================== */
+#start-screen.launcher .patch-tabs {
+  position: relative;
+  z-index: 3;
+  order: 2;
+  top: auto; left: auto; right: auto;
+  margin: 0 calc(16 * var(--u)) calc(14 * var(--u));
+  padding-top: calc(10 * var(--u));
+  border-top: 1px solid var(--border);
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: calc(5 * var(--u));
+}
+#start-screen.launcher .patch-tabs::before {
+  content: 'История обновлений';
+  font-family: 'Cinzel', serif;
+  font-size: calc(12 * var(--u));
+  letter-spacing: calc(1.5 * var(--u));
+  color: var(--gold);
+  margin-right: calc(8 * var(--u));
+  text-shadow: 0 1px 3px #000;
+}
+#start-screen.launcher .patch-tab {
+  min-width: 0;
+  padding: calc(5 * var(--u)) calc(10 * var(--u));
+  border-radius: calc(4 * var(--u));
+  border-right-width: 1px;
+  border-bottom: 2px solid var(--gold);
+  align-items: center;
+}
+#start-screen.launcher .patch-tab .pt-version { font-size: calc(12 * var(--u)); }
+#start-screen.launcher .patch-tab .pt-date { display: none; }
+#start-screen.launcher .patch-tab-group { padding-left: calc(20 * var(--u)); }
+#start-screen.launcher .patch-tab:hover,
+#start-screen.launcher .patch-tab.active { transform: translateY(calc(-1 * var(--u))); }
+#start-screen.launcher .patch-tabs .patch-tab-group:hover,
+#start-screen.launcher .patch-tabs .patch-tab-group.active { transform: none; }
+#start-screen.launcher .patch-panel-body { min-height: 0; }

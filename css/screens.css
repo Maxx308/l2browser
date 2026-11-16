@@ -66,8 +66,7 @@
   font-size: calc(18 * var(--u));
   color: var(--gold);
   letter-spacing: calc(6 * var(--u));
-  margin-bottom: calc(40 * var(--u));
-  font-style: italic;
+  margin-bottom: calc(32 * var(--u));
 }
 
 /* ---------- СЕТКА СЛОТОВ ---------- */
@@ -672,13 +671,14 @@
   text-shadow: 0 0 calc(8 * var(--u)) rgba(224,190,122,0.5);
 }
 
+/* v0.37: без курсива и крупнее — мелкий курсив плохо читался на телефоне */
 .cloud-auth-hint {
-  font-size: calc(11.5 * var(--u));
-  color: var(--text-dim);
-  font-style: italic;
+  font-family: var(--font-text);
+  font-size: calc(13.5 * var(--u));
+  color: var(--text);
   text-align: center;
-  margin-bottom: calc(10 * var(--u));
-  line-height: 1.4;
+  margin-bottom: calc(12 * var(--u));
+  line-height: 1.45;
 }
 
 .cloud-auth-form {
@@ -745,9 +745,9 @@
 }
 
 .cloud-auth-status {
-  font-size: calc(11.5 * var(--u));
+  font-family: var(--font-text);
+  font-size: calc(13 * var(--u));
   color: var(--text-dim);
-  font-style: italic;
   text-align: center;
   margin-top: calc(8 * var(--u));
   min-height: calc(14 * var(--u));
@@ -758,6 +758,67 @@
 .cloud-auth-status.ok {
   color: #a0d080;
 }
+
+/* ---- v0.37: «Попробовать без регистрации» (cloud.js → cloudGuestBlockHtml) ---- */
+.cloud-guest { margin-top: calc(6 * var(--u)); text-align: center; }
+.cloud-guest-or {
+  display: flex;
+  align-items: center;
+  gap: calc(10 * var(--u));
+  margin: calc(2 * var(--u)) 0 calc(10 * var(--u));
+  font-family: var(--font-text);
+  font-size: calc(13 * var(--u));
+  color: var(--text-dim);
+}
+.cloud-guest-or::before,
+.cloud-guest-or::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+.cloud-guest-btn {
+  width: 100%;
+  font-size: calc(13 * var(--u));
+  padding: calc(9 * var(--u)) calc(12 * var(--u));
+  border-style: dashed;
+}
+.cloud-guest-note,
+.cloud-guest-text {
+  margin-top: calc(7 * var(--u));
+  font-family: var(--font-text);
+  font-size: calc(12.5 * var(--u));
+  line-height: 1.4;
+  color: var(--text-dim);
+}
+.cloud-guest-on {
+  padding: calc(10 * var(--u)) calc(12 * var(--u));
+  border: 1px dashed var(--gold);
+  border-radius: calc(3 * var(--u));
+  background: rgba(184,148,90,0.08);
+}
+.cloud-guest-on .cloud-guest-text { margin-top: 0; color: var(--text); }
+.cloud-guest-exit {
+  margin-top: calc(6 * var(--u));
+  background: none;
+  border: none;
+  padding: calc(2 * var(--u));
+  font-family: var(--font-text);
+  font-size: calc(12.5 * var(--u));
+  color: var(--gold);
+  text-decoration: underline;
+  cursor: pointer;
+}
+.cloud-guest-exit:hover { color: var(--gold-bright); }
+
+/* кнопка «ГОСТЬ» в шапке игры */
+.guest-chip {
+  font-family: 'Cinzel', serif;
+  font-size: calc(11 * var(--u));
+  letter-spacing: calc(1 * var(--u));
+  padding: calc(3 * var(--u)) calc(8 * var(--u));
+  color: var(--gold-bright);
+  background: rgba(184,148,90,0.12);
+  border: 1px dashed var(--gold);
+  border-radius: calc(3 * var(--u));
+  cursor: pointer;
+}
+.guest-chip:hover { background: rgba(184,148,90,0.25); }
 
 /* ========================================================
    НОВОЕ (v0.13f): ПОМЕТКА ☁️ НА СЛОТАХ
@@ -993,40 +1054,183 @@
    НОВОЕ (v0.13l): ЗАМОК ДОСТУПА (cloud-access-gate)
    ======================================================== */
 
-.cloud-access-gate {
+/* v0.37: замок больше не повторяет «войдите в аккаунт» (это уже пишет форма входа) —
+   теперь в нём листалка скриншотов. Раскладка экрана до входа («лаунчер») — ниже,
+   в блоке «ЭКРАН ДО ВХОДА». */
+.start-side {
   width: 100%;
   max-width: calc(560 * var(--u));
-  margin: 0 auto calc(24 * var(--u));
-  padding: calc(24 * var(--u)) calc(20 * var(--u));
-  background: linear-gradient(180deg, rgba(30,25,15,0.85), rgba(15,12,8,0.9));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.start-lead { display: none; }   /* только до входа */
+.cloud-access-gate { width: 100%; min-width: 0; }
+/* ---- v0.37: листалка скриншотов (start-screen.js → startShotsHtml) ---- */
+.start-shots {
   border: 1px solid var(--border);
-  border-radius: calc(4 * var(--u));
-  box-shadow: 0 0 calc(20 * var(--u)) rgba(0,0,0,0.6);
+  border-radius: calc(3 * var(--u));
+  overflow: hidden;
+  background: #050505;
+  box-shadow: 0 calc(4 * var(--u)) calc(16 * var(--u)) rgba(0,0,0,0.7);
+}
+.start-shots-view { position: relative; }
+.start-shots-track {
+  display: flex;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
+}
+.start-shots-cap {
+  padding: calc(9 * var(--u)) calc(12 * var(--u));
+  font-family: var(--font-text);
+  font-size: calc(14 * var(--u));
+  line-height: 1.35;
+  color: var(--text);
   text-align: center;
+  border-top: 1px solid var(--border);
+  background: linear-gradient(180deg, rgba(30,25,15,0.9), rgba(15,12,8,0.95));
 }
-
-.cloud-gate-icon {
-  font-size: calc(48 * var(--u));
+.start-shots-track::-webkit-scrollbar { display: none; }
+.start-shot {
+  flex: 0 0 100%;
+  margin: 0;
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+  display: flex;
+  flex-direction: column;
+}
+.start-shot-open {
+  position: relative;
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  padding: 0;
+  border: 0;
+  background: #050505;
+  cursor: zoom-in;
+}
+.start-shot-open img {   /* absolute: почти квадратный скриншот не растягивает рамку 16:10 */
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.start-shots-nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: calc(36 * var(--u));
+  height: calc(48 * var(--u));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 0 calc(4 * var(--u));
+  font-size: calc(30 * var(--u));
   line-height: 1;
-  margin-bottom: calc(10 * var(--u));
-  filter: drop-shadow(0 0 calc(15 * var(--u)) rgba(184,148,90,0.5));
-  opacity: 0.9;
-}
-
-.cloud-gate-title {
-  font-family: 'Cinzel', serif;
-  font-size: calc(18 * var(--u));
   color: var(--gold-bright);
-  letter-spacing: calc(3 * var(--u));
-  margin-bottom: calc(12 * var(--u));
-  text-shadow: 0 0 calc(15 * var(--u)) rgba(224,190,122,0.5);
+  background: rgba(10,8,5,0.75);
+  border: 1px solid var(--border);
+  border-radius: calc(3 * var(--u));
+  cursor: pointer;
+  transition: border-color .2s, background .2s;
 }
+.start-shots-nav:hover { border-color: var(--gold-bright); background: rgba(30,25,15,0.9); }
+.start-shots-nav.prev { left: calc(6 * var(--u)); }
+.start-shots-nav.next { right: calc(6 * var(--u)); }
+.start-shots-dots {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: calc(6 * var(--u));
+  display: flex;
+  gap: calc(2 * var(--u));
+  padding: calc(2 * var(--u)) calc(6 * var(--u));
+  border-radius: calc(10 * var(--u));
+  background: rgba(0,0,0,0.6);   /* точки видны и на светлом скриншоте */
+  pointer-events: none;
+}
+.start-shots-dot {
+  pointer-events: auto;
+  width: calc(22 * var(--u));
+  height: calc(14 * var(--u));
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  position: relative;
+}
+.start-shots-dot::before {
+  content: '';
+  position: absolute;
+  left: 50%; top: 50%;
+  width: calc(8 * var(--u));
+  height: calc(8 * var(--u));
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: var(--border);
+  transition: background .2s, width .2s;
+}
+.start-shots-dot.active::before { background: var(--gold-bright); width: calc(16 * var(--u)); border-radius: calc(4 * var(--u)); }
 
-.cloud-gate-text {
-  font-size: calc(13 * var(--u));
-  color: var(--text-dim);
-  font-style: italic;
-  line-height: 1.5;
+/* Скриншот на весь экран */
+.start-shot-view {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 960;
+  background: #050505;
+  padding: calc(44 * var(--u)) calc(12 * var(--u)) calc(56 * var(--u));
+  cursor: zoom-out;
+}
+.start-shot-view.active { display: block; }
+.start-shot-view img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.start-shot-view-cap {
+  position: absolute;
+  left: calc(12 * var(--u)); right: calc(12 * var(--u));
+  bottom: calc(16 * var(--u));
+  text-align: center;
+  font-family: var(--font-text);
+  font-size: calc(15 * var(--u));
+  color: var(--text);
+}
+.start-shot-view-btn,
+.start-shot-view-close {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--gold-bright);
+  background: rgba(20,16,10,0.85);
+  border: 1px solid var(--border);
+  border-radius: calc(3 * var(--u));
+  cursor: pointer;
+  line-height: 1;
+}
+.start-shot-view-btn {
+  top: 50%;
+  transform: translateY(-50%);
+  width: calc(44 * var(--u));
+  height: calc(60 * var(--u));
+  font-size: calc(36 * var(--u));
+  padding-bottom: calc(4 * var(--u));
+}
+.start-shot-view-btn.prev { left: calc(10 * var(--u)); }
+.start-shot-view-btn.next { right: calc(10 * var(--u)); }
+.start-shot-view-close {
+  top: calc(8 * var(--u));
+  right: calc(10 * var(--u));
+  width: calc(38 * var(--u));
+  height: calc(38 * var(--u));
+  font-size: calc(26 * var(--u));
 }
 /* ========================================================
    НОВОЕ (v0.13m): МОДАЛКА МИГРАЦИИ + ЗНАЧОК 💾 НА СЛОТАХ
@@ -1118,16 +1322,112 @@
    Раньше на телефоне эти правила не работали (не было meta viewport),
    и слоты (200px) не помещались в колонки по 160px — налезали друг на друга.
    ======================================================== */
+@media (max-width: 420px) {
+  .start-shots-nav { width: calc(30 * var(--u)); height: calc(40 * var(--u)); font-size: calc(26 * var(--u)); }
+  .start-shots-cap { font-size: calc(13.5 * var(--u)); }
+}
+
+/* v0.37: экран старта прокручивается — со скриншотами он бывает выше окна */
+#start-screen { overflow-y: auto; }
+.start-content { height: auto; min-height: 100%; }
+
+/* ========================================================
+   v0.37: ЭКРАН ДО ВХОДА — «ЛАУНЧЕР» (#start-screen.launcher, класс ставит start-screen.js)
+   Телефон и узкое окно: одна колонка — название, строки о игре, скриншоты, вход.
+   Компьютер: слева название, строки о игре и вход, справа скриншоты.
+   Везде: версии строкой по низу страницы (patches.css).
+   ======================================================== */
+#start-screen.launcher.active { display: flex; flex-direction: column; }
+#start-screen.launcher > .start-content {
+  flex: 1 0 auto;
+  min-height: 0;
+  justify-content: flex-start;
+  padding: calc(28 * var(--u)) calc(16 * var(--u)) calc(12 * var(--u));
+}
+#start-screen.launcher .start-side { display: contents; }
+#start-screen.launcher .start-title,
+#start-screen.launcher .start-subtitle { order: 1; text-align: center; }
+#start-screen.launcher .start-subtitle { margin-bottom: calc(14 * var(--u)); }
+#start-screen.launcher .start-lead {
+  order: 2;
+  display: block;
+  width: 100%;
+  max-width: calc(620 * var(--u));
+  margin: 0 auto calc(16 * var(--u));
+  font-family: var(--font-text);
+  font-size: calc(15 * var(--u));
+  line-height: 1.5;
+  color: var(--text);
+  text-align: center;
+  text-shadow: 0 1px 3px #000, 0 0 calc(10 * var(--u)) rgba(0,0,0,0.8);
+}
+#start-screen.launcher .cloud-access-gate {
+  order: 3;
+  max-width: calc(620 * var(--u));
+  margin: 0 auto calc(16 * var(--u));
+}
+#start-screen.launcher .cloud-auth { order: 4; max-width: calc(620 * var(--u)); margin: 0 auto; }
+#start-screen.launcher .start-copyright { order: 6; margin-top: calc(18 * var(--u)); }
+
+@media (min-width: 960px) and (min-height: 501px) {
+  #start-screen.launcher > .start-content {
+    display: grid;
+    grid-template-columns: minmax(calc(300 * var(--u)), calc(370 * var(--u))) minmax(0, 1fr);
+    column-gap: calc(40 * var(--u));
+    align-content: center;
+    align-items: center;
+    width: 100%;
+    max-width: calc(1400 * var(--u));
+    margin: 0 auto;
+    padding: calc(28 * var(--u)) calc(40 * var(--u)) calc(12 * var(--u));
+  }
+  #start-screen.launcher .start-side {
+    display: flex;
+    align-items: stretch;
+    max-width: none;
+    grid-column: 1;
+    grid-row: 1;
+  }
+  #start-screen.launcher .start-title {
+    font-size: calc(42 * var(--u));
+    letter-spacing: calc(5 * var(--u));
+    text-align: left;
+    line-height: 1.1;
+  }
+  #start-screen.launcher .start-subtitle {
+    text-align: left;
+    font-size: calc(16 * var(--u));
+    letter-spacing: calc(5 * var(--u));
+    margin-bottom: calc(18 * var(--u));
+  }
+  #start-screen.launcher .start-lead { text-align: left; margin: 0 0 calc(20 * var(--u)); max-width: none; }
+  #start-screen.launcher .cloud-auth { margin: 0; max-width: none; }
+  #start-screen.launcher .cloud-access-gate { grid-column: 2; grid-row: 1; max-width: none; margin: 0; }
+  /* скриншот не выше окна: под ним подпись, сверху и снизу отступы, внизу строка версий */
+  #start-screen.launcher .start-shot-open { max-height: calc(100vh - 210 * var(--u)); }
+  #start-screen.launcher .start-copyright { grid-column: 1 / -1; grid-row: 2; }
+}
+/* большой монитор: шире и крупнее, чтобы не сжиматься в середине экрана */
+@media (min-width: 1600px) and (min-height: 801px) {
+  #start-screen.launcher > .start-content {
+    grid-template-columns: calc(420 * var(--u)) minmax(0, 1fr);
+    column-gap: calc(56 * var(--u));
+    max-width: calc(1680 * var(--u));
+    padding-left: calc(56 * var(--u));
+    padding-right: calc(56 * var(--u));
+  }
+  #start-screen.launcher .start-title { font-size: calc(50 * var(--u)); }
+  #start-screen.launcher .start-lead { font-size: calc(16.5 * var(--u)); }
+}
+
 @media (max-width: 700px) {
-  #start-screen { overflow-y: auto; }
   .start-content {
-    height: auto;
-    min-height: 100%;
     justify-content: flex-start;
-    padding: calc(118 * var(--u)) calc(16 * var(--u)) calc(24 * var(--u));
+    /* v0.37: версии ушли вниз страницы (patches.css) — сверху больше не нужен отступ под них */
+    padding: calc(28 * var(--u)) calc(16 * var(--u)) calc(24 * var(--u));
   }
   .start-title { font-size: calc(34 * var(--u)); letter-spacing: calc(4 * var(--u)); text-align: center; }
-  .start-subtitle { font-size: calc(13 * var(--u)); letter-spacing: calc(3 * var(--u)); margin-bottom: calc(20 * var(--u)); }
+  .start-subtitle { font-size: calc(15 * var(--u)); letter-spacing: calc(3 * var(--u)); margin-bottom: calc(18 * var(--u)); }
   .slots-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     width: 100%;
@@ -1140,21 +1440,18 @@
   .slot-name { font-size: calc(14 * var(--u)); }
 }
 
-/* v0.36.4: телефон лёжа — закладки версий теперь строкой сверху (patches.css), под них отступ */
+/* v0.36.4: телефон лёжа. v0.37: версии внизу страницы (patches.css), отступ сверху не нужен */
 @media (min-width: 701px) and (max-height: 500px) and (orientation: landscape) {
-  #start-screen { overflow-y: auto; }
   .start-content {
-    height: auto;
-    min-height: 100%;
     justify-content: flex-start;
-    padding-top: calc(56 * var(--u));
+    padding-top: calc(20 * var(--u));
   }
 }
 
 /* ---------- v0.34: АВТОРСТВО ВНИЗУ СТАРТОВОГО ЭКРАНА (подробно — файл LICENSE) ---------- */
 .start-copyright {
   margin-top: calc(24 * var(--u));
-  font-size: calc(11 * var(--u));
+  font-size: calc(12 * var(--u));
   color: var(--text-dim);
   letter-spacing: calc(1 * var(--u));
   text-align: center;

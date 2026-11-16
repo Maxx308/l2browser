@@ -1,4 +1,4 @@
-// L2 BROWSER — СБОРКА v0.37 (build.js; правки — в js/**, а не сюда). Файлов: 98
+// L2 BROWSER — СБОРКА v0.37.1 (build.js; правки — в js/**, а не сюда). Файлов: 98
 // ==== ФАЙЛ js/data/config.js ====
 const CHEAT_MULTIPLIER = 10;
 const MP_COST_PER_ATTACK = 5;
@@ -2793,6 +2793,18 @@ return Math.min(50, total);
 
 // ==== ФАЙЛ js/data/changelog.js ====
 const CHANGELOG = [
+{
+version: 'v0.37.1',
+date: '16.11.2026',
+title: '🚪 Новый экран входа и игра без регистрации',
+changes: [
+{ icon: '🎮', text: '«Попробовать без регистрации»: можно начать играть сразу, без почты и пароля. Герой и склад гостя хранятся только в этом браузере, ограничений нет. Зарегистрируетесь позже — гостевые герои и склад сами перейдут в аккаунт' },
+{ icon: '💾', text: 'Гостю иногда напоминаем о регистрации: кнопка «ГОСТЬ» в шапке и короткое напоминание раз в 45 минут игры' },
+{ icon: '🖼', text: 'Экран входа переделан: слева название, пара слов об игре и вход, справа скриншоты игры (листаются, открываются на весь экран), история обновлений — строкой внизу' },
+{ icon: '📱', text: 'На телефоне история обновлений больше не стоит над названием игры — она внизу страницы. Мелкий курсив на экране входа заменён на обычный, крупнее' },
+{ icon: '🛡', text: 'Если на устройстве раньше играли с другим аккаунтом, гость не видит ни чужих героев, ни чужой склад' },
+],
+},
 {
 version: 'v0.37',
 date: '15.11.2026',
@@ -6594,7 +6606,9 @@ return data ? (data.updatedAt || null) : null;
 const SLOT_PARK_PREFIX = 'l2browser_park_';
 const SLOT_CLOUD_SEEN = {};
 function slotOwnerId() {
-return (typeof cloudUser !== 'undefined' && cloudUser && cloudUser.id) || null;
+if (typeof cloudUser !== 'undefined' && cloudUser && cloudUser.id) return cloudUser.id;
+if (typeof cloudIsGuest === 'function' && cloudIsGuest()) return 'guest';
+return null;
 }
 function slotParkKey(owner, slotIndex) {
 return SLOT_PARK_PREFIX + owner + '_' + slotIndex;
@@ -6867,7 +6881,107 @@ if (typeof updateLeaderboardButtonVisibility === 'function') updateLeaderboardBu
 function cloudIsAllowedToPlay() {
 if (cloudUser) return true;
 if (cloudIsMasterUnlocked()) return true;
+if (cloudIsGuest()) return true;
 return false;
+}
+const GUEST_FLAG_KEY = 'l2browser_guest';
+const GUEST_UID = 'guest';
+function cloudIsGuest() {
+if (cloudUser) return false;
+try { return localStorage.getItem(GUEST_FLAG_KEY) === '1'; } catch (e) { return false; }
+}
+function cloudRefreshStartAccess() {
+if (typeof slotsClaimForAccount === 'function') slotsClaimForAccount();
+if (typeof renderCloudAuth === 'function') renderCloudAuth();
+if (typeof updateCloudAccessGate === 'function') updateCloudAccessGate();
+if (typeof renderSlots === 'function') renderSlots();
+if (typeof updateLeaderboardButtonVisibility === 'function') updateLeaderboardButtonVisibility();
+if (typeof updateGuestChip === 'function') updateGuestChip();
+}
+function cloudStartGuest() {
+try { localStorage.setItem(GUEST_FLAG_KEY, '1'); } catch (e) {
+if (typeof showToast === 'function') showToast('⚠', 'Браузер не даёт сохранять — гостевой режим здесь не сработает (режим инкогнито?)');
+return;
+}
+cloudRefreshStartAccess();
+if (typeof showToast === 'function') showToast('🎮', 'Гостевой режим: создайте героя. Он сохранится только в этом браузере');
+}
+function cloudStopGuest() {
+try { localStorage.removeItem(GUEST_FLAG_KEY); } catch (e) {}
+cloudRefreshStartAccess();
+}
+const GUEST_REMIND_FIRST_MIN = 15;
+const GUEST_REMIND_EVERY_MIN = 45;
+let __guestPlayMin = 0;
+let __guestNextRemindMin = GUEST_REMIND_FIRST_MIN;
+function updateGuestChip() {
+const el = document.getElementById('top-guest');
+if (el) el.style.display = cloudIsGuest() ? '' : 'none';
+}
+function guestRemind() {
+if (typeof showToast === 'function') {
+showToast('💾', 'Вы играете как гость — герой хранится только в этом браузере. Зарегистрируйтесь, чтобы не потерять его');
+}
+if (typeof logLoot === 'function') {
+logLoot('💾 Гостевой режим: герой хранится только в этом браузере — очистка браузера его сотрёт. Зарегистрируйтесь (кнопка «ГОСТЬ» вверху), и герой перейдёт в аккаунт.', 'log-info');
+}
+}
+function guestChipClick() {
+const ok = confirm('Вы играете как гость: герой хранится только в этом браузере.\n\n'
++ 'Перейти к регистрации? Герой сохранится, а после входа в аккаунт перейдёт туда.');
+if (ok && typeof exitToCharacterSelect === 'function') exitToCharacterSelect(false);
+}
+setInterval(() => {
+updateGuestChip();
+if (!cloudIsGuest() || document.hidden) return;
+const start = document.getElementById('start-screen');
+const inGame = !(start && start.classList.contains('active'))
+&& typeof state !== 'undefined' && state.activeSlotIndex !== null && state.activeSlotIndex !== undefined;
+if (!inGame) return;
+__guestPlayMin++;
+if (__guestPlayMin >= __guestNextRemindMin) {
+__guestNextRemindMin = __guestPlayMin + GUEST_REMIND_EVERY_MIN;
+guestRemind();
+}
+}, 60000);
+function guestAdoptIntoAccount() {
+let flag = null;
+try { flag = localStorage.getItem(GUEST_FLAG_KEY); } catch (e) {}
+if (flag !== '1' || !cloudUser || !cloudUser.id || typeof SLOT_COUNT === 'undefined') return;
+const uid = cloudUser.id;
+let moved = 0;
+try {
+for (let i = 0; i < SLOT_COUNT; i++) {
+const key = SLOT_KEY_PREFIX + i;
+const ownParked = localStorage.getItem(slotParkKey(uid, i));
+let raw = localStorage.getItem(key);
+let data = null;
+try { data = raw ? JSON.parse(raw) : null; } catch (e) { data = null; }
+if (!data) {
+const gp = localStorage.getItem(slotParkKey(GUEST_UID, i));
+if (!gp || ownParked) continue;
+try { data = JSON.parse(gp); } catch (e) { continue; }
+localStorage.removeItem(slotParkKey(GUEST_UID, i));
+const gbak = localStorage.getItem(slotParkKey(GUEST_UID, i) + '_bak');
+if (gbak) { localStorage.setItem(slotBackupKey(i), gbak); localStorage.removeItem(slotParkKey(GUEST_UID, i) + '_bak'); }
+} else if (data.uid !== GUEST_UID) {
+continue;
+} else if (ownParked) {
+slotPark(GUEST_UID, i);
+continue;
+}
+data.uid = uid;
+delete data.cloudSeen;
+localStorage.setItem(key, JSON.stringify(data));
+moved++;
+}
+if (typeof storageAdoptGuest === 'function') storageAdoptGuest();
+localStorage.removeItem(GUEST_FLAG_KEY);
+} catch (e) {
+console.warn('[guest] перенос в аккаунт не удался:', e);
+return;
+}
+if (moved && typeof showToast === 'function') showToast('☁️', `Гостевые герои перенесены в аккаунт: ${moved}`);
 }
 function cloudIsAdmin() {
 if (cloudUser && cloudUser.email) {
@@ -6902,6 +7016,7 @@ cloudUser = session.user;
 cloudUser = null;
 cloudSlotsCache = {};
 }
+if (session && session.user) guestAdoptIntoAccount();
 if (typeof renderCloudAuth === 'function') renderCloudAuth();
 if (session && session.user) {
 cloudRefreshSlotsAndUI();
@@ -6924,6 +7039,7 @@ updateLeaderboardButtonVisibility();
 supabaseClient.auth.getSession().then(({ data }) => {
 if (data && data.session && data.session.user) {
 cloudUser = data.session.user;
+guestAdoptIntoAccount();
 } else {
 cloudUser = null;
 }
@@ -7000,6 +7116,7 @@ box.innerHTML = `
       <div class="cloud-auth-buttons">
         <button class="btn" onclick="location.reload()">Обновить</button>
       </div>
+      ${cloudIsMasterUnlocked() ? '' : cloudGuestBlockHtml()}
     `;
 return;
 }
@@ -7020,11 +7137,11 @@ const masterOn = cloudIsMasterUnlocked();
 const masterHint = masterOn
 ? `<div class="cloud-auth-status ok" style="margin-top:8px;">🛠 Мастер-режим: игра доступна без входа</div>`
 : '';
+const guestHtml = masterOn ? '' : cloudGuestBlockHtml();
 box.innerHTML = `
     <div class="cloud-auth-title">ВХОД В АККАУНТ</div>
     <div class="cloud-auth-hint">
-      Игра доступна только с аккаунтом.<br>
-      Прогресс хранится в облаке и защищён от потери.
+      ☁️ Прогресс хранится в облаке: играйте с телефона и компьютера, ничего не потеряется.
     </div>
     <div class="cloud-auth-form">
       <input type="email" id="cloud-email" class="cloud-auth-input" placeholder="email" autocomplete="email">
@@ -7036,7 +7153,24 @@ box.innerHTML = `
     </div>
     <div class="cloud-auth-status" id="cloud-auth-status"></div>
     ${masterHint}
+    ${guestHtml}
   `;
+}
+function cloudGuestBlockHtml() {
+if (cloudIsGuest()) {
+return `
+      <div class="cloud-guest cloud-guest-on">
+        <div class="cloud-guest-text">🎮 Вы играете как гость: герои хранятся только в этом браузере.
+          Зарегистрируйтесь — и они перейдут в аккаунт.</div>
+        <button type="button" class="cloud-guest-exit" onclick="cloudStopGuest()">Выйти из гостевого режима</button>
+      </div>`;
+}
+return `
+    <div class="cloud-guest">
+      <div class="cloud-guest-or"><span>или</span></div>
+      <button type="button" class="btn cloud-guest-btn" onclick="cloudStartGuest()">▶ Попробовать без регистрации</button>
+      <div class="cloud-guest-note">Герой сохранится только в этом браузере. Зарегистрироваться можно потом — он перейдёт в аккаунт.</div>
+    </div>`;
 }
 function setCloudStatus(text, kind) {
 const el = document.getElementById('cloud-auth-status');
@@ -8303,6 +8437,12 @@ if (!gate || !slotsGrid) return;
 const allowed = (typeof cloudIsAllowedToPlay === 'function')
 ? cloudIsAllowedToPlay()
 : true;
+if (typeof updateGuestChip === 'function') updateGuestChip();
+const startScreen = document.getElementById('start-screen');
+if (startScreen && startScreen.classList.contains('launcher') !== !allowed) {
+startScreen.classList.toggle('launcher', !allowed);
+if (typeof closePatchPanel === 'function') { closePatchPanel(); closePatchGroup(); }
+}
 if (allowed) {
 gate.style.display = 'none';
 gate.innerHTML = '';
@@ -8313,21 +8453,114 @@ updateLeaderboardButtonVisibility();
 return;
 }
 gate.style.display = 'block';
-gate.innerHTML = `
-    <div class="cloud-gate-icon">🔒</div>
-    <div class="cloud-gate-title">ВОЙДИТЕ В АККАУНТ</div>
-    <div class="cloud-gate-text">
-      Игра доступна только с аккаунтом.<br>
-      Так прогресс сохраняется в облаке и защищён от потери.
-    </div>
-  `;
+if (!gate.querySelector('.start-shots')) {
+gate.innerHTML = startShotsHtml();
+initStartShots(gate);
+}
 slotsGrid.style.display = 'none';
 if (typeof updateLeaderboardButtonVisibility === 'function') {
 updateLeaderboardButtonVisibility();
 }
 }
+const START_SHOTS = [
+{ src: 'img/start/battle.webp', w: 1171, h: 689, cap: 'Бой со стаей: навыки, криты, кровотечение' },
+{ src: 'img/start/beasts.webp', w: 1210, h: 422, cap: 'У каждой твари свои приёмы и добыча' },
+{ src: 'img/start/gear.webp',   w: 704,  h: 651, cap: 'Снаряжение: редкость, подгонка до +15, фишки тиров' },
+{ src: 'img/start/forge.webp',  w: 989,  h: 925, cap: 'Кузница: добыча превращается в ресурсы' },
+{ src: 'img/start/craft.webp',  w: 944,  h: 653, cap: 'Комплекты доспехов из редких материалов' },
+];
+function startShotsHtml() {
+const slides = START_SHOTS.map((s, i) => `
+    <figure class="start-shot">
+      <button type="button" class="start-shot-open" data-shot="${i}" aria-label="Открыть на весь экран: ${s.cap}">
+        <img src="${s.src}" width="${s.w}" height="${s.h}" alt="${s.cap}" ${i ? 'loading="lazy"' : ''} decoding="async">
+      </button>
+    </figure>`).join('');
+const dots = START_SHOTS.map((s, i) =>
+`<button type="button" class="start-shots-dot${i ? '' : ' active'}" data-dot="${i}" aria-label="Скриншот ${i + 1}"></button>`).join('');
+return `
+    <div class="start-shots">
+      <div class="start-shots-view">
+        <div class="start-shots-track">${slides}</div>
+        <button type="button" class="start-shots-nav prev" aria-label="Предыдущий скриншот">‹</button>
+        <button type="button" class="start-shots-nav next" aria-label="Следующий скриншот">›</button>
+        <div class="start-shots-dots">${dots}</div>
+      </div>
+      <div class="start-shots-cap">${START_SHOTS[0].cap}</div>
+    </div>`;
+}
+function initStartShots(root) {
+const track = root.querySelector('.start-shots-track');
+if (!track) return;
+const n = START_SHOTS.length;
+const cur = () => Math.round(track.scrollLeft / Math.max(1, track.clientWidth));
+let target = null, targetTimer = 0;
+const base = () => (target !== null ? target : cur());
+const go = (i) => {
+target = (i + n) % n;
+clearTimeout(targetTimer);
+targetTimer = setTimeout(() => { target = null; }, 700);
+track.scrollTo({ left: target * track.clientWidth, behavior: 'smooth' });
+};
+root.querySelector('.start-shots-nav.prev').onclick = () => go(base() - 1);
+root.querySelector('.start-shots-nav.next').onclick = () => go(base() + 1);
+const dots = root.querySelectorAll('.start-shots-dot');
+const cap = root.querySelector('.start-shots-cap');
+dots.forEach(d => { d.onclick = () => go(+d.dataset.dot); });
+track.addEventListener('scroll', () => {
+const i = Math.min(n - 1, Math.max(0, cur()));
+dots.forEach((d, k) => d.classList.toggle('active', k === i));
+if (cap) cap.textContent = START_SHOTS[i].cap;
+}, { passive: true });
+root.querySelectorAll('.start-shot-open').forEach(b => { b.onclick = () => openStartShot(+b.dataset.shot); });
+}
+function openStartShot(i) {
+let box = document.getElementById('start-shot-view');
+if (!box) {
+box = document.createElement('div');
+box.id = 'start-shot-view';
+box.className = 'start-shot-view';
+box.innerHTML = `
+      <img alt="">
+      <div class="start-shot-view-cap"></div>
+      <button type="button" class="start-shot-view-btn prev" aria-label="Предыдущий скриншот">‹</button>
+      <button type="button" class="start-shot-view-btn next" aria-label="Следующий скриншот">›</button>
+      <button type="button" class="start-shot-view-close" aria-label="Закрыть">×</button>`;
+document.body.appendChild(box);
+box.addEventListener('click', (e) => {
+const b = e.target.closest('.start-shot-view-btn');
+if (b) showStartShot(box.__i + (b.classList.contains('prev') ? -1 : 1));
+else closeStartShot();
+});
+document.addEventListener('keydown', (e) => {
+if (!box.classList.contains('active')) return;
+if (e.key === 'Escape') closeStartShot();
+else if (e.key === 'ArrowLeft') showStartShot(box.__i - 1);
+else if (e.key === 'ArrowRight') showStartShot(box.__i + 1);
+});
+}
+showStartShot(i);
+box.classList.add('active');
+}
+function showStartShot(i) {
+const box = document.getElementById('start-shot-view');
+if (!box) return;
+const n = START_SHOTS.length;
+i = (i + n) % n;
+box.__i = i;
+const s = START_SHOTS[i];
+const img = box.querySelector('img');
+img.src = s.src;
+img.alt = s.cap;
+box.querySelector('.start-shot-view-cap').textContent = `${s.cap} · ${i + 1} из ${n}`;
+}
+function closeStartShot() {
+const box = document.getElementById('start-shot-view');
+if (box) box.classList.remove('active');
+}
 function hideStartScreen() {
 document.getElementById('start-screen').classList.remove('active');
+closeStartShot();
 }
 function renderSlots() {
 const grid = document.getElementById('slots-grid');
@@ -9111,12 +9344,26 @@ if (!tab || !container) return;
 const pad = 10;
 list.style.top = list.style.right = list.style.maxHeight = '';
 if (isPatchMobile()) {
-const top = container.getBoundingClientRect().bottom + 6;
-list.style.top = top + 'px';
-list.style.maxHeight = Math.max(160, window.innerHeight - top - pad) + 'px';
+const r = tab.getBoundingClientRect();
+const below = window.innerHeight - r.bottom - 6 - pad;
+const above = r.top - 6 - pad;
+if (below >= 220 || below >= above) {
+list.style.top = (r.bottom + 6) + 'px';
+list.style.maxHeight = Math.max(160, below) + 'px';
+} else {
+list.style.maxHeight = Math.max(160, above) + 'px';
+list.style.top = Math.max(pad, r.top - 6 - list.offsetHeight) + 'px';
+}
 return;
 }
 const r = tab.getBoundingClientRect();
+const startScreen = document.getElementById('start-screen');
+if (startScreen && startScreen.classList.contains('launcher')) {
+list.style.right = Math.max(pad, window.innerWidth - r.right) + 'px';
+list.style.maxHeight = Math.max(160, r.top - 6 - pad) + 'px';
+list.style.top = Math.max(pad, r.top - 6 - list.offsetHeight) + 'px';
+return;
+}
 list.style.right = (window.innerWidth - r.left + 6) + 'px';
 list.style.maxHeight = (window.innerHeight - pad * 2) + 'px';
 const h = list.offsetHeight;
@@ -9173,7 +9420,31 @@ closePatchPanel();
 }
 container.appendChild(panel);
 const groupList = container.querySelector('.patch-group-list.visible');
-if (!mobile && groupList && groupList.querySelector(`.patch-group-item[data-version="${version}"]`)) {
+const fromGroup = !!(groupList && groupList.querySelector(`.patch-group-item[data-version="${version}"]`));
+const startScreen = document.getElementById('start-screen');
+if (!mobile && startScreen && startScreen.classList.contains('launcher')) {
+const pad = 10;
+panel.style.top = 'auto';
+if (fromGroup) {
+const lr = groupList.getBoundingClientRect();
+panel.style.left = 'auto';
+panel.style.right = (window.innerWidth - lr.left + 6) + 'px';
+panel.style.bottom = Math.max(pad, window.innerHeight - lr.bottom) + 'px';
+panel.style.maxHeight = Math.max(200, lr.bottom - pad) + 'px';
+} else {
+const tab = container.querySelector(`.patch-tab[data-version="${version}"]`);
+const tr = tab ? tab.getBoundingClientRect() : container.getBoundingClientRect();
+const w = panel.offsetWidth;
+const left = Math.max(pad, Math.min(tr.left + tr.width / 2 - w / 2, window.innerWidth - w - pad));
+panel.style.right = 'auto';
+panel.style.left = left + 'px';
+panel.style.bottom = (window.innerHeight - tr.top + 8) + 'px';
+panel.style.maxHeight = Math.max(200, tr.top - 8 - pad) + 'px';
+}
+requestAnimationFrame(() => panel.classList.add('visible'));
+return;
+}
+if (!mobile && fromGroup) {
 const lr = groupList.getBoundingClientRect();
 panel.style.right = (window.innerWidth - lr.left + 6) + 'px';
 const top = Math.max(10, Math.min(lr.top, window.innerHeight * 0.2));
@@ -13566,17 +13837,38 @@ return item && item.isDust ? ALCHEMY_DUST_STACK_MAX : STORAGE_STACK_MAX;
 const STORAGE_CLOUD_SLOT = 100;
 const STORAGE_UPDATED_KEY = 'l2browser_storage_updated';
 const STORAGE_SYNCED_KEY = 'l2browser_storage_user';
+const STORAGE_GUEST_KEY = 'l2browser_storage_guest';
+const STORAGE_GUEST_UPDATED_KEY = 'l2browser_storage_guest_updated';
+function storageGuestOn() { return typeof cloudIsGuest === 'function' && cloudIsGuest(); }
+function storageKey() { return storageGuestOn() ? STORAGE_GUEST_KEY : STORAGE_KEY; }
+function storageUpdatedKey() { return storageGuestOn() ? STORAGE_GUEST_UPDATED_KEY : STORAGE_UPDATED_KEY; }
+function storageAdoptGuest() {
+try {
+const raw = localStorage.getItem(STORAGE_GUEST_KEY);
+let items = [];
+try { items = raw ? JSON.parse(raw) : []; } catch (e) { items = []; }
+if (Array.isArray(items) && items.length) {
+localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+localStorage.setItem(STORAGE_UPDATED_KEY, localStorage.getItem(STORAGE_GUEST_UPDATED_KEY) || new Date().toISOString());
+localStorage.removeItem(STORAGE_SYNCED_KEY);
+}
+localStorage.removeItem(STORAGE_GUEST_KEY);
+localStorage.removeItem(STORAGE_GUEST_UPDATED_KEY);
+} catch (e) {
+console.warn('[storage] склад гостя не перенесён:', e);
+}
+}
 const STORAGE_STACKABLE_TYPES = ['material', 'consumable', 'food'];
 let storageDustRescaled = false;
 function loadStorage() {
 try {
-const raw = localStorage.getItem(STORAGE_KEY);
+const raw = localStorage.getItem(storageKey());
 if (!raw) return [];
 const arr = imgPathsToWebp(JSON.parse(raw));
 if (!Array.isArray(arr)) return [];
 if (typeof migrateDustScale === 'function' && migrateDustScale(arr) > 0) {
 storageDustRescaled = true;
-try { localStorage.setItem(STORAGE_KEY, JSON.stringify(arr)); } catch (e) {}
+try { localStorage.setItem(storageKey(), JSON.stringify(arr)); } catch (e) {}
 }
 return typeof isRetiredGem === 'function' ? arr.filter(i => !isRetiredGem(i)) : arr;
 } catch (e) {
@@ -13586,8 +13878,8 @@ return [];
 }
 function writeStorageLocal(arr, updatedAt) {
 try {
-localStorage.setItem(STORAGE_KEY, JSON.stringify(arr));
-localStorage.setItem(STORAGE_UPDATED_KEY, updatedAt || new Date().toISOString());
+localStorage.setItem(storageKey(), JSON.stringify(arr));
+localStorage.setItem(storageUpdatedKey(), updatedAt || new Date().toISOString());
 } catch (e) {
 console.error('Склад: не удалось сохранить', e);
 }
@@ -13603,7 +13895,7 @@ function storageCloudOn() {
 return !__storageCloudBroken && typeof cloudIsReady === 'function' && cloudIsReady();
 }
 function getStorageLocalUpdatedAt() {
-try { return localStorage.getItem(STORAGE_UPDATED_KEY) || null; } catch (e) { return null; }
+try { return localStorage.getItem(storageUpdatedKey()) || null; } catch (e) { return null; }
 }
 function scheduleStorageCloudPush() {
 if (!storageCloudOn()) return;
@@ -20614,7 +20906,7 @@ function retireOldGemsOnLoad() {
 const p = state.player;
 let n = purgeRetiredGems(p.inventory);
 if (typeof loadStorage === 'function') {
-const raw = (() => { try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); } catch (e) { return []; } })();
+const raw = (() => { try { return JSON.parse(localStorage.getItem(typeof storageKey === 'function' ? storageKey() : STORAGE_KEY) || '[]'); } catch (e) { return []; } })();
 const before = Array.isArray(raw) ? raw.filter(isRetiredGem).reduce((s, i) => s + (i.qty || 1), 0) : 0;
 if (before > 0) {
 writeStorageLocal(loadStorage(), getStorageLocalUpdatedAt() || undefined);

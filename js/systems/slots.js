@@ -111,7 +111,11 @@ const SLOT_PARK_PREFIX = 'l2browser_park_';
 const SLOT_CLOUD_SEEN = {};   // слот → облако уже принимало его сейв (в этой сессии или раньше)
 
 function slotOwnerId() {
-  return (typeof cloudUser !== 'undefined' && cloudUser && cloudUser.id) || null;
+  if (typeof cloudUser !== 'undefined' && cloudUser && cloudUser.id) return cloudUser.id;
+  // v0.37: гость — свой «владелец»: его герои помечаются 'guest', чужие герои устройства
+  // откладываются в сторону так же, как при входе в другой аккаунт (slotsClaimForAccount)
+  if (typeof cloudIsGuest === 'function' && cloudIsGuest()) return 'guest';
+  return null;
 }
 
 function slotParkKey(owner, slotIndex) {

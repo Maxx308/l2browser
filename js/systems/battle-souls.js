@@ -211,7 +211,7 @@ function retireOldGemsOnLoad() {
   let n = purgeRetiredGems(p.inventory);
   if (typeof loadStorage === 'function') {
     // loadStorage уже отдаёт склад без старых камней — сохраняем очищенный
-    const raw = (() => { try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); } catch (e) { return []; } })();
+    const raw = (() => { try { return JSON.parse(localStorage.getItem(typeof storageKey === 'function' ? storageKey() : STORAGE_KEY) || '[]'); } catch (e) { return []; } })();
     const before = Array.isArray(raw) ? raw.filter(isRetiredGem).reduce((s, i) => s + (i.qty || 1), 0) : 0;
     if (before > 0) {
       writeStorageLocal(loadStorage(), getStorageLocalUpdatedAt() || undefined);

@@ -228,12 +228,28 @@ function positionPatchGroupList(list) {
   const pad = 10;
   list.style.top = list.style.right = list.style.maxHeight = '';
   if (isPatchMobile()) {
-    const top = container.getBoundingClientRect().bottom + 6;
-    list.style.top = top + 'px';
-    list.style.maxHeight = Math.max(160, window.innerHeight - top - pad) + 'px';
+    // v0.37: закладки теперь внизу страницы — места под ними может не быть, тогда список над закладкой
+    const r = tab.getBoundingClientRect();
+    const below = window.innerHeight - r.bottom - 6 - pad;
+    const above = r.top - 6 - pad;
+    if (below >= 220 || below >= above) {
+      list.style.top = (r.bottom + 6) + 'px';
+      list.style.maxHeight = Math.max(160, below) + 'px';
+    } else {
+      list.style.maxHeight = Math.max(160, above) + 'px';
+      list.style.top = Math.max(pad, r.top - 6 - list.offsetHeight) + 'px';
+    }
     return;
   }
   const r = tab.getBoundingClientRect();
+  // v0.37: экран до входа — закладки строкой по низу, список над своей закладкой
+  const startScreen = document.getElementById('start-screen');
+  if (startScreen && startScreen.classList.contains('launcher')) {
+    list.style.right = Math.max(pad, window.innerWidth - r.right) + 'px';
+    list.style.maxHeight = Math.max(160, r.top - 6 - pad) + 'px';
+    list.style.top = Math.max(pad, r.top - 6 - list.offsetHeight) + 'px';
+    return;
+  }
   list.style.right = (window.innerWidth - r.left + 6) + 'px';
   list.style.maxHeight = (window.innerHeight - pad * 2) + 'px';
   const h = list.offsetHeight;
@@ -308,9 +324,37 @@ function openPatchPanel(version) {
 
   container.appendChild(panel);
 
-  // v0.36.4: старый патч из открытого списка — панель встаёт левее списка, а не поверх него.
   const groupList = container.querySelector('.patch-group-list.visible');
-  if (!mobile && groupList && groupList.querySelector(`.patch-group-item[data-version="${version}"]`)) {
+  const fromGroup = !!(groupList && groupList.querySelector(`.patch-group-item[data-version="${version}"]`));
+
+  // v0.37: экран до входа — версии строкой по низу страницы, панель выезжает НАД строкой:
+  // над своей закладкой (не за краями окна) или левее списка старых версий, низом к нему.
+  const startScreen = document.getElementById('start-screen');
+  if (!mobile && startScreen && startScreen.classList.contains('launcher')) {
+    const pad = 10;
+    panel.style.top = 'auto';
+    if (fromGroup) {
+      const lr = groupList.getBoundingClientRect();
+      panel.style.left = 'auto';
+      panel.style.right = (window.innerWidth - lr.left + 6) + 'px';
+      panel.style.bottom = Math.max(pad, window.innerHeight - lr.bottom) + 'px';
+      panel.style.maxHeight = Math.max(200, lr.bottom - pad) + 'px';
+    } else {
+      const tab = container.querySelector(`.patch-tab[data-version="${version}"]`);
+      const tr = tab ? tab.getBoundingClientRect() : container.getBoundingClientRect();
+      const w = panel.offsetWidth;
+      const left = Math.max(pad, Math.min(tr.left + tr.width / 2 - w / 2, window.innerWidth - w - pad));
+      panel.style.right = 'auto';
+      panel.style.left = left + 'px';
+      panel.style.bottom = (window.innerHeight - tr.top + 8) + 'px';
+      panel.style.maxHeight = Math.max(200, tr.top - 8 - pad) + 'px';
+    }
+    requestAnimationFrame(() => panel.classList.add('visible'));
+    return;
+  }
+
+  // v0.36.4: старый патч из открытого списка — панель встаёт левее списка, а не поверх него.
+  if (!mobile && fromGroup) {
     const lr = groupList.getBoundingClientRect();
     panel.style.right = (window.innerWidth - lr.left + 6) + 'px';
     const top = Math.max(10, Math.min(lr.top, window.innerHeight * 0.2));

@@ -34,6 +34,33 @@ const STORAGE_CLOUD_SLOT = 100;
 const STORAGE_UPDATED_KEY = 'l2browser_storage_updated';   // когда склад менялся на этом устройстве
 const STORAGE_SYNCED_KEY = 'l2browser_storage_user';       // с каким аккаунтом склад уже синхронизирован
 
+// v0.37: у гостя («Попробовать без регистрации», cloud.js) свой склад — иначе он увидел бы
+// склад прежнего игрока этого устройства, а тот потом мог бы уйти в облако без вещей.
+const STORAGE_GUEST_KEY = 'l2browser_storage_guest';
+const STORAGE_GUEST_UPDATED_KEY = 'l2browser_storage_guest_updated';
+function storageGuestOn() { return typeof cloudIsGuest === 'function' && cloudIsGuest(); }
+function storageKey() { return storageGuestOn() ? STORAGE_GUEST_KEY : STORAGE_KEY; }
+function storageUpdatedKey() { return storageGuestOn() ? STORAGE_GUEST_UPDATED_KEY : STORAGE_UPDATED_KEY; }
+
+// Вход в аккаунт из гостевого режима: склад гостя становится складом устройства без метки
+// аккаунта — pullStorageFromCloud сочтёт это первой синхронизацией и объединит с облачным.
+function storageAdoptGuest() {
+  try {
+    const raw = localStorage.getItem(STORAGE_GUEST_KEY);
+    let items = [];
+    try { items = raw ? JSON.parse(raw) : []; } catch (e) { items = []; }
+    if (Array.isArray(items) && items.length) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+      localStorage.setItem(STORAGE_UPDATED_KEY, localStorage.getItem(STORAGE_GUEST_UPDATED_KEY) || new Date().toISOString());
+      localStorage.removeItem(STORAGE_SYNCED_KEY);
+    }
+    localStorage.removeItem(STORAGE_GUEST_KEY);
+    localStorage.removeItem(STORAGE_GUEST_UPDATED_KEY);
+  } catch (e) {
+    console.warn('[storage] склад гостя не перенесён:', e);
+  }
+}
+
 // Какие типы стакаются.
 const STORAGE_STACKABLE_TYPES = ['material', 'consumable', 'food'];
 
@@ -45,7 +72,7 @@ let storageDustRescaled = false;
 // --------------------------------------------------------
 function loadStorage() {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = localStorage.getItem(storageKey());
     if (!raw) return [];
     const arr = imgPathsToWebp(JSON.parse(raw));   // v0.36.2: старые пути картинок → .webp
     if (!Array.isArray(arr)) return [];
@@ -53,7 +80,7 @@ function loadStorage() {
     // Поделённое сразу сохраняем с прежней меткой времени, чтобы не спорить с облаком.
     if (typeof migrateDustScale === 'function' && migrateDustScale(arr) > 0) {
       storageDustRescaled = true;
-      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(arr)); } catch (e) {}
+      try { localStorage.setItem(storageKey(), JSON.stringify(arr)); } catch (e) {}
     }
     // v0.33: старые рубины и сапфиры (обычный дроп) изъяты — со склада тоже
     return typeof isRetiredGem === 'function' ? arr.filter(i => !isRetiredGem(i)) : arr;
@@ -66,8 +93,8 @@ function loadStorage() {
 // Записать склад в браузер. updatedAt — метка изменения (по умолчанию «сейчас»).
 function writeStorageLocal(arr, updatedAt) {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(arr));
-    localStorage.setItem(STORAGE_UPDATED_KEY, updatedAt || new Date().toISOString());
+    localStorage.setItem(storageKey(), JSON.stringify(arr));
+    localStorage.setItem(storageUpdatedKey(), updatedAt || new Date().toISOString());
   } catch (e) {
     console.error('Склад: не удалось сохранить', e);
   }
@@ -91,7 +118,7 @@ function storageCloudOn() {
 }
 
 function getStorageLocalUpdatedAt() {
-  try { return localStorage.getItem(STORAGE_UPDATED_KEY) || null; } catch (e) { return null; }
+  try { return localStorage.getItem(storageUpdatedKey()) || null; } catch (e) { return null; }
 }
 
 function scheduleStorageCloudPush() {
