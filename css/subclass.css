@@ -1,0 +1,121 @@
+/* ========================================================
+   v0.38: ПОДКЛАССЫ — окно посвящения в Храме Ильграда
+   (js/systems/subclass.js)
+   ======================================================== */
+.sc-window { max-width: calc(980 * var(--u)); width: 100%; }
+.sc-pane { display: flex; flex-direction: column; gap: calc(14 * var(--u)); }
+
+.sc-intro {
+  font-size: var(--fs-base); line-height: 1.55; color: var(--text);
+  padding: calc(10 * var(--u)) calc(14 * var(--u));
+  border-left: 2px solid var(--gold); background: rgba(40, 30, 12, 0.35);
+}
+.sc-req {
+  display: inline-block; margin-left: 6px; padding: 1px 8px;
+  border: 1px solid var(--gold); border-radius: 3px;
+  font-family: 'Cinzel', serif; font-size: var(--fs-tiny); color: var(--gold-bright);
+}
+
+.sc-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: calc(12 * var(--u)); }
+
+.sc-card {
+  display: flex; flex-direction: column; gap: 6px;
+  padding: calc(10 * var(--u));
+  background: linear-gradient(180deg, #15151a, #0d0d10);
+  border: 1px solid var(--border); border-radius: 3px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.sc-card:hover { border-color: var(--gold); }
+.sc-card-closed { opacity: 0.55; }
+.sc-card-closed .sc-portrait img { filter: grayscale(0.7) brightness(0.7); }
+.sc-card-mine, .sc-card-picked {
+  border-color: var(--gold-bright);
+  box-shadow: 0 0 22px rgba(224, 190, 122, 0.3) inset;
+}
+
+.sc-portrait {
+  position: relative; aspect-ratio: 1 / 1; overflow: hidden;
+  border: 1px solid var(--border); border-radius: 3px; background: #050505;
+}
+.sc-portrait img { width: 100%; height: 100%; object-fit: cover; display: block; }
+/* свеча у образа: тлеет; у выбранного — горит */
+.sc-candle {
+  position: absolute; left: 50%; bottom: 6px; width: 10px; height: 18px; margin-left: -5px;
+  border-radius: 50% 50% 40% 40%;
+  background: radial-gradient(ellipse at 50% 70%, #ffe7a0 0%, #ffae40 45%, rgba(255, 120, 20, 0) 75%);
+  opacity: 0.25; filter: blur(0.5px);
+}
+.sc-card-picked .sc-candle, .sc-card-mine .sc-candle, .sc-candle-lit {
+  opacity: 1; animation: sc-flicker 1.6s ease-in-out infinite;
+  box-shadow: 0 0 18px 6px rgba(255, 170, 60, 0.45);
+}
+@keyframes sc-flicker {
+  0%, 100% { transform: scale(1, 1); }
+  40% { transform: scale(0.9, 1.08); }
+  70% { transform: scale(1.06, 0.95); }
+}
+
+.sc-role { font-size: var(--fs-tiny); color: var(--text-dim); letter-spacing: 1px; text-transform: uppercase; }
+.sc-name { font-family: 'Cinzel', serif; font-size: var(--fs-xl); color: var(--gold-bright); }
+.sc-blurb { font-size: var(--fs-small); color: var(--text); line-height: 1.45; flex: 1; }
+.sc-action { display: flex; }
+.sc-action .btn { width: 100%; }
+.sc-mine {
+  width: 100%; text-align: center; padding: 6px;
+  font-family: 'Cinzel', serif; font-size: var(--fs-small); color: var(--gold-bright);
+  border: 1px solid var(--gold); border-radius: 3px; background: rgba(80, 60, 20, 0.45);
+}
+
+.sc-confirm {
+  padding: calc(12 * var(--u)); border: 1px solid var(--gold-bright); border-radius: 3px;
+  background: linear-gradient(180deg, rgba(60, 45, 15, 0.6), rgba(25, 18, 6, 0.6));
+  font-size: var(--fs-base); line-height: 1.5;
+}
+.sc-confirm p { margin: 0 0 10px; }
+.sc-buttons { display: flex; gap: 8px; flex-wrap: wrap; }
+
+.sc-foot { font-size: var(--fs-tiny); color: var(--text-dim); font-style: italic; }
+
+.sc-dedicated { display: flex; gap: calc(18 * var(--u)); align-items: flex-start; }
+.sc-portrait-big { width: calc(280 * var(--u)); flex-shrink: 0; }
+.sc-dedicated-text { flex: 1; font-size: var(--fs-base); line-height: 1.55; }
+.sc-dedicated-text p { margin: 8px 0; }
+.sc-hint { font-size: var(--fs-small); color: var(--text-dim); }
+
+/* окно навыков: строка пути */
+.mentor-subclass { font-size: var(--fs-small); color: var(--gold-bright); margin-top: 2px; }
+.mentor-subclass-hint { color: var(--text-dim); font-style: italic; }
+
+@media (max-width: 720px) {
+  .sc-grid { grid-template-columns: 1fr; }
+  .sc-card { display: grid; grid-template-columns: 88px 1fr; column-gap: 10px; row-gap: 4px; align-items: start; }
+  .sc-card > .sc-portrait { grid-row: 1 / span 3; }
+  .sc-card > .sc-action { grid-column: 1 / -1; }
+  .sc-dedicated { flex-direction: column; align-items: center; }
+  .sc-portrait-big { width: 200px; }
+}
+
+/* v0.38: слуги героя в бою (js/systems/battle-allies.js) — полоска под карточкой героя */
+.bx-allies { display: flex; gap: calc(4 * var(--u)); margin-top: calc(6 * var(--u)); width: var(--w, auto); justify-content: center; }
+.bx-ally {
+  width: calc(40 * var(--u)); display: flex; flex-direction: column; gap: 2px;
+  animation: bx-ally-rise .5s ease-out;
+}
+.bx-ally img {
+  width: 100%; aspect-ratio: 1 / 1; object-fit: cover; display: block;
+  border: 1px solid #5a6a8a; border-radius: 3px; background: #050505;
+  box-shadow: 0 0 6px rgba(120, 140, 220, 0.35);
+}
+.bx-ally-hp { height: 4px; background: #2a0a0a; border-radius: 2px; overflow: hidden; }
+.bx-ally-hp i { display: block; height: 100%; background: linear-gradient(90deg, #8a1a1a, #e04040); transition: width .3s; }
+@keyframes bx-ally-rise { from { transform: translateY(8px); opacity: 0; } to { transform: none; opacity: 1; } }
+@media (max-width: 720px) {
+  .bx-hero .bx-allies { grid-column: 1 / -1; width: auto; justify-content: flex-start; }
+}
+
+/* v0.38: Переплавка (Мастер горна) */
+.smelt-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr) auto; gap: 10px; align-items: center;
+  padding: 8px 10px; border: 1px solid var(--border); border-radius: 3px; background: rgba(20, 16, 10, 0.5); font-size: var(--fs-small); }
+.smelt-name { color: var(--gold-bright); }
+.smelt-back { color: var(--text-dim); }
+@media (max-width: 720px) { .smelt-row { grid-template-columns: 1fr; } }

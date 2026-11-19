@@ -262,6 +262,7 @@ function getPlayerAccuracy() {
 
   // Бонусы подгонки (v0.10 — теперь учитываются).
   acc += (p.accuracyBonus || 0);
+  if (typeof subclassAccuracyBonus === 'function') acc += subclassAccuracyBonus();   // v0.38: Глаз ястреба
 
   return Math.round(acc);
 }
@@ -306,6 +307,7 @@ function getPlayerEvasion(attacker) {
 
   // Бонусы подгонки (v0.10 — теперь учитываются).
   eva += (p.evasionBonus || 0);
+  if (typeof subclassEvasionBonus === 'function') eva += subclassEvasionBonus();   // v0.38: Песнь (Певец клинка)
 
   if (attacker && attacker.heroEvaMult) eva *= attacker.heroEvaMult;   // v0.36: Чуткий
 

@@ -81,6 +81,8 @@ const SAVE_PLAYER_DEFAULTS = {
   soulHuntCap: 0,
   hideProfile: false,
   repeatPref: true,   // v0.36.4: «Повторять бой» в начале боя
+  subclass: null,     // v0.38: подкласс (id из SUBCLASSES)
+  skillPts26: 0,      // v0.38: за сколько уровней выше 25 уже выдано третье очко
 };
 
 // Новые герои получают то же самое, что и старые сейвы без этих полей.
@@ -111,10 +113,11 @@ function saveNormalizePlayer(p) {
   if (!Array.isArray(p.inventory)) p.inventory = [];
   if (!Array.isArray(p.expeditionLoot)) p.expeditionLoot = [];
 
-  // три слота навыков
+  // три слота навыков (v0.38: с подклассом — четыре)
+  const slotN = p.subclass ? 4 : 3;
   if (!Array.isArray(p.skillSlots)) p.skillSlots = [null, null, null];
-  while (p.skillSlots.length < 3) p.skillSlots.push(null);
-  if (p.skillSlots.length > 3) p.skillSlots.length = 3;
+  while (p.skillSlots.length < slotN) p.skillSlots.push(null);
+  if (p.skillSlots.length > slotN) p.skillSlots.length = slotN;
   p.skillSlots = p.skillSlots.map(s => (typeof s === 'string' && s) ? s : null);
 
   // числа: не трогаем xpNext (там бывает Infinity, в JSON она приходит как null —

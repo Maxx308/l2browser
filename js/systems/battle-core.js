@@ -93,6 +93,7 @@ function startBattle(template, variantId) {
   });
 
   clearAllDebuffs();
+  if (typeof subclassOnBattleStart === 'function') subclassOnBattleStart();   // v0.38: Последний рубеж — раз за бой
 
   // ---- Показываем окно боя ----
   document.getElementById('battle-window').classList.add('active');

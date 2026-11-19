@@ -58,7 +58,8 @@ function gameLoop() {
         p.hp += heal;
         if (inBattle) spawnFloatDamage('fighter-player', Math.floor(heal), 'food');
         else REGEN_SHOW.hp += heal;   // v0.34.1: на привале — вместе с обычной регенерацией
-      }
+        if (inBattle && typeof subclassOnHeroHeal === 'function') subclassOnHeroHeal(heal, rate - heal);   // v0.38
+      } else if (inBattle && typeof subclassOnHeroHeal === 'function') subclassOnHeroHeal(0, rate);   // v0.38: Благодать
       if (k.mp && p.mp < p.maxMp) {
         const mp = Math.min(k.mp, p.maxMp - p.mp);
         p.mp += mp;
@@ -154,15 +155,19 @@ function gameLoop() {
       }
     }
 
-    if (state.player.hpRegenIn && state.player.hpRegenIn > 0) {
-      state.battle.hpRegenAccum = (state.battle.hpRegenAccum || 0) + dt * state.player.hpRegenIn;
+    // v0.38: Боевой транс (×), Кровь кипит (+) — реген в бою подкласса
+    const scRg = typeof subclassRegen === 'function' ? subclassRegen() : { mult: 1, add: 0 };
+    const regenIn = (state.player.hpRegenIn || 0) * scRg.mult + scRg.add;
+    if (regenIn > 0) {
+      state.battle.hpRegenAccum = (state.battle.hpRegenAccum || 0) + dt * regenIn;
       while (state.battle.hpRegenAccum >= 1) {
         state.battle.hpRegenAccum -= 1;
         if (state.player.hp < state.player.maxHp) {
           const heal = Math.min(1, state.player.maxHp - state.player.hp);
           state.player.hp += heal;
           spawnFloatDamage('fighter-player', Math.floor(heal), 'heal');
-        }
+          if (typeof subclassOnHeroHeal === 'function') subclassOnHeroHeal(heal, 1 - heal);   // v0.38
+        } else if (typeof subclassOnHeroHeal === 'function') subclassOnHeroHeal(0, 1);   // v0.38: реген сверх полного → Благодать
       }
     }
 
@@ -214,7 +219,7 @@ function gameLoop() {
     const webDebuff = getDebuff('player', 'web');
     const webMult = (webDebuff && webDebuff.atbMult) ? webDebuff.atbMult : 1.0;
 
-    const playerSpeed = p.atbSpeed * 0.5 * locMult * webMult;
+    const playerSpeed = p.atbSpeed * 0.5 * locMult * webMult * (typeof subclassAtbMult === 'function' ? subclassAtbMult() : 1);   // v0.38: Неистовство, Волк
     const monsterSpeed = 0.7 * 0.5;
 
     // ---- v0.20: ручной режим — пока игрок выбирает действие, бой на паузе ----
@@ -227,7 +232,7 @@ function gameLoop() {
       // monstersATB остался как «часы стаи» — по ним идут тики дебаффов (следующий шаг).
       state.battle.monstersATB += monsterSpeed * dt;
       for (const m of state.battle.monsters) {
-        if (m.hp > 0) m.atb = (m.atb || 0) + monsterSpeed * dt * (m.atbMult || 1);   // v0.36: Стремительный, Неповоротливый
+        if (m.hp > 0) m.atb = (m.atb || 0) + monsterSpeed * dt * (m.atbMult || 1) * (typeof subclassMonsterAtbMult === 'function' ? subclassMonsterAtbMult(m) : 1);   // v0.38: корни Тернового стража   // v0.36: Стремительный, Неповоротливый
       }
       setText(document.getElementById('battle-status'), 'ATB заряжается...');
 
@@ -261,6 +266,7 @@ function gameLoop() {
           if (paraImm.turnsLeft <= 0) removeDebuff('monster', 'paraImmune', attacker.index);
         }
 
+        if (typeof subclassMonsterSkip === 'function' && subclassMonsterSkip(attacker)) { spawnFloatDamage('fighter-monster', 0, 'block', { mon: attacker, text: 'СОН' }); continue; }   // v0.38: Сон (Ткач снов)
         const freeze = getDebuff('monster', 'freeze', attacker.index);
         const stun   = getDebuff('monster', 'stun', attacker.index);
 

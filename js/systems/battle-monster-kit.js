@@ -63,6 +63,11 @@ function monsterTagAnnounce(m, kinds, pct) {
 
 // Урон героя с учётом тегов твари. kinds — виды урона этого удара.
 function monsterTagDmg(m, dmg, kinds) {
+  // v0.38: подкласс — Вызов, Метка, Серебряный наконечник, Обет (урон героя по твари)
+  if (m && typeof subclassHeroDmgMult === 'function') {
+    const cm = subclassHeroDmgMult(m);
+    if (cm > 1) dmg = Math.max(1, Math.floor(dmg * cm));
+  }
   if (!m || !m.tags) return dmg;
   const list = kinds.filter(Boolean);
   let pct = 0;
@@ -81,11 +86,12 @@ function monsterTagDmg(m, dmg, kinds) {
   if (m.undying && final >= m.hp) {          // Неупокоенный: первый смертельный удар
     m.undying = false;
     // v0.37: не всегда, а с шансом (один бросок на тварь — на её первый смертельный удар)
-    if (Math.random() * 100 >= (MONSTER_TAGS.undying.undyingChance || 100)) return final;
+    if (Math.random() * 100 >= (MONSTER_TAGS.undying.undyingChance || 100)) { if (typeof subclassOnHeroDamage === 'function') subclassOnHeroDamage(m, final); return final; }
     spawnFloatDamage('fighter-monster', 0, 'block', { mon: m, text: 'НЕ УПОКОЕН' });
     logCombat(`💀 ${m.name} не падает!`, 'log-entry monster');
     return Math.max(0, m.hp - 1);
   }
+  if (typeof subclassOnHeroDamage === 'function') subclassOnHeroDamage(m, final);   // v0.38: На краю (вампиризм), Приговор
   return final;
 }
 
@@ -190,7 +196,7 @@ const MONSTER_DRY_ATK_MULT = 0.7;
 
 function monsterManaAbsorb(m, dmg) {
   if (!m.maxMp || m.mp <= 0 || dmg <= 0) return dmg;
-  const mp = Math.min(Math.ceil(m.mp), Math.round(dmg * MONSTER_MANA_SHIELD_PERCENT / 100));
+  const mp = Math.min(Math.ceil(m.mp), Math.round(dmg * MONSTER_MANA_SHIELD_PERCENT / 100 * (typeof subclassManaShieldMult === 'function' ? subclassManaShieldMult() : 1)));
   if (mp <= 0) return dmg;
   m.mp = Math.max(0, m.mp - mp);
   if (m.mp <= 0) monsterManaBroke(m);
@@ -224,7 +230,7 @@ function monsterTrueDodge(m) {
 const HEAL_STRIKE_MIN_HP = 70;
 function healStrikeApplies(m) {
   const p = state.player;
-  return isMage() && !!m && m.hp > 0 && p.maxHp > 0 && (p.hp / p.maxHp) * 100 >= HEAL_STRIKE_MIN_HP && monsterHasTagFlag(m, 'healHurts');
+  return isMage() && !!m && m.hp > 0 && p.maxHp > 0 && (p.hp / p.maxHp) * 100 >= HEAL_STRIKE_MIN_HP && (monsterHasTagFlag(m, 'healHurts') || (typeof subclassHealHurtsAny === 'function' && subclassHealHurtsAny()));   // v0.38: Звездочёт ранит любую тварь
 }
 
 // Шипы: ближний удар героя возвращается уроном «уровень твари − поглощение героя». Убить героя не могут.
@@ -348,7 +354,7 @@ function monsterKitAfterSkill(m, skill, landed) {
     }
   }
   if (skill.atbCut && landed > 0) {
-    state.battle.playerATB = Math.max(0, (state.battle.playerATB || 0) - skill.atbCut);
+    if (!(typeof subclassPlayerUnmovable === 'function' && subclassPlayerUnmovable())) state.battle.playerATB = Math.max(0, (state.battle.playerATB || 0) - skill.atbCut);   // v0.38: Несдвигаемый
     logCombat(`⚡ ${m.name} сбивает вашу шкалу хода на ${Math.round(skill.atbCut * 100)}%.`, 'log-entry monster');
   }
 }

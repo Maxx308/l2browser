@@ -455,6 +455,7 @@ function loadSlotAndStart(slotIndex, opts) {
   if (typeof migrateSkillSlots === 'function') {
     migrateSkillSlots();
   }
+  if (typeof subclassOnLoad === 'function') subclassOnLoad();   // v0.38: подкласс и очки с 26 уровня
 
   if (typeof getXpForLevel === 'function') {
     // Infinity в сейве хранится как null: такой герой стоял на потолке, его опыт копился впустую.
@@ -761,6 +762,8 @@ function resetStateToFresh() {
 
   state.player.learnedSkills = {};
   state.player.skillPoints = 0;
+  state.player.subclass = null;   // v0.38: подкласс прошлого героя не переходит новому
+  state.player.skillPts26 = 0;
 
   state.player.skillSlots = [null, null, null];
 

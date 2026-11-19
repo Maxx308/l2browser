@@ -114,6 +114,11 @@ function applyConfusedTick(m) {
 // --------------------------------------------------------
 function manaShieldAbsorb(dmg) {
   const p = state.player;
+  // v0.38: удар сначала принимают Барьер Благодати (Жрец) и Костяная плата (Некромант)
+  if (typeof subclassAbsorbHit === 'function') {
+    dmg = subclassAbsorbHit(dmg);
+    if (dmg <= 0) return { hp: 0, mp: 0 };
+  }
   const pct = Math.min(90, p.manaShield || 0);
   if (pct <= 0 || dmg <= 0 || p.mp < 1) return { hp: dmg, mp: 0 };
   const mp = Math.min(Math.floor(p.mp), Math.round(dmg * pct / 100));
@@ -219,7 +224,7 @@ function addGreedMark(m, turns, type) {
   }
   const M = greedMarkList(mark);
   for (let i = 0; i < M.length; i++) M[i] += 1;
-  if (M.length < GREED_MAX_MARKS) M.push(turns);
+  if (M.length < (typeof subclassGreedMax === 'function' ? subclassGreedMax() : GREED_MAX_MARKS)) M.push(turns);   // v0.38: Старатель — до 7
   else {
     let oldest = 0;
     M.forEach((t, i) => { if (t < M[oldest]) oldest = i; });

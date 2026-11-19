@@ -198,6 +198,7 @@ DIALOGUES.ilgrad_temple = {
       options: [
         { text: '🕯 Благословение', onSelect: () => { __ilgradTavernPlace = 'temple'; openTavern(); applyTownWindowTitles(); } },
         { text: '✦ Таинство (навыки)', onSelect: () => { openMentor(); applyTownWindowTitles(); } },
+        { text: '✦ Посвящение (путь)', onSelect: () => openSubclassTemple() },   // v0.38: подклассы с 25 ур.
         { text: 'Уйти', action: 'close' },
       ],
     },

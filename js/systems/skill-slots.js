@@ -19,7 +19,28 @@
 //  + Автопостановка при изучении (см. mentor.js).
 // ========================================================
 
-const SKILL_SLOT_COUNT = 3;
+// v0.38: с подклассом (посвящение в Храме, 25 ур.) открывается 4-я ячейка.
+const SKILL_SLOT_BASE = 3;
+function skillSlotCount() {
+  const p = state.player;
+  return SKILL_SLOT_BASE + (p && p.subclass ? 1 : 0);
+}
+// Дотянуть массив ячеек до нужной длины (лишние — убрать).
+function ensureSkillSlotsLength() {
+  const p = state.player;
+  if (!Array.isArray(p.skillSlots)) p.skillSlots = [];
+  const n = skillSlotCount();
+  while (p.skillSlots.length < n) p.skillSlots.push(null);
+  if (p.skillSlots.length > n) {
+    // Навыки из лишних ячеек — в свободные, чтобы не пропали молча.
+    const extra = p.skillSlots.slice(n).filter(Boolean);
+    p.skillSlots.length = n;
+    extra.forEach(id => {
+      const free = p.skillSlots.indexOf(null);
+      if (free >= 0 && !p.skillSlots.includes(id)) p.skillSlots[free] = id;
+    });
+  }
+}
 
 // Текущий выбранный слот в панели «Инвентарь» (для стрелок).
 let __selectedSkillSlot = null;
@@ -43,7 +64,7 @@ function renderSkillSlots() {
   const p = state.player;
   const slots = p.skillSlots || [null, null, null];
 
-  for (let i = 0; i < SKILL_SLOT_COUNT; i++) {
+  for (let i = 0; i < skillSlotCount(); i++) {
     const skillId = slots[i];
     const skill = skillId ? SKILLS[skillId] : null;
 
@@ -166,7 +187,7 @@ function renderSkillLoadout() {
   const p = state.player;
   const slots = p.skillSlots || [null, null, null];
 
-  for (let i = 0; i < SKILL_SLOT_COUNT; i++) {
+  for (let i = 0; i < skillSlotCount(); i++) {
     const skillId = slots[i];
     const skill = skillId ? SKILLS[skillId] : null;
     const isValid = skill && skill.type === 'active' && p.learnedSkills[skillId] > 0;
@@ -228,7 +249,7 @@ function updateSkillLoadoutControls() {
   const btnClear = ctr.querySelector('button:nth-child(3)');
 
   if (btnUp) btnUp.disabled = (!hasSkill) || (__selectedSkillSlot === 0);
-  if (btnDown) btnDown.disabled = (!hasSkill) || (__selectedSkillSlot === SKILL_SLOT_COUNT - 1);
+  if (btnDown) btnDown.disabled = (!hasSkill) || (__selectedSkillSlot === skillSlotCount() - 1);
   if (btnClear) btnClear.disabled = !hasSkill;
 }
 
@@ -238,8 +259,8 @@ function updateSkillLoadoutControls() {
 function swapSkillSlots(from, to) {
   const p = state.player;
   if (!Array.isArray(p.skillSlots)) p.skillSlots = [null, null, null];
-  if (from < 0 || from >= SKILL_SLOT_COUNT) return;
-  if (to < 0 || to >= SKILL_SLOT_COUNT) return;
+  if (from < 0 || from >= skillSlotCount()) return;
+  if (to < 0 || to >= skillSlotCount()) return;
 
   const a = p.skillSlots[from];
   p.skillSlots[from] = p.skillSlots[to];
@@ -252,7 +273,7 @@ function swapSkillSlots(from, to) {
 function moveSelectedSkill(direction) {
   if (__selectedSkillSlot === null) return;
   const target = __selectedSkillSlot + direction;
-  if (target < 0 || target >= SKILL_SLOT_COUNT) return;
+  if (target < 0 || target >= skillSlotCount()) return;
 
   swapSkillSlots(__selectedSkillSlot, target);
   __selectedSkillSlot = target;
@@ -452,15 +473,7 @@ document.addEventListener('click', (e) => {
 function migrateSkillSlots() {
   const p = state.player;
 
-  if (!Array.isArray(p.skillSlots)) {
-    p.skillSlots = [null, null, null];
-  }
-  while (p.skillSlots.length < SKILL_SLOT_COUNT) {
-    p.skillSlots.push(null);
-  }
-  if (p.skillSlots.length > SKILL_SLOT_COUNT) {
-    p.skillSlots.length = SKILL_SLOT_COUNT;
-  }
+  ensureSkillSlotsLength();
 
   // Если слоты пустые — заполняем из изученных активных скиллов.
   const allEmpty = p.skillSlots.every(s => !s);
@@ -472,7 +485,7 @@ function migrateSkillSlots() {
       return s && s.type === 'active' && p.learnedSkills[id] > 0;
     });
 
-  for (let i = 0; i < SKILL_SLOT_COUNT; i++) {
+  for (let i = 0; i < skillSlotCount(); i++) {
     p.skillSlots[i] = activeSkills[i] || null;
   }
 
@@ -492,7 +505,7 @@ function tryAutoPlaceSkillInSlot(skillId) {
   const skill = SKILLS[skillId];
   if (!skill || skill.type !== 'active') return;
 
-  if (!Array.isArray(p.skillSlots)) p.skillSlots = [null, null, null];
+  ensureSkillSlotsLength();
 
   // Уже стоит где-то — ничего.
   if (p.skillSlots.indexOf(skillId) >= 0) return;

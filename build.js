@@ -214,6 +214,10 @@ function rewriteIndexHtml(html, version, mode) {
     return lines.join('\n');
   }
 
+  // Скрипты и так отдельные — «разобрать» нечего. Раньше сюда проваливался и --unbundle
+  // и молча собирал index.html обратно в бандл (19.11.2026).
+  if (mode === 'unbundle') return html;
+
   const start = lines.findIndex(l => l.indexOf(BLOCK_START) === 0);
   const end = lines.findIndex(l => l.indexOf(BLOCK_END) === 0);
   if (start < 0 || end < 0 || end < start) throw new Error('не нашёл блок игровых скриптов в index.html');

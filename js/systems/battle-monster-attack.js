@@ -11,6 +11,7 @@
 function monsterAttack(attacker) {
   if (!attacker) return;
   if (monsterTagsOnTurn(attacker)) return;   // v0.36: Трус сбежал, Плач
+  if (typeof subclassOnMonsterAct === 'function') { subclassOnMonsterAct(attacker); if (attacker.hp <= 0 || !state.battle.active) return; }   // v0.38: Ломота
   monsterManaTurn(attacker);   // v0.36: заклинание стоит маны
   const skill = monsterKitPickSkill(attacker);
   const hits = (skill && skill.hits) || 1;
@@ -30,9 +31,14 @@ function monsterStrike(attacker, skill) {
   if (!m || m.hp <= 0 || p.hp <= 0) return;
 
   // ---- Блок ----
-  if (p.blockChance > 0 && Math.random() * 100 < p.blockChance) {
+  if (typeof subclassTryEvade === 'function' && subclassTryEvade(m)) return;   // v0.38: Ускользнуть (Егерь)
+  if (typeof alliesTryIntercept === 'function' && alliesTryIntercept(m, skill)) { updateBattleUI(); return; }   // v0.38: удар ушёл в слугу
+  const blockChance = p.blockChance + (typeof subclassBlockBonus === 'function' ? subclassBlockBonus() : 0);   // v0.38: Глухая оборона
+  if (blockChance > 0 && Math.random() * 100 < blockChance) {
     spawnFloatDamage('fighter-player', 0, 'block');
     logCombat(`🛡 Блок! Удар поглощён.`, 'log-entry block');
+    if (typeof wallguardRetort === 'function') wallguardRetort(m, 'block');   // v0.38: Ответ щита
+    updateBattleUI();
     return;
   }
 
@@ -105,6 +111,9 @@ function monsterStrike(attacker, skill) {
   const guardInfo = guardMult < 1 ? ` (защита −${GUARD_DAMAGE_CUT}%)` : '';
   // v0.27: стойка щита — −8% ко всему входящему урону
   const stanceMult = getShieldStanceMult();
+  // v0.38: подкласс — Глухая оборона, Последний рубеж
+  const scMult = typeof subclassDamageTakenMult === 'function' ? subclassDamageTakenMult(m, hitIsMagic) : 1;
+  const scInfo = scMult < 1 ? ` (оборона −${Math.round((1 - scMult) * 100)}%)` : '';
   // ---- Мана-щит (Шёлковая мантия +10): v0.34.1 — режет и основной удар, и крит, и стихию
   //      (manaShieldAbsorb в battle-effects.js сразу списывает MP). rawHit — удар до щита: от него считается крит.
   let msAbsorbed = 0;
@@ -114,24 +123,26 @@ function monsterStrike(attacker, skill) {
     dmg = Math.max(1, raw - Math.floor(p.mDef * 0.5 * armorLeft));
     if (stanceMult < 1) dmg = Math.max(1, Math.floor(dmg * stanceMult));
     if (guardMult < 1) dmg = Math.max(1, Math.floor(dmg * guardMult));
+    if (scMult < 1) dmg = Math.max(1, Math.floor(dmg * scMult));
     rawHit = dmg;
     { const sh = manaShieldAbsorb(dmg); dmg = sh.hp; msAbsorbed += sh.mp; }
     p.hp -= dmg;
     spawnFloatDamage('fighter-player', dmg, 'magic');
-    logCombat(`✦ ${m.name} бьёт магией на ${dmg} урона.${guardInfo}`, 'log-entry magic');
+    logCombat(`✦ ${m.name} бьёт магией на ${dmg} урона.${guardInfo}${scInfo}`, 'log-entry magic');
   } else {
-    const flatReduce = Math.ceil(p.flatDamageReduce || 0);
+    const flatReduce = Math.ceil(typeof subclassFlatReduce === 'function' ? subclassFlatReduce(p.flatDamageReduce || 0) : (p.flatDamageReduce || 0));   // v0.38: Сомкнуть броню, Закалка
     dmg = Math.max(1, raw - Math.floor(p.pDef * 0.3 * armorLeft) - flatReduce);
     if (mixtureDefMult < 1.0) dmg = Math.max(1, Math.floor(dmg * mixtureDefMult));
     if (stanceMult < 1) dmg = Math.max(1, Math.floor(dmg * stanceMult));
     if (guardMult < 1) dmg = Math.max(1, Math.floor(dmg * guardMult));
+    if (scMult < 1) dmg = Math.max(1, Math.floor(dmg * scMult));
     rawHit = dmg;
     { const sh = manaShieldAbsorb(dmg); dmg = sh.hp; msAbsorbed += sh.mp; }
     p.hp -= dmg;
     spawnFloatDamage('fighter-player', dmg, 'dmg');
     const reduceInfo = (flatReduce > 0 ? ` (щит/шкура -${flatReduce})` : '') + (stanceMult < 1 ? ` (стойка −${SHIELD_STANCE_DAMAGE_CUT}%)` : '');
     const mixtureInfo = mixtureDefMult < 1.0 ? ` (крепость −30%)` : '';
-    logCombat(`🩸 ${m.name} наносит ${dmg} урона.${reduceInfo}${mixtureInfo}${guardInfo}`, 'log-entry monster');
+    logCombat(`🩸 ${m.name} наносит ${dmg} урона.${reduceInfo}${mixtureInfo}${guardInfo}${scInfo}`, 'log-entry monster');
 
     const mixtureData = getActiveMixtureData();
     if (mixtureData && mixtureData.chargeType === 'enemyAttacks') tickMixtureCharge();
@@ -147,6 +158,7 @@ function monsterStrike(attacker, skill) {
   monsterTagOnHit(m);                           // v0.36: Вор
 
   // ---- 1. КРИТ (Бандит) ----
+  let monsterCrit = false;   // v0.38: Ответ щита — в конце удара
   if (traits && traits.critChance) {
     const critChance = traits.critChance * chanceMult;
     if (Math.random() * 100 < critChance) {
@@ -156,6 +168,7 @@ function monsterStrike(attacker, skill) {
       p.hp -= bonus; hitDamageForBleed += bonus;
       spawnFloatDamage('fighter-player', bonus, 'crit');
       logCombat(`⚔ КРИТ! ${m.name} наносит дополнительно ${bonus} урона!`, 'log-entry monster');
+      monsterCrit = true;
     }
   }
 
@@ -166,7 +179,7 @@ function monsterStrike(attacker, skill) {
       const elements = ['fire', 'ice', 'lightning'];
       const elemId = elements[Math.floor(Math.random() * elements.length)];
       const bonusPercent = traits.elementBonusPercent || 30;
-      const sh = manaShieldAbsorb(Math.max(1, Math.floor(m.atk * (bonusPercent / 100) * guardMult * stanceMult)));   // v0.34.1: щит режет и стихию
+      const sh = manaShieldAbsorb(Math.max(1, Math.floor(m.atk * (bonusPercent / 100) * guardMult * stanceMult * scMult)));   // v0.34.1: щит режет и стихию
       const elemDmg = sh.hp; msAbsorbed += sh.mp;
       p.hp -= elemDmg; hitDamageForBleed += elemDmg;
       const icon = elemId === 'fire' ? '🔥' : elemId === 'ice' ? '❄' : '⚡';
@@ -241,12 +254,12 @@ function monsterStrike(attacker, skill) {
         if (!state.battle.drowHitCounter) state.battle.drowHitCounter = 0;
         state.battle.drowHitCounter++;
         
-        if (state.battle.drowHitCounter >= stormData.frequency) {
+        if (state.battle.drowHitCounter >= (typeof subclassStormLegacyFreq === 'function' ? subclassStormLegacyFreq(stormData.frequency) : stormData.frequency)) {
           state.battle.drowHitCounter = 0; // Сбрасываем счётчик
           
           // Урон = 5 + уровень Молнии
           const lightningLvl = getElementLevel('lightning');
-          const stormDmg = monsterTagDmg(m, 5 + lightningLvl, ['magic', 'lightning']);   // v0.36: теги твари
+          const stormDmg = monsterTagDmg(m, 5 + lightningLvl + (typeof subclassStormLegacyBonus === 'function' ? subclassStormLegacyBonus() : 0), ['magic', 'lightning']);   // v0.36: теги твари
           
           m.hp -= stormDmg;
           spawnFloatDamage('fighter-monster', stormDmg, 'magic');
@@ -277,6 +290,14 @@ function monsterStrike(attacker, skill) {
       }
     }
   }
+
+  if (monsterCrit && typeof subclassOnMonsterCrit === 'function') subclassOnMonsterCrit(m);   // v0.38: Проклятие крови (Вождь)
+  // ---- v0.38: Ответ щита на крит (в конце удара — тварь могла от него умереть) ----
+  if (monsterCrit && p.hp > 0 && typeof wallguardRetort === 'function' && wallguardRetort(m, 'crit')) {
+    updateTopStatus(); updateBattleUI(); return;
+  }
+
+  if (typeof subclassAfterHeroHit === 'function') subclassAfterHeroHit(m, hitDamageForBleed, monsterCrit);   // v0.38: Заступничество, Шипастая кора, Бутон
 
   // ---- Смерть игрока ----
   const heroDied = p.hp <= 0;

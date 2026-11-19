@@ -1,4 +1,4 @@
-// L2 BROWSER — СБОРКА v0.37.2 (build.js; правки — в js/**, а не сюда). Файлов: 98
+// L2 BROWSER — СБОРКА v0.38 (build.js; правки — в js/**, а не сюда). Файлов: 101
 // ==== ФАЙЛ js/data/config.js ====
 const CHEAT_MULTIPLIER = 10;
 const MP_COST_PER_ATTACK = 5;
@@ -1831,7 +1831,7 @@ getNextDesc: (lvl) => { if (lvl >= 5) return ''; const n = SKILLS.iceArrow.level
 };
 const GUILD_BUFFS = {
 berserk: {
-id: 'berserk', name: 'Берсерк', iconKey: 'buffBerserk', iconPng: 'img/buffs/berserk.webp',
+id: 'berserk', name: 'Боевое безумие', iconKey: 'buffBerserk', iconPng: 'img/buffs/berserk.webp',
 price: BUFF_PRICE, duration: BUFF_DURATION,
 effects: { pAtkPercent: 4, mAtkPercent: 8, atbPercent: 5, pDefPercent: -4, mDefPercent: -8 },
 desc: 'Ярость берсерка: мощнее, но уязвимее.'
@@ -2105,6 +2105,1900 @@ getNextDesc: (lvl) => { if (lvl >= 5) return ''; const n = SKILLS.blizzardRune.l
 },
 };
 Object.assign(SKILLS, SKILLS_AOE);
+
+;
+
+// ==== ФАЙЛ js/data/subclasses.js ====
+const SUBCLASS_MIN_LEVEL = 25;
+const SUBCLASS_CHANGE_PRICE = 100000;
+const SUBCLASS_SKILL_MAX_LEVEL = 7;
+const SUBCLASS_ROLES = {
+tank:    { name: 'Танк',        icon: '🛡' },
+damage:  { name: 'Урон',        icon: '⚔' },
+hybrid:  { name: 'Гибрид',      icon: '✦' },
+ruin:    { name: 'Разрушитель', icon: '🔥' },
+support: { name: 'Опора',       icon: '✚' },
+allies:  { name: 'Союзники',    icon: '👥' },
+economy: { name: 'Ремесло',     icon: '⚒' },
+};
+const SUBCLASSES = {
+human_wallguard:    { race: 'human', cls: 'warrior', role: 'tank',    name: 'Страж стены',     ready: true,
+blurb: 'Держит удар, пока стоит стена. Щит не обязателен, но лучшие приёмы — только со щитом.' },
+human_huntsman:     { race: 'human', cls: 'warrior', role: 'damage',  name: 'Егерь',     ready: true,
+blurb: 'Луки, арбалеты, кинжалы. Копит азарт на критах и спускает его в одно добивание.' },
+human_templar:      { race: 'human', cls: 'warrior', role: 'hybrid',  name: 'Храмовник', ready: true,
+rarityProfile: 'neutral',
+blurb: 'Воин со светом в руках: каждый удар подкреплён магией, нежить горит.' },
+human_elementalist: { race: 'human', cls: 'mage',    role: 'ruin',    name: 'Элементалист', ready: true,
+blurb: 'Сила в сочетаниях стихий: лёд раскалывает огонь, молния выжигает ману.' },
+human_priest:       { race: 'human', cls: 'mage',    role: 'support', name: 'Жрец',         ready: true,
+blurb: 'Свет и Жизнь. Один — почти бессмертный маг без зелий, с союзниками — их опора.' },
+human_necromancer:  { race: 'human', cls: 'mage',    role: 'allies',  name: 'Некромант',    ready: true,
+blurb: 'Поднимает павших: зомби, скелеты, духи. До трёх слуг в бою.' },
+orc_rock:      { race: 'orc', cls: 'warrior', role: 'tank',    name: 'Скала',          ready: true,
+blurb: 'Перелечивает любой урон. Щит не нужен — нужна кровь орка.' },
+orc_berserker: { race: 'orc', cls: 'warrior', role: 'damage',  name: 'Берсерк',        ready: true,
+blurb: 'Двуручное оружие и навыки за здоровье. Чем ближе к смерти, тем страшнее.' },
+orc_chieftain: { race: 'orc', cls: 'warrior', role: 'hybrid',  name: 'Вождь',          ready: true,
+blurb: 'Боевой клич и сила предков. Любое оружие и броня.' },
+orc_hexer:     { race: 'orc', cls: 'mage',    role: 'ruin',    name: 'Проклинатель',   ready: true,
+blurb: 'Разные проклятия на одной цели — и урон растёт с каждым ходом.' },
+orc_healer:    { race: 'orc', cls: 'mage',    role: 'support', name: 'Костоправ',      ready: true,
+blurb: 'Лечит через кровь и Гниение: чем больше ран у врага, тем крепче сам.' },
+orc_shaman:    { race: 'orc', cls: 'mage',    role: 'allies',  name: 'Шаман',          ready: true,
+blurb: 'Тотемы духов — по одному за призыв, никогда не знаешь какой.' },
+elf_thornguard:  { race: 'elf', cls: 'warrior', role: 'tank',    name: 'Терновый страж', ready: true,
+blurb: 'Растягивает удары во времени — рана приходит, когда он уже готов.' },
+elf_pathfinder:  { race: 'elf', cls: 'warrior', role: 'damage',  name: 'Следопыт', ready: true,
+blurb: 'Луки, глефы и копья. Верные попадания и отложенный урон.' },
+elf_bladesinger: { race: 'elf', cls: 'warrior', role: 'hybrid',  name: 'Певец клинка', ready: true,
+blurb: 'Клинок и Жизнь: танец, в котором каждый удар лечит.' },
+elf_stargazer:   { race: 'elf', cls: 'mage',    role: 'ruin',    name: 'Звездочёт', ready: true,
+blurb: 'Снайпер против одной цели: звезда падает не сразу, но наверняка.' },
+elf_grovekeeper: { race: 'elf', cls: 'mage',    role: 'support', name: 'Хранитель Рощи', ready: true,
+blurb: 'Лечение во времени и дары рощи.' },
+elf_druid:       { race: 'elf', cls: 'mage',    role: 'allies',  name: 'Друид', ready: true,
+blurb: 'Один дух-зверь на всю охоту — и он растёт вместе с тобой.' },
+drow_stormguard:   { race: 'drow', cls: 'warrior', role: 'tank',    name: 'Грозовой страж', ready: true,
+blurb: 'Тварь просто не успевает ходить.' },
+drow_assassin:     { race: 'drow', cls: 'warrior', role: 'damage',  name: 'Ассасин', ready: true,
+blurb: 'Парные кинжалы и внеочередные ходы.' },
+drow_shadowweaver: { race: 'drow', cls: 'warrior', role: 'hybrid',  name: 'Теневой ткач', ready: true,
+blurb: 'Сталь и молния из тени.' },
+drow_stormcaller:  { race: 'drow', cls: 'mage',    role: 'ruin',    name: 'Буревестник', ready: true,
+blurb: 'Молния за молнией — напряжение копится до разряда.' },
+drow_dreamweaver:  { race: 'drow', cls: 'mage',    role: 'support', name: 'Ткач снов', ready: true,
+blurb: 'Усыпляет лишних, пока сам разбирается с остальными.' },
+drow_spiderlord:   { race: 'drow', cls: 'mage',    role: 'allies',  name: 'Паучий владыка', ready: true,
+blurb: 'Паучиха-матка и её выводок.' },
+dwarf_steelwall:   { race: 'dwarf', cls: 'warrior', role: 'tank',    name: 'Стальная стена', ready: true,
+blurb: 'Поглощает удары сталью — с каждым ударом крепче.' },
+dwarf_hammerer:    { race: 'dwarf', cls: 'warrior', role: 'damage',  name: 'Молотобоец', ready: true,
+blurb: 'Молоты и топоры: ломает броню и раскалывает лёд.' },
+dwarf_prospector:  { race: 'dwarf', cls: 'warrior', role: 'economy', name: 'Старатель', ready: true,
+blurb: 'Середнячок в бою — и больше всех добычи.' },
+dwarf_forgemaster: { race: 'dwarf', cls: 'mage',    role: 'economy', name: 'Мастер горна', ready: true,
+blurb: 'Жар в бою и у наковальни: ковка с лучшей редкостью.' },
+dwarf_runemaster:  { race: 'dwarf', cls: 'mage',    role: 'economy', name: 'Рунный мастер', ready: true,
+blurb: 'Руны на себя и на вещи: подгонка без лишних трат.' },
+dwarf_stonecaller: { race: 'dwarf', cls: 'mage',    role: 'allies',  name: 'Заклинатель камня', ready: true,
+blurb: 'Элементали камня, огня и жилы.' },
+};
+Object.keys(SUBCLASSES).forEach(id => {
+SUBCLASSES[id].id = id;
+SUBCLASSES[id].portrait = `img/subclasses/${id}.webp`;
+if (!SUBCLASSES[id].mods) SUBCLASSES[id].mods = {};
+});
+function scX(v) { return `<span class="val">×${v.toFixed(2)}</span>`; }
+function scV(v) { return `<span class="val">${v}</span>`; }
+function scNext(skill, lvl, fmt) {
+if (lvl >= skill.maxLevel) return '';
+const n = skill.levels[lvl];
+return `Следующий уровень: ${fmt(n)}${lvl + 1 > 5 ? ' (ступень подкласса)' : ''}`;
+}
+const WALLGUARD_SHIELD_DEF_MULT = 3;
+SUBCLASSES.human_wallguard.mods = {
+powerStrike: {
+name: 'Удар щитом',
+levels: [
+{ mpCost: 10, multiplier: 2.0 }, { mpCost: 11, multiplier: 2.25 },
+{ mpCost: 13, multiplier: 2.5 }, { mpCost: 14, multiplier: 2.75 },
+{ mpCost: 15, multiplier: 3.0 }, { mpCost: 16, multiplier: 3.25 },
+{ mpCost: 17, multiplier: 3.5 },
+],
+getDesc: (lvl) => { const d = SKILLS.powerStrike.levels[lvl-1]; return `Со щитом: (атака + защита щита ×${WALLGUARD_SHIELD_DEF_MULT}) × ${scX(d.multiplier)}. Без щита — обычный сильный удар на ${scX(d.multiplier)}. <b>Цикл мастера:</b> убийство — КД «Меча и щита» −1. MP: ${scV(d.mpCost)}. КД: ${SKILLS.powerStrike.cooldown} ATB.`; },
+getNextDesc: (lvl) => scNext(SKILLS.powerStrike, lvl, n => `×${n.multiplier.toFixed(2)}, MP ${n.mpCost}`),
+},
+doubleStrike: {
+name: 'Меч и щит',
+stunChance: 20,
+levels: [
+{ mpCost: 10, multiplier: 0.90 }, { mpCost: 11, multiplier: 0.95 },
+{ mpCost: 12, multiplier: 1.00 }, { mpCost: 13, multiplier: 1.05 },
+{ mpCost: 15, multiplier: 1.10 }, { mpCost: 16, multiplier: 1.15 },
+{ mpCost: 17, multiplier: 1.20 },
+],
+getDesc: (lvl) => { const d = SKILLS.doubleStrike.levels[lvl-1]; return `Два удара по ${scX(d.multiplier)}. Со щитом второй удар — щитом: к атаке прибавляется защита щита ×${WALLGUARD_SHIELD_DEF_MULT}, шанс ${scV(SKILLS.doubleStrike.stunChance + '%')} оглушить. <b>Цикл мастера:</b> убийство — КД «Кругового вызова» −1. MP: ${scV(d.mpCost)}. КД: ${SKILLS.doubleStrike.cooldown} ATB.`; },
+getNextDesc: (lvl) => scNext(SKILLS.doubleStrike, lvl, n => `×${n.multiplier.toFixed(2)} каждый удар, MP ${n.mpCost}`),
+},
+whirlwind: {
+name: 'Круговой вызов',
+challengeTurns: 3, challengePct: 15,
+levels: [
+{ mpCost: 14, multiplier: 0.90, targets: 3 }, { mpCost: 15, multiplier: 0.97, targets: 3 },
+{ mpCost: 16, multiplier: 1.05, targets: 3 }, { mpCost: 17, multiplier: 1.12, targets: 3 },
+{ mpCost: 18, multiplier: 1.20, targets: 4 }, { mpCost: 19, multiplier: 1.27, targets: 4 },
+{ mpCost: 20, multiplier: 1.35, targets: 4 },
+],
+getDesc: (lvl) => { const w = SKILLS.whirlwind; const d = w.levels[lvl-1]; return `Удар по кругу: до ${scV(d.targets)} врагов на ${scX(d.multiplier)}. <b>Вызов:</b> задетые ${w.challengeTurns} хода бьют только героя и получают ${scV('+' + w.challengePct + '%')} урона от всех. <b>Цикл мастера:</b> убил хоть одного — КД «Удара щитом» −1. MP: ${scV(d.mpCost)}. КД: ${w.cooldown}.`; },
+getNextDesc: (lvl) => scNext(SKILLS.whirlwind, lvl, n => `${n.targets} цели, ×${n.multiplier.toFixed(2)}, MP ${n.mpCost}`),
+},
+};
+const SUBCLASS_SKILLS = {
+wgHoldLine: {
+id: 'wgHoldLine', subclassId: 'human_wallguard', name: 'Глухая оборона', type: 'active',
+iconPng: 'img/skills/warrior/resilience.webp',
+maxLevel: 5, cooldown: 8, turns: 5, shieldBlock: 5,
+levels: [
+{ mpCost: 0, cut: 15 }, { mpCost: 0, cut: 17 }, { mpCost: 0, cut: 20 },
+{ mpCost: 0, cut: 22 }, { mpCost: 0, cut: 25 },
+],
+getDesc: (lvl) => { const s = SKILLS.wgHoldLine; const d = s.levels[lvl-1]; return `Тратит ход: ${s.turns} ходов входящий урон ${scV('−' + d.cut + '%')}, со щитом ещё ${scV('+' + s.shieldBlock + '%')} блока. Без маны. Автобой ставит оборону только против стаи из двух и больше или сильной твари. КД: ${s.cooldown}.`; },
+getNextDesc: (lvl) => scNext(SKILLS.wgHoldLine, lvl, n => `−${n.cut}% урона`),
+},
+wgShieldRetort: {
+id: 'wgShieldRetort', subclassId: 'human_wallguard', name: 'Ответ щита', type: 'active', semiPassive: true,
+iconPng: 'img/skills/human/doubleStrike.webp',
+maxLevel: 5, retortEvery: 3, needsShield: true,
+levels: [
+{ mpCost: 0, power: 0.9, blockChance: 20 }, { mpCost: 0, power: 1.0, blockChance: 25 },
+{ mpCost: 0, power: 1.1, blockChance: 30 }, { mpCost: 0, power: 1.2, blockChance: 35 },
+{ mpCost: 0, power: 1.3, blockChance: 40 },
+],
+getDesc: (lvl) => { const s = SKILLS.wgShieldRetort; const d = s.levels[lvl-1]; return `<b>Срабатывает сам</b>, пока стоит в слоте; только со щитом. Крит твари по вам — мгновенный удар щитом: (атака + защита и поглощение щита ×${WALLGUARD_SHIELD_DEF_MULT}) × ${scX(d.power)} и оглушение на 1 ход. После блока — с шансом ${scV(d.blockChance + '%')}. Не чаще раза в ${s.retortEvery} хода. Ничего не стоит — цена в занятом слоте.`; },
+getNextDesc: (lvl) => scNext(SKILLS.wgShieldRetort, lvl, n => `×${n.power.toFixed(2)}, после блока ${n.blockChance}%`),
+},
+wgShieldMastery: {
+id: 'wgShieldMastery', subclassId: 'human_wallguard', name: 'Мастер щита', type: 'passive',
+iconPng: 'img/skills/warrior/resilience.webp',
+maxLevel: 5,
+levels: [
+{ block: 3, shieldPct: 20 }, { block: 4, shieldPct: 25 }, { block: 5, shieldPct: 30 },
+{ block: 6, shieldPct: 35 }, { block: 7, shieldPct: 40 },
+],
+getDesc: (lvl) => { const d = SKILLS.wgShieldMastery.levels[lvl-1]; return `Пассивно, только со щитом: ${scV('+' + d.block + '%')} блока, защита и поглощение щита ${scV('+' + d.shieldPct + '%')}.`; },
+getNextDesc: (lvl) => scNext(SKILLS.wgShieldMastery, lvl, n => `+${n.block}% блока, щит +${n.shieldPct}%`),
+},
+wgLastStand: {
+id: 'wgLastStand', subclassId: 'human_wallguard', name: 'Последний рубеж', type: 'passive',
+iconPng: 'img/skills/warrior/resilience.webp',
+maxLevel: 5, turns: 2,
+levels: [ { cut: 30 }, { cut: 35 }, { cut: 40 }, { cut: 45 }, { cut: 50 } ],
+getDesc: (lvl) => { const s = SKILLS.wgLastStand; const d = s.levels[lvl-1]; return `Пассивно, раз за бой: смертельный удар оставляет ${scV('1 HP')}, и ${s.turns} хода входящий урон ${scV('−' + d.cut + '%')}.`; },
+getNextDesc: (lvl) => scNext(SKILLS.wgLastStand, lvl, n => `−${n.cut}% урона`),
+},
+};
+const JAEGER_ZEAL_MAX = 5;
+const JAEGER_WEAPONS = ['bows', 'crossbows', 'daggers'];
+SUBCLASSES.human_huntsman.mods = {
+powerStrike: {
+name: 'Добивание',
+perCharge: 0.4, lowHpPct: 30, lowHpBonus: 50, minZeal: 2,
+levels: [
+{ mpCost: 0, multiplier: 1.3 }, { mpCost: 0, multiplier: 1.4 }, { mpCost: 0, multiplier: 1.5 },
+{ mpCost: 0, multiplier: 1.6 }, { mpCost: 0, multiplier: 1.7 }, { mpCost: 0, multiplier: 1.8 },
+{ mpCost: 0, multiplier: 1.9 },
+],
+getDesc: (lvl) => { const s = SKILLS.powerStrike, mod = SUBCLASSES.human_huntsman.mods.powerStrike, d = s.levels[lvl-1];
+const full = d.multiplier + mod.perCharge * JAEGER_ZEAL_MAX;
+return `Тратит весь Азарт: ${scX(d.multiplier)} + ${scV('×' + mod.perCharge.toFixed(1))} за каждый заряд (${scX(full)} на ${JAEGER_ZEAL_MAX}). Цель ниже ${mod.lowHpPct}% HP — ещё ${scV('+' + mod.lowHpBonus + '%')}. Нужно от ${mod.minZeal} зарядов. Без маны. <b>Цикл мастера:</b> убийство — КД Шквала −1. КД: ${s.cooldown} ATB.`; },
+getNextDesc: (lvl) => scNext(SKILLS.powerStrike, lvl, n => `база ×${n.multiplier.toFixed(2)}`),
+useCheck: () => (jaegerZeal() < SUBCLASSES.human_huntsman.mods.powerStrike.minZeal ? `нужно ${SUBCLASSES.human_huntsman.mods.powerStrike.minZeal} заряда Азарта` : ''),
+},
+doubleStrike: {
+name: 'Шквал', hits: 3,
+levels: [
+{ mpCost: 7, multiplier: 0.60 }, { mpCost: 8, multiplier: 0.63 }, { mpCost: 8, multiplier: 0.67 },
+{ mpCost: 9, multiplier: 0.70 }, { mpCost: 9, multiplier: 0.73 }, { mpCost: 10, multiplier: 0.77 },
+{ mpCost: 11, multiplier: 0.80 },
+],
+getDesc: (lvl) => { const s = SKILLS.doubleStrike, d = s.levels[lvl-1]; return `Три быстрых удара по ${scX(d.multiplier)}. Крит — отдельно на каждый, и каждый крит — заряд Азарта. <b>Цикл мастера:</b> убийство — КД Веера −1. MP: ${scV(d.mpCost)}. КД: ${s.cooldown} ATB.`; },
+getNextDesc: (lvl) => scNext(SKILLS.doubleStrike, lvl, n => `×${n.multiplier.toFixed(2)} каждый удар, MP ${n.mpCost}`),
+},
+whirlwind: {
+name: 'Веер',
+levels: [
+{ mpCost: 14, multiplier: 0.90, targets: 3 }, { mpCost: 15, multiplier: 0.97, targets: 3 },
+{ mpCost: 16, multiplier: 1.05, targets: 3 }, { mpCost: 17, multiplier: 1.12, targets: 4 },
+{ mpCost: 18, multiplier: 1.20, targets: 4 }, { mpCost: 19, multiplier: 1.27, targets: 4 },
+{ mpCost: 20, multiplier: 1.35, targets: 4 },
+],
+getDesc: (lvl) => { const s = SKILLS.whirlwind, d = s.levels[lvl-1]; return `Веер ударов или стрел: до ${scV(d.targets)} врагов на ${scX(d.multiplier)}. Каждый крит — заряд Азарта. <b>Цикл мастера:</b> убил хоть одного — КД Добивания −1. MP: ${scV(d.mpCost)}. КД: ${s.cooldown}.`; },
+getNextDesc: (lvl) => scNext(SKILLS.whirlwind, lvl, n => `${n.targets} цели, ×${n.multiplier.toFixed(2)}, MP ${n.mpCost}`),
+},
+};
+SUBCLASSES.human_templar.mods = {
+powerStrike: {
+name: 'Карающий удар',
+magPart: 0.5, stunUndead: 20,
+levels: [
+{ mpCost: 10, multiplier: 2.0 }, { mpCost: 11, multiplier: 2.25 },
+{ mpCost: 13, multiplier: 2.5 }, { mpCost: 14, multiplier: 2.75 },
+{ mpCost: 15, multiplier: 3.0 }, { mpCost: 16, multiplier: 3.25 },
+{ mpCost: 17, multiplier: 3.5 },
+],
+getDesc: (lvl) => { const s = SKILLS.powerStrike, mod = SUBCLASSES.human_templar.mods.powerStrike, d = s.levels[lvl-1]; return `Удар светом: (атака + маг. атака ×${mod.magPart}) × ${scX(d.multiplier)}. Нежить оглушает с шансом ${scV(mod.stunUndead + '%')}. <b>Цикл мастера:</b> убийство — КД Удара с молитвой −1. MP: ${scV(d.mpCost)}. КД: ${s.cooldown} ATB.`; },
+getNextDesc: (lvl) => scNext(SKILLS.powerStrike, lvl, n => `×${n.multiplier.toFixed(2)}, MP ${n.mpCost}`),
+},
+doubleStrike: {
+name: 'Удар с молитвой',
+levels: [
+{ mpCost: 10, multiplier: 0.90, heal: 10 }, { mpCost: 11, multiplier: 0.95, heal: 12 },
+{ mpCost: 12, multiplier: 1.00, heal: 13 }, { mpCost: 13, multiplier: 1.05, heal: 15 },
+{ mpCost: 15, multiplier: 1.10, heal: 17 }, { mpCost: 16, multiplier: 1.15, heal: 18 },
+{ mpCost: 17, multiplier: 1.20, heal: 20 },
+],
+getDesc: (lvl) => { const s = SKILLS.doubleStrike, d = s.levels[lvl-1]; return `Два удара по ${scX(d.multiplier)}, каждый лечит ${scV(d.heal + '%')} нанесённого. <b>Цикл мастера:</b> убийство — КД Волны света −1. MP: ${scV(d.mpCost)}. КД: ${s.cooldown} ATB.`; },
+getNextDesc: (lvl) => scNext(SKILLS.doubleStrike, lvl, n => `×${n.multiplier.toFixed(2)}, лечение ${n.heal}%, MP ${n.mpCost}`),
+},
+whirlwind: {
+name: 'Волна света',
+magPart: 0.5,
+levels: [
+{ mpCost: 14, multiplier: 0.90, targets: 3, heal: 2 },   { mpCost: 15, multiplier: 0.97, targets: 3, heal: 2.3 },
+{ mpCost: 16, multiplier: 1.05, targets: 3, heal: 2.7 }, { mpCost: 17, multiplier: 1.12, targets: 3, heal: 3 },
+{ mpCost: 18, multiplier: 1.20, targets: 4, heal: 3.3 }, { mpCost: 19, multiplier: 1.27, targets: 4, heal: 3.7 },
+{ mpCost: 20, multiplier: 1.35, targets: 4, heal: 4 },
+],
+getDesc: (lvl) => { const s = SKILLS.whirlwind, mod = SUBCLASSES.human_templar.mods.whirlwind, d = s.levels[lvl-1]; return `Волна по кругу: до ${scV(d.targets)} врагов — удар на ${scX(d.multiplier)} и свет на ${scX(d.multiplier * mod.magPart)} от маг. атаки. За каждого задетого лечит ${scV(d.heal + '%')} макс. HP. <b>Цикл мастера:</b> убил хоть одного — КД Карающего удара −1. MP: ${scV(d.mpCost)}. КД: ${s.cooldown}.`; },
+getNextDesc: (lvl) => scNext(SKILLS.whirlwind, lvl, n => `${n.targets} цели, ×${n.multiplier.toFixed(2)}, лечение ${n.heal}%`),
+},
+};
+Object.assign(SUBCLASS_SKILLS, {
+jgEvade: {
+id: 'jgEvade', subclassId: 'human_huntsman', name: 'Ускользнуть', type: 'active',
+iconPng: 'img/skills/elf/grace.webp',
+maxLevel: 5, cooldown: 6, zealCost: 2, misses: 2,
+levels: [ { mpCost: 0, atb: 10 }, { mpCost: 0, atb: 15 }, { mpCost: 0, atb: 20 }, { mpCost: 0, atb: 25 }, { mpCost: 0, atb: 30 } ],
+getDesc: (lvl) => { const s = SKILLS.jgEvade, d = s.levels[lvl-1]; return `Тратит ${s.zealCost} заряда Азарта: две следующие атаки твари проходят мимо, каждая — ${scV('+' + d.atb + '%')} к шкале ATB. Без маны. Автобой уходит при HP ниже 50%. КД: ${s.cooldown}.`; },
+getNextDesc: (lvl) => scNext(SKILLS.jgEvade, lvl, n => `+${n.atb}% ATB`),
+useCheck: () => (jaegerZeal() < SKILLS.jgEvade.zealCost ? `нужно ${SKILLS.jgEvade.zealCost} заряда Азарта` : ''),
+},
+jgMark: {
+id: 'jgMark', subclassId: 'human_huntsman', name: 'Метка егеря', type: 'active', semiPassive: true,
+iconPng: 'img/skills/dwarf/dwarfGreed.webp',
+maxLevel: 5,
+levels: [ { mpCost: 0, bonus: 10 }, { mpCost: 0, bonus: 12 }, { mpCost: 0, bonus: 15 }, { mpCost: 0, bonus: 17 }, { mpCost: 0, bonus: 20 } ],
+getDesc: (lvl) => { const d = SKILLS.jgMark.levels[lvl-1]; return `<b>Срабатывает сама</b>, пока стоит в слоте. Крит по цели без метки ставит на неё Метку (метка одна). По меченой — ${scV('+' + d.bonus + '%')} вашего урона, а крит по ней даёт ${scV('2')} заряда Азарта. Ничего не стоит — цена в занятом слоте.`; },
+getNextDesc: (lvl) => scNext(SKILLS.jgMark, lvl, n => `+${n.bonus}% урона по меченой`),
+},
+jgEye: {
+id: 'jgEye', subclassId: 'human_huntsman', name: 'Глаз егеря', type: 'passive',
+iconPng: 'img/skills/warrior/weaponMasterW.webp',
+maxLevel: 5,
+levels: [ { crit: 3, critDmg: 10 }, { crit: 4, critDmg: 15 }, { crit: 5, critDmg: 20 }, { crit: 6, critDmg: 25 }, { crit: 8, critDmg: 30 } ],
+getDesc: (lvl) => { const d = SKILLS.jgEye.levels[lvl-1]; return `Пассивно, с луком, арбалетом или кинжалом: ${scV('+' + d.crit + '%')} шанса крита и ${scV('+' + d.critDmg + '%')} к урону крита.`; },
+getNextDesc: (lvl) => scNext(SKILLS.jgEye, lvl, n => `+${n.crit}% крита, +${n.critDmg}% урона крита`),
+},
+jgSilver: {
+id: 'jgSilver', subclassId: 'human_huntsman', name: 'Серебряный наконечник', type: 'passive',
+iconPng: 'img/skills/warrior/weaponMasterW.webp',
+maxLevel: 5,
+levels: [ { undead: 10 }, { undead: 12 }, { undead: 15 }, { undead: 17 }, { undead: 20 } ],
+getDesc: (lvl) => { const d = SKILLS.jgSilver.levels[lvl-1]; return `Пассивно: ${scV('+' + d.undead + '%')} урона по нежити (твари с тегом «Мёртвый»), крит по нежити — ещё заряд Азарта.`; },
+getNextDesc: (lvl) => scNext(SKILLS.jgSilver, lvl, n => `+${n.undead}% по нежити`),
+},
+tpSeal: {
+id: 'tpSeal', subclassId: 'human_templar', name: 'Печать света', type: 'active', freeTurn: true,
+iconPng: 'img/skills/elf/heal.webp',
+maxLevel: 5, cooldown: 8, turns: 5,
+levels: [ { mpCost: 10, pct: 20 }, { mpCost: 11, pct: 25 }, { mpCost: 12, pct: 30 }, { mpCost: 13, pct: 35 }, { mpCost: 14, pct: 40 } ],
+getDesc: (lvl) => { const s = SKILLS.tpSeal, d = s.levels[lvl-1]; return `Не тратит ход: ${s.turns} ходов каждый ваш удар оружием добавляет свет — ${scV(d.pct + '%')} силы света (маг. атака + половина физ.) сверху. MP: ${scV(d.mpCost)}. КД: ${s.cooldown}.`; },
+getNextDesc: (lvl) => scNext(SKILLS.tpSeal, lvl, n => `${n.pct}% маг. атаки, MP ${n.mpCost}`),
+},
+tpRadiance: {
+id: 'tpRadiance', subclassId: 'human_templar', name: 'Сияние', type: 'active', semiPassive: true,
+iconPng: 'img/skills/elf/forest_blessing.webp',
+maxLevel: 5, ramp: 5, maxTurns: 10, undeadMult: 2,
+levels: [ { mpCost: 0, base: 8, mp: 4 }, { mpCost: 0, base: 9, mp: 4 }, { mpCost: 0, base: 10, mp: 3 }, { mpCost: 0, base: 11, mp: 3 }, { mpCost: 0, base: 12, mp: 2 } ],
+getDesc: (lvl) => { const s = SKILLS.tpRadiance, d = s.levels[lvl-1]; return `<b>Горит само</b>, пока стоит в слоте и есть мана: каждый ваш ход бьёт всех врагов светом на ${scV(d.base + '%')} силы света (маг. атака + половина физ.), +${s.ramp}% за каждый ход подряд (до ${s.maxTurns} ходов). Нежить — ×${s.undeadMult}. Стоит ${scV(d.mp)} MP за ход; мана кончилась — гаснет, и разгон с нуля.`; },
+getNextDesc: (lvl) => scNext(SKILLS.tpRadiance, lvl, n => `${n.base}% маг. атаки, ${n.mp} MP за ход`),
+},
+tpVow: {
+id: 'tpVow', subclassId: 'human_templar', name: 'Обет против тьмы', type: 'passive',
+iconPng: 'img/skills/warrior/resilience.webp',
+maxLevel: 5,
+levels: [ { pct: 10 }, { pct: 12 }, { pct: 15 }, { pct: 17 }, { pct: 20 } ],
+getDesc: (lvl) => { const d = SKILLS.tpVow.levels[lvl-1]; return `Пассивно: нежить бьёт вас на ${scV(d.pct + '%')} слабее, а вы её — на ${scV(d.pct + '%')} сильнее.`; },
+getNextDesc: (lvl) => scNext(SKILLS.tpVow, lvl, n => `${n.pct}%`),
+},
+tpBalance: {
+id: 'tpBalance', subclassId: 'human_templar', name: 'Равновесие', type: 'passive',
+iconPng: 'img/skills/mage/manaRegen.webp',
+maxLevel: 5,
+levels: [ { mp: 1 }, { mp: 1.5 }, { mp: 2 }, { mp: 2.5 }, { mp: 3 } ],
+getDesc: (lvl) => { const d = SKILLS.tpBalance.levels[lvl-1]; return `Пассивно: каждый удар оружием возвращает ${scV(d.mp)} MP (дробная часть — шансом). Кормит Сияние.`; },
+getNextDesc: (lvl) => scNext(SKILLS.tpBalance, lvl, n => `${n.mp} MP за удар`),
+},
+});
+const SC_FIREBALL_LEVELS = [
+{ mpCost: 10, multiplier: 2.00, burnPercent: 10 }, { mpCost: 11, multiplier: 2.24, burnPercent: 12 },
+{ mpCost: 13, multiplier: 2.48, burnPercent: 15 }, { mpCost: 14, multiplier: 2.72, burnPercent: 17 },
+{ mpCost: 15, multiplier: 2.96, burnPercent: 20 }, { mpCost: 16, multiplier: 3.20, burnPercent: 22 },
+{ mpCost: 17, multiplier: 3.44, burnPercent: 25 },
+];
+const SC_ICE_LEVELS = [
+{ mpCost: 12, multiplier: 2.07 }, { mpCost: 13, multiplier: 2.34 }, { mpCost: 14, multiplier: 2.61 },
+{ mpCost: 15, multiplier: 2.88 }, { mpCost: 17, multiplier: 3.15 }, { mpCost: 18, multiplier: 3.42 },
+{ mpCost: 19, multiplier: 3.69 },
+];
+const SC_VOLLEY_LEVELS = [
+{ mpCost: 16, multiplier: 0.80, shots: 3, effectChance: 10 }, { mpCost: 17, multiplier: 0.87, shots: 3, effectChance: 12 },
+{ mpCost: 19, multiplier: 0.95, shots: 3, effectChance: 14 }, { mpCost: 20, multiplier: 1.02, shots: 3, effectChance: 17 },
+{ mpCost: 22, multiplier: 1.10, shots: 4, effectChance: 20 }, { mpCost: 23, multiplier: 1.17, shots: 4, effectChance: 22 },
+{ mpCost: 24, multiplier: 1.25, shots: 4, effectChance: 25 },
+];
+const scMap = (arr, fn) => arr.map((x, i) => Object.assign({}, x, fn(x, i)));
+SUBCLASSES.human_elementalist.mods = {
+fireball: {
+name: 'Огненный шар', shatterMult: 1.5,
+levels: SC_FIREBALL_LEVELS,
+getDesc: (lvl) => { const s = SKILLS.fireball, d = s.levels[lvl-1]; return `Огненный удар на ${scX(d.multiplier)}, поджог на ${s.burnTurns} хода по ${scV(d.burnPercent + '%')} маг. атаки. <b>Раскол:</b> по замороженной — ${scX(1.5)}, заморозка спадает. MP: ${scV(d.mpCost)}.`; },
+getNextDesc: (lvl) => scNext(SKILLS.fireball, lvl, n => `×${n.multiplier.toFixed(2)}, поджог ${n.burnPercent}%, MP ${n.mpCost}`),
+},
+iceArrow: {
+name: 'Ледяная стрела', freezeChance: 35,
+levels: SC_ICE_LEVELS,
+getDesc: (lvl) => { const s = SKILLS.iceArrow, d = s.levels[lvl-1]; return `Ледяной удар на ${scX(d.multiplier)}. Шанс ${scV(s.freezeChance + '%')} заморозить (пропуск удара); замороженную Огненный шар раскалывает. MP: ${scV(d.mpCost)}. КД: ${s.cooldown} ATB.`; },
+getNextDesc: (lvl) => scNext(SKILLS.iceArrow, lvl, n => `×${n.multiplier.toFixed(2)}, MP ${n.mpCost}`),
+},
+elementalVolley: {
+name: 'Буря стихий',
+levels: SC_VOLLEY_LEVELS,
+getDesc: (lvl) => { const s = SKILLS.elementalVolley, d = s.levels[lvl-1]; return `${scV(d.shots)} снаряда по ${scX(d.multiplier)} — огонь, лёд и молния <b>гарантированно</b> все три. Шанс ${scV(d.effectChance + '%')} эффекта стихии. Резонанс — каждый раз: следующий Шар или Стрела без маны. MP: ${scV(d.mpCost)}. КД: ${s.cooldown}.`; },
+getNextDesc: (lvl) => scNext(SKILLS.elementalVolley, lvl, n => `${n.shots} снаряда, ×${n.multiplier.toFixed(2)}, эффект ${n.effectChance}%`),
+},
+};
+SUBCLASSES.human_priest.mods = {
+fireball: {
+name: 'Кара', undeadMult: 1.5, healPct: 20,
+levels: SC_FIREBALL_LEVELS,
+getDesc: (lvl) => { const s = SKILLS.fireball, d = s.levels[lvl-1]; return `Удар светом на ${scX(d.multiplier)}, нежить — ${scX(1.5)}. Лечит ${scV('20%')} нанесённого. Усиливается и качает Жизнь. MP: ${scV(d.mpCost)}.`; },
+getNextDesc: (lvl) => scNext(SKILLS.fireball, lvl, n => `×${n.multiplier.toFixed(2)}, MP ${n.mpCost}`),
+},
+iceArrow: {
+name: 'Оковы света', weakTurns: 3, weakPct: 20,
+levels: scMap(SC_ICE_LEVELS, (x, i) => ({ stun: [25, 27, 30, 32, 35, 37, 40][i] })),
+getDesc: (lvl) => { const s = SKILLS.iceArrow, d = s.levels[lvl-1]; return `Свет на ${scX(d.multiplier)}. Шанс ${scV(d.stun + '%')} оглушить; цель ${s.weakTurns} хода бьёт на ${scV('20%')} слабее. MP: ${scV(d.mpCost)}. КД: ${s.cooldown} ATB.`; },
+getNextDesc: (lvl) => scNext(SKILLS.iceArrow, lvl, n => `×${n.multiplier.toFixed(2)}, оглушение ${n.stun}%`),
+},
+elementalVolley: {
+name: 'Благодатный дождь',
+levels: scMap(SC_VOLLEY_LEVELS, (x, i) => ({ heal: [2, 2.2, 2.5, 2.7, 3, 3.2, 3.5][i] })),
+getDesc: (lvl) => { const s = SKILLS.elementalVolley, d = s.levels[lvl-1]; return `${scV(d.shots)} капли света по ${scX(d.multiplier)} в случайных врагов, каждое попадание лечит ${scV(d.heal + '%')} макс. HP. Качает Жизнь. MP: ${scV(d.mpCost)}. КД: ${s.cooldown}.`; },
+getNextDesc: (lvl) => scNext(SKILLS.elementalVolley, lvl, n => `${n.shots} капли, ×${n.multiplier.toFixed(2)}, лечение ${n.heal}%`),
+},
+};
+const NECRO_ALLY_MAX = 3;
+const NECRO_KINDS = {
+zombie:   { name: 'Зомби',  img: 'img/allies/necro_zombie.webp',   hp: 0.60, atk: 0.40, dodge: 0,  slow: true },
+skeleton: { name: 'Скелет', img: 'img/allies/necro_skeleton.webp', hp: 0.35, atk: 0.60, dodge: 5,  slow: false },
+spirit:   { name: 'Дух',    img: 'img/allies/necro_spirit.webp',   hp: 0.25, atk: 0.50, dodge: 50, slow: false },
+};
+SUBCLASSES.human_necromancer.mods = {
+fireball: {
+name: 'Костяное копьё',
+levels: SC_FIREBALL_LEVELS,
+getDesc: (lvl) => { const s = SKILLS.fireball, d = s.levels[lvl-1]; return `Копьё Смерти на ${scX(d.multiplier)}. Убило — павший встаёт бесплатно, если есть место (до ${NECRO_ALLY_MAX} слуг). Усиливается и качает Смерть. MP: ${scV(d.mpCost)}.`; },
+getNextDesc: (lvl) => scNext(SKILLS.fireball, lvl, n => `×${n.multiplier.toFixed(2)}, MP ${n.mpCost}`),
+},
+iceArrow: {
+name: 'Проклятие слабости', weakTurns: 3,
+levels: scMap(SC_ICE_LEVELS, (x, i) => ({ weak: [15, 17, 18, 20, 22, 23, 25][i] })),
+getDesc: (lvl) => { const s = SKILLS.iceArrow, d = s.levels[lvl-1]; return `Проклятие Смерти на ${scX(d.multiplier)}: цель ${s.weakTurns} хода бьёт на ${scV(d.weak + '%')} слабее. MP: ${scV(d.mpCost)}. КД: ${s.cooldown} ATB.`; },
+getNextDesc: (lvl) => scNext(SKILLS.iceArrow, lvl, n => `×${n.multiplier.toFixed(2)}, ослабление ${n.weak}%`),
+},
+elementalVolley: {
+name: 'Зов могил',
+levels: scMap(SC_VOLLEY_LEVELS, x => ({ targets: x.shots })),
+getDesc: (lvl) => { const s = SKILLS.elementalVolley, d = s.levels[lvl-1]; return `Смерть бьёт до ${scV(d.targets)} врагов на ${scX(d.multiplier)} каждого. Убитые встают слугами, пока есть место. MP: ${scV(d.mpCost)}. КД: ${s.cooldown}.`; },
+getNextDesc: (lvl) => scNext(SKILLS.elementalVolley, lvl, n => `${n.targets} цели, ×${n.multiplier.toFixed(2)}`),
+},
+};
+Object.assign(SUBCLASS_SKILLS, {
+elLightning: {
+id: 'elLightning', subclassId: 'human_elementalist', name: 'Удар молнии', type: 'active',
+iconPng: 'img/skills/drow/discharge.webp',
+maxLevel: 5, cooldown: 4, shockTurns: 2, burstPct: 50,
+levels: [
+{ mpCost: 14, multiplier: 1.8, atbCut: 20, manaBurn: 20 }, { mpCost: 15, multiplier: 2.0, atbCut: 25, manaBurn: 25 },
+{ mpCost: 16, multiplier: 2.2, atbCut: 30, manaBurn: 30 }, { mpCost: 17, multiplier: 2.4, atbCut: 35, manaBurn: 35 },
+{ mpCost: 18, multiplier: 2.6, atbCut: 40, manaBurn: 40 },
+],
+getDesc: (lvl) => { const s = SKILLS.elLightning, d = s.levels[lvl-1]; return `Молния на ${scX(d.multiplier)}: шкала ATB стаи ${scV('−' + d.atbCut + '%')}, у магических тварей выжигает ${scV(d.manaBurn + '%')} маны. По горящей — <b>взрыв</b>: соседи получают ${scV(s.burstPct + '%')} урона. Цель ${s.shockTurns} хода «под током». Качает Молнию. MP: ${scV(d.mpCost)}. КД: ${s.cooldown}.`; },
+getNextDesc: (lvl) => scNext(SKILLS.elLightning, lvl, n => `×${n.multiplier.toFixed(2)}, ATB −${n.atbCut}%, мана −${n.manaBurn}%`),
+},
+elEcho: {
+id: 'elEcho', subclassId: 'human_elementalist', name: 'Отголосок', type: 'active', semiPassive: true,
+iconPng: 'img/skills/mage/fireball.webp',
+maxLevel: 5,
+levels: [ { mpCost: 0, chance: 60 }, { mpCost: 0, chance: 70 }, { mpCost: 0, chance: 80 }, { mpCost: 0, chance: 90 }, { mpCost: 0, chance: 100 } ],
+getDesc: (lvl) => { const d = SKILLS.elEcho.levels[lvl-1]; return `<b>Срабатывает сам</b>, пока стоит в слоте. Тварь умерла горящей, замороженной или под током — с шансом ${scV(d.chance + '%')} эффект перескакивает на соседа. Ничего не стоит — цена в занятом слоте.`; },
+getNextDesc: (lvl) => scNext(SKILLS.elEcho, lvl, n => `шанс ${n.chance}%`),
+},
+elFusion: {
+id: 'elFusion', subclassId: 'human_elementalist', name: 'Сплав стихий', type: 'passive',
+iconPng: 'img/skills/mage/weaponMasterM.webp',
+maxLevel: 5,
+levels: [ { pct: 10 }, { pct: 12 }, { pct: 15 }, { pct: 17 }, { pct: 20 } ],
+getDesc: (lvl) => { const d = SKILLS.elFusion.levels[lvl-1]; return `Пассивно: если на цели эффекты двух стихий (горение, заморозка, ток) — ${scV('+' + d.pct + '%')} вашего урона по ней.`; },
+getNextDesc: (lvl) => scNext(SKILLS.elFusion, lvl, n => `+${n.pct}%`),
+},
+elShift: {
+id: 'elShift', subclassId: 'human_elementalist', name: 'Смена стихий', type: 'passive',
+iconPng: 'img/skills/mage/manaRegen.webp',
+maxLevel: 5,
+levels: [ { pct: 10 }, { pct: 12 }, { pct: 15 }, { pct: 17 }, { pct: 20 } ],
+getDesc: (lvl) => { const d = SKILLS.elShift.levels[lvl-1]; return `Пассивно: заклинание другой стихии, чем прошлое, стоит на ${scV(d.pct + '%')} меньше маны.`; },
+getNextDesc: (lvl) => scNext(SKILLS.elShift, lvl, n => `−${n.pct}% MP`),
+},
+prBlessing: {
+id: 'prBlessing', subclassId: 'human_priest', name: 'Благословение', type: 'active', freeTurn: true,
+iconPng: 'img/skills/elf/heal.webp',
+maxLevel: 5, cooldown: 3,
+levels: [
+{ mpCost: 15, cut: 8, regen: 1 }, { mpCost: 16, cut: 10, regen: 1.2 }, { mpCost: 17, cut: 11, regen: 1.5 },
+{ mpCost: 18, cut: 13, regen: 1.7 }, { mpCost: 19, cut: 15, regen: 2 },
+],
+getDesc: (lvl) => { const d = SKILLS.prBlessing.levels[lvl-1]; return `Не тратит ход: до конца боя входящий урон ${scV('−' + d.cut + '%')} и ${scV(d.regen + '%')} макс. HP лечения в начале каждого вашего хода. Автобой благословляет себя в начале боя. MP: ${scV(d.mpCost)}.`; },
+getNextDesc: (lvl) => scNext(SKILLS.prBlessing, lvl, n => `−${n.cut}% урона, ${n.regen}% HP за ход`),
+},
+prIntercede: {
+id: 'prIntercede', subclassId: 'human_priest', name: 'Заступничество', type: 'active', semiPassive: true,
+iconPng: 'img/skills/elf/nature_heal.webp',
+maxLevel: 5, threshold: 35, every: 4,
+levels: [ { mpCost: 0, heal: 15 }, { mpCost: 0, heal: 17 }, { mpCost: 0, heal: 20 }, { mpCost: 0, heal: 22 }, { mpCost: 0, heal: 25 } ],
+getDesc: (lvl) => { const s = SKILLS.prIntercede, d = s.levels[lvl-1]; return `<b>Срабатывает само</b>, пока стоит в слоте: HP упало ниже ${s.threshold}% — лечение на ${scV(d.heal + '%')} макс. HP. Не чаще раза в ${s.every} хода. Ничего не стоит — цена в занятом слоте.`; },
+getNextDesc: (lvl) => scNext(SKILLS.prIntercede, lvl, n => `лечение ${n.heal}%`),
+},
+prGrace: {
+id: 'prGrace', subclassId: 'human_priest', name: 'Благодать', type: 'passive',
+iconPng: 'img/skills/elf/forest_blessing.webp',
+maxLevel: 5,
+levels: [ { cap: 20 }, { cap: 25 }, { cap: 30 }, { cap: 35 }, { cap: 40 } ],
+getDesc: (lvl) => { const d = SKILLS.prGrace.levels[lvl-1]; return `Пассивно, только в бою: лечение сверх полного HP (любое — навыки, зелья, реген) копится барьером до ${scV(d.cap + '%')} макс. HP. Барьер принимает удары первым; после боя пропадает.`; },
+getNextDesc: (lvl) => scNext(SKILLS.prGrace, lvl, n => `барьер до ${n.cap}%`),
+},
+prCleanse: {
+id: 'prCleanse', subclassId: 'human_priest', name: 'Очищение', type: 'passive',
+iconPng: 'img/skills/elf/fast_prayer.webp',
+maxLevel: 5,
+levels: [ { step: 14 }, { step: 13 }, { step: 12 }, { step: 11 }, { step: 10 } ],
+getDesc: (lvl) => { const d = SKILLS.prCleanse.levels[lvl-1]; return `Пассивно: каждые ${scV(d.step + '%')} макс. HP, восстановленные любым лечением, снимают с вас один вредный эффект (яд, кровотечение, паутина).`; },
+getNextDesc: (lvl) => scNext(SKILLS.prCleanse, lvl, n => `каждые ${n.step}%`),
+},
+nmRaise: {
+id: 'nmRaise', subclassId: 'human_necromancer', name: 'Поднять павшего', type: 'active', freeTurn: true,
+iconPng: 'img/skills/orc/spiritWrath.webp',
+maxLevel: 5, cooldown: 3,
+levels: [ { mpCost: 14, power: 40 }, { mpCost: 15, power: 45 }, { mpCost: 16, power: 50 }, { mpCost: 17, power: 55 }, { mpCost: 18, power: 60 } ],
+getDesc: (lvl) => { const d = SKILLS.nmRaise.levels[lvl-1]; return `Не тратит ход: поднимает последнюю убитую тварь нежитью на ${scV(d.power + '%')} её силы: Плоть — зомби (крепкий, медленный), Конструкт / Камень / Древо — дух (хрупкий, увёртливый), остальные — скелет. Трупа нет — встаёт скелет-страж от вашей маг. атаки. До ${NECRO_ALLY_MAX} слуг, после боя рассыпаются. Ваши бесплатные подъёмы (Копьё, Зов могил) — той же силы. MP: ${scV(d.mpCost)}. КД: ${SKILLS.nmRaise.cooldown}.`; },
+getNextDesc: (lvl) => scNext(SKILLS.nmRaise, lvl, n => `${n.power}% силы`),
+useCheck: () => (necroAllies().length >= NECRO_ALLY_MAX ? 'нет места для слуги' : ''),
+},
+nmBonePlate: {
+id: 'nmBonePlate', subclassId: 'human_necromancer', name: 'Костяная плата', type: 'active', semiPassive: true,
+iconPng: 'img/skills/orc/pestilence.webp',
+maxLevel: 5,
+levels: [ { mpCost: 0, over: 20 }, { mpCost: 0, over: 18 }, { mpCost: 0, over: 16 }, { mpCost: 0, over: 14 }, { mpCost: 0, over: 12 } ],
+getDesc: (lvl) => { const d = SKILLS.nmBonePlate.levels[lvl-1]; return `<b>Срабатывает сама</b>, пока стоит в слоте: удар по вам больше ${scV(d.over + '%')} макс. HP целиком принимает слуга. Ничего не стоит — цена в занятом слоте.`; },
+getNextDesc: (lvl) => scNext(SKILLS.nmBonePlate, lvl, n => `удар больше ${n.over}% HP`),
+},
+nmBonds: {
+id: 'nmBonds', subclassId: 'human_necromancer', name: 'Узы смерти', type: 'passive',
+iconPng: 'img/skills/orc/orcBlood.webp',
+maxLevel: 5,
+levels: [ { atk: 6, hp: 5 }, { atk: 8, hp: 7 }, { atk: 10, hp: 10 }, { atk: 12, hp: 12 }, { atk: 15, hp: 15 } ],
+getDesc: (lvl) => { const d = SKILLS.nmBonds.levels[lvl-1]; return `Пассивно: каждый слуга получает ${scV(d.atk + '%')} вашей маг. атаки к удару и ${scV(d.hp + '%')} вашего макс. HP.`; },
+getNextDesc: (lvl) => scNext(SKILLS.nmBonds, lvl, n => `${n.atk}% маг. атаки, ${n.hp}% HP`),
+},
+nmFeast: {
+id: 'nmFeast', subclassId: 'human_necromancer', name: 'Пир смерти', type: 'passive',
+iconPng: 'img/skills/orc/shamanWisdom.webp',
+maxLevel: 5,
+levels: [ { mp: 8 }, { mp: 10 }, { mp: 12 }, { mp: 14 }, { mp: 16 } ],
+getDesc: (lvl) => { const d = SKILLS.nmFeast.levels[lvl-1]; return `Пассивно: слуга пал — вы получаете ${scV(d.mp + '%')} макс. MP.`; },
+getNextDesc: (lvl) => scNext(SKILLS.nmFeast, lvl, n => `${n.mp}% MP`),
+},
+});
+const SC_WAR_PS_LEVELS = [
+{ mpCost: 10, multiplier: 2.0 }, { mpCost: 11, multiplier: 2.25 }, { mpCost: 13, multiplier: 2.5 },
+{ mpCost: 14, multiplier: 2.75 }, { mpCost: 15, multiplier: 3.0 }, { mpCost: 16, multiplier: 3.25 },
+{ mpCost: 17, multiplier: 3.5 },
+];
+const SC_RAGE_LEVELS = [
+{ mpCost: 0, multiplier: 2.2, recoilPercent: 4, harvestCdCut: 1 }, { mpCost: 0, multiplier: 2.4, recoilPercent: 4, harvestCdCut: 1 },
+{ mpCost: 0, multiplier: 2.6, recoilPercent: 4, harvestCdCut: 1 }, { mpCost: 0, multiplier: 2.8, recoilPercent: 4, harvestCdCut: 2 },
+{ mpCost: 0, multiplier: 3.5, recoilPercent: 4, harvestCdCut: 2 }, { mpCost: 0, multiplier: 3.7, recoilPercent: 4, harvestCdCut: 2 },
+{ mpCost: 0, multiplier: 3.9, recoilPercent: 4, harvestCdCut: 2 },
+];
+const SC_HARVEST_LEVELS = [
+{ mpCost: 12, multiplier: 0.70, targets: 5, healPercent: 5 }, { mpCost: 13, multiplier: 0.77, targets: 5, healPercent: 5.5 },
+{ mpCost: 14, multiplier: 0.85, targets: 5, healPercent: 6 }, { mpCost: 15, multiplier: 0.92, targets: 5, healPercent: 7 },
+{ mpCost: 16, multiplier: 1.00, targets: 5, healPercent: 8 }, { mpCost: 17, multiplier: 1.07, targets: 5, healPercent: 8.5 },
+{ mpCost: 18, multiplier: 1.15, targets: 5, healPercent: 9 },
+];
+const SC_WRATH_LEVELS = [
+{ mpCost: 0, multiplier: 2.70, recoilPercent: 4 }, { mpCost: 0, multiplier: 3.03, recoilPercent: 4 },
+{ mpCost: 0, multiplier: 3.35, recoilPercent: 4 }, { mpCost: 0, multiplier: 3.68, recoilPercent: 4 },
+{ mpCost: 0, multiplier: 4.00, recoilPercent: 4 }, { mpCost: 0, multiplier: 4.30, recoilPercent: 4 },
+{ mpCost: 0, multiplier: 4.60, recoilPercent: 4 },
+];
+const SC_PEST_LEVELS = [
+{ mpCost: 16, targets: 3, dotPercent: 28, turns: 3 }, { mpCost: 17, targets: 3, dotPercent: 31, turns: 3 },
+{ mpCost: 19, targets: 4, dotPercent: 34, turns: 4 }, { mpCost: 20, targets: 4, dotPercent: 38, turns: 5 },
+{ mpCost: 22, targets: 5, dotPercent: 44, turns: 6 }, { mpCost: 23, targets: 5, dotPercent: 47, turns: 6 },
+{ mpCost: 24, targets: 5, dotPercent: 50, turns: 6 },
+];
+const scPct = (arr) => arr;
+SUBCLASSES.orc_rock.mods = {
+powerStrike: {
+name: 'Таран', stun: 15,
+levels: scMap(SC_WAR_PS_LEVELS, (x, i) => ({ hpPct: [5, 5.5, 6, 6.5, 7, 7.5, 8][i] })),
+getDesc: (lvl) => { const s = SKILLS.powerStrike, d = s.levels[lvl-1]; return `Таран на ${scX(d.multiplier)} и ещё ${scV(d.hpPct + '%')} вашего макс. HP. Шанс ${scV('15%')} оглушить. MP: ${scV(d.mpCost)}. КД: ${s.cooldown} ATB.`; },
+getNextDesc: (lvl) => scNext(SKILLS.powerStrike, lvl, n => `×${n.multiplier.toFixed(2)} + ${n.hpPct}% HP`),
+},
+orcRage: {
+name: 'Ответная ярость', minHpPercent: 0, lifePct: 30,
+levels: scMap(SC_RAGE_LEVELS, () => ({ recoilPercent: 0 })),
+getDesc: (lvl) => { const s = SKILLS.orcRage, d = s.levels[lvl-1]; return `Удар на ${scX(d.multiplier)}, при любом HP и без отдачи. Чем меньше у вас HP, тем сильнее — до ${scX(2)} на последнем издыхании. ${scV('30%')} урона возвращается здоровьем. Убийство: КД Жатвы −${scV(d.harvestCdCut)}. Качает Смерть. КД: ${s.cooldown} ATB.`; },
+getNextDesc: (lvl) => scNext(SKILLS.orcRage, lvl, n => `×${n.multiplier.toFixed(2)}`),
+},
+bloodHarvest: {
+name: 'Жатва с рыком', roarTurns: 3, roarPct: 15,
+levels: SC_HARVEST_LEVELS,
+getDesc: (lvl) => { const s = SKILLS.bloodHarvest, d = s.levels[lvl-1]; return `Широкий удар по всем (до ${scV(d.targets)}) на ${scX(d.multiplier)}. <b>Рык:</b> задетые 3 хода бьют только вас и на ${scV('15%')} слабее. За каждого убитого — ${scV(d.healPercent + '%')} макс. HP. MP: ${scV(d.mpCost)}. КД: ${s.cooldown}.`; },
+getNextDesc: (lvl) => scNext(SKILLS.bloodHarvest, lvl, n => `×${n.multiplier.toFixed(2)}, лечение ${n.healPercent}%`),
+},
+};
+const BERSERK_HP_COST = 4;
+const BERSERK_FREE_BELOW = 15;
+const BERSERK_HP_BACK = 100;
+SUBCLASSES.orc_berserker.mods = {
+powerStrike: {
+name: 'Сокрушить',
+levels: scMap(SC_WAR_PS_LEVELS, (x, i) => ({ mpCost: 0, pierce: [30, 33, 37, 40, 43, 47, 50][i] })),
+getDesc: (lvl) => { const s = SKILLS.powerStrike, d = s.levels[lvl-1]; return `Сокрушающий удар на ${scX(d.multiplier)}. С двуручным пробивает ${scV(d.pierce + '%')} защиты (против Толстокожих). <b>Кровавая цена:</b> ${BERSERK_HP_COST}% HP вместо маны, убийство возвращает заплаченное. КД: ${s.cooldown} ATB.`; },
+getNextDesc: (lvl) => scNext(SKILLS.powerStrike, lvl, n => `×${n.multiplier.toFixed(2)}, пробой ${n.pierce}%`),
+},
+orcRage: {
+name: 'Безумная ярость', minHpPercent: 0, maxBonus: 60, noRecoilBelow: 30,
+levels: SC_RAGE_LEVELS,
+getDesc: (lvl) => { const s = SKILLS.orcRage, d = s.levels[lvl-1]; return `Удар на ${scX(d.multiplier)} при любом HP: ${scV('+1%')} урона за каждый 1% потерянного HP (до ${scV('+60%')}). Отдача ${scV(d.recoilPercent + '%')} HP, ниже 30% HP — без отдачи. Убийство: КД Размаха −${scV(d.harvestCdCut)}. КД: ${s.cooldown} ATB.`; },
+getNextDesc: (lvl) => scNext(SKILLS.orcRage, lvl, n => `×${n.multiplier.toFixed(2)}`),
+},
+bloodHarvest: {
+name: 'Кровавый размах', twoHandTargets: 1, twoHandMult: 1.0,
+levels: scMap(SC_HARVEST_LEVELS, () => ({ mpCost: 0 })),
+getDesc: (lvl) => { const s = SKILLS.bloodHarvest, d = s.levels[lvl-1]; return `Широкий удар по всем (до ${scV(d.targets)}) на ${scX(d.multiplier)}; с двуручным — ещё одна цель. За каждого убитого — ${scV(d.healPercent + '%')} макс. HP. <b>Кровавая цена:</b> ${BERSERK_HP_COST}% HP, убийство возвращает заплаченное. КД: ${s.cooldown}.`; },
+getNextDesc: (lvl) => scNext(SKILLS.bloodHarvest, lvl, n => `×${n.multiplier.toFixed(2)}, лечение ${n.healPercent}%`),
+},
+};
+SUBCLASSES.orc_chieftain.mods = {
+powerStrike: {
+name: 'Удар предков', magPart: 0.5, enemyHpPct: 2,
+levels: SC_WAR_PS_LEVELS,
+getDesc: (lvl) => { const s = SKILLS.powerStrike, d = s.levels[lvl-1]; return `(атака + маг. атака ×0.5) × ${scX(d.multiplier)} и ещё ${scV('2%')} от макс. HP врага. Сила предков — Смерть. MP: ${scV(d.mpCost)}. КД: ${s.cooldown} ATB.`; },
+getNextDesc: (lvl) => scNext(SKILLS.powerStrike, lvl, n => `×${n.multiplier.toFixed(2)}`),
+},
+orcRage: {
+name: 'Клинок духов',
+levels: SC_RAGE_LEVELS,
+getDesc: (lvl) => { const s = SKILLS.orcRage, d = s.levels[lvl-1]; return `Удар на ${scX(d.multiplier)}, половина урона — магия Смерти: защиту режет наполовину физ., наполовину маг. Без маны, отдача ${scV(d.recoilPercent + '%')} HP, только при HP от 50%. Убийство: КД Жатвы −${scV(d.harvestCdCut)}. КД: ${s.cooldown} ATB.`; },
+getNextDesc: (lvl) => scNext(SKILLS.orcRage, lvl, n => `×${n.multiplier.toFixed(2)}`),
+},
+bloodHarvest: {
+name: 'Жатва предков', rotPct: 15,
+levels: scMap(SC_HARVEST_LEVELS, (x, i) => ({ rotTurns: i < 3 ? 2 : 3 })),
+getDesc: (lvl) => { const s = SKILLS.bloodHarvest, d = s.levels[lvl-1]; return `Широкий удар по всем (до ${scV(d.targets)}) на ${scX(d.multiplier)}, задетые гниют ${scV(d.rotTurns)} хода (${scV('15%')} маг. атаки за ход). За каждого убитого — ${scV(d.healPercent + '%')} макс. HP. MP: ${scV(d.mpCost)}. КД: ${s.cooldown}.`; },
+getNextDesc: (lvl) => scNext(SKILLS.bloodHarvest, lvl, n => `×${n.multiplier.toFixed(2)}, гниение ${n.rotTurns} хода`),
+},
+};
+SUBCLASSES.orc_hexer.mods = {
+fireball: {
+name: 'Трупный огонь', rotPct: 15, rotTurns: 3,
+levels: SC_FIREBALL_LEVELS,
+getDesc: (lvl) => { const s = SKILLS.fireball, d = s.levels[lvl-1]; return `Огонь на ${scX(d.multiplier)}: поджог по ${scV(d.burnPercent + '%')} маг. атаки и слой Гниения (${scV('15%')} маг. атаки, 3 хода). MP: ${scV(d.mpCost)}.`; },
+getNextDesc: (lvl) => scNext(SKILLS.fireball, lvl, n => `×${n.multiplier.toFixed(2)}, MP ${n.mpCost}`),
+},
+spiritWrath: {
+name: 'Гнев',
+levels: SC_WRATH_LEVELS,
+getDesc: (lvl) => { const s = SKILLS.spiritWrath, d = s.levels[lvl-1]; return `Гнев духов на ${scX(d.multiplier)} и ${scV(DEATH_MAGIC_MAX_HP_PERCENT + '%')} макс. HP врага. ${scV('+10%')} за каждое разное проклятие на цели и ${scV('+5%')} за слой Гниения. Отдача ${scV(d.recoilPercent + '%')}, только при HP от 50%. КД: ${s.cooldown} ATB.`; },
+getNextDesc: (lvl) => scNext(SKILLS.spiritWrath, lvl, n => `×${n.multiplier.toFixed(2)}`),
+},
+pestilence: {
+name: 'Мор', rotMaxLayers: 4,
+levels: SC_PEST_LEVELS,
+getDesc: (lvl) => { const s = SKILLS.pestilence, d = s.levels[lvl-1]; return `Гниение на ${scV(d.targets)} врагов: ${scV(d.dotPercent + '%')} маг. атаки и ${scV(DEATH_MAGIC_MAX_HP_PERCENT + '%')} макс. HP за ход, ${scV(d.turns)} хода. До <b>4 слоёв</b>. Перескакивает при смерти. MP: ${scV(d.mpCost)}. КД: ${s.cooldown}.`; },
+getNextDesc: (lvl) => scNext(SKILLS.pestilence, lvl, n => `${n.targets} цели, ${n.dotPercent}%, ${n.turns} хода`),
+},
+};
+SUBCLASSES.orc_healer.mods = {
+fireball: {
+name: 'Порча', weakTurns: 3,
+levels: scMap(SC_FIREBALL_LEVELS, (x, i) => ({ weak: [15, 17, 18, 20, 22, 23, 25][i] })),
+getDesc: (lvl) => { const s = SKILLS.fireball, d = s.levels[lvl-1]; return `Порча Смертью на ${scX(d.multiplier)}: цель 3 хода бьёт на ${scV(d.weak + '%')} слабее. MP: ${scV(d.mpCost)}.`; },
+getNextDesc: (lvl) => scNext(SKILLS.fireball, lvl, n => `×${n.multiplier.toFixed(2)}, ослабление ${n.weak}%`),
+},
+spiritWrath: {
+name: 'Кровопуск', minHpPercent: 0,
+levels: scMap(SC_WRATH_LEVELS, (x, i) => ({ recoilPercent: 0, heal: [20, 22, 25, 27, 30, 32, 35][i] })),
+getDesc: (lvl) => { const s = SKILLS.spiritWrath, d = s.levels[lvl-1]; return `Гнев на ${scX(d.multiplier)} и ${scV(DEATH_MAGIC_MAX_HP_PERCENT + '%')} макс. HP врага — без отдачи и при любом HP: ${scV(d.heal + '%')} урона лечит вас. КД: ${s.cooldown} ATB.`; },
+getNextDesc: (lvl) => scNext(SKILLS.spiritWrath, lvl, n => `×${n.multiplier.toFixed(2)}, лечение ${n.heal}%`),
+},
+pestilence: {
+name: 'Иссушение',
+levels: scMap(SC_PEST_LEVELS, (x, i) => ({ heal: [20, 22, 25, 27, 30, 32, 35][i] })),
+getDesc: (lvl) => { const s = SKILLS.pestilence, d = s.levels[lvl-1]; return `Гниение на ${scV(d.targets)} врагов: ${scV(d.dotPercent + '%')} маг. атаки за ход, ${scV(d.turns)} хода. Каждый тик Гниения лечит вас на ${scV(d.heal + '%')} нанесённого. MP: ${scV(d.mpCost)}. КД: ${s.cooldown}.`; },
+getNextDesc: (lvl) => scNext(SKILLS.pestilence, lvl, n => `${n.dotPercent}%, лечение ${n.heal}%`),
+},
+};
+const TOTEM_KINDS = {
+stone:  { name: 'Тотем Камня',  img: 'img/allies/totem_stone.webp',  hp: 0.6, atk: 0,   taunt: true, desc: 'принимает удары' },
+rage:   { name: 'Тотем Ярости', img: 'img/allies/totem_rage.webp',   hp: 0.3, atk: 0.6, desc: 'стреляет' },
+spirit: { name: 'Тотем Духов',  img: 'img/allies/totem_spirit.webp', hp: 0.3, atk: 0,   healHp: 2, healMp: 2, desc: 'лечит и даёт ману' },
+};
+SUBCLASSES.orc_shaman.mods = {
+fireball: {
+name: 'Искра предков', perTotem: 15,
+levels: SC_FIREBALL_LEVELS,
+getDesc: (lvl) => { const s = SKILLS.fireball, d = s.levels[lvl-1]; return `Огонь предков на ${scX(d.multiplier)}, поджог по ${scV(d.burnPercent + '%')} маг. атаки. ${scV('+15%')} урона за каждый стоящий тотем. MP: ${scV(d.mpCost)}.`; },
+getNextDesc: (lvl) => scNext(SKILLS.fireball, lvl, n => `×${n.multiplier.toFixed(2)}, MP ${n.mpCost}`),
+},
+spiritWrath: {
+name: 'Гнев',
+levels: SC_WRATH_LEVELS,
+getDesc: (lvl) => { const s = SKILLS.spiritWrath, d = s.levels[lvl-1]; return `Гнев духов на ${scX(d.multiplier)} и ${scV(DEATH_MAGIC_MAX_HP_PERCENT + '%')} макс. HP врага. Отдачу ${scV(d.recoilPercent + '%')} принимает тотем, если он стоит. Только при HP от 50%. КД: ${s.cooldown} ATB.`; },
+getNextDesc: (lvl) => scNext(SKILLS.spiritWrath, lvl, n => `×${n.multiplier.toFixed(2)}`),
+},
+pestilence: {
+name: 'Круг гнили', perTotem: 20,
+levels: SC_PEST_LEVELS,
+getDesc: (lvl) => { const s = SKILLS.pestilence, d = s.levels[lvl-1]; return `Гниение на ${scV(d.targets)} врагов: ${scV(d.dotPercent + '%')} маг. атаки за ход, ${scV(d.turns)} хода; ${scV('+20%')} урона за каждый тотем в круге. MP: ${scV(d.mpCost)}. КД: ${s.cooldown}.`; },
+getNextDesc: (lvl) => scNext(SKILLS.pestilence, lvl, n => `${n.targets} цели, ${n.dotPercent}%`),
+},
+};
+Object.assign(SUBCLASS_SKILLS, {
+rkTrance: {
+id: 'rkTrance', subclassId: 'orc_rock', name: 'Боевой транс', type: 'active', freeTurn: true,
+iconPng: 'img/skills/orc/orcBlood.webp',
+maxLevel: 5, cooldown: 8, turns: 5,
+levels: [ { mpCost: 0, mult: 3, heal: 2 }, { mpCost: 0, mult: 3, heal: 2.5 }, { mpCost: 0, mult: 3, heal: 3 }, { mpCost: 0, mult: 3, heal: 3.5 }, { mpCost: 0, mult: 3, heal: 4 } ],
+getDesc: (lvl) => { const s = SKILLS.rkTrance, d = s.levels[lvl-1]; return `Не тратит ход: ${s.turns} ходов реген в бою ×${d.mult} и ${scV(d.heal + '%')} макс. HP в начале каждого вашего хода. Без затрат. Автобой входит в транс при HP ниже 60%. КД: ${s.cooldown}.`; },
+getNextDesc: (lvl) => scNext(SKILLS.rkTrance, lvl, n => `${n.heal}% HP за ход`),
+},
+rkGuardian: {
+id: 'rkGuardian', subclassId: 'orc_rock', name: 'Дух-хранитель', type: 'active', semiPassive: true,
+iconPng: 'img/skills/orc/shamanWisdom.webp',
+maxLevel: 5, every: 4, over: 15,
+levels: [ { mpCost: 0, take: 50 }, { mpCost: 0, take: 55 }, { mpCost: 0, take: 60 }, { mpCost: 0, take: 65 }, { mpCost: 0, take: 70 } ],
+getDesc: (lvl) => { const s = SKILLS.rkGuardian, d = s.levels[lvl-1]; return `<b>Срабатывает сам</b>, пока стоит в слоте: удар больше ${s.over}% макс. HP — дух предка забирает ${scV(d.take + '%')} урона. Не чаще раза в ${s.every} хода. Ничего не стоит — цена в занятом слоте.`; },
+getNextDesc: (lvl) => scNext(SKILLS.rkGuardian, lvl, n => `забирает ${n.take}%`),
+},
+rkHide: {
+id: 'rkHide', subclassId: 'orc_rock', name: 'Шкура вместо щита', type: 'passive',
+iconPng: 'img/skills/orc/ironSkin.webp',
+maxLevel: 5,
+levels: [ { chance: 15 }, { chance: 17 }, { chance: 20 }, { chance: 22 }, { chance: 25 } ],
+getDesc: (lvl) => { const d = SKILLS.rkHide.levels[lvl-1]; return `Пассивно, только без щита: ${scV(d.chance + '%')} шанс принять удар на шкуру — урон вдвое меньше.`; },
+getNextDesc: (lvl) => scNext(SKILLS.rkHide, lvl, n => `${n.chance}%`),
+},
+rkBoil: {
+id: 'rkBoil', subclassId: 'orc_rock', name: 'Кровь кипит', type: 'passive',
+iconPng: 'img/skills/orc/orcBlood.webp',
+maxLevel: 5,
+levels: [ { regen: 0.2 }, { regen: 0.25 }, { regen: 0.3 }, { regen: 0.35 }, { regen: 0.4 } ],
+getDesc: (lvl) => { const d = SKILLS.rkBoil.levels[lvl-1]; return `Пассивно: за каждые 10% потерянного HP — ${scV('+' + d.regen)} HP/сек регена в бою (до +${(d.regen * 9).toFixed(1)} на краю).`; },
+getNextDesc: (lvl) => scNext(SKILLS.rkBoil, lvl, n => `+${n.regen} HP/сек за 10%`),
+},
+bkFrenzy: {
+id: 'bkFrenzy', subclassId: 'orc_berserker', name: 'Неистовство', type: 'active',
+iconPng: 'img/skills/orc/orcRage.webp',
+maxLevel: 5, cooldown: 8, turns: 4, hpCost: 10, defCut: 15,
+levels: [ { mpCost: 0, atb: 25, dmg: 20 }, { mpCost: 0, atb: 27, dmg: 22 }, { mpCost: 0, atb: 30, dmg: 25 }, { mpCost: 0, atb: 32, dmg: 27 }, { mpCost: 0, atb: 35, dmg: 30 } ],
+getDesc: (lvl) => { const s = SKILLS.bkFrenzy, d = s.levels[lvl-1]; return `Тратит ${s.hpCost}% HP: ${s.turns} хода шкала ATB быстрее на ${scV(d.atb + '%')}, урон ${scV('+' + d.dmg + '%')}, но входящий урон +${s.defCut}%. Автобой — при HP выше 50% против стаи или сильной твари. КД: ${s.cooldown}.`; },
+getNextDesc: (lvl) => scNext(SKILLS.bkFrenzy, lvl, n => `ATB +${n.atb}%, урон +${n.dmg}%`),
+},
+bkThirst: {
+id: 'bkThirst', subclassId: 'orc_berserker', name: 'Жажда крови', type: 'active', semiPassive: true,
+iconPng: 'img/skills/orc/bloodHarvest.webp',
+maxLevel: 5, every: 2,
+levels: [ { mpCost: 0, mult: 0.8 }, { mpCost: 0, mult: 0.9 }, { mpCost: 0, mult: 1.0 }, { mpCost: 0, mult: 1.1 }, { mpCost: 0, mult: 1.2 } ],
+getDesc: (lvl) => { const s = SKILLS.bkThirst, d = s.levels[lvl-1]; return `<b>Срабатывает сама</b>, пока стоит в слоте: убийство — в начале следующего хода бесплатный удар на ${scX(d.mult)} по новой цели (с двуручным — по двум). Не чаще раза в ${s.every} хода. Ничего не стоит — цена в занятом слоте.`; },
+getNextDesc: (lvl) => scNext(SKILLS.bkThirst, lvl, n => `×${n.mult.toFixed(2)}`),
+},
+bkTwoHand: {
+id: 'bkTwoHand', subclassId: 'orc_berserker', name: 'Двуручник', type: 'passive',
+iconPng: 'img/skills/warrior/weaponMasterW.webp',
+maxLevel: 5,
+levels: [ { dmg: 5, crit: 5 }, { dmg: 6, crit: 6 }, { dmg: 7, crit: 7 }, { dmg: 8, crit: 8 }, { dmg: 10, crit: 10 } ],
+getDesc: (lvl) => { const d = SKILLS.bkTwoHand.levels[lvl-1]; return `Пассивно, только с двуручным: урон ${scV('+' + d.dmg + '%')}, урон крита ${scV('+' + d.crit + '%')}, штраф уворота двуручного вдвое меньше.`; },
+getNextDesc: (lvl) => scNext(SKILLS.bkTwoHand, lvl, n => `+${n.dmg}%, крит +${n.crit}%`),
+},
+bkEdge: {
+id: 'bkEdge', subclassId: 'orc_berserker', name: 'На краю', type: 'passive',
+iconPng: 'img/skills/orc/orcBlood.webp',
+maxLevel: 5,
+levels: [ { steal: 5 }, { steal: 6 }, { steal: 7 }, { steal: 8 }, { steal: 10 } ],
+getDesc: (lvl) => { const d = SKILLS.bkEdge.levels[lvl-1]; return `Пассивно: при HP ниже 50% ${scV(d.steal + '%')} вашего урона возвращается здоровьем, ниже 25% — вдвое больше.`; },
+getNextDesc: (lvl) => scNext(SKILLS.bkEdge, lvl, n => `${n.steal}%`),
+},
+chAncestor: {
+id: 'chAncestor', subclassId: 'orc_chieftain', name: 'Зов предка', type: 'active',
+iconPng: 'img/skills/orc/spiritWrath.webp',
+maxLevel: 5, cooldown: 8, turns: 6,
+levels: [
+{ mpCost: 10, wolf: 15, bear: 10 }, { mpCost: 11, wolf: 17, bear: 12 }, { mpCost: 12, wolf: 20, bear: 14 },
+{ mpCost: 13, wolf: 22, bear: 16 }, { mpCost: 14, wolf: 25, bear: 18 },
+],
+getDesc: (lvl) => { const s = SKILLS.chAncestor, d = s.levels[lvl-1]; return `Тратит ход: ${s.turns} ходов рядом дух предка. HP выше 50% — <b>Волк</b>: шкала ATB и урон ${scV('+' + d.wolf + '%')}. Ниже — <b>Медведь</b>: входящий урон ${scV('−' + d.bear + '%')} и 2% HP за ход. Кто придёт, решают предки. MP: ${scV(d.mpCost)}. КД: ${s.cooldown}.`; },
+getNextDesc: (lvl) => scNext(SKILLS.chAncestor, lvl, n => `Волк +${n.wolf}%, Медведь −${n.bear}%`),
+},
+chBloodCurse: {
+id: 'chBloodCurse', subclassId: 'orc_chieftain', name: 'Проклятие крови', type: 'active', semiPassive: true,
+iconPng: 'img/skills/orc/pestilence.webp',
+maxLevel: 5, turns: 3,
+levels: [ { mpCost: 0, pct: 20 }, { mpCost: 0, pct: 25 }, { mpCost: 0, pct: 30 }, { mpCost: 0, pct: 35 }, { mpCost: 0, pct: 40 } ],
+getDesc: (lvl) => { const d = SKILLS.chBloodCurse.levels[lvl-1]; return `<b>Срабатывает само</b>, пока стоит в слоте: тварь, ударившая вас критом, гниёт 3 хода — ${scV(d.pct + '%')} маг. атаки за ход. Ничего не стоит — цена в занятом слоте.`; },
+getNextDesc: (lvl) => scNext(SKILLS.chBloodCurse, lvl, n => `${n.pct}% маг. атаки`),
+},
+chAncestralBlood: {
+id: 'chAncestralBlood', subclassId: 'orc_chieftain', name: 'Кровь предков', type: 'passive',
+iconPng: 'img/skills/orc/orcBlood.webp',
+maxLevel: 5,
+levels: [ { pct: 2 }, { pct: 2.5 }, { pct: 3 }, { pct: 3.5 }, { pct: 4 } ],
+getDesc: (lvl) => { const d = SKILLS.chAncestralBlood.levels[lvl-1]; return `Пассивно: ${scV(d.pct + '%')} вашего макс. HP прибавляется к маг. атаке.`; },
+getNextDesc: (lvl) => scNext(SKILLS.chAncestralBlood, lvl, n => `${n.pct}% HP`),
+},
+chTribute: {
+id: 'chTribute', subclassId: 'orc_chieftain', name: 'Дань павших', type: 'passive',
+iconPng: 'img/skills/orc/shamanWisdom.webp',
+maxLevel: 5,
+levels: [ { mp: 1.5, hp: 0.5 }, { mp: 1.7, hp: 0.6 }, { mp: 2, hp: 0.7 }, { mp: 2.2, hp: 0.8 }, { mp: 2.5, hp: 1 } ],
+getDesc: (lvl) => { const d = SKILLS.chTribute.levels[lvl-1]; return `Пассивно: каждое убийство — ${scV(d.mp + '%')} макс. MP и ${scV(d.hp + '%')} макс. HP.`; },
+getNextDesc: (lvl) => scNext(SKILLS.chTribute, lvl, n => `${n.mp}% MP, ${n.hp}% HP`),
+},
+hxCurse: {
+id: 'hxCurse', subclassId: 'orc_hexer', name: 'Наслать проклятие', type: 'active',
+iconPng: 'img/skills/orc/pestilence.webp',
+maxLevel: 5, cooldown: 2,
+levels: [ { mpCost: 12, base: 20 }, { mpCost: 13, base: 24 }, { mpCost: 14, base: 28 }, { mpCost: 15, base: 32 }, { mpCost: 16, base: 36 } ],
+getDesc: (lvl) => { const d = SKILLS.hxCurse.levels[lvl-1]; return `Вешает на цель следующее проклятие, которого на ней ещё нет (сила — ${scV(d.base + '%')} маг. атаки):<br>• <b>Сухотка</b> — 6 ходов, урон растёт ×1.5 каждый ход;<br>• <b>Ломота</b> — 5 ходов бьёт тварь каждый раз, когда она сама действует;<br>• <b>Приговор</b> — 3 хода копит 30% всего вашего урона по цели и выдаёт разом. MP: ${scV(d.mpCost)}. КД: ${SKILLS.hxCurse.cooldown}.`; },
+getNextDesc: (lvl) => scNext(SKILLS.hxCurse, lvl, n => `сила ${n.base}%`),
+useCheck: () => (hexerNextCurse(getCurrentMonster()) ? '' : 'все проклятия уже висят'),
+},
+hxBurst: {
+id: 'hxBurst', subclassId: 'orc_hexer', name: 'Взрыв проклятий', type: 'active', semiPassive: true,
+iconPng: 'img/skills/orc/spiritWrath.webp',
+maxLevel: 5,
+levels: [ { mpCost: 0, pct: 40 }, { mpCost: 0, pct: 50 }, { mpCost: 0, pct: 60 }, { mpCost: 0, pct: 70 }, { mpCost: 0, pct: 80 } ],
+getDesc: (lvl) => { const d = SKILLS.hxBurst.levels[lvl-1]; return `<b>Срабатывает сам</b>, пока стоит в слоте: проклятая тварь умерла — её проклятия перескакивают на соседа, а все рядом получают ${scV(d.pct + '%')} маг. атаки за каждое проклятие. Ничего не стоит — цена в занятом слоте.`; },
+getNextDesc: (lvl) => scNext(SKILLS.hxBurst, lvl, n => `${n.pct}% за проклятие`),
+},
+hxBlackBook: {
+id: 'hxBlackBook', subclassId: 'orc_hexer', name: 'Чёрная книга', type: 'passive',
+iconPng: 'img/skills/orc/shamanWisdom.webp',
+maxLevel: 5,
+levels: [ { pct: 6 }, { pct: 7 }, { pct: 8 }, { pct: 9 }, { pct: 10 } ],
+getDesc: (lvl) => { const d = SKILLS.hxBlackBook.levels[lvl-1]; return `Пассивно: каждое разное проклятие на цели (Гниение, Сухотка, Ломота, Приговор) — ${scV('+' + d.pct + '%')} к урону всех ваших проклятий по ней.`; },
+getNextDesc: (lvl) => scNext(SKILLS.hxBlackBook, lvl, n => `+${n.pct}% за проклятие`),
+},
+hxCarrion: {
+id: 'hxCarrion', subclassId: 'orc_hexer', name: 'Падаль кормит', type: 'passive',
+iconPng: 'img/skills/mage/manaRegen.webp',
+maxLevel: 5,
+levels: [ { mp: 3 }, { mp: 3.5 }, { mp: 4 }, { mp: 4.5 }, { mp: 5 } ],
+getDesc: (lvl) => { const d = SKILLS.hxCarrion.levels[lvl-1]; return `Пассивно: проклятая тварь умерла — вы получаете ${scV(d.mp + '%')} макс. MP.`; },
+getNextDesc: (lvl) => scNext(SKILLS.hxCarrion, lvl, n => `${n.mp}% MP`),
+},
+hlWarpaint: {
+id: 'hlWarpaint', subclassId: 'orc_healer', name: 'Боевая раскраска', type: 'active', freeTurn: true,
+iconPng: 'img/skills/orc/orcBlood.webp',
+maxLevel: 5, cooldown: 3,
+levels: [ { mpCost: 12, dmg: 10, cut: 5 }, { mpCost: 13, dmg: 12, cut: 6 }, { mpCost: 14, dmg: 15, cut: 7 }, { mpCost: 15, dmg: 17, cut: 8 }, { mpCost: 16, dmg: 20, cut: 10 } ],
+getDesc: (lvl) => { const d = SKILLS.hlWarpaint.levels[lvl-1]; return `Не тратит ход: до конца боя ваш урон ${scV('+' + d.dmg + '%')}, входящий ${scV('−' + d.cut + '%')}. Автобой раскрашивается в начале боя. MP: ${scV(d.mpCost)}.`; },
+getNextDesc: (lvl) => scNext(SKILLS.hlWarpaint, lvl, n => `+${n.dmg}% урона, −${n.cut}% входящего`),
+},
+hlBloodBond: {
+id: 'hlBloodBond', subclassId: 'orc_healer', name: 'Кровная связь', type: 'active', semiPassive: true,
+iconPng: 'img/skills/orc/bloodHarvest.webp',
+maxLevel: 5, threshold: 35, every: 4,
+levels: [ { mpCost: 0, pct: 50 }, { mpCost: 0, pct: 60 }, { mpCost: 0, pct: 70 }, { mpCost: 0, pct: 80 }, { mpCost: 0, pct: 90 } ],
+getDesc: (lvl) => { const s = SKILLS.hlBloodBond, d = s.levels[lvl-1]; return `<b>Срабатывает сама</b>, пока стоит в слоте: HP упало ниже ${s.threshold}% — тянет кровь со всех врагов (${scV(d.pct + '%')} маг. атаки с каждого) и лечит вас на всю сумму. Не чаще раза в ${s.every} хода.`; },
+getNextDesc: (lvl) => scNext(SKILLS.hlBloodBond, lvl, n => `${n.pct}% маг. атаки`),
+},
+hlVitality: {
+id: 'hlVitality', subclassId: 'orc_healer', name: 'Живучесть', type: 'passive',
+iconPng: 'img/skills/orc/orcBlood.webp',
+maxLevel: 5,
+levels: [ { pct: 10 }, { pct: 12 }, { pct: 15 }, { pct: 17 }, { pct: 20 } ],
+getDesc: (lvl) => { const d = SKILLS.hlVitality.levels[lvl-1]; return `Пассивно, в бою: любое лечение (навыки, зелья, реген, еда) лечит ещё на ${scV(d.pct + '%')} сверху.`; },
+getNextDesc: (lvl) => scNext(SKILLS.hlVitality, lvl, n => `+${n.pct}%`),
+},
+hlBrews: {
+id: 'hlBrews', subclassId: 'orc_healer', name: 'Отвары', type: 'passive',
+iconPng: 'img/skills/mage/manaRegen.webp',
+maxLevel: 5,
+levels: [ { pct: 10 }, { pct: 12 }, { pct: 15 }, { pct: 17 }, { pct: 20 } ],
+getDesc: (lvl) => { const d = SKILLS.hlBrews.levels[lvl-1]; return `Пассивно, в бою: любое лечение возвращает ещё и ману — ${scV(d.pct + '%')} от вылеченного.`; },
+getNextDesc: (lvl) => scNext(SKILLS.hlBrews, lvl, n => `${n.pct}%`),
+},
+smTotem: {
+id: 'smTotem', subclassId: 'orc_shaman', name: 'Призыв тотема', type: 'active', freeTurn: 0.15,
+iconPng: 'img/allies/totem_spirit.webp',
+maxLevel: 5, cooldown: 1,
+levels: [ { mpCost: 8, power: 60 }, { mpCost: 9, power: 70 }, { mpCost: 10, power: 80 }, { mpCost: 11, power: 90 }, { mpCost: 12, power: 100 } ],
+getDesc: (lvl) => { const d = SKILLS.smTotem.levels[lvl-1]; return `Быстрый: ${scV('15%')} хода сразу возвращается. Ставит случайный тотем (сила ${scV(d.power + '%')}): <b>Камня</b> — крепкий, принимает удары на себя; <b>Ярости</b> — стреляет; <b>Духов</b> — каждый ход 2% HP и 2% MP. До 3 тотемов, четвёртый заменяет самый старый. MP: ${scV(d.mpCost)}. КД: ${SKILLS.smTotem.cooldown}.`; },
+getNextDesc: (lvl) => scNext(SKILLS.smTotem, lvl, n => `сила ${n.power}%`),
+},
+smVengeance: {
+id: 'smVengeance', subclassId: 'orc_shaman', name: 'Месть тотема', type: 'active', semiPassive: true,
+iconPng: 'img/allies/totem_rage.webp',
+maxLevel: 5,
+levels: [ { mpCost: 0, pct: 80 }, { mpCost: 0, pct: 100 }, { mpCost: 0, pct: 120 }, { mpCost: 0, pct: 140 }, { mpCost: 0, pct: 160 } ],
+getDesc: (lvl) => { const d = SKILLS.smVengeance.levels[lvl-1]; return `<b>Срабатывает сама</b>, пока стоит в слоте: разбитый тотем взрывается — все враги получают ${scV(d.pct + '%')} маг. атаки Смертью.`; },
+getNextDesc: (lvl) => scNext(SKILLS.smVengeance, lvl, n => `${n.pct}%`),
+},
+smOak: {
+id: 'smOak', subclassId: 'orc_shaman', name: 'Резной дуб', type: 'passive',
+iconPng: 'img/allies/totem_stone.webp',
+maxLevel: 5,
+levels: [ { pct: 20 }, { pct: 25 }, { pct: 30 }, { pct: 35 }, { pct: 40 } ],
+getDesc: (lvl) => { const d = SKILLS.smOak.levels[lvl-1]; return `Пассивно: тотемы крепче — ${scV('+' + d.pct + '%')} HP.`; },
+getNextDesc: (lvl) => scNext(SKILLS.smOak, lvl, n => `+${n.pct}% HP`),
+},
+smVoice: {
+id: 'smVoice', subclassId: 'orc_shaman', name: 'Голос предков', type: 'passive',
+iconPng: 'img/skills/orc/shamanWisdom.webp',
+maxLevel: 5,
+levels: [ { pct: 10 }, { pct: 14 }, { pct: 18 }, { pct: 21 }, { pct: 25 } ],
+getDesc: (lvl) => { const d = SKILLS.smVoice.levels[lvl-1]; return `Пассивно: выстрелы тотема Ярости и лечение тотема Духов ${scV('+' + d.pct + '%')}.`; },
+getNextDesc: (lvl) => scNext(SKILLS.smVoice, lvl, n => `+${n.pct}%`),
+},
+});
+const SC_NHEAL_LEVELS = [
+{ mpCost: 10, multiplier: 2.00 }, { mpCost: 11, multiplier: 2.25 }, { mpCost: 13, multiplier: 2.50 },
+{ mpCost: 14, multiplier: 2.75 }, { mpCost: 15, multiplier: 3.00 }, { mpCost: 16, multiplier: 3.25 },
+{ mpCost: 17, multiplier: 3.50 },
+];
+const SC_THORN_LEVELS = [
+{ mpCost: 12, multiplier: 1.00, targets: 2, accReduction: 20, turns: 2 }, { mpCost: 13, multiplier: 1.07, targets: 2, accReduction: 24, turns: 2 },
+{ mpCost: 14, multiplier: 1.15, targets: 3, accReduction: 27, turns: 2 }, { mpCost: 15, multiplier: 1.22, targets: 3, accReduction: 31, turns: 2 },
+{ mpCost: 16, multiplier: 1.30, targets: 3, accReduction: 35, turns: 2 }, { mpCost: 17, multiplier: 1.37, targets: 3, accReduction: 38, turns: 2 },
+{ mpCost: 18, multiplier: 1.45, targets: 4, accReduction: 40, turns: 2 },
+];
+const SC_DRAIN_LEVELS = [
+{ mpCost: 16, multiplier: 2.00, targets: 3, healPercent: 10 }, { mpCost: 17, multiplier: 2.15, targets: 3, healPercent: 12 },
+{ mpCost: 19, multiplier: 2.30, targets: 3, healPercent: 15 }, { mpCost: 20, multiplier: 2.45, targets: 3, healPercent: 17 },
+{ mpCost: 22, multiplier: 2.60, targets: 4, healPercent: 20 }, { mpCost: 23, multiplier: 2.75, targets: 4, healPercent: 22 },
+{ mpCost: 24, multiplier: 2.90, targets: 4, healPercent: 25 },
+];
+SUBCLASSES.elf_thornguard.mods = {
+powerStrike: {
+name: 'Подсечка', slowTurns: 2, slowPct: 30,
+levels: SC_WAR_PS_LEVELS,
+getDesc: (lvl) => { const s = SKILLS.powerStrike, d = s.levels[lvl-1]; return `Подсечка на ${scX(d.multiplier)}: цель опутана на 2 хода — её шкала хода растёт на ${scV('30%')} медленнее. MP: ${scV(d.mpCost)}. КД: ${s.cooldown} ATB.`; },
+getNextDesc: (lvl) => scNext(SKILLS.powerStrike, lvl, n => `×${n.multiplier.toFixed(2)}`),
+},
+natureHeal: {
+name: 'Кора', barkTurns: 3,
+levels: scMap(SC_NHEAL_LEVELS, (x, i) => ({ bark: [10, 11, 12, 14, 15, 17, 20][i] })),
+getDesc: (lvl) => { const s = SKILLS.natureHeal, d = s.levels[lvl-1]; return `Лечение на ${scX(d.multiplier)} от маг. атаки, и 3 хода кора: входящий урон ${scV('−' + d.bark + '%')}. MP: ${scV(d.mpCost)}. КД: ${s.cooldown} ATB.`; },
+getNextDesc: (lvl) => scNext(SKILLS.natureHeal, lvl, n => `×${n.multiplier.toFixed(2)}, кора −${n.bark}%`),
+},
+thornWhirl: {
+name: 'Терновый вызов', slowPct: 30, extraTargets: 1,
+levels: SC_THORN_LEVELS,
+getDesc: (lvl) => { const s = SKILLS.thornWhirl, d = s.levels[lvl-1]; return `Бьёт ${scV(d.targets + 1)} врагов на ${scX(d.multiplier)} и опутывает на ${d.turns} хода: шкала хода опутанных растёт на ${scV('30%')} медленнее, и они бьют только вас. MP: ${scV(d.mpCost)}. КД: ${s.cooldown}.`; },
+getNextDesc: (lvl) => scNext(SKILLS.thornWhirl, lvl, n => `${n.targets + 1} цели, ×${n.multiplier.toFixed(2)}`),
+},
+};
+const SEED_MAX = 5;
+SUBCLASSES.elf_pathfinder.mods = {
+powerStrike: {
+name: 'Прицельный выстрел', seeds: 2,
+levels: scMap(SC_WAR_PS_LEVELS, (x, i) => ({ pierce: [20, 23, 27, 30, 33, 37, 40][i] })),
+getDesc: (lvl) => { const s = SKILLS.powerStrike, d = s.levels[lvl-1]; return `Выстрел на ${scX(d.multiplier)}: <b>не промахивается</b>, пробивает ${scV(d.pierce + '%')} защиты и сажает ${scV('2')} семени терна. MP: ${scV(d.mpCost)}. КД: ${s.cooldown} ATB.`; },
+getNextDesc: (lvl) => scNext(SKILLS.powerStrike, lvl, n => `×${n.multiplier.toFixed(2)}, пробой ${n.pierce}%`),
+},
+natureHeal: {
+name: 'Цветение', isHeal: false, bloomMult: 1.5, lifePct: 30,
+levels: SC_NHEAL_LEVELS.map(x => ({ mpCost: x.mpCost })),
+getDesc: (lvl) => { const s = SKILLS.natureHeal, d = s.levels[lvl-1]; return `Все семена на цели распускаются сразу и на ${scX(1.5)}; ${scV('30%')} урона лечит вас. Нужно хоть одно семя. MP: ${scV(d.mpCost)}. КД: ${s.cooldown} ATB.`; },
+getNextDesc: (lvl) => scNext(SKILLS.natureHeal, lvl, n => `MP ${n.mpCost}`),
+useCheck: () => (pathfinderSeeds(getCurrentMonster()).length ? '' : 'на цели нет семян'),
+},
+thornWhirl: {
+name: 'Терновый залп', fixedTargets: 3,
+levels: SC_THORN_LEVELS,
+getDesc: (lvl) => { const s = SKILLS.thornWhirl, d = s.levels[lvl-1]; return `Залп по ${scV('3')} врагам на ${scX(d.multiplier)}: каждому семя терна, опутывание (точность −${scV(d.accReduction + '%')}). MP: ${scV(d.mpCost)}. КД: ${s.cooldown}.`; },
+getNextDesc: (lvl) => scNext(SKILLS.thornWhirl, lvl, n => `×${n.multiplier.toFixed(2)}`),
+},
+};
+const SONG_MAX = 5;
+const SONG_DMG = 10;
+const SONG_EVA = 3;
+SUBCLASSES.elf_bladesinger.mods = {
+powerStrike: {
+name: 'Поющий клинок', magPart: 0.5,
+levels: SC_WAR_PS_LEVELS,
+getDesc: (lvl) => { const s = SKILLS.powerStrike, d = s.levels[lvl-1]; return `(атака + маг. атака ×0.5) × ${scX(d.multiplier)}, Жизнь. MP: ${scV(d.mpCost)}. КД: ${s.cooldown} ATB.`; },
+getNextDesc: (lvl) => scNext(SKILLS.powerStrike, lvl, n => `×${n.multiplier.toFixed(2)}`),
+},
+natureHeal: {
+name: 'Дыхание природы', edgeHits: 2, edgePct: 40,
+levels: SC_NHEAL_LEVELS,
+getDesc: (lvl) => { const s = SKILLS.natureHeal, d = s.levels[lvl-1]; return `Лечение на ${scX(d.multiplier)} от маг. атаки, и 2 следующих удара оружием добавляют ${scV('40%')} маг. атаки Жизнью. MP: ${scV(d.mpCost)}. КД: ${s.cooldown} ATB.`; },
+getNextDesc: (lvl) => scNext(SKILLS.natureHeal, lvl, n => `×${n.multiplier.toFixed(2)}`),
+},
+thornWhirl: {
+name: 'Вихрь лепестков',
+levels: scMap(SC_THORN_LEVELS, (x, i) => ({ heal: [2, 2.3, 2.7, 3, 3.3, 3.7, 4][i] })),
+getDesc: (lvl) => { const s = SKILLS.thornWhirl, d = s.levels[lvl-1]; return `Бьёт ${scV(d.targets)} врагов на ${scX(d.multiplier)}, опутывает (точность −${scV(d.accReduction + '%')}), за каждого задетого лечит ${scV(d.heal + '%')} макс. HP. MP: ${scV(d.mpCost)}. КД: ${s.cooldown}.`; },
+getNextDesc: (lvl) => scNext(SKILLS.thornWhirl, lvl, n => `${n.targets} цели, лечение ${n.heal}%`),
+},
+};
+SUBCLASSES.elf_stargazer.mods = {
+fireball: {
+name: 'Падающая звезда', delay: 2,
+levels: scMap(SC_FIREBALL_LEVELS, (x, i) => ({ starMult: [3.5, 3.75, 4.0, 4.25, 4.5, 4.75, 5.0][i] })),
+getDesc: (lvl) => { const s = SKILLS.fireball, d = s.levels[lvl-1]; return `Звезда падает на цель <b>через 2 хода</b> и бьёт на ${scX(d.starMult)}. Цель погибла раньше — звезда упадёт на соседа. MP: ${scV(d.mpCost)}.`; },
+getNextDesc: (lvl) => scNext(SKILLS.fireball, lvl, n => `×${n.starMult.toFixed(2)}`),
+},
+heal: {
+name: 'Исцеление',
+levels: SC_NHEAL_LEVELS,
+getDesc: (lvl) => { const s = SKILLS.heal, d = s.levels[lvl-1]; return `Исцеление на ${scX(d.multiplier)} от маг. атаки. При здоровье от 70% — <b>ранит любую тварь</b> с той же силой. MP: ${scV(d.mpCost)}. КД: ${s.cooldown} ATB.`; },
+getNextDesc: (lvl) => scNext(SKILLS.heal, lvl, n => `×${n.multiplier.toFixed(2)}`),
+},
+lifeDrain: {
+name: 'Звездопад',
+levels: SC_DRAIN_LEVELS,
+getDesc: (lvl) => { const s = SKILLS.lifeDrain, d = s.levels[lvl-1]; return `Звёзды падают на ${scV(d.targets)} врагов, каждому ${scX(d.multiplier * 0.7)} — без ослабления по цепочке. ${scV(Math.round(d.healPercent / 2) + '%')} урона лечат. MP: ${scV(d.mpCost)}. КД: ${s.cooldown}.`; },
+getNextDesc: (lvl) => scNext(SKILLS.lifeDrain, lvl, n => `${n.targets} цели, ×${(n.multiplier * 0.7).toFixed(2)}`),
+},
+};
+SUBCLASSES.elf_grovekeeper.mods = {
+fireball: {
+name: 'Колючая лоза', hotPct: 15, hotTurns: 3, dmgMult: 1.2,
+levels: SC_FIREBALL_LEVELS,
+getDesc: (lvl) => { const s = SKILLS.fireball, d = s.levels[lvl-1]; return `Лоза Жизни на ${scX(d.multiplier * 1.2)}; ${scV('15%')} урона возвращается вам лечением за 3 хода. MP: ${scV(d.mpCost)}.`; },
+getNextDesc: (lvl) => scNext(SKILLS.fireball, lvl, n => `×${n.multiplier.toFixed(2)}`),
+},
+heal: {
+name: 'Росток', hotTurns: 4, hotBonus: 1.5,
+levels: SC_NHEAL_LEVELS,
+getDesc: (lvl) => { const s = SKILLS.heal, d = s.levels[lvl-1]; return `Росток лечит за 4 хода на ${scX(d.multiplier * 1.5)} от маг. атаки (в полтора раза больше обычного Исцеления, но не сразу). MP: ${scV(d.mpCost)}. КД: ${s.cooldown} ATB.`; },
+getNextDesc: (lvl) => scNext(SKILLS.heal, lvl, n => `×${(n.multiplier * 1.5).toFixed(2)} за 4 хода`),
+},
+lifeDrain: {
+name: 'Дыхание рощи', hotBonus: 1.5, hotTurns: 3,
+levels: SC_DRAIN_LEVELS,
+getDesc: (lvl) => { const s = SKILLS.lifeDrain, d = s.levels[lvl-1]; return `Цепь Жизни по ${scV(d.targets)} врагам: ${scX(d.multiplier)} первому, дальше слабее. Вместо мгновенного лечения — ${scV(Math.round(d.healPercent * 1.5) + '%')} урона лечением за 3 хода. MP: ${scV(d.mpCost)}. КД: ${s.cooldown}.`; },
+getNextDesc: (lvl) => scNext(SKILLS.lifeDrain, lvl, n => `${n.targets} цели, ×${n.multiplier.toFixed(2)}`),
+},
+};
+const DRUID_KINDS = {
+lynx: { name: 'Рысь',   img: 'img/allies/druid_lynx.webp',  hp: 0.30, atk: 0.60, desc: 'бьёт сильнее всех' },
+stag: { name: 'Олень',  img: 'img/allies/druid_stag.webp',  hp: 0.50, atk: 0.30, healHp: 2, desc: 'лечит вас каждый ход' },
+owl:  { name: 'Филин',  img: 'img/allies/druid_owl.webp',   hp: 0.30, atk: 0.40, healMp: 2, atbCut: 10, desc: 'сбивает шкалу хода и даёт ману' },
+};
+SUBCLASSES.elf_druid.mods = {
+fireball: {
+name: 'Зов когтей', spiritPct: 50,
+levels: SC_FIREBALL_LEVELS,
+getDesc: (lvl) => { const s = SKILLS.fireball, d = s.levels[lvl-1]; return `Огонь на ${scX(d.multiplier)}, поджог по ${scV(d.burnPercent + '%')} маг. атаки — и дух-зверь сразу бьёт ту же цель на ${scV('50%')} своей силы. MP: ${scV(d.mpCost)}.`; },
+getNextDesc: (lvl) => scNext(SKILLS.fireball, lvl, n => `×${n.multiplier.toFixed(2)}`),
+},
+heal: {
+name: 'Исцеление',
+levels: SC_NHEAL_LEVELS,
+getDesc: (lvl) => { const s = SKILLS.heal, d = s.levels[lvl-1]; return `Исцеление на ${scX(d.multiplier)} от маг. атаки — лечит и вас, и духа-зверя на ту же силу. При здоровье от 70% ранит мёртвых. MP: ${scV(d.mpCost)}. КД: ${s.cooldown} ATB.`; },
+getNextDesc: (lvl) => scNext(SKILLS.heal, lvl, n => `×${n.multiplier.toFixed(2)}`),
+},
+lifeDrain: {
+name: 'Похищение жизни',
+levels: SC_DRAIN_LEVELS,
+getDesc: (lvl) => { const s = SKILLS.lifeDrain, d = s.levels[lvl-1]; return `Цепь Жизни по ${scV(d.targets)} врагам: ${scX(d.multiplier)} первому, дальше слабее. ${scV(d.healPercent + '%')} урона лечат вас, столько же — духа. MP: ${scV(d.mpCost)}. КД: ${s.cooldown}.`; },
+getNextDesc: (lvl) => scNext(SKILLS.lifeDrain, lvl, n => `${n.targets} цели, ×${n.multiplier.toFixed(2)}`),
+},
+};
+Object.assign(SUBCLASS_SKILLS, {
+tgRoot: {
+id: 'tgRoot', subclassId: 'elf_thornguard', name: 'Укоренение', type: 'active', freeTurn: true,
+iconPng: 'img/skills/elf/thorn_whirl.webp',
+maxLevel: 5, cooldown: 8, turns: 5,
+levels: [ { mpCost: 0, share: 40 }, { mpCost: 0, share: 45 }, { mpCost: 0, share: 50 }, { mpCost: 0, share: 55 }, { mpCost: 0, share: 60 } ],
+getDesc: (lvl) => { const s = SKILLS.tgRoot, d = s.levels[lvl-1]; return `Не тратит ход: ${s.turns} ходов ${scV(d.share + '%')} каждого удара уходит в корни (приходит за 3 хода), и половина ушедшего рассасывается. Без затрат. Автобой — против стаи или сильной твари. КД: ${s.cooldown}.`; },
+getNextDesc: (lvl) => scNext(SKILLS.tgRoot, lvl, n => `${n.share}% в корни`),
+},
+tgBarbs: {
+id: 'tgBarbs', subclassId: 'elf_thornguard', name: 'Шипастая кора', type: 'active', semiPassive: true,
+iconPng: 'img/skills/elf/grace.webp',
+maxLevel: 5,
+levels: [ { mpCost: 0, pct: 20, cut: 8 }, { mpCost: 0, pct: 24, cut: 10 }, { mpCost: 0, pct: 27, cut: 12 }, { mpCost: 0, pct: 31, cut: 13 }, { mpCost: 0, pct: 35, cut: 15 } ],
+getDesc: (lvl) => { const d = SKILLS.tgBarbs.levels[lvl-1]; return `<b>Работает сама</b>, пока стоит в слоте: входящий урон ${scV('−' + d.cut + '%')}, а тварь, попавшая по вам — ${scV(d.pct + '%')} урона возвращается ей шипами, за крит — вдвое. Ничего не стоит — цена в занятом слоте.`; },
+getNextDesc: (lvl) => scNext(SKILLS.tgBarbs, lvl, n => `${n.pct}%`),
+},
+tgRoots: {
+id: 'tgRoots', subclassId: 'elf_thornguard', name: 'Корни принимают удар', type: 'passive',
+iconPng: 'img/skills/warrior/resilience.webp',
+maxLevel: 5,
+levels: [ { share: 20 }, { share: 24 }, { share: 27 }, { share: 31 }, { share: 35 } ],
+getDesc: (lvl) => { const d = SKILLS.tgRoots.levels[lvl-1]; return `Пассивно, в бою: ${scV(d.share + '%')} каждого удара приходит не сразу, а за 3 хода, и половина отложенного рассасывается. Любое лечение сначала гасит отложенный урон.`; },
+getNextDesc: (lvl) => scNext(SKILLS.tgRoots, lvl, n => `${n.share}%`),
+},
+tgSap: {
+id: 'tgSap', subclassId: 'elf_thornguard', name: 'Сок древа', type: 'passive',
+iconPng: 'img/skills/elf/forest_blessing.webp',
+maxLevel: 5,
+levels: [ { pct: 10 }, { pct: 12 }, { pct: 15 }, { pct: 17 }, { pct: 20 } ],
+getDesc: (lvl) => { const d = SKILLS.tgSap.levels[lvl-1]; return `Пассивно, в бою: любое лечение, включая реген, сильнее на ${scV(d.pct + '%')}.`; },
+getNextDesc: (lvl) => scNext(SKILLS.tgSap, lvl, n => `+${n.pct}%`),
+},
+pfSeed: {
+id: 'pfSeed', subclassId: 'elf_pathfinder', name: 'Семя терна', type: 'active', semiPassive: true,
+iconPng: 'img/skills/elf/thorn_whirl.webp',
+maxLevel: 5, chance: 30, turns: 3,
+levels: [ { mpCost: 0, power: 30 }, { mpCost: 0, power: 35 }, { mpCost: 0, power: 40 }, { mpCost: 0, power: 45 }, { mpCost: 0, power: 50 } ],
+getDesc: (lvl) => { const s = SKILLS.pfSeed, d = s.levels[lvl-1]; return `<b>Срабатывает само</b>, пока стоит в слоте: любой ваш удар с шансом ${s.chance}% сажает в цель семя терна (до ${SEED_MAX}). Через ${s.turns} хода семя распускается — ${scV(d.power + '%')} атаки, защита не режет. Ничего не стоит — цена в занятом слоте.`; },
+getNextDesc: (lvl) => scNext(SKILLS.pfSeed, lvl, n => `${n.power}% атаки`),
+},
+pfLeaves: {
+id: 'pfLeaves', subclassId: 'elf_pathfinder', name: 'Шквал листьев', type: 'active',
+iconPng: 'img/skills/elf/grace.webp',
+maxLevel: 5, cooldown: 4,
+levels: [ { mpCost: 8, multiplier: 0.60 }, { mpCost: 8, multiplier: 0.65 }, { mpCost: 9, multiplier: 0.70 }, { mpCost: 9, multiplier: 0.75 }, { mpCost: 10, multiplier: 0.80 } ],
+getDesc: (lvl) => { const d = SKILLS.pfLeaves.levels[lvl-1]; return `Листья режут всех врагов на ${scX(d.multiplier)}, каждому — семя терна. MP: ${scV(d.mpCost)}. КД: ${SKILLS.pfLeaves.cooldown}.`; },
+getNextDesc: (lvl) => scNext(SKILLS.pfLeaves, lvl, n => `×${n.multiplier.toFixed(2)}`),
+},
+pfHawk: {
+id: 'pfHawk', subclassId: 'elf_pathfinder', name: 'Глаз ястреба', type: 'passive',
+iconPng: 'img/skills/warrior/weaponMasterW.webp',
+maxLevel: 5,
+levels: [ { acc: 5, ignore: 10 }, { acc: 6, ignore: 12 }, { acc: 7, ignore: 15 }, { acc: 8, ignore: 17 }, { acc: 10, ignore: 20 } ],
+getDesc: (lvl) => { const d = SKILLS.pfHawk.levels[lvl-1]; return `Пассивно: точность ${scV('+' + d.acc)}, удары навыков пробивают ${scV(d.ignore + '%')} защиты твари.`; },
+getNextDesc: (lvl) => scNext(SKILLS.pfHawk, lvl, n => `+${n.acc} точности, пробой ${n.ignore}%`),
+},
+pfGrowth: {
+id: 'pfGrowth', subclassId: 'elf_pathfinder', name: 'Буйный рост', type: 'passive',
+iconPng: 'img/skills/elf/forest_blessing.webp',
+maxLevel: 5,
+levels: [ { pct: 10 }, { pct: 12 }, { pct: 15 }, { pct: 17 }, { pct: 20 } ],
+getDesc: (lvl) => { const d = SKILLS.pfGrowth.levels[lvl-1]; return `Пассивно: семена бьют на ${scV(d.pct + '%')} сильнее и распускаются на ход раньше.`; },
+getNextDesc: (lvl) => scNext(SKILLS.pfGrowth, lvl, n => `+${n.pct}%`),
+},
+bsWind: {
+id: 'bsWind', subclassId: 'elf_bladesinger', name: 'Песнь ветра', type: 'active', freeTurn: true,
+iconPng: 'img/skills/elf/fast_prayer.webp',
+maxLevel: 5, cooldown: 8, turns: 5,
+levels: [ { mpCost: 6, atb: 20 }, { mpCost: 6, atb: 22 }, { mpCost: 7, atb: 25 }, { mpCost: 7, atb: 27 }, { mpCost: 8, atb: 30 } ],
+getDesc: (lvl) => { const s = SKILLS.bsWind, d = s.levels[lvl-1]; return `Не тратит ход: ${s.turns} ходов шкала хода ${scV('+' + d.atb + '%')}, и Песнь не падает (одинаковые действия подряд её не сбивают). Считается навыком для Песни. MP: ${scV(d.mpCost)}. КД: ${s.cooldown}.`; },
+getNextDesc: (lvl) => scNext(SKILLS.bsWind, lvl, n => `+${n.atb}% ATB`),
+},
+bsSprout: {
+id: 'bsSprout', subclassId: 'elf_bladesinger', name: 'Росток жизни', type: 'active', semiPassive: true,
+iconPng: 'img/skills/elf/nature_heal.webp',
+maxLevel: 5,
+levels: [ { mpCost: 0, pct: 60 }, { mpCost: 0, pct: 70 }, { mpCost: 0, pct: 80 }, { mpCost: 0, pct: 90 }, { mpCost: 0, pct: 100 } ],
+getDesc: (lvl) => { const d = SKILLS.bsSprout.levels[lvl-1]; return `<b>Срабатывает сам</b>, пока стоит в слоте: лечение сверх полного HP бьёт цель Жизнью — ${scV(d.pct + '%')} излишка. Ничего не стоит — цена в занятом слоте.`; },
+getNextDesc: (lvl) => scNext(SKILLS.bsSprout, lvl, n => `${n.pct}%`),
+},
+bsHarmony: {
+id: 'bsHarmony', subclassId: 'elf_bladesinger', name: 'Гармония', type: 'passive',
+iconPng: 'img/skills/mage/weaponMasterM.webp',
+maxLevel: 5,
+levels: [ { pct: 10 }, { pct: 12 }, { pct: 15 }, { pct: 17 }, { pct: 20 } ],
+getDesc: (lvl) => { const d = SKILLS.bsHarmony.levels[lvl-1]; return `Пассивно: ${scV(d.pct + '%')} физ. атаки прибавляется к маг. атаке и ${scV(d.pct + '%')} маг. атаки — к физической.`; },
+getNextDesc: (lvl) => scNext(SKILLS.bsHarmony, lvl, n => `${n.pct}%`),
+},
+bsLiving: {
+id: 'bsLiving', subclassId: 'elf_bladesinger', name: 'Живой клинок', type: 'passive',
+iconPng: 'img/skills/elf/heal.webp',
+maxLevel: 5,
+levels: [ { pct: 6 }, { pct: 7 }, { pct: 8 }, { pct: 9 }, { pct: 10 } ],
+getDesc: (lvl) => { const d = SKILLS.bsLiving.levels[lvl-1]; return `Пассивно: ваш урон Жизнью лечит вас на ${scV(d.pct + '%')} от нанесённого.`; },
+getNextDesc: (lvl) => scNext(SKILLS.bsLiving, lvl, n => `${n.pct}%`),
+},
+sgReflect: {
+id: 'sgReflect', subclassId: 'elf_stargazer', name: 'Отражённый свет', type: 'active', semiPassive: true,
+iconPng: 'img/skills/elf/fast_prayer.webp',
+maxLevel: 5,
+levels: [ { mpCost: 0, pct: 60 }, { mpCost: 0, pct: 70 }, { mpCost: 0, pct: 80 }, { mpCost: 0, pct: 90 }, { mpCost: 0, pct: 100 } ],
+getDesc: (lvl) => { const d = SKILLS.sgReflect.levels[lvl-1]; return `<b>Срабатывает сам</b>, пока стоит в слоте: урон сверх нужного для убийства уходит в следующую тварь — ${scV(d.pct + '%')} излишка, в начале вашего хода. Ничего не стоит — цена в занятом слоте.`; },
+getNextDesc: (lvl) => scNext(SKILLS.sgReflect, lvl, n => `${n.pct}%`),
+},
+sgStarfall: {
+id: 'sgStarfall', subclassId: 'elf_stargazer', name: 'Звёздный луч', type: 'active',
+iconPng: 'img/skills/elf/life_drain.webp',
+maxLevel: 5, cooldown: 4,
+levels: [ { mpCost: 14, multiplier: 2.2 }, { mpCost: 15, multiplier: 2.4 }, { mpCost: 16, multiplier: 2.6 }, { mpCost: 17, multiplier: 2.8 }, { mpCost: 18, multiplier: 3.0 } ],
+getDesc: (lvl) => { const d = SKILLS.sgStarfall.levels[lvl-1]; return `Луч в одну цель на ${scX(d.multiplier)}; если на цель уже летит звезда — она падает прямо сейчас. MP: ${scV(d.mpCost)}. КД: ${SKILLS.sgStarfall.cooldown}.`; },
+getNextDesc: (lvl) => scNext(SKILLS.sgStarfall, lvl, n => `×${n.multiplier.toFixed(2)}`),
+},
+sgFocus: {
+id: 'sgFocus', subclassId: 'elf_stargazer', name: 'Сосредоточение', type: 'passive',
+iconPng: 'img/skills/mage/weaponMasterM.webp',
+maxLevel: 5,
+levels: [ { pct: 6 }, { pct: 7 }, { pct: 8 }, { pct: 9 }, { pct: 10 } ],
+getDesc: (lvl) => { const d = SKILLS.sgFocus.levels[lvl-1]; return `Пассивно: каждое заклинание подряд в ту же цель — ${scV('+' + d.pct + '%')} урона по ней (до 5 раз). Сменили цель — счёт заново.`; },
+getNextDesc: (lvl) => scNext(SKILLS.sgFocus, lvl, n => `+${n.pct}% за раз`),
+},
+sgClear: {
+id: 'sgClear', subclassId: 'elf_stargazer', name: 'Ясный взор', type: 'passive',
+iconPng: 'img/skills/mage/manaRegen.webp',
+maxLevel: 5,
+levels: [ { pct: 10 }, { pct: 14 }, { pct: 18 }, { pct: 21 }, { pct: 25 } ],
+getDesc: (lvl) => { const d = SKILLS.sgClear.levels[lvl-1]; return `Пассивно: ваши заклинания на ${scV(d.pct + '%')} сильнее против маг. защиты (урон по твари с маг. защитой), щит маны тварей берёт на ${scV(d.pct + '%')} меньше.`; },
+getNextDesc: (lvl) => scNext(SKILLS.sgClear, lvl, n => `${n.pct}%`),
+},
+gkGift: {
+id: 'gkGift', subclassId: 'elf_grovekeeper', name: 'Дар рощи', type: 'active', freeTurn: true,
+iconPng: 'img/skills/elf/forest_blessing.webp',
+maxLevel: 5, cooldown: 3,
+levels: [ { mpCost: 14, regen: 1.5, heal: 10, dmg: 6 }, { mpCost: 15, regen: 1.8, heal: 12, dmg: 7 }, { mpCost: 16, regen: 2.2, heal: 15, dmg: 9 }, { mpCost: 17, regen: 2.6, heal: 17, dmg: 10 }, { mpCost: 18, regen: 3, heal: 20, dmg: 12 } ],
+getDesc: (lvl) => { const d = SKILLS.gkGift.levels[lvl-1]; return `Не тратит ход: до конца боя ${scV(d.regen + '%')} макс. HP лечения в начале каждого хода, всё ваше лечение ${scV('+' + d.heal + '%')} и урон ${scV('+' + d.dmg + '%')}. Автобой — в начале боя. MP: ${scV(d.mpCost)}.`; },
+getNextDesc: (lvl) => scNext(SKILLS.gkGift, lvl, n => `${n.regen}% HP за ход, лечение +${n.heal}%`),
+},
+gkBud: {
+id: 'gkBud', subclassId: 'elf_grovekeeper', name: 'Бутон', type: 'active', semiPassive: true,
+iconPng: 'img/skills/elf/nature_heal.webp',
+maxLevel: 5, threshold: 40, every: 5, turns: 3,
+levels: [ { mpCost: 0, total: 30 }, { mpCost: 0, total: 35 }, { mpCost: 0, total: 40 }, { mpCost: 0, total: 45 }, { mpCost: 0, total: 50 } ],
+getDesc: (lvl) => { const s = SKILLS.gkBud, d = s.levels[lvl-1]; return `<b>Распускается сам</b>, пока стоит в слоте: HP упало ниже ${s.threshold}% — лечит ${scV(d.total + '%')} макс. HP за 3 хода. Не чаще раза в ${s.every} ходов.`; },
+getNextDesc: (lvl) => scNext(SKILLS.gkBud, lvl, n => `${n.total}% HP`),
+},
+gkDew: {
+id: 'gkDew', subclassId: 'elf_grovekeeper', name: 'Живительная роса', type: 'passive',
+iconPng: 'img/skills/elf/fast_prayer.webp',
+maxLevel: 5,
+levels: [ { chance: 20 }, { chance: 25 }, { chance: 30 }, { chance: 35 }, { chance: 40 } ],
+getDesc: (lvl) => { const d = SKILLS.gkDew.levels[lvl-1]; return `Пассивно: каждый тик лечения во времени с шансом ${scV(d.chance + '%')} продлевает его на ход.`; },
+getNextDesc: (lvl) => scNext(SKILLS.gkDew, lvl, n => `${n.chance}%`),
+},
+gkCycle: {
+id: 'gkCycle', subclassId: 'elf_grovekeeper', name: 'Круговорот жизни', type: 'passive',
+iconPng: 'img/skills/mage/manaRegen.webp',
+maxLevel: 5,
+levels: [ { pct: 10 }, { pct: 12 }, { pct: 15 }, { pct: 17 }, { pct: 20 } ],
+getDesc: (lvl) => { const d = SKILLS.gkCycle.levels[lvl-1]; return `Пассивно, в бою: любое лечение возвращает ману — ${scV(d.pct + '%')} от вылеченного.`; },
+getNextDesc: (lvl) => scNext(SKILLS.gkCycle, lvl, n => `${n.pct}%`),
+},
+drSpirit: {
+id: 'drSpirit', subclassId: 'elf_druid', name: 'Дух-зверь', type: 'active',
+iconPng: 'img/allies/druid_lynx.webp',
+maxLevel: 5, cooldown: 3,
+levels: [ { mpCost: 14, power: 60, rage: 1.6 }, { mpCost: 15, power: 70, rage: 1.75 }, { mpCost: 16, power: 80, rage: 1.9 }, { mpCost: 17, power: 90, rage: 2.05 }, { mpCost: 18, power: 100, rage: 2.2 } ],
+getDesc: (lvl) => { const d = SKILLS.drSpirit.levels[lvl-1]; return `Нет духа — зовёт одного случайного (сила ${scV(d.power + '%')}): <b>Рысь</b> бьёт сильнее всех, <b>Олень</b> лечит вас, <b>Филин</b> сбивает шкалу хода и даёт ману. Дух живёт всю охоту и копит силу за убийства. Дух есть — <b>Ярость духа</b>: удар на ${scX(d.rage)} его силы. MP: ${scV(d.mpCost)}. КД: ${SKILLS.drSpirit.cooldown}.`; },
+getNextDesc: (lvl) => scNext(SKILLS.drSpirit, lvl, n => `сила ${n.power}%, ярость ×${n.rage.toFixed(1)}`),
+},
+drHunt: {
+id: 'drHunt', subclassId: 'elf_druid', name: 'Общая охота', type: 'active', semiPassive: true,
+iconPng: 'img/allies/druid_owl.webp',
+maxLevel: 5,
+levels: [ { mpCost: 0, mult: 0.8 }, { mpCost: 0, mult: 0.9 }, { mpCost: 0, mult: 1.0 }, { mpCost: 0, mult: 1.1 }, { mpCost: 0, mult: 1.2 } ],
+getDesc: (lvl) => { const d = SKILLS.drHunt.levels[lvl-1]; return `<b>Срабатывает сама</b>, пока стоит в слоте: заклинание с шансом крита героя — дух бьёт ту же цель бесплатно на ${scX(d.mult)} своей силы. Ничего не стоит — цена в занятом слоте.`; },
+getNextDesc: (lvl) => scNext(SKILLS.drHunt, lvl, n => `×${n.mult.toFixed(1)}`),
+},
+drBonds: {
+id: 'drBonds', subclassId: 'elf_druid', name: 'Узы рощи', type: 'passive',
+iconPng: 'img/skills/elf/forest_blessing.webp',
+maxLevel: 5,
+levels: [ { atk: 6, hp: 5 }, { atk: 8, hp: 7 }, { atk: 10, hp: 10 }, { atk: 12, hp: 12 }, { atk: 15, hp: 15 } ],
+getDesc: (lvl) => { const d = SKILLS.drBonds.levels[lvl-1]; return `Пассивно: дух получает ${scV(d.atk + '%')} вашей маг. атаки к удару и ${scV(d.hp + '%')} вашего макс. HP.`; },
+getNextDesc: (lvl) => scNext(SKILLS.drBonds, lvl, n => `${n.atk}% маг. атаки, ${n.hp}% HP`),
+},
+drGrowing: {
+id: 'drGrowing', subclassId: 'elf_druid', name: 'Растущая связь', type: 'passive',
+iconPng: 'img/skills/elf/fast_prayer.webp',
+maxLevel: 5,
+levels: [ { per: 1, cap: 20 }, { per: 1.2, cap: 22 }, { per: 1.5, cap: 25 }, { per: 1.7, cap: 27 }, { per: 2, cap: 30 } ],
+getDesc: (lvl) => { const d = SKILLS.drGrowing.levels[lvl-1]; return `Пассивно: каждое убийство на охоте делает духа сильнее на ${scV(d.per + '%')} (до ${scV('+' + d.cap + '%')}). Дух пал — рост с нуля.`; },
+getNextDesc: (lvl) => scNext(SKILLS.drGrowing, lvl, n => `+${n.per}% за убийство, до +${n.cap}%`),
+},
+});
+const SC_DISCHARGE_LEVELS = [
+{ mpCost: 12, multiplier: 1.80, atbReduction: 20 }, { mpCost: 13, multiplier: 2.00, atbReduction: 25 },
+{ mpCost: 15, multiplier: 2.20, atbReduction: 30 }, { mpCost: 16, multiplier: 2.40, atbReduction: 35 },
+{ mpCost: 18, multiplier: 2.60, atbReduction: 40 }, { mpCost: 19, multiplier: 2.80, atbReduction: 42 },
+{ mpCost: 20, multiplier: 3.00, atbReduction: 45 },
+];
+const SC_SPARK_LEVELS = [
+{ mpCost: 10, multiplier: 0.80, targets: 2, atbCut: 10 }, { mpCost: 11, multiplier: 0.85, targets: 2, atbCut: 10 },
+{ mpCost: 12, multiplier: 0.90, targets: 2, atbCut: 10 }, { mpCost: 13, multiplier: 0.95, targets: 2, atbCut: 10 },
+{ mpCost: 14, multiplier: 1.00, targets: 2, atbCut: 10 }, { mpCost: 15, multiplier: 1.05, targets: 2, atbCut: 12 },
+{ mpCost: 16, multiplier: 1.10, targets: 2, atbCut: 15 },
+];
+const SC_CHAIN_LEVELS = [
+{ mpCost: 14, multiplier: 1.60, targets: 2 }, { mpCost: 15, multiplier: 1.70, targets: 2 },
+{ mpCost: 17, multiplier: 1.80, targets: 3 }, { mpCost: 18, multiplier: 1.90, targets: 3 },
+{ mpCost: 20, multiplier: 2.00, targets: 3 }, { mpCost: 21, multiplier: 2.10, targets: 3 },
+{ mpCost: 22, multiplier: 2.20, targets: 4 },
+];
+const SC_DISCHARGE_DESC = (s, d, extra) => `Разряд на ${scX(d.multiplier)}, шкала хода твари ${scV('−' + d.atbReduction + '%')}. ${extra} MP: ${scV(d.mpCost)}. КД: ${s.cooldown} ATB.`;
+const STATIC_MAX = 3;
+SUBCLASSES.drow_stormguard.mods = {
+powerStrike: {
+name: 'Громовой удар', atbCut: 30,
+levels: SC_WAR_PS_LEVELS,
+getDesc: (lvl) => { const s = SKILLS.powerStrike, d = s.levels[lvl-1]; return `Громовой удар на ${scX(d.multiplier)}, шкала хода цели ${scV('−30%')}. MP: ${scV(d.mpCost)}. КД: ${s.cooldown} ATB.`; },
+getNextDesc: (lvl) => scNext(SKILLS.powerStrike, lvl, n => `×${n.multiplier.toFixed(2)}`),
+},
+discharge: {
+name: 'Разряд',
+levels: SC_DISCHARGE_LEVELS,
+getDesc: (lvl) => SC_DISCHARGE_DESC(SKILLS.discharge, SKILLS.discharge.levels[lvl-1], 'По цели со Статикой <b>паралич гарантирован</b> (невосприимчивость после паралича остаётся).'),
+getNextDesc: (lvl) => scNext(SKILLS.discharge, lvl, n => `×${n.multiplier.toFixed(2)}, ATB −${n.atbReduction}%`),
+},
+sparkSlash: {
+name: 'Искровой вызов', fixedTargets: 3,
+levels: SC_SPARK_LEVELS,
+getDesc: (lvl) => { const s = SKILLS.sparkSlash, d = s.levels[lvl-1]; return `Разрез по ${scV('3')} врагам на ${scX(d.multiplier)}, шкала стаи ${scV('−' + d.atbCut + '%')}. Каждому — заряд Статики, и задетые бьют только вас. MP: ${scV(d.mpCost)}. КД: ${s.cooldown}.`; },
+getNextDesc: (lvl) => scNext(SKILLS.sparkSlash, lvl, n => `×${n.multiplier.toFixed(2)}`),
+},
+};
+SUBCLASSES.drow_assassin.mods = {
+powerStrike: {
+name: 'Удар в спину', backMult: 1.5, backAtb: 50,
+levels: SC_WAR_PS_LEVELS,
+getDesc: (lvl) => { const s = SKILLS.powerStrike, d = s.levels[lvl-1]; return `Удар на ${scX(d.multiplier)}; если цель не готова к удару (её шкала хода ниже половины) — ещё ${scX(1.5)}. MP: ${scV(d.mpCost)}. КД: ${s.cooldown} ATB.`; },
+getNextDesc: (lvl) => scNext(SKILLS.powerStrike, lvl, n => `×${n.multiplier.toFixed(2)}`),
+},
+discharge: {
+name: 'Искра в клинке', selfAtb: 30,
+levels: scMap(SC_DISCHARGE_LEVELS, x => ({ mpCost: Math.ceil(x.mpCost * 0.6) })),
+getDesc: (lvl) => SC_DISCHARGE_DESC(SKILLS.discharge, SKILLS.discharge.levels[lvl-1], `Дешевле обычного, и после — ваша шкала хода ${scV('+30%')}.`),
+getNextDesc: (lvl) => scNext(SKILLS.discharge, lvl, n => `×${n.multiplier.toFixed(2)}, MP ${n.mpCost}`),
+},
+sparkSlash: {
+name: 'Искровой разрез', fixedTargets: 3,
+levels: SC_SPARK_LEVELS,
+getDesc: (lvl) => { const s = SKILLS.sparkSlash, d = s.levels[lvl-1]; return `Разрез по ${scV('3')} врагам на ${scX(d.multiplier)}, шкала стаи ${scV('−' + d.atbCut + '%')}. MP: ${scV(d.mpCost)}. КД: ${s.cooldown}.`; },
+getNextDesc: (lvl) => scNext(SKILLS.sparkSlash, lvl, n => `×${n.multiplier.toFixed(2)}`),
+},
+};
+SUBCLASSES.drow_shadowweaver.mods = {
+powerStrike: {
+name: 'Сумеречный удар', magPart: 0.5, atbCut: 20,
+levels: SC_WAR_PS_LEVELS,
+getDesc: (lvl) => { const s = SKILLS.powerStrike, d = s.levels[lvl-1]; return `(атака + маг. атака ×0.5) × ${scX(d.multiplier)}, молния, шкала хода цели ${scV('−20%')}. MP: ${scV(d.mpCost)}. КД: ${s.cooldown} ATB.`; },
+getNextDesc: (lvl) => scNext(SKILLS.powerStrike, lvl, n => `×${n.multiplier.toFixed(2)}`),
+},
+discharge: {
+name: 'Разряд',
+levels: SC_DISCHARGE_LEVELS,
+getDesc: (lvl) => SC_DISCHARGE_DESC(SKILLS.discharge, SKILLS.discharge.levels[lvl-1], 'Паралич — Теневой двойник держится на 2 хода дольше, а если его нет — появляется на 2 хода.'),
+getNextDesc: (lvl) => scNext(SKILLS.discharge, lvl, n => `×${n.multiplier.toFixed(2)}, ATB −${n.atbReduction}%`),
+},
+sparkSlash: {
+name: 'Теневой разрез', extraTargets: 1,
+levels: SC_SPARK_LEVELS,
+getDesc: (lvl) => { const s = SKILLS.sparkSlash, d = s.levels[lvl-1]; return `Разрез по ${scV(d.targets + 1)} врагам на ${scX(d.multiplier)}, шкала стаи ${scV('−' + d.atbCut + '%')}; двойник режет вместе с вами. MP: ${scV(d.mpCost)}. КД: ${s.cooldown}.`; },
+getNextDesc: (lvl) => scNext(SKILLS.sparkSlash, lvl, n => `×${n.multiplier.toFixed(2)}`),
+},
+};
+const LIGHTNING_SPELLS = ['discharge', 'chainLightning', 'fireball', 'scStormFront'];
+SUBCLASSES.drow_stormcaller.mods = {
+fireball: {
+name: 'Шаровая молния', splash: 50,
+levels: SC_FIREBALL_LEVELS,
+getDesc: (lvl) => { const s = SKILLS.fireball, d = s.levels[lvl-1]; return `Шаровая молния на ${scX(d.multiplier)}; отскакивает в соседа на ${scV('50%')}. Молния — копит Напряжение. MP: ${scV(d.mpCost)}.`; },
+getNextDesc: (lvl) => scNext(SKILLS.fireball, lvl, n => `×${n.multiplier.toFixed(2)}`),
+},
+discharge: {
+name: 'Разряд',
+levels: SC_DISCHARGE_LEVELS,
+getDesc: (lvl) => SC_DISCHARGE_DESC(SKILLS.discharge, SKILLS.discharge.levels[lvl-1], 'Копит Напряжение.'),
+getNextDesc: (lvl) => scNext(SKILLS.discharge, lvl, n => `×${n.multiplier.toFixed(2)}, ATB −${n.atbReduction}%`),
+},
+chainLightning: {
+name: 'Цепная молния',
+levels: SC_CHAIN_LEVELS,
+getDesc: (lvl) => { const s = SKILLS.chainLightning, d = s.levels[lvl-1]; return `Молния прыгает по ${scV(d.targets)} врагам: ${scX(d.multiplier)} первому, каждый прыжок −30% (через парализованного — не слабеет). Копит Напряжение. MP: ${scV(d.mpCost)}. КД: ${s.cooldown}.`; },
+getNextDesc: (lvl) => scNext(SKILLS.chainLightning, lvl, n => `${n.targets} цели, ×${n.multiplier.toFixed(2)}`),
+},
+};
+SUBCLASSES.drow_dreamweaver.mods = {
+fireball: {
+name: 'Сон', sleepTurns: 3,
+levels: SC_FIREBALL_LEVELS,
+getDesc: (lvl) => { const s = SKILLS.fireball, d = s.levels[lvl-1]; return `Усыпляет тварь на 3 хода — до первого удара по ней. В стае выбирает <b>лишнюю</b>: не текущую цель. Усыплять некого — <b>Кошмар</b>: молния по текущей цели на ${scX(d.multiplier)}. MP: ${scV(d.mpCost)}.`; },
+getNextDesc: (lvl) => scNext(SKILLS.fireball, lvl, n => `×${n.multiplier.toFixed(2)}`),
+},
+discharge: {
+name: 'Живая искра', selfAtb: 30, dmgPart: 0.6,
+levels: SC_DISCHARGE_LEVELS,
+getDesc: (lvl) => { const s = SKILLS.discharge, d = s.levels[lvl-1]; return `Искра на ${scX(d.multiplier * 0.6)} и лечение на ${scX(d.multiplier)} от маг. атаки; ваша шкала хода ${scV('+30%')}. MP: ${scV(d.mpCost)}. КД: ${s.cooldown} ATB.`; },
+getNextDesc: (lvl) => scNext(SKILLS.discharge, lvl, n => `×${n.multiplier.toFixed(2)}`),
+},
+chainLightning: {
+name: 'Цепь сна', sleepTurns: 2,
+levels: SC_CHAIN_LEVELS,
+getDesc: (lvl) => { const s = SKILLS.chainLightning, d = s.levels[lvl-1]; return `Молния по ${scV(d.targets)} врагам (${scX(d.multiplier)} первому, дальше слабее); все задетые, кроме текущей цели, засыпают на 2 хода. MP: ${scV(d.mpCost)}. КД: ${s.cooldown}.`; },
+getNextDesc: (lvl) => scNext(SKILLS.chainLightning, lvl, n => `${n.targets} цели, ×${n.multiplier.toFixed(2)}`),
+},
+};
+const SPIDER_KINDS = {
+mother: { name: 'Паучиха-матка', img: 'img/allies/spider_mother.webp', hp: 0.5, atk: 0.45 },
+spawn:  { name: 'Паучонок',      img: 'img/allies/spider_spawn.webp',  hp: 0.2, atk: 0.30 },
+};
+SUBCLASSES.drow_spiderlord.mods = {
+fireball: {
+name: 'Ядовитый плевок',
+levels: SC_FIREBALL_LEVELS,
+getDesc: (lvl) => { const s = SKILLS.fireball, d = s.levels[lvl-1]; return `Плевок ядом на ${scX(d.multiplier)} и 2 слоя яда. MP: ${scV(d.mpCost)}.`; },
+getNextDesc: (lvl) => scNext(SKILLS.fireball, lvl, n => `×${n.multiplier.toFixed(2)}`),
+},
+discharge: {
+name: 'Разряд',
+levels: SC_DISCHARGE_LEVELS,
+getDesc: (lvl) => SC_DISCHARGE_DESC(SKILLS.discharge, SKILLS.discharge.levels[lvl-1], 'Паралич — все пауки бросаются на цель.'),
+getNextDesc: (lvl) => scNext(SKILLS.discharge, lvl, n => `×${n.multiplier.toFixed(2)}, ATB −${n.atbReduction}%`),
+},
+chainLightning: {
+name: 'Цепная молния',
+levels: SC_CHAIN_LEVELS,
+getDesc: (lvl) => { const s = SKILLS.chainLightning, d = s.levels[lvl-1]; return `Молния по ${scV(d.targets)} врагам и ещё по одному за каждого паука (прыгает через паутину). MP: ${scV(d.mpCost)}. КД: ${s.cooldown}.`; },
+getNextDesc: (lvl) => scNext(SKILLS.chainLightning, lvl, n => `${n.targets} цели, ×${n.multiplier.toFixed(2)}`),
+},
+};
+Object.assign(SUBCLASS_SKILLS, {
+sgArmor: {
+id: 'sgArmor', subclassId: 'drow_stormguard', name: 'Грозовой доспех', type: 'active', freeTurn: true,
+iconPng: 'img/skills/drow/storm_legacy.webp',
+maxLevel: 5, cooldown: 8, turns: 5,
+levels: [ { mpCost: 0, pct: 5, cut: 15 }, { mpCost: 0, pct: 6, cut: 18 }, { mpCost: 0, pct: 7, cut: 22 }, { mpCost: 0, pct: 8, cut: 26 }, { mpCost: 0, pct: 10, cut: 30 } ],
+getDesc: (lvl) => { const s = SKILLS.sgArmor, d = s.levels[lvl-1]; return `Не тратит ход: ${s.turns} ходов входящий урон ${scV('−' + d.cut + '%')}, каждый удар по вам даёт твари 2 заряда Статики и бьёт её молнией на ${scV(d.pct + '%')} атаки. Без затрат. Автобой — против стаи или сильной твари. КД: ${s.cooldown}.`; },
+getNextDesc: (lvl) => scNext(SKILLS.sgArmor, lvl, n => `${n.pct}% атаки`),
+},
+sgStatic: {
+id: 'sgStatic', subclassId: 'drow_stormguard', name: 'Статика', type: 'active', semiPassive: true,
+iconPng: 'img/skills/drow/discharge.webp',
+maxLevel: 5,
+levels: [ { mpCost: 0, pct: 25 }, { mpCost: 0, pct: 28 }, { mpCost: 0, pct: 32 }, { mpCost: 0, pct: 36 }, { mpCost: 0, pct: 40 } ],
+getDesc: (lvl) => { const d = SKILLS.sgStatic.levels[lvl-1]; return `<b>Работает сама</b>, пока стоит в слоте: каждый удар по вам — заряд Статики на ударившую тварь. На ${STATIC_MAX} — разряд: ${scV(d.pct + '%')} атаки молнией и шкала хода ${scV('−50%')}, заряды сгорают.`; },
+getNextDesc: (lvl) => scNext(SKILLS.sgStatic, lvl, n => `${n.pct}% атаки`),
+},
+sgGround: {
+id: 'sgGround', subclassId: 'drow_stormguard', name: 'Заземление', type: 'passive',
+iconPng: 'img/skills/warrior/resilience.webp',
+maxLevel: 5,
+levels: [ { magic: 10 }, { magic: 12 }, { magic: 15 }, { magic: 17 }, { magic: 20 } ],
+getDesc: (lvl) => { const d = SKILLS.sgGround.levels[lvl-1]; return `Пассивно: магический урон по вам ${scV('−' + d.magic + '%')}, и каждый заряд Статики на твари — её удары ${scV('−5%')}.`; },
+getNextDesc: (lvl) => scNext(SKILLS.sgGround, lvl, n => `маг. урон −${n.magic}%`),
+},
+sgConductor: {
+id: 'sgConductor', subclassId: 'drow_stormguard', name: 'Проводник', type: 'passive',
+iconPng: 'img/skills/drow/storm_legacy.webp',
+maxLevel: 5,
+levels: [ { def: 30 }, { def: 40 }, { def: 50 }, { def: 60 }, { def: 70 } ],
+getDesc: (lvl) => { const d = SKILLS.sgConductor.levels[lvl-1]; return `Пассивно: Наследие Грозы бьёт на один удар чаще, и к ответной молнии прибавляется ${scV(d.def + '%')} вашей физ. защиты.`; },
+getNextDesc: (lvl) => scNext(SKILLS.sgConductor, lvl, n => `+${n.def}% защиты`),
+},
+asStep: {
+id: 'asStep', subclassId: 'drow_assassin', name: 'Шаг тени', type: 'active',
+iconPng: 'img/skills/drow/lightning_speed.webp',
+maxLevel: 5, cooldown: 6,
+levels: [ { mpCost: 10, dmg: 10 }, { mpCost: 10, dmg: 15 }, { mpCost: 11, dmg: 20 }, { mpCost: 11, dmg: 25 }, { mpCost: 12, dmg: 30 } ],
+getDesc: (lvl) => { const d = SKILLS.asStep.levels[lvl-1]; return `Шаг в тень: шкала хода сразу полная — следующий ход прямо сейчас, и он ${scV('+' + d.dmg + '%')} к урону. MP: ${scV(d.mpCost)}. КД: ${SKILLS.asStep.cooldown}.`; },
+getNextDesc: (lvl) => scNext(SKILLS.asStep, lvl, n => `+${n.dmg}%`),
+},
+asSting: {
+id: 'asSting', subclassId: 'drow_assassin', name: 'Ядовитое жало', type: 'active', semiPassive: true,
+iconPng: 'img/skills/drow/chain_mind.webp',
+maxLevel: 5,
+levels: [ { mpCost: 0, tick: 4 }, { mpCost: 0, tick: 5 }, { mpCost: 0, tick: 6 }, { mpCost: 0, tick: 7 }, { mpCost: 0, tick: 8 } ],
+getDesc: (lvl) => { const d = SKILLS.asSting.levels[lvl-1]; return `<b>Работает само</b>, пока стоит в слоте: каждый удар — слой яда (до 5). Каждый ход слой бьёт на ${scV(d.tick + '%')} атаки, и каждый слой — ${scV('+3%')} к вашему урону по цели.`; },
+getNextDesc: (lvl) => scNext(SKILLS.asSting, lvl, n => `${n.tick}% за слой`),
+},
+asDual: {
+id: 'asDual', subclassId: 'drow_assassin', name: 'Парные клинки', type: 'passive',
+iconPng: 'img/skills/warrior/weaponMasterW.webp',
+maxLevel: 5,
+levels: [ { off: 47 }, { off: 49 }, { off: 51 }, { off: 53 }, { off: 55 } ],
+getDesc: (lvl) => { const d = SKILLS.asDual.levels[lvl-1]; return `Пассивно, с парным оружием: вторая рука даёт ${scV(d.off + '%')} своей атаки вместо 40%, штрафа точности нет.`; },
+getNextDesc: (lvl) => scNext(SKILLS.asDual, lvl, n => `${n.off}%`),
+},
+asLight: {
+id: 'asLight', subclassId: 'drow_assassin', name: 'Лёгкая рука', type: 'passive',
+iconPng: 'img/skills/drow/lightning_speed.webp',
+maxLevel: 5,
+levels: [ { atb: 15 }, { atb: 19 }, { atb: 22 }, { atb: 26 }, { atb: 30 } ],
+getDesc: (lvl) => { const d = SKILLS.asLight.levels[lvl-1]; return `Пассивно: убийство — ваша шкала хода ${scV('+' + d.atb + '%')}.`; },
+getNextDesc: (lvl) => scNext(SKILLS.asLight, lvl, n => `+${n.atb}%`),
+},
+swDouble: {
+id: 'swDouble', subclassId: 'drow_shadowweaver', name: 'Теневой двойник', type: 'active', freeTurn: true,
+iconPng: 'img/skills/drow/discharge.webp',
+maxLevel: 5, cooldown: 9, turns: 5,
+levels: [ { mpCost: 16, pct: 40 }, { mpCost: 17, pct: 45 }, { mpCost: 18, pct: 50 }, { mpCost: 19, pct: 55 }, { mpCost: 20, pct: 60 } ],
+getDesc: (lvl) => { const s = SKILLS.swDouble, d = s.levels[lvl-1]; return `Не тратит ход: ${s.turns} ходов рядом теневой двойник и повторяет каждый ваш удар на ${scV(d.pct + '%')}. Его не убить. MP: ${scV(d.mpCost)}. КД: ${s.cooldown}.`; },
+getNextDesc: (lvl) => scNext(SKILLS.swDouble, lvl, n => `${n.pct}%`),
+},
+swBlade: {
+id: 'swBlade', subclassId: 'drow_shadowweaver', name: 'Заряженный клинок', type: 'active', semiPassive: true,
+iconPng: 'img/skills/drow/spark_slash.webp',
+maxLevel: 5,
+levels: [ { mpCost: 0, pct: 20 }, { mpCost: 0, pct: 23 }, { mpCost: 0, pct: 26 }, { mpCost: 0, pct: 28 }, { mpCost: 0, pct: 30 } ],
+getDesc: (lvl) => { const d = SKILLS.swBlade.levels[lvl-1]; return `<b>Работает сам</b>, пока стоит в слоте: после Разряда следующий удар оружием добавляет ${scV(d.pct + '%')} силы молнии (маг. атака + половина физ.) и сбивает шкалу цели на ${scV('10%')}.`; },
+getNextDesc: (lvl) => scNext(SKILLS.swBlade, lvl, n => `${n.pct}%`),
+},
+swDeep: {
+id: 'swDeep', subclassId: 'drow_shadowweaver', name: 'Глубокая тень', type: 'passive',
+iconPng: 'img/skills/drow/chain_mind.webp',
+maxLevel: 5,
+levels: [ { pct: 10 }, { pct: 12 }, { pct: 15 }, { pct: 17 }, { pct: 20 } ],
+getDesc: (lvl) => { const d = SKILLS.swDeep.levels[lvl-1]; return `Пассивно: двойник повторяет на ${scV('+' + d.pct + '%')} сильнее и держится на ход дольше.`; },
+getNextDesc: (lvl) => scNext(SKILLS.swDeep, lvl, n => `+${n.pct}%`),
+},
+swFlesh: {
+id: 'swFlesh', subclassId: 'drow_shadowweaver', name: 'Плоть грозы', type: 'passive',
+iconPng: 'img/skills/mage/manaRegen.webp',
+maxLevel: 5,
+levels: [ { mp: 10 }, { mp: 12 }, { mp: 15 }, { mp: 17 }, { mp: 20 } ],
+getDesc: (lvl) => { const d = SKILLS.swFlesh.levels[lvl-1]; return `Пассивно: макс. MP ${scV('+' + d.mp + '%')}, и каждый паралич возвращает ${scV('5%')} макс. MP.`; },
+getNextDesc: (lvl) => scNext(SKILLS.swFlesh, lvl, n => `+${n.mp}% MP`),
+},
+scStormFront: {
+id: 'scStormFront', subclassId: 'drow_stormcaller', name: 'Грозовой фронт', type: 'active',
+iconPng: 'img/skills/drow/chain_lightning.webp',
+maxLevel: 5, cooldown: 7, turns: 4,
+levels: [ { mpCost: 18, pct: 60 }, { mpCost: 19, pct: 70 }, { mpCost: 20, pct: 80 }, { mpCost: 21, pct: 90 }, { mpCost: 22, pct: 100 } ],
+getDesc: (lvl) => { const s = SKILLS.scStormFront, d = s.levels[lvl-1]; return `Тратит ход: ${s.turns} хода в начале каждого вашего хода молния бьёт случайную тварь на ${scV(d.pct + '%')} маг. атаки. Копит Напряжение. MP: ${scV(d.mpCost)}. КД: ${s.cooldown}.`; },
+getNextDesc: (lvl) => scNext(SKILLS.scStormFront, lvl, n => `${n.pct}%`),
+},
+scSpark: {
+id: 'scSpark', subclassId: 'drow_stormcaller', name: 'Искрение', type: 'active', semiPassive: true,
+iconPng: 'img/skills/drow/chain_mind.webp',
+maxLevel: 5,
+levels: [ { mpCost: 0, pct: 50 }, { mpCost: 0, pct: 60 }, { mpCost: 0, pct: 70 }, { mpCost: 0, pct: 80 }, { mpCost: 0, pct: 90 } ],
+getDesc: (lvl) => { const d = SKILLS.scSpark.levels[lvl-1]; return `<b>Работает само</b>, пока стоит в слоте: сработал Цепной разум — бесплатная искра в случайную тварь на ${scV(d.pct + '%')} маг. атаки.`; },
+getNextDesc: (lvl) => scNext(SKILLS.scSpark, lvl, n => `${n.pct}%`),
+},
+scBlood: {
+id: 'scBlood', subclassId: 'drow_stormcaller', name: 'Буря в крови', type: 'passive',
+iconPng: 'img/skills/drow/storm_legacy.webp',
+maxLevel: 5,
+levels: [ { chance: 10 }, { chance: 14 }, { chance: 18 }, { chance: 21 }, { chance: 25 } ],
+getDesc: (lvl) => { const d = SKILLS.scBlood.levels[lvl-1]; return `Пассивно: Цепной разум срабатывает на ${scV('+' + d.chance + '%')} чаще.`; },
+getNextDesc: (lvl) => scNext(SKILLS.scBlood, lvl, n => `+${n.chance}%`),
+},
+scTension: {
+id: 'scTension', subclassId: 'drow_stormcaller', name: 'Напряжение', type: 'passive',
+iconPng: 'img/skills/drow/discharge.webp',
+maxLevel: 5,
+levels: [ { mult: 1.4 }, { mult: 1.5 }, { mult: 1.6 }, { mult: 1.7 }, { mult: 1.8 } ],
+getDesc: (lvl) => { const d = SKILLS.scTension.levels[lvl-1]; return `Пассивно: 5 молний подряд (Разряд, Шаровая, Цепная, Фронт) — следующая молния ${scX(d.mult)} и без маны. Другое действие сбрасывает счёт.`; },
+getNextDesc: (lvl) => scNext(SKILLS.scTension, lvl, n => `×${n.mult.toFixed(1)}`),
+},
+dwHaste: {
+id: 'dwHaste', subclassId: 'drow_dreamweaver', name: 'Ускорение', type: 'active', freeTurn: true,
+iconPng: 'img/skills/drow/lightning_speed.webp',
+maxLevel: 5, cooldown: 8, turns: 5,
+levels: [ { mpCost: 12, atb: 25 }, { mpCost: 13, atb: 27 }, { mpCost: 14, atb: 30 }, { mpCost: 15, atb: 32 }, { mpCost: 16, atb: 35 } ],
+getDesc: (lvl) => { const s = SKILLS.dwHaste, d = s.levels[lvl-1]; return `Не тратит ход: ${s.turns} ходов шкала хода ${scV('+' + d.atb + '%')}. MP: ${scV(d.mpCost)}. КД: ${s.cooldown}.`; },
+getNextDesc: (lvl) => scNext(SKILLS.dwHaste, lvl, n => `+${n.atb}%`),
+},
+dwMist: {
+id: 'dwMist', subclassId: 'drow_dreamweaver', name: 'Сонная дымка', type: 'active', semiPassive: true,
+iconPng: 'img/skills/elf/fast_prayer.webp',
+maxLevel: 5, threshold: 40,
+levels: [ { mpCost: 0, every: 7 }, { mpCost: 0, every: 6 }, { mpCost: 0, every: 6 }, { mpCost: 0, every: 5 }, { mpCost: 0, every: 4 } ],
+getDesc: (lvl) => { const s = SKILLS.dwMist, d = s.levels[lvl-1]; return `<b>Работает сама</b>, пока стоит в слоте: HP упало ниже ${s.threshold}% — все враги засыпают на ход (до первого удара). Не чаще раза в ${scV(d.every)} ходов.`; },
+getNextDesc: (lvl) => scNext(SKILLS.dwMist, lvl, n => `раз в ${n.every} ходов`),
+},
+dwLullaby: {
+id: 'dwLullaby', subclassId: 'drow_dreamweaver', name: 'Колыбельная', type: 'passive',
+iconPng: 'img/skills/elf/heal.webp',
+maxLevel: 5,
+levels: [ { heal: 15, regen: 2 }, { heal: 17, regen: 2 }, { heal: 20, regen: 2 }, { heal: 22, regen: 2.5 }, { heal: 25, regen: 3 } ],
+getDesc: (lvl) => { const d = SKILLS.dwLullaby.levels[lvl-1]; return `Пассивно: пока хоть одна тварь спит — реген в бою ×${d.regen}, а любое лечение ${scV('+' + d.heal + '%')}.`; },
+getNextDesc: (lvl) => scNext(SKILLS.dwLullaby, lvl, n => `лечение +${n.heal}%, реген ×${n.regen}`),
+},
+dwNightmare: {
+id: 'dwNightmare', subclassId: 'drow_dreamweaver', name: 'Кошмар', type: 'passive',
+iconPng: 'img/skills/drow/chain_mind.webp',
+maxLevel: 5,
+levels: [ { pct: 20 }, { pct: 25 }, { pct: 30 }, { pct: 35 }, { pct: 40 } ],
+getDesc: (lvl) => { const d = SKILLS.dwNightmare.levels[lvl-1]; return `Пассивно: удар, который будит спящую тварь, — ${scV('+' + d.pct + '%')} урона.`; },
+getNextDesc: (lvl) => scNext(SKILLS.dwNightmare, lvl, n => `+${n.pct}%`),
+},
+slMother: {
+id: 'slMother', subclassId: 'drow_spiderlord', name: 'Паучиха-матка', type: 'active', freeTurn: 0.7,
+iconPng: 'img/allies/spider_mother.webp',
+maxLevel: 5, cooldown: 3, layEvery: 2,
+levels: [ { mpCost: 14, power: 60 }, { mpCost: 15, power: 70 }, { mpCost: 16, power: 80 }, { mpCost: 17, power: 90 }, { mpCost: 18, power: 100 } ],
+getDesc: (lvl) => { const d = SKILLS.slMother.levels[lvl-1]; return `Быстрый: ${scV('70%')} хода сразу возвращается. Нет матки — призывает её на весь бой (сила ${scV(d.power + '%')}). Каждые 2 хода она откладывает паучонка (до 2, всего 3 паука). Матка уже есть — она сразу откладывает паучонка. Укусы опутывают паутиной: шкала хода твари медленнее. MP: ${scV(d.mpCost)}. КД: ${SKILLS.slMother.cooldown}.`; },
+getNextDesc: (lvl) => scNext(SKILLS.slMother, lvl, n => `сила ${n.power}%`),
+},
+slVenom: {
+id: 'slVenom', subclassId: 'drow_spiderlord', name: 'Паучий яд', type: 'active', semiPassive: true,
+iconPng: 'img/skills/drow/chain_mind.webp',
+maxLevel: 5,
+levels: [ { mpCost: 0, tick: 4 }, { mpCost: 0, tick: 5 }, { mpCost: 0, tick: 6 }, { mpCost: 0, tick: 7 }, { mpCost: 0, tick: 8 } ],
+getDesc: (lvl) => { const d = SKILLS.slVenom.levels[lvl-1]; return `<b>Работает сам</b>, пока стоит в слоте: каждый укус паука — слой яда (до 5), слой бьёт на ${scV(d.tick + '%')} вашей маг. атаки каждый ход.`; },
+getNextDesc: (lvl) => scNext(SKILLS.slVenom, lvl, n => `${n.tick}% за слой`),
+},
+slBrood: {
+id: 'slBrood', subclassId: 'drow_spiderlord', name: 'Плодовитость', type: 'passive',
+iconPng: 'img/allies/spider_spawn.webp',
+maxLevel: 5,
+levels: [ { pct: 20 }, { pct: 25 }, { pct: 30 }, { pct: 35 }, { pct: 40 } ],
+getDesc: (lvl) => { const d = SKILLS.slBrood.levels[lvl-1]; return `Пассивно: паучата сильнее на ${scV(d.pct + '%')} (здоровье и укус).`; },
+getNextDesc: (lvl) => scNext(SKILLS.slBrood, lvl, n => `+${n.pct}%`),
+},
+slSilk: {
+id: 'slSilk', subclassId: 'drow_spiderlord', name: 'Шёлковые нити', type: 'passive',
+iconPng: 'img/skills/elf/thorn_whirl.webp',
+maxLevel: 5,
+levels: [ { slow: 20 }, { slow: 25 }, { slow: 30 }, { slow: 35 }, { slow: 40 } ],
+getDesc: (lvl) => { const d = SKILLS.slSilk.levels[lvl-1]; return `Пассивно: паутина пауков замедляет шкалу хода твари на ${scV(d.slow + '%')} (без нити — на 15%).`; },
+getNextDesc: (lvl) => scNext(SKILLS.slSilk, lvl, n => `−${n.slow}%`),
+},
+});
+const SC_GREED_W_LEVELS = [
+{ mpCost: 10, multiplier: 0.90, markTurns: 3 }, { mpCost: 11, multiplier: 0.95, markTurns: 4 },
+{ mpCost: 12, multiplier: 1.00, markTurns: 4 }, { mpCost: 13, multiplier: 1.05, markTurns: 5 },
+{ mpCost: 15, multiplier: 1.15, markTurns: 6 }, { mpCost: 16, multiplier: 1.20, markTurns: 6 },
+{ mpCost: 17, multiplier: 1.25, markTurns: 7 },
+];
+const SC_GREED_M_LEVELS = [
+{ mpCost: 12, multiplier: 2.00, markTurns: 3 }, { mpCost: 13, multiplier: 2.20, markTurns: 4 },
+{ mpCost: 14, multiplier: 2.40, markTurns: 4 }, { mpCost: 15, multiplier: 2.60, markTurns: 5 },
+{ mpCost: 17, multiplier: 2.90, markTurns: 6 }, { mpCost: 18, multiplier: 3.10, markTurns: 6 },
+{ mpCost: 19, multiplier: 3.30, markTurns: 7 },
+];
+const SC_QUAKE_LEVELS = [
+{ mpCost: 12, multiplier: 0.60, targets: 5, freezeChance: 25 }, { mpCost: 13, multiplier: 0.67, targets: 5, freezeChance: 30 },
+{ mpCost: 14, multiplier: 0.75, targets: 5, freezeChance: 35 }, { mpCost: 15, multiplier: 0.82, targets: 5, freezeChance: 40 },
+{ mpCost: 16, multiplier: 0.90, targets: 5, freezeChance: 45 }, { mpCost: 17, multiplier: 0.97, targets: 5, freezeChance: 48 },
+{ mpCost: 18, multiplier: 1.05, targets: 5, freezeChance: 50 },
+];
+const SC_RUNE_LEVELS = [
+{ mpCost: 18, multiplier: 1.30, targets: 3, atbCut: 15 }, { mpCost: 19, multiplier: 1.40, targets: 3, atbCut: 15 },
+{ mpCost: 21, multiplier: 1.50, targets: 4, atbCut: 15 }, { mpCost: 22, multiplier: 1.60, targets: 4, atbCut: 15 },
+{ mpCost: 24, multiplier: 1.70, targets: 5, atbCut: 15 }, { mpCost: 25, multiplier: 1.80, targets: 5, atbCut: 17 },
+{ mpCost: 26, multiplier: 1.90, targets: 5, atbCut: 20 },
+];
+const BREACH_PCT = 15;
+const BREACH_MAX = 3;
+const HEAT_MAX = 5;
+SUBCLASSES.dwarf_steelwall.mods = {
+powerStrike: {
+name: 'Удар-наковальня', defPart: 0.6,
+levels: SC_WAR_PS_LEVELS,
+getDesc: (lvl) => { const s = SKILLS.powerStrike, d = s.levels[lvl-1]; return `(атака + ${scV('60%')} физ. защиты) × ${scX(d.multiplier)}. MP: ${scV(d.mpCost)}. КД: ${s.cooldown} ATB.`; },
+getNextDesc: (lvl) => scNext(SKILLS.powerStrike, lvl, n => `×${n.multiplier.toFixed(2)}`),
+},
+dwarfGreed: {
+name: 'Жадность',
+levels: SC_GREED_W_LEVELS,
+getDesc: (lvl) => { const s = SKILLS.dwarfGreed, d = s.levels[lvl-1]; return `Удар на ${scX(d.multiplier)} и Метка Жадности на ${scV(d.markTurns)} хода (до 5). Каждая метка: +25% добычи и +10% опыта при убийстве — и ${scV('−4%')} к ударам этой твари по вам. MP: ${scV(d.mpCost)}. КД: ${s.cooldown} ATB.`; },
+getNextDesc: (lvl) => scNext(SKILLS.dwarfGreed, lvl, n => `×${n.multiplier.toFixed(2)}, метка ${n.markTurns} хода`),
+},
+frostQuake: {
+name: 'Ледяной вызов',
+levels: SC_QUAKE_LEVELS,
+getDesc: (lvl) => { const s = SKILLS.frostQuake, d = s.levels[lvl-1]; return `Лёд бьёт всех (до ${scV(d.targets)}) на ${scX(d.multiplier)}, заморозка ${scV(d.freezeChance + '%')}; задетые бьют только вас. Разносит Метки Жадности. MP: ${scV(d.mpCost)}. КД: ${s.cooldown}.`; },
+getNextDesc: (lvl) => scNext(SKILLS.frostQuake, lvl, n => `×${n.multiplier.toFixed(2)}, заморозка ${n.freezeChance}%`),
+},
+};
+SUBCLASSES.dwarf_hammerer.mods = {
+powerStrike: {
+name: 'Сокрушающий молот',
+levels: SC_WAR_PS_LEVELS,
+getDesc: (lvl) => { const s = SKILLS.powerStrike, d = s.levels[lvl-1]; return `Удар на ${scX(d.multiplier)} и <b>Пролом</b>: защита цели ${scV('−' + BREACH_PCT + '%')} до конца боя (до ${BREACH_MAX}). MP: ${scV(d.mpCost)}. КД: ${s.cooldown} ATB.`; },
+getNextDesc: (lvl) => scNext(SKILLS.powerStrike, lvl, n => `×${n.multiplier.toFixed(2)}`),
+},
+dwarfGreed: {
+name: 'Жадность',
+levels: SC_GREED_W_LEVELS,
+getDesc: (lvl) => { const s = SKILLS.dwarfGreed, d = s.levels[lvl-1]; return `Удар на ${scX(d.multiplier)} и Метка Жадности на ${scV(d.markTurns)} хода; по замороженной — ${scV('2')} метки. MP: ${scV(d.mpCost)}. КД: ${s.cooldown} ATB.`; },
+getNextDesc: (lvl) => scNext(SKILLS.dwarfGreed, lvl, n => `×${n.multiplier.toFixed(2)}`),
+},
+frostQuake: {
+name: 'Раскол',
+levels: SC_QUAKE_LEVELS,
+getDesc: (lvl) => { const s = SKILLS.frostQuake, d = s.levels[lvl-1]; return `Лёд бьёт всех (до ${scV(d.targets)}) на ${scX(d.multiplier)}, заморозка ${scV(d.freezeChance + '%')}. Уже замороженные получают ${scX(2)} и оттаивают. MP: ${scV(d.mpCost)}. КД: ${s.cooldown}.`; },
+getNextDesc: (lvl) => scNext(SKILLS.frostQuake, lvl, n => `×${n.multiplier.toFixed(2)}`),
+},
+};
+const PROSPECTOR_GREED_MAX = 7;
+const PROSPECTOR_GREED_PER = 30;
+SUBCLASSES.dwarf_prospector.mods = {
+powerStrike: {
+name: 'Удар кайлом',
+levels: SC_WAR_PS_LEVELS,
+getDesc: (lvl) => { const s = SKILLS.powerStrike, d = s.levels[lvl-1]; return `Удар на ${scX(d.multiplier)}; убил — лишний бросок добычи. MP: ${scV(d.mpCost)}. КД: ${s.cooldown} ATB.`; },
+getNextDesc: (lvl) => scNext(SKILLS.powerStrike, lvl, n => `×${n.multiplier.toFixed(2)}`),
+},
+dwarfGreed: {
+name: 'Жадность',
+levels: SC_GREED_W_LEVELS,
+getDesc: (lvl) => { const s = SKILLS.dwarfGreed, d = s.levels[lvl-1]; return `Удар на ${scX(d.multiplier)} и Метка Жадности на ${scV(d.markTurns)} хода — до ${scV(PROSPECTOR_GREED_MAX)} меток, каждая ${scV('+' + PROSPECTOR_GREED_PER + '%')} добычи. MP: ${scV(d.mpCost)}. КД: ${s.cooldown} ATB.`; },
+getNextDesc: (lvl) => scNext(SKILLS.dwarfGreed, lvl, n => `×${n.multiplier.toFixed(2)}`),
+},
+frostQuake: {
+name: 'Ледяной раскол',
+levels: SC_QUAKE_LEVELS,
+getDesc: (lvl) => { const s = SKILLS.frostQuake, d = s.levels[lvl-1]; return `Лёд бьёт всех (до ${scV(d.targets)}) на ${scX(d.multiplier)}, заморозка ${scV(d.freezeChance + '%')}, разносит Метки Жадности. Убитая с метками может выронить руду (10% за метку). MP: ${scV(d.mpCost)}. КД: ${s.cooldown}.`; },
+getNextDesc: (lvl) => scNext(SKILLS.frostQuake, lvl, n => `×${n.multiplier.toFixed(2)}`),
+},
+};
+SUBCLASSES.dwarf_forgemaster.mods = {
+fireball: {
+name: 'Огненный шар',
+levels: SC_FIREBALL_LEVELS,
+getDesc: (lvl) => { const s = SKILLS.fireball, d = s.levels[lvl-1]; return `Огонь на ${scX(d.multiplier)}, поджог по ${scV(d.burnPercent + '%')} маг. атаки и ${scV('+1 Жар')} цели (до ${HEAT_MAX}; каждая единица — ${scV('−5%')} защиты твари). MP: ${scV(d.mpCost)}.`; },
+getNextDesc: (lvl) => scNext(SKILLS.fireball, lvl, n => `×${n.multiplier.toFixed(2)}`),
+},
+dwarfGreedMagic: {
+name: 'Жадность',
+levels: SC_GREED_M_LEVELS,
+getDesc: (lvl) => { const s = SKILLS.dwarfGreedMagic, d = s.levels[lvl-1]; return `Удар на ${scX(d.multiplier)} и Метка Жадности (+25% Оболов). Раскалённая (с Жаром) тварь с меткой роняет руду. MP: ${scV(d.mpCost)}. КД: ${s.cooldown} ATB.`; },
+getNextDesc: (lvl) => scNext(SKILLS.dwarfGreedMagic, lvl, n => `×${n.multiplier.toFixed(2)}`),
+},
+blizzardRune: {
+name: 'Руна закалки', temperMult: 1.8,
+levels: SC_RUNE_LEVELS,
+getDesc: (lvl) => { const s = SKILLS.blizzardRune, d = s.levels[lvl-1]; return `Руна, на следующий ход буран: ${scV(d.targets)} врагов по ${scX(d.multiplier)}, шкала стаи −${scV(d.atbCut + '%')}. По раскалённым — <b>Закалка</b>: ${scX(1.8)}, Жар сгорает и оставляет Пролом (защита −15%). MP: ${scV(d.mpCost)}. КД: ${s.cooldown}.`; },
+getNextDesc: (lvl) => scNext(SKILLS.blizzardRune, lvl, n => `${n.targets} цели, ×${n.multiplier.toFixed(2)}`),
+},
+};
+SUBCLASSES.dwarf_runemaster.mods = {
+fireball: {
+name: 'Руна-ловушка', nowMult: 0.6, trapMult: 1.2,
+levels: SC_FIREBALL_LEVELS,
+getDesc: (lvl) => { const s = SKILLS.fireball, d = s.levels[lvl-1]; return `Огонь на ${scX(d.multiplier * 0.6)} сразу и руна-ловушка: она взрывается на ${scX(d.multiplier * 1.2)}, когда тварь сама соберётся ударить. Ловушка на твари уже есть — старая взрывается сразу. MP: ${scV(d.mpCost)}.`; },
+getNextDesc: (lvl) => scNext(SKILLS.fireball, lvl, n => `×${(n.multiplier * 0.6).toFixed(2)} + ×${(n.multiplier * 1.2).toFixed(2)}`),
+},
+dwarfGreedMagic: {
+name: 'Жадность', mpBack: 3,
+levels: SC_GREED_M_LEVELS,
+getDesc: (lvl) => { const s = SKILLS.dwarfGreedMagic, d = s.levels[lvl-1]; return `Удар на ${scX(d.multiplier)} и Метка Жадности (+25% Оболов). Убийство твари с меткой — ${scV('3%')} макс. MP. MP: ${scV(d.mpCost)}. КД: ${s.cooldown} ATB.`; },
+getNextDesc: (lvl) => scNext(SKILLS.dwarfGreedMagic, lvl, n => `×${n.multiplier.toFixed(2)}`),
+},
+blizzardRune: {
+name: 'Руна вьюги', guardTurns: 3, guardCut: 15,
+levels: SC_RUNE_LEVELS,
+getDesc: (lvl) => { const s = SKILLS.blizzardRune, d = s.levels[lvl-1]; return `Руна, на следующий ход буран: ${scV(d.targets)} врагов по ${scX(d.multiplier)}, шкала стаи −${scV(d.atbCut + '%')}. После бурана 3 хода урон по вам ${scV('−15%')}. MP: ${scV(d.mpCost)}. КД: ${s.cooldown}.`; },
+getNextDesc: (lvl) => scNext(SKILLS.blizzardRune, lvl, n => `${n.targets} цели, ×${n.multiplier.toFixed(2)}`),
+},
+};
+const ELEMENTAL_KINDS = {
+stone: { name: 'Элементаль камня', img: 'img/allies/elemental_stone.webp', hp: 0.6, atk: 0.3, taunt: true, desc: 'принимает удары' },
+fire:  { name: 'Элементаль огня',  img: 'img/allies/elemental_fire.webp',  hp: 0.3, atk: 0.5, burn: true, desc: 'поджигает' },
+vein:  { name: 'Элементаль жилы',  img: 'img/allies/elemental_vein.webp',  hp: 0.35, atk: 0.4, vein: true, desc: 'кристаллы по двум целям, убитые им дают добычу' },
+};
+const ELEMENTAL_ORDER = ['stone', 'fire', 'vein'];
+SUBCLASSES.dwarf_stonecaller.mods = {
+fireball: {
+name: 'Огненный шар',
+levels: SC_FIREBALL_LEVELS,
+getDesc: (lvl) => { const s = SKILLS.fireball, d = s.levels[lvl-1]; return `Огонь на ${scX(d.multiplier)}, поджог по ${scV(d.burnPercent + '%')} маг. атаки. Элементали разгораются: каждый сразу бьёт ещё раз на ${scV('50%')}. MP: ${scV(d.mpCost)}.`; },
+getNextDesc: (lvl) => scNext(SKILLS.fireball, lvl, n => `×${n.multiplier.toFixed(2)}`),
+},
+dwarfGreedMagic: {
+name: 'Жадность',
+levels: SC_GREED_M_LEVELS,
+getDesc: (lvl) => { const s = SKILLS.dwarfGreedMagic, d = s.levels[lvl-1]; return `Удар на ${scX(d.multiplier)} и Метка Жадности (+25% Оболов). Удары элементалей тоже ставят метки. MP: ${scV(d.mpCost)}. КД: ${s.cooldown} ATB.`; },
+getNextDesc: (lvl) => scNext(SKILLS.dwarfGreedMagic, lvl, n => `×${n.multiplier.toFixed(2)}`),
+},
+blizzardRune: {
+name: 'Руна вьюги',
+levels: SC_RUNE_LEVELS,
+getDesc: (lvl) => { const s = SKILLS.blizzardRune, d = s.levels[lvl-1]; return `Руна, на следующий ход буран: ${scV(d.targets)} врагов по ${scX(d.multiplier)}, шкала стаи −${scV(d.atbCut + '%')} — и из бурана бесплатно выходит элементаль. MP: ${scV(d.mpCost)}. КД: ${s.cooldown}.`; },
+getNextDesc: (lvl) => scNext(SKILLS.blizzardRune, lvl, n => `${n.targets} цели, ×${n.multiplier.toFixed(2)}`),
+},
+};
+Object.assign(SUBCLASS_SKILLS, {
+swlClose: {
+id: 'swlClose', subclassId: 'dwarf_steelwall', name: 'Сомкнуть броню', type: 'active',
+iconPng: 'img/skills/dwarf/stoneSkin.webp',
+maxLevel: 5, cooldown: 8, turns: 5,
+levels: [ { mpCost: 0, mult: 2.0 }, { mpCost: 0, mult: 2.2 }, { mpCost: 0, mult: 2.4 }, { mpCost: 0, mult: 2.7 }, { mpCost: 0, mult: 3.0 } ],
+getDesc: (lvl) => { const s = SKILLS.swlClose, d = s.levels[lvl-1]; return `Тратит ход: ${s.turns} ходов поглощение урона ${scX(d.mult)}. Без затрат. Автобой — против стаи или сильной твари. КД: ${s.cooldown}.`; },
+getNextDesc: (lvl) => scNext(SKILLS.swlClose, lvl, n => `×${n.mult.toFixed(1)}`),
+},
+swlTemper: {
+id: 'swlTemper', subclassId: 'dwarf_steelwall', name: 'Закалка', type: 'active', semiPassive: true,
+iconPng: 'img/skills/dwarf/dwarfFortitude.webp',
+maxLevel: 5,
+levels: [ { mpCost: 0, max: 6 }, { mpCost: 0, max: 7 }, { mpCost: 0, max: 8 }, { mpCost: 0, max: 9 }, { mpCost: 0, max: 10 } ],
+getDesc: (lvl) => { const d = SKILLS.swlTemper.levels[lvl-1]; return `<b>Работает сама</b>, пока стоит в слоте: каждый удар по вам — ${scV('+1')} поглощения до конца боя (до ${scV('+' + d.max)}).`; },
+getNextDesc: (lvl) => scNext(SKILLS.swlTemper, lvl, n => `до +${n.max}`),
+},
+swlSteel: {
+id: 'swlSteel', subclassId: 'dwarf_steelwall', name: 'Гномья сталь', type: 'passive',
+iconPng: 'img/skills/warrior/resilience.webp',
+maxLevel: 5,
+levels: [ { pct: 10 }, { pct: 12 }, { pct: 15 }, { pct: 17 }, { pct: 20 } ],
+getDesc: (lvl) => { const d = SKILLS.swlSteel.levels[lvl-1]; return `Пассивно: защита от тяжёлой брони (сеты Оплот и Палач) ${scV('+' + d.pct + '%')}.`; },
+getNextDesc: (lvl) => scNext(SKILLS.swlSteel, lvl, n => `+${n.pct}%`),
+},
+swlUnmoved: {
+id: 'swlUnmoved', subclassId: 'dwarf_steelwall', name: 'Несдвигаемый', type: 'passive',
+iconPng: 'img/skills/dwarf/dwarfFortitude.webp',
+maxLevel: 5,
+levels: [ { hp: 4 }, { hp: 5 }, { hp: 6 }, { hp: 8 }, { hp: 10 } ],
+getDesc: (lvl) => { const d = SKILLS.swlUnmoved.levels[lvl-1]; return `Пассивно: вас не оглушить и не сбить вашу шкалу хода; макс. HP ${scV('+' + d.hp + '%')}.`; },
+getNextDesc: (lvl) => scNext(SKILLS.swlUnmoved, lvl, n => `+${n.hp}% HP`),
+},
+hmAnvil: {
+id: 'hmAnvil', subclassId: 'dwarf_hammerer', name: 'Удар по наковальне', type: 'active',
+iconPng: 'img/skills/warrior/powerStrike.webp',
+maxLevel: 5, cooldown: 5,
+levels: [ { mpCost: 12, mult: 1.8, full: 3.4 }, { mpCost: 13, mult: 1.9, full: 3.6 }, { mpCost: 14, mult: 2.0, full: 3.8 }, { mpCost: 15, mult: 2.1, full: 4.0 }, { mpCost: 16, mult: 2.2, full: 4.2 } ],
+getDesc: (lvl) => { const d = SKILLS.hmAnvil.levels[lvl-1]; return `Удар на ${scX(d.mult)}; по цели с ${BREACH_MAX} Проломами — ${scX(d.full)} и оглушение. MP: ${scV(d.mpCost)}. КД: ${SKILLS.hmAnvil.cooldown}.`; },
+getNextDesc: (lvl) => scNext(SKILLS.hmAnvil, lvl, n => `×${n.mult.toFixed(1)} / ×${n.full.toFixed(1)}`),
+},
+hmCrack: {
+id: 'hmCrack', subclassId: 'dwarf_hammerer', name: 'Трещина', type: 'active', semiPassive: true,
+iconPng: 'img/skills/dwarf/frostQuake.webp',
+maxLevel: 5,
+levels: [ { mpCost: 0, every: 4 }, { mpCost: 0, every: 4 }, { mpCost: 0, every: 3 }, { mpCost: 0, every: 3 }, { mpCost: 0, every: 2 } ],
+getDesc: (lvl) => { const d = SKILLS.hmCrack.levels[lvl-1]; return `<b>Работает сама</b>, пока стоит в слоте: каждый ${scV(d.every + '-й')} удар оружием — бесплатный Пролом.`; },
+getNextDesc: (lvl) => scNext(SKILLS.hmCrack, lvl, n => `каждый ${n.every}-й`),
+},
+hmHeavy: {
+id: 'hmHeavy', subclassId: 'dwarf_hammerer', name: 'Тяжёлая рука', type: 'passive',
+iconPng: 'img/skills/warrior/weaponMasterW.webp',
+maxLevel: 5,
+levels: [ { pct: 15 }, { pct: 18 }, { pct: 22 }, { pct: 26 }, { pct: 30 } ],
+getDesc: (lvl) => { const d = SKILLS.hmHeavy.levels[lvl-1]; return `Пассивно, с молотом (дубиной) или топором: урон ${scV('+' + d.pct + '%')}, поглощение тварей (Толстокожий и т. п.) не режет ваш урон.`; },
+getNextDesc: (lvl) => scNext(SKILLS.hmHeavy, lvl, n => `+${n.pct}%`),
+},
+hmIce: {
+id: 'hmIce', subclassId: 'dwarf_hammerer', name: 'Лёд и сталь', type: 'passive',
+iconPng: 'img/skills/dwarf/frostQuake.webp',
+maxLevel: 5,
+levels: [ { freeze: 10, dmg: 20 }, { freeze: 10, dmg: 22 }, { freeze: 10, dmg: 25 }, { freeze: 12, dmg: 27 }, { freeze: 15, dmg: 30 } ],
+getDesc: (lvl) => { const d = SKILLS.hmIce.levels[lvl-1]; return `Пассивно: заморозка Раскола ${scV('+' + d.freeze + '%')}, урон по замороженным ${scV('+' + d.dmg + '%')}.`; },
+getNextDesc: (lvl) => scNext(SKILLS.hmIce, lvl, n => `+${n.freeze}% заморозки, +${n.dmg}% урона`),
+},
+prVein: {
+id: 'prVein', subclassId: 'dwarf_prospector', name: 'Чутьё жилы', type: 'active',
+iconPng: 'img/skills/dwarf/dwarfGreed.webp',
+maxLevel: 5, cooldown: 3,
+levels: [ { mpCost: 10, rare: 50 }, { mpCost: 11, rare: 62 }, { mpCost: 12, rare: 75 }, { mpCost: 13, rare: 87 }, { mpCost: 14, rare: 100 } ],
+getDesc: (lvl) => { const d = SKILLS.prVein.levels[lvl-1]; return `Тратит ход: до конца боя редкая добыча (шанс 2% и ниже) выпадает на ${scV('+' + d.rare + '%')} чаще. Автобой — в начале боя. MP: ${scV(d.mpCost)}.`; },
+getNextDesc: (lvl) => scNext(SKILLS.prVein, lvl, n => `+${n.rare}%`),
+},
+prEye: {
+id: 'prEye', subclassId: 'dwarf_prospector', name: 'Глаз старателя', type: 'active', semiPassive: true,
+iconPng: 'img/skills/dwarf/dwarfGreed.webp',
+maxLevel: 5,
+levels: [ { mpCost: 0, need: 7 }, { mpCost: 0, need: 6 }, { mpCost: 0, need: 6 }, { mpCost: 0, need: 5 }, { mpCost: 0, need: 5 } ],
+getDesc: (lvl) => { const d = SKILLS.prEye.levels[lvl-1]; return `<b>Работает сам</b>, пока стоит в слоте: тварь убита с ${scV(d.need)}+ метками Жадности — лишний бросок добычи; тварь с душой — ещё щепоть зелёной пыли.`; },
+getNextDesc: (lvl) => scNext(SKILLS.prEye, lvl, n => `от ${n.need} меток`),
+},
+prLode: {
+id: 'prLode', subclassId: 'dwarf_prospector', name: 'Жила', type: 'passive',
+iconPng: 'img/skills/dwarf/stoneSkin.webp',
+maxLevel: 5,
+levels: [ { pct: 10 }, { pct: 12 }, { pct: 15 }, { pct: 17 }, { pct: 20 } ],
+getDesc: (lvl) => { const d = SKILLS.prLode.levels[lvl-1]; return `Пассивно: ресурсы (материалы) с тварей выпадают на ${scV('+' + d.pct + '%')} чаще.`; },
+getNextDesc: (lvl) => scNext(SKILLS.prLode, lvl, n => `+${n.pct}%`),
+},
+prThrift: {
+id: 'prThrift', subclassId: 'dwarf_prospector', name: 'Скупой расчёт', type: 'passive',
+iconPng: 'img/skills/dwarf/dwarfGreed.webp',
+maxLevel: 5,
+levels: [ { pct: 8 }, { pct: 10 }, { pct: 12 }, { pct: 14 }, { pct: 16 } ],
+getDesc: (lvl) => { const d = SKILLS.prThrift.levels[lvl-1]; return `Пассивно: Оболов с тварей ${scV('+' + d.pct + '%')}.`; },
+getNextDesc: (lvl) => scNext(SKILLS.prThrift, lvl, n => `+${n.pct}%`),
+},
+fmBellows: {
+id: 'fmBellows', subclassId: 'dwarf_forgemaster', name: 'Раздуть мехи', type: 'active', freeTurn: true,
+iconPng: 'img/skills/mage/fireball.webp',
+maxLevel: 5, cooldown: 8, turns: 5,
+levels: [ { mpCost: 10, cut: 20, dmg: 8 }, { mpCost: 10, cut: 22, dmg: 10 }, { mpCost: 11, cut: 25, dmg: 11 }, { mpCost: 11, cut: 27, dmg: 13 }, { mpCost: 12, cut: 30, dmg: 15 } ],
+getDesc: (lvl) => { const s = SKILLS.fmBellows, d = s.levels[lvl-1]; return `Не тратит ход: ${s.turns} ходов ваш урон ${scV('+' + d.dmg + '%')}, огненные заклинания стоят на ${scV(d.cut + '%')} меньше маны, а Огненный шар даёт ${scV('+2 Жара')}. MP: ${scV(d.mpCost)}. КД: ${s.cooldown}.`; },
+getNextDesc: (lvl) => scNext(SKILLS.fmBellows, lvl, n => `урон +${n.dmg}%, −${n.cut}% MP`),
+},
+fmSparks: {
+id: 'fmSparks', subclassId: 'dwarf_forgemaster', name: 'Искры', type: 'active', semiPassive: true,
+iconPng: 'img/skills/mage/fireball.webp',
+maxLevel: 5,
+levels: [ { mpCost: 0, pct: 60 }, { mpCost: 0, pct: 70 }, { mpCost: 0, pct: 80 }, { mpCost: 0, pct: 90 }, { mpCost: 0, pct: 100 } ],
+getDesc: (lvl) => { const d = SKILLS.fmSparks.levels[lvl-1]; return `<b>Работают сами</b>, пока стоят в слоте: на ${HEAT_MAX} Жара тварь вспыхивает — соседи получают ${scV(d.pct + '%')} маг. атаки огнём, а у неё Жар остывает до 2.`; },
+getNextDesc: (lvl) => scNext(SKILLS.fmSparks, lvl, n => `${n.pct}%`),
+},
+fmSmith: {
+id: 'fmSmith', subclassId: 'dwarf_forgemaster', name: 'Рука мастера', type: 'passive',
+iconPng: 'img/skills/dwarf/runeKnowledge.webp',
+maxLevel: 5,
+levels: [ { reroll: 20, save: 10 }, { reroll: 30, save: 12 }, { reroll: 40, save: 15 }, { reroll: 50, save: 17 }, { reroll: 60, save: 20 } ],
+getDesc: (lvl) => { const d = SKILLS.fmSmith.levels[lvl-1]; return `Пассивно, в кузнице: с шансом ${scV(d.reroll + '%')} редкость бросается дважды и берётся лучшая; ${scV(d.save + '%')} шанс не потратить материалы.`; },
+getNextDesc: (lvl) => scNext(SKILLS.fmSmith, lvl, n => `${n.reroll}% двойной бросок, ${n.save}% экономии`),
+},
+fmSmelt: {
+id: 'fmSmelt', subclassId: 'dwarf_forgemaster', name: 'Переплавка', type: 'passive',
+iconPng: 'img/skills/dwarf/stoneSkin.webp',
+maxLevel: 5,
+levels: [ { pct: 30 }, { pct: 35 }, { pct: 40 }, { pct: 45 }, { pct: 50 } ],
+getDesc: (lvl) => { const d = SKILLS.fmSmelt.levels[lvl-1]; return `Пассивно: в кузнице появляется кнопка «Переплавка» — ненужное снаряжение (не надетое) превращается в ${scV(d.pct + '%')} материалов его рецепта.`; },
+getNextDesc: (lvl) => scNext(SKILLS.fmSmelt, lvl, n => `${n.pct}%`),
+},
+rmInscribe: {
+id: 'rmInscribe', subclassId: 'dwarf_runemaster', name: 'Начертать руны', type: 'active', freeTurn: true,
+iconPng: 'img/skills/dwarf/runeKnowledge.webp',
+maxLevel: 5, cooldown: 2,
+levels: [ { mpCost: 10, pct: 10, regen: 1.5 }, { mpCost: 11, pct: 12, regen: 1.8 }, { mpCost: 12, pct: 15, regen: 2.2 }, { mpCost: 13, pct: 17, regen: 2.6 }, { mpCost: 14, pct: 20, regen: 3 } ],
+getDesc: (lvl) => { const d = SKILLS.rmInscribe.levels[lvl-1]; return `Не тратит ход: чертит разом три руны до конца боя: <b>Камня</b> — урон по вам ${scV('−' + d.pct + '%')}; <b>Силы</b> — ваш урон ${scV('+' + d.pct + '%')}; <b>Жизни</b> — ${scV(d.regen + '%')} HP за ход. MP: ${scV(d.mpCost)}. КД: ${SKILLS.rmInscribe.cooldown}.`; },
+getNextDesc: (lvl) => scNext(SKILLS.rmInscribe, lvl, n => `${n.pct}%, ${n.regen}% HP`),
+useCheck: () => (runemasterNextRune() ? '' : 'все руны уже горят'),
+},
+rmWard: {
+id: 'rmWard', subclassId: 'dwarf_runemaster', name: 'Охранная руна', type: 'active', semiPassive: true,
+iconPng: 'img/skills/dwarf/stoneSkin.webp',
+maxLevel: 5, threshold: 35,
+levels: [ { mpCost: 0, shield: 14, every: 7 }, { mpCost: 0, shield: 16, every: 6 }, { mpCost: 0, shield: 18, every: 6 }, { mpCost: 0, shield: 19, every: 5 }, { mpCost: 0, shield: 20, every: 5 } ],
+getDesc: (lvl) => { const s = SKILLS.rmWard, d = s.levels[lvl-1]; return `<b>Вспыхивает сама</b>, пока стоит в слоте: HP упало ниже ${s.threshold}% — щит на ${scV(d.shield + '%')} макс. HP. Не чаще раза в ${scV(d.every)} ходов.`; },
+getNextDesc: (lvl) => scNext(SKILLS.rmWard, lvl, n => `щит ${n.shield}%`),
+},
+rmSteady: {
+id: 'rmSteady', subclassId: 'dwarf_runemaster', name: 'Твёрдая рука', type: 'passive',
+iconPng: 'img/skills/dwarf/runeKnowledge.webp',
+maxLevel: 5,
+levels: [ { chance: 5 }, { chance: 6 }, { chance: 7 }, { chance: 8 }, { chance: 10 } ],
+getDesc: (lvl) => { const d = SKILLS.rmSteady.levels[lvl-1]; return `Пассивно, у мастерицы подгонки: шанс подгонки ${scV('+' + d.chance + '%')}, а неудача стоит половину цены.`; },
+getNextDesc: (lvl) => scNext(SKILLS.rmSteady, lvl, n => `+${n.chance}%`),
+},
+rmWeave: {
+id: 'rmWeave', subclassId: 'dwarf_runemaster', name: 'Руническая вязь', type: 'passive',
+iconPng: 'img/skills/dwarf/runeKnowledge.webp',
+maxLevel: 5,
+levels: [ { chance: 40 }, { chance: 55 }, { chance: 70 }, { chance: 85 }, { chance: 100 } ],
+getDesc: (lvl) => { const d = SKILLS.rmWeave.levels[lvl-1]; return `Пассивно: с шансом ${scV(d.chance + '%')} случайный бонус подгонки бросается дважды и берётся лучший (для мага ценнее мана, HP и крит, потом опыт и добыча).`; },
+getNextDesc: (lvl) => scNext(SKILLS.rmWeave, lvl, n => `${n.chance}%`),
+},
+scSummon: {
+id: 'scSummon', subclassId: 'dwarf_stonecaller', name: 'Призвать элементаля', type: 'active', freeTurn: 0.3,
+iconPng: 'img/allies/elemental_stone.webp',
+maxLevel: 5, cooldown: 2,
+levels: [ { mpCost: 12, power: 60 }, { mpCost: 13, power: 70 }, { mpCost: 14, power: 80 }, { mpCost: 15, power: 90 }, { mpCost: 16, power: 100 } ],
+getDesc: (lvl) => { const d = SKILLS.scSummon.levels[lvl-1]; return `Быстрый: ${scV('30%')} хода сразу возвращается. Призывает следующего по порядку элементаля (сила ${scV(d.power + '%')}): <b>Камня</b> — принимает удары, <b>Огня</b> — поджигает, <b>Жилы</b> — кристаллы по двум целям, убитые им дают добычу. Когда стоят все трое — <b>Слияние</b> в одного Великого (сумма ×1.2, все способности). MP: ${scV(d.mpCost)}. КД: ${SKILLS.scSummon.cooldown}.`; },
+getNextDesc: (lvl) => scNext(SKILLS.scSummon, lvl, n => `сила ${n.power}%`),
+},
+scShards: {
+id: 'scShards', subclassId: 'dwarf_stonecaller', name: 'Осколки', type: 'active', semiPassive: true,
+iconPng: 'img/allies/elemental_vein.webp',
+maxLevel: 5,
+levels: [ { mpCost: 0, pct: 60 }, { mpCost: 0, pct: 75 }, { mpCost: 0, pct: 90 }, { mpCost: 0, pct: 105 }, { mpCost: 0, pct: 120 } ],
+getDesc: (lvl) => { const d = SKILLS.scShards.levels[lvl-1]; return `<b>Работают сами</b>, пока стоят в слоте: разбитый элементаль взрывается своей стихией — все враги получают ${scV(d.pct + '%')} маг. атаки.`; },
+getNextDesc: (lvl) => scNext(SKILLS.scShards, lvl, n => `${n.pct}%`),
+},
+scStoneblood: {
+id: 'scStoneblood', subclassId: 'dwarf_stonecaller', name: 'Каменная кровь', type: 'passive',
+iconPng: 'img/skills/dwarf/stoneSkin.webp',
+maxLevel: 5,
+levels: [ { atk: 10 }, { atk: 14 }, { atk: 18 }, { atk: 21 }, { atk: 25 } ],
+getDesc: (lvl) => { const d = SKILLS.scStoneblood.levels[lvl-1]; return `Пассивно: элементали наследуют ваше поглощение урона и ${scV(d.atk + '%')} маг. атаки к удару.`; },
+getNextDesc: (lvl) => scNext(SKILLS.scStoneblood, lvl, n => `${n.atk}%`),
+},
+scFusion: {
+id: 'scFusion', subclassId: 'dwarf_stonecaller', name: 'Великое слияние', type: 'passive',
+iconPng: 'img/allies/elemental_great.webp',
+maxLevel: 5,
+levels: [ { mult: 1.26 }, { mult: 1.32 }, { mult: 1.38 }, { mult: 1.44 }, { mult: 1.5 } ],
+getDesc: (lvl) => { const d = SKILLS.scFusion.levels[lvl-1]; return `Пассивно: Великий элементаль получает ×${d.mult.toFixed(2)} от суммы трёх (вместо ×1.2).`; },
+getNextDesc: (lvl) => scNext(SKILLS.scFusion, lvl, n => `×${n.mult.toFixed(2)}`),
+},
+});
+Object.assign(SKILLS, SUBCLASS_SKILLS);
+const SUBCLASS_ANNAL = 'Посвящение в Храме Ильграда. Мать Исмера говорит, знак дают боги: свеча вспыхнула у образа «%name%». Странно — я будто знал{|а} заранее, какая вспыхнет.';
 
 ;
 
@@ -2832,6 +4726,21 @@ return Math.min(50, total);
 
 // ==== ФАЙЛ js/data/changelog.js ====
 const CHANGELOG = [
+{
+version: 'v0.38',
+date: '20.11.2026',
+title: '✦ Подклассы',
+changes: [
+{ icon: '✦', text: 'Подклассы: с 25-го уровня в Храме Ильграда появился пункт «✦ Посвящение». У каждой расы три пути для воина и три для мага, всего 30. Храм говорит, что путь указывают боги, но выбираете вы сами' },
+{ icon: '📖', text: 'С подклассом три привычные активки меняются под выбранный путь, добавляются две новые активки (одна из них срабатывает сама, пока стоит в ячейке) и две пассивки. Новые навыки учатся там же, в Храме' },
+{ icon: '🔲', text: 'Вместе с подклассом открывается 4-я ячейка навыков — в Инвентаре и на арене' },
+{ icon: '⭐', text: 'С 26-го уровня за уровень дают 3 очка навыков. Героям, которые уже выше 25-го, недостающие очки начисляются один раз при входе' },
+{ icon: '🔄', text: 'Пока игра в бете, путь можно сменить в Храме за 100 000 Оболов. Вложенные очки навыков при этом возвращаются' },
+{ icon: '🐾', text: 'Союзники в бою: некоторые маги призывают помощников, до трёх сразу — поднятых павших, тотемы, духа-зверя, пауков или элементалей. Их портреты видны под героем, и твари иногда бьют их вместо героя' },
+{ icon: '⚒', text: 'У гнома половина путей ремесленные: Старатель лучше добывает, Мастер горна лучше куёт (с навыком «Переплавка» в кузнице можно вернуть часть материалов из ненужной вещи), Рунный мастер лучше подгоняет' },
+{ icon: '🍺', text: 'Бафф Гильдии «Берсерк» переименован в «Боевое безумие», чтобы не путать с подклассом орка. Действует так же' },
+],
+},
 {
 version: 'v0.37.2',
 date: '19.11.2026',
@@ -4547,7 +6456,7 @@ const ANNALS_REWRITES_351 = [
 ['Бьётся она за него злее обычного', 'Билась она за него злее обычного'],
 ['Впервые вынул{|а} камень', 'Вынул{|а} камень'],
 ['Впервые застал{|а} здесь ночь', 'Здесь наступила ночь'],
-['Сегодня впервые ощутил{|а} на себе чары «Берсерк»', 'Гильдия наложила на меня «Берсерка»'],
+['Сегодня впервые ощутил{|а} на себе чары «Боевое безумие»', 'Гильдия наложила на меня «Боевое безумие»'],
 ['Впервые ощутил{|а} на себе «Говорливость». Слова заклинаний слетают с языка сами', 'С «Говорливостью» слова заклинаний слетают с языка сами'],
 ['Сегодня впервые ощутил{|а} на себе «Боевое усиление»', 'Взял{|а} в Гильдии «Боевое усиление»'],
 ['Впервые ощутил{|а} на себе «Меткость»', 'Эльфийка из Гильдии наложила «Меткость»'],
@@ -5486,6 +7395,8 @@ craftFilterLevel: 0,
 stackCap: 3,
 learnedSkills: {},
 skillPoints: 0,
+subclass: null,
+skillPts26: 0,
 skillSlots: [null, null, null],
 currentLocation: 'town',
 foodTimer: 0,
@@ -5730,6 +7641,7 @@ const category = weapon ? getWeaponCategory(weapon.name) : null;
 acc += getWeaponAccuracyBonus(category);
 if (getOffhandWeapon()) acc -= DUAL_WIELD_ACCURACY_PENALTY;
 acc += (p.accuracyBonus || 0);
+if (typeof subclassAccuracyBonus === 'function') acc += subclassAccuracyBonus();
 return Math.round(acc);
 }
 const EVASION_LEVEL_GAP_CAP = 3;
@@ -5755,6 +7667,7 @@ if (attacker && attacker.level) lvl = Math.min(lvl, attacker.level + EVASION_LEV
 let eva = Math.sqrt(dex) * 6 + lvl * 2.5;
 eva -= getWeaponStyleEvasionPenalty();
 eva += (p.evasionBonus || 0);
+if (typeof subclassEvasionBonus === 'function') eva += subclassEvasionBonus();
 if (attacker && attacker.heroEvaMult) eva *= attacker.heroEvaMult;
 return Math.round(eva);
 }
@@ -5933,6 +7846,7 @@ return eq.length >= set.pieces.length && eq.every(e => (e.refineLevel || 0) >= l
 }
 function recalcStats() {
 const p = state.player;
+if (typeof applySubclassSkills === 'function') applySubclassSkills();
 if (!p.classId) {
 p.maxHp = 0; p.maxMp = 0; p.pAtk = 0; p.mAtk = 0;
 p.pDef = 0; p.mDef = 0; p.atbSpeed = 0;
@@ -6139,6 +8053,8 @@ p.atbSpeed *= (1 + data.atbPercent / 100);
 p.skillBonuses.push(`${skill.name} (ур.${lvl}): +${data.atbPercent}% скорости ATB`);
 }
 }
+p.scMAtkAdd = 0;
+if (typeof subclassApplyPassives === 'function') subclassApplyPassives(p);
 const gripBonus = (typeof getTwoHandGripBonus === 'function') ? getTwoHandGripBonus() : 0;
 if (gripBonus > 0) p.skillBonuses.push(`Двуручный хват: +${gripBonus}% к урону навыков, уворот −${TWO_HAND_EVASION_PENALTY}`);
 if (getEquippedShield()) p.skillBonuses.push(`Стойка щита: −${SHIELD_STANCE_DAMAGE_CUT}% входящего урона, уворот −${SHIELD_EVASION_PENALTY}`);
@@ -6153,7 +8069,8 @@ finalPAtk += passivePAtkFlat;
 p.pAtk = finalPAtk;
 let finalMAtk = baseMAtk + bonusMAtk;
 if (passiveMAtkPercent > 0) finalMAtk = Math.floor(finalMAtk * (1 + passiveMAtkPercent / 100));
-p.mAtk = finalMAtk + passiveMAtkFlat;
+p.mAtk = finalMAtk + passiveMAtkFlat + (p.scMAtkAdd || 0);
+if (typeof subclassFinalAtk === 'function') subclassFinalAtk(p);
 p.setBonuses = [];
 if (jewelryMiniSet) {
 p.setBonuses.push({ name: `Бижутерия тира ${jewelryMiniSet.tier}+`, text: `${jewelryMiniSet.count} ${jewelryMiniSet.count >= 5 ? 'вещей' : 'вещи'}: +${jewelryMiniSet.bonus} маг. защиты` });
@@ -6536,6 +8453,8 @@ breakthroughResult: 0,
 soulHuntCap: 0,
 hideProfile: false,
 repeatPref: true,
+subclass: null,
+skillPts26: 0,
 };
 function saveClone(x) {
 if (x === null || typeof x !== 'object') return x;
@@ -6554,9 +8473,10 @@ if (!(slot in p.equipment)) p.equipment[slot] = null;
 });
 if (!Array.isArray(p.inventory)) p.inventory = [];
 if (!Array.isArray(p.expeditionLoot)) p.expeditionLoot = [];
+const slotN = p.subclass ? 4 : 3;
 if (!Array.isArray(p.skillSlots)) p.skillSlots = [null, null, null];
-while (p.skillSlots.length < 3) p.skillSlots.push(null);
-if (p.skillSlots.length > 3) p.skillSlots.length = 3;
+while (p.skillSlots.length < slotN) p.skillSlots.push(null);
+if (p.skillSlots.length > slotN) p.skillSlots.length = slotN;
 p.skillSlots = p.skillSlots.map(s => (typeof s === 'string' && s) ? s : null);
 ['level', 'xp', 'hp', 'maxHp', 'mp', 'maxMp', 'STR', 'DEX', 'CON', 'INT',
 'WIT', 'MEN', 'gold', 'stackCap', 'cheatRate', 'skillPoints',
@@ -8805,6 +10725,7 @@ state.cheat = false;
 if (typeof migrateSkillSlots === 'function') {
 migrateSkillSlots();
 }
+if (typeof subclassOnLoad === 'function') subclassOnLoad();
 if (typeof getXpForLevel === 'function') {
 if (state.player.level >= getMaxPlayerLevel() || !(state.player.xpNext > 0)) {
 state.player.xpNext = Infinity;
@@ -9042,6 +10963,8 @@ state.player.craftFilterLevel = 0;
 state.player.stackCap = 3;
 state.player.learnedSkills = {};
 state.player.skillPoints = 0;
+state.player.subclass = null;
+state.player.skillPts26 = 0;
 state.player.skillSlots = [null, null, null];
 state.player.currentLocation = 'town';
 state.player.foodTimer = 0;
@@ -10285,6 +12208,7 @@ if (!state.battle.debuffs) state.battle.debuffs = { monsters: {}, player: {} };
 if (!state.battle.debuffs.monsters) state.battle.debuffs.monsters = {};
 if (!state.battle.debuffs.player) state.battle.debuffs.player = {};
 if (target === 'player') {
+if (id === 'stun' && typeof subclassPlayerUnmovable === 'function' && subclassPlayerUnmovable()) return;
 state.battle.debuffs.player[id] = { ...data };
 renderDebuffBar('player');
 return;
@@ -11014,6 +12938,7 @@ return SKILLS[skillId].levels[lvl - 1];
 function isSkillAvailableForPlayer(skill, player) {
 if (skill.classId && skill.classId !== player.classId) return false;
 if (skill.raceId && skill.raceId !== player.raceId) return false;
+if (skill.subclassId && player.subclass !== skill.subclassId) return false;
 return true;
 }
 function openMentor() {
@@ -11053,6 +12978,7 @@ p.learnedSkills = {};
 p.skillPoints += totalSpent;
 if (p.skillSlots) {
 p.skillSlots = [null, null, null];
+if (typeof ensureSkillSlotsLength === 'function') ensureSkillSlotsLength();
 }
 recalcStats();
 updateCharacterPanel();
@@ -11075,9 +13001,13 @@ return;
 }
 let totalSpent = 0;
 for (const id in p.learnedSkills) totalSpent += p.learnedSkills[id];
+const sc = (typeof getPlayerSubclass === 'function') ? getPlayerSubclass() : null;
+const scLine = sc ? `<div class="mentor-subclass">✦ Путь: <b>${sc.name}</b></div>`
+: (p.level >= (typeof SUBCLASS_MIN_LEVEL === 'number' ? SUBCLASS_MIN_LEVEL : 99) && p.underwoodFallen
+? `<div class="mentor-subclass mentor-subclass-hint">Путь ещё не выбран — посвящение в Храме Ильграда.</div>` : '');
 const header = `
-    <div class="skill-points-header" style="display:flex; justify-content:space-between; align-items:center;">
-      <div>Свободных очков: <b>${p.skillPoints}</b></div>
+    <div class="skill-points-header" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px;">
+      <div>Свободных очков: <b>${p.skillPoints}</b>${scLine}</div>
       ${totalSpent > 0 ? `<button class="btn danger" onclick="resetSkills()">🔄 Сбросить навыки (5000 🪙)</button>` : ''}
     </div>
   `;
@@ -11128,6 +13058,7 @@ const curLvl = getSkillLevel(skillId);
 if (curLvl >= skill.maxLevel) return;
 if (p.skillPoints < 1) return;
 if (skill.minLevel && p.level < skill.minLevel) return;
+if (!isSkillAvailableForPlayer(skill, p)) return;
 p.skillPoints -= 1;
 p.learnedSkills[skillId] = curLvl + 1;
 if (curLvl === 0 && skill.type === 'active') {
@@ -11151,7 +13082,25 @@ saveCurrentSlot();
 ;
 
 // ==== ФАЙЛ js/systems/skill-slots.js ====
-const SKILL_SLOT_COUNT = 3;
+const SKILL_SLOT_BASE = 3;
+function skillSlotCount() {
+const p = state.player;
+return SKILL_SLOT_BASE + (p && p.subclass ? 1 : 0);
+}
+function ensureSkillSlotsLength() {
+const p = state.player;
+if (!Array.isArray(p.skillSlots)) p.skillSlots = [];
+const n = skillSlotCount();
+while (p.skillSlots.length < n) p.skillSlots.push(null);
+if (p.skillSlots.length > n) {
+const extra = p.skillSlots.slice(n).filter(Boolean);
+p.skillSlots.length = n;
+extra.forEach(id => {
+const free = p.skillSlots.indexOf(null);
+if (free >= 0 && !p.skillSlots.includes(id)) p.skillSlots[free] = id;
+});
+}
+}
 let __selectedSkillSlot = null;
 let __skillPickerSlot = null;
 let __dragFromSlot = null;
@@ -11161,7 +13110,7 @@ if (!col) return;
 col.innerHTML = '<div class="skills-column-title">НАВЫКИ</div>';
 const p = state.player;
 const slots = p.skillSlots || [null, null, null];
-for (let i = 0; i < SKILL_SLOT_COUNT; i++) {
+for (let i = 0; i < skillSlotCount(); i++) {
 const skillId = slots[i];
 const skill = skillId ? SKILLS[skillId] : null;
 const isValid = skill && skill.type === 'active' && p.learnedSkills[skillId] > 0;
@@ -11244,7 +13193,7 @@ if (!box) return;
 box.innerHTML = '';
 const p = state.player;
 const slots = p.skillSlots || [null, null, null];
-for (let i = 0; i < SKILL_SLOT_COUNT; i++) {
+for (let i = 0; i < skillSlotCount(); i++) {
 const skillId = slots[i];
 const skill = skillId ? SKILLS[skillId] : null;
 const isValid = skill && skill.type === 'active' && p.learnedSkills[skillId] > 0;
@@ -11290,14 +13239,14 @@ const btnUp = ctr.querySelector('button:nth-child(1)');
 const btnDown = ctr.querySelector('button:nth-child(2)');
 const btnClear = ctr.querySelector('button:nth-child(3)');
 if (btnUp) btnUp.disabled = (!hasSkill) || (__selectedSkillSlot === 0);
-if (btnDown) btnDown.disabled = (!hasSkill) || (__selectedSkillSlot === SKILL_SLOT_COUNT - 1);
+if (btnDown) btnDown.disabled = (!hasSkill) || (__selectedSkillSlot === skillSlotCount() - 1);
 if (btnClear) btnClear.disabled = !hasSkill;
 }
 function swapSkillSlots(from, to) {
 const p = state.player;
 if (!Array.isArray(p.skillSlots)) p.skillSlots = [null, null, null];
-if (from < 0 || from >= SKILL_SLOT_COUNT) return;
-if (to < 0 || to >= SKILL_SLOT_COUNT) return;
+if (from < 0 || from >= skillSlotCount()) return;
+if (to < 0 || to >= skillSlotCount()) return;
 const a = p.skillSlots[from];
 p.skillSlots[from] = p.skillSlots[to];
 p.skillSlots[to] = a;
@@ -11306,7 +13255,7 @@ if (typeof saveCurrentSlot === 'function') saveCurrentSlot();
 function moveSelectedSkill(direction) {
 if (__selectedSkillSlot === null) return;
 const target = __selectedSkillSlot + direction;
-if (target < 0 || target >= SKILL_SLOT_COUNT) return;
+if (target < 0 || target >= skillSlotCount()) return;
 swapSkillSlots(__selectedSkillSlot, target);
 __selectedSkillSlot = target;
 renderSkillLoadout();
@@ -11447,15 +13396,7 @@ closeSkillPicker();
 });
 function migrateSkillSlots() {
 const p = state.player;
-if (!Array.isArray(p.skillSlots)) {
-p.skillSlots = [null, null, null];
-}
-while (p.skillSlots.length < SKILL_SLOT_COUNT) {
-p.skillSlots.push(null);
-}
-if (p.skillSlots.length > SKILL_SLOT_COUNT) {
-p.skillSlots.length = SKILL_SLOT_COUNT;
-}
+ensureSkillSlotsLength();
 const allEmpty = p.skillSlots.every(s => !s);
 if (!allEmpty) return;
 const activeSkills = Object.keys(p.learnedSkills)
@@ -11463,7 +13404,7 @@ const activeSkills = Object.keys(p.learnedSkills)
 const s = SKILLS[id];
 return s && s.type === 'active' && p.learnedSkills[id] > 0;
 });
-for (let i = 0; i < SKILL_SLOT_COUNT; i++) {
+for (let i = 0; i < skillSlotCount(); i++) {
 p.skillSlots[i] = activeSkills[i] || null;
 }
 if (p.skillSlots.some(s => s)) {
@@ -11476,7 +13417,7 @@ function tryAutoPlaceSkillInSlot(skillId) {
 const p = state.player;
 const skill = SKILLS[skillId];
 if (!skill || skill.type !== 'active') return;
-if (!Array.isArray(p.skillSlots)) p.skillSlots = [null, null, null];
+ensureSkillSlotsLength();
 if (p.skillSlots.indexOf(skillId) >= 0) return;
 const idx = p.skillSlots.findIndex(s => !s);
 if (idx < 0) return;
@@ -13334,6 +15275,7 @@ if (typeof cancelWaitingForResume === 'function') {
 cancelWaitingForResume('открыта кузница');
 }
 document.getElementById('forge-overlay').classList.add('active');
+if (typeof smeltButtonSync === 'function') smeltButtonSync();
 state.currentArmorSetTab = 'all';
 state.currentJewelrySetTab = 'all';
 state.currentWeaponCategory = 'swords';
@@ -13767,7 +15709,9 @@ showToast('📦', 'Инвентарь переполнен — крафт нев
 logLoot(`📦 Инвентарь переполнен — «${res.name}» не создан.`, 'log-info');
 return;
 }
-takeRecipeMaterials(recipe, 1);
+const scSaved = typeof subclassForgeSaveMaterials === 'function' && subclassForgeSaveMaterials();
+if (!scSaved) takeRecipeMaterials(recipe, 1);
+else logLoot(`⚒ Рука мастера: материалы на «${res.name}» не потрачены.`, 'log-info');
 state.player.gold -= price;
 const drop = {
 name: res.name, type: res.type, qty: 1,
@@ -13781,7 +15725,7 @@ const RARITY_TYPES = ['weapon', 'shield', 'helmet', 'armorTop', 'armorBottom',
 let rarityId = 'white';
 let bonusStats = {};
 if (RARITY_TYPES.includes(res.type)) {
-rarityId = rollRarity();
+rarityId = typeof subclassForgeRarity === 'function' ? subclassForgeRarity() : rollRarity();
 const rarity = RARITIES[rarityId];
 const profile = getRarityStatProfile(res);
 bonusStats = rollRarityStats(rarity.statPoints, profile);
@@ -16547,6 +18491,7 @@ text: '*Под сводами тихо, свечи горят ровно, без
 options: [
 { text: '🕯 Благословение', onSelect: () => { __ilgradTavernPlace = 'temple'; openTavern(); applyTownWindowTitles(); } },
 { text: '✦ Таинство (навыки)', onSelect: () => { openMentor(); applyTownWindowTitles(); } },
+{ text: '✦ Посвящение (путь)', onSelect: () => openSubclassTemple() },
 { text: 'Уйти', action: 'close' },
 ],
 },
@@ -17685,6 +19630,10 @@ else renderDebuffBar('monster');
 }
 function manaShieldAbsorb(dmg) {
 const p = state.player;
+if (typeof subclassAbsorbHit === 'function') {
+dmg = subclassAbsorbHit(dmg);
+if (dmg <= 0) return { hp: 0, mp: 0 };
+}
 const pct = Math.min(90, p.manaShield || 0);
 if (pct <= 0 || dmg <= 0 || p.mp < 1) return { hp: dmg, mp: 0 };
 const mp = Math.min(Math.floor(p.mp), Math.round(dmg * pct / 100));
@@ -17760,7 +19709,7 @@ return 1;
 }
 const M = greedMarkList(mark);
 for (let i = 0; i < M.length; i++) M[i] += 1;
-if (M.length < GREED_MAX_MARKS) M.push(turns);
+if (M.length < (typeof subclassGreedMax === 'function' ? subclassGreedMax() : GREED_MAX_MARKS)) M.push(turns);
 else {
 let oldest = 0;
 M.forEach((t, i) => { if (t < M[oldest]) oldest = i; });
@@ -17843,6 +19792,7 @@ return false;
 }
 const recoil = Math.floor(p.maxHp * pct / 100);
 if (recoil <= 0) return false;
+if (typeof subclassRecoilHook === 'function' && subclassRecoilHook(skill, recoil)) return false;
 p.hp -= recoil;
 spawnFloatDamage('fighter-player', recoil, 'dmg');
 logCombat(`💢 Отдача от ${label}: ${recoil} HP.`, 'log-entry loss');
@@ -17865,6 +19815,10 @@ if (!skillId) continue;
 const skill = SKILLS[skillId];
 if (!skill || skill.type !== 'active') continue;
 if (!p.learnedSkills[skillId]) continue;
+if (skill.semiPassive) continue;
+if (skill.subclassId && p.subclass !== skill.subclassId) continue;
+if (skill.useCheck && skill.useCheck()) continue;
+if (skill.autoCheck && !skill.autoCheck()) continue;
 const enabled = state.battle.skillToggles[skillId] !== false;
 const cd = state.battle.skillCooldowns[skillId] || 0;
 if (!enabled || cd > 0) continue;
@@ -17915,7 +19869,8 @@ const mult = getWoundDamageMult(m);
 return mult > 1 ? Math.ceil(dmg * mult) : dmg;
 }
 function getCritMultiplier(weaponCategory) {
-return (weaponCategory === 'daggers' ? 2.2 : 1.8) + (state.player.critMultBonus || 0);
+return (weaponCategory === 'daggers' ? 2.2 : 1.8) + (state.player.critMultBonus || 0)
++ (typeof subclassCritMultBonus === 'function' ? subclassCritMultBonus(weaponCategory) : 0);
 }
 function getCritChance(weaponCategory) {
 const base = state.player.critChance || 10;
@@ -18090,15 +20045,18 @@ monsterEva = monsterEva * (1 - confused.evasionReduction / 100);
 }
 const playerHit = rollHit(playerAcc, monsterEva) && !monsterTrueDodge(m);
 const skill = tryUseActiveSkill();
+if (typeof subclassOnHeroAction === 'function') subclassOnHeroAction(skill ? 'skill' : 'weapon', skill);
 if (skill) {
 const data = getSkillData(skill.id);
 if ((skill.id === 'fireball' || skill.id === 'iceArrow') && getDebuff('player', 'resonance')) {
 removeDebuff('player', 'resonance');
 logCombat(`✦ Стихийный резонанс: ${skill.name} без маны!`, 'log-entry player-skill');
 } else {
-p.mp -= data.mpCost;
+p.mp -= typeof subclassMpCost === 'function' ? subclassMpCost(skill, data.mpCost) : data.mpCost;
 }
 state.battle.skillCooldowns[skill.id] = skill.cooldown;
+if (skill.subclassId && typeof performSubclassActive === 'function' && performSubclassActive(skill, data)) return;
+if (typeof subclassOverrideSkill === 'function' && subclassOverrideSkill(skill, data, m)) return;
 if (skill.aoe && typeof performAoeSkill === 'function') {
 performAoeSkill(skill, data);
 return;
@@ -18116,7 +20074,8 @@ if (tryBonusProficiencyXP()) { addWeaponXP(weaponCategory); logCombat(`🍺 Бо
 addElementXP('death');
 if (tryBonusProficiencyXP()) { addElementXP('death'); logCombat(`🍺 Бонусный опыт стихии!`, 'log-entry levelup'); }
 } else if (skill.id === 'fireball' || skill.id === 'iceArrow' || skill.id === 'dwarfGreedMagic') {
-const elemId = (skill.id === 'iceArrow') ? 'ice' : 'fire';
+let elemId = (skill.id === 'iceArrow') ? 'ice' : 'fire';
+if (typeof subclassSpellElem === 'function') elemId = subclassSpellElem(skill.id, elemId);
 addElementXP(elemId);
 if (tryBonusProficiencyXP()) { addElementXP(elemId); logCombat(`🍺 Бонусный опыт стихии!`, 'log-entry levelup'); }
 } else if (skill.id === 'spiritWrath') {
@@ -18128,7 +20087,7 @@ if (tryBonusProficiencyXP()) { addElementXP('lightning'); logCombat(`🍺 Бон
 }
 if (skill.id === 'powerStrike' || skill.id === 'orcRage' || skill.id === 'doubleStrike' || skill.id === 'dwarfGreed') {
 const hits = skill.hits || 1;
-if (!playerHit) {
+if (!playerHit && !(typeof subclassNeverMiss === 'function' && subclassNeverMiss(skill))) {
 spawnFloatDamage('fighter-monster', 0, 'miss');
 logCombat(`⚔ ${skill.name} — промах.`, 'log-entry');
 const mixtureData = getActiveMixtureData();
@@ -18147,18 +20106,23 @@ if (skill.id === 'orcRage') deathBonus = getElementDamageBonus('death');
 const gripBonus = getTwoHandGripBonus();
 let totalDamage = 0, thornsTaken = 0;
 const parts = [];
+const skillMult = typeof subclassStrikeMult === 'function' ? subclassStrikeMult(skill, data, m, notes) : data.multiplier;
 for (let h = 0; h < hits; h++) {
-const variance = Math.floor(basePAtk * 0.2);
-let raw = basePAtk + Math.floor(Math.random() * variance * 2) - variance;
-let baseDmg = Math.max(1, raw - pierce.effectivePDef);
-let dmg = Math.floor(baseDmg * data.multiplier);
+const hitAtk = basePAtk + (typeof subclassHitAtk === 'function' ? subclassHitAtk(skill.id, h) : 0);
+const variance = Math.floor(hitAtk * 0.2);
+let raw = hitAtk + Math.floor(Math.random() * variance * 2) - variance;
+let baseDmg = Math.max(1, raw - (typeof subclassStrikeDef === 'function' ? subclassStrikeDef(skill, pierce.effectivePDef, m) : pierce.effectivePDef));
+let dmg = Math.floor(baseDmg * skillMult);
 if (weaponBonusPercent > 0) dmg = Math.floor(dmg * (1 + weaponBonusPercent / 100));
 if (deathBonus > 0) dmg = Math.floor(dmg * (1 + deathBonus / 100));
 if (gripBonus > 0) dmg = Math.floor(dmg * (1 + gripBonus / 100));
 if (mixtureAtkMult > 1.0) dmg = Math.floor(dmg * mixtureAtkMult);
 const isCrit = Math.random() * 100 < critChance;
 if (isCrit) dmg = Math.floor(dmg * critMult);
+if (isCrit && typeof subclassOnCrit === 'function') subclassOnCrit(m);
 dmg = withSkillFlat(Math.max(1, dmg));
+if (typeof subclassStrikeFlat === 'function') dmg += subclassStrikeFlat(skill, m);
+if (typeof subclassOnWeaponHit === 'function') dmg += subclassOnWeaponHit(m);
 dmg = applyWoundMult(m, dmg);
 dmg = monsterTagDmg(m, dmg, heroPhysKinds(weaponCategory).concat(skill.id === 'orcRage' ? ['death'] : []));
 m.hp -= dmg; totalDamage += dmg;
@@ -18168,6 +20132,7 @@ parts.push(dmg + (isCrit ? ' (крит!)' : ''));
 if (m.hp <= 0) break;
 }
 if (thornsTaken > 0) notes.push(`🌵 шипы −${thornsTaken} HP`);
+if (typeof subclassAfterStrike === 'function') notes.push(subclassAfterStrike(skill, m, parts.length, totalDamage));
 const dmgText = parts.length > 1 ? `${parts.join(' + ')} = ${totalDamage}` : parts[0];
 const mixtureData = getActiveMixtureData();
 if (mixtureData && mixtureData.chargeType === 'playerAttacks') tickMixtureCharge(parts.length);
@@ -18177,20 +20142,20 @@ if (m.hp <= 0 && cut > 0 && p.learnedSkills.bloodHarvest && (state.battle.skillC
 state.battle.skillCooldowns.bloodHarvest = Math.max(0, state.battle.skillCooldowns.bloodHarvest - cut);
 notes.push(`🩸 КД Кровавой жатвы −${cut}`);
 }
-logCombat(`🌑 Ярость: ${dmgText}`, 'log-entry player-skill', notes.join(' · '));
+logCombat(`🌑 ${skill.name}: ${dmgText}`, 'log-entry player-skill', notes.filter(Boolean).join(' · '));
 if (applySkillRecoil(skill, m.hp <= 0)) { updateTopStatus(); updateBattleUI(); if (m.hp <= 0) onMonsterDeath(m); onPlayerDeath(); return; }
 } else if (skill.id === 'doubleStrike') {
 if (m.hp <= 0 && typeof humanCycleOnKill === 'function') notes.push(humanCycleOnKill('doubleStrike'));
-logCombat(`⚔ Двойной удар: ${dmgText}`, 'log-entry player-skill', notes.filter(Boolean).join(' · '));
+logCombat(`⚔ ${skill.name}: ${dmgText}`, 'log-entry player-skill', notes.filter(Boolean).join(' · '));
 } else if (skill.id === 'dwarfGreed') {
 if (skill.greedMarkType) {
 const n = addGreedMark(m, m.hp > 0 ? (data.markTurns || skill.greedMarkTurns || 3) : 1, skill.greedMarkType);
 notes.push(`💰 метка${n > 1 ? ` ×${n}` : ''}`);
 }
-logCombat(`💰 Жадность: ${dmgText}`, 'log-entry player-skill', notes.join(' · '));
+logCombat(`💰 Жадность: ${dmgText}`, 'log-entry player-skill', notes.filter(Boolean).join(' · '));
 } else {
 if (m.hp <= 0 && typeof humanCycleOnKill === 'function') notes.push(humanCycleOnKill('powerStrike'));
-logCombat(`⚔ Сильный удар: ${dmgText}`, 'log-entry player-skill', notes.filter(Boolean).join(' · '));
+logCombat(`⚔ ${skill.name}: ${dmgText}`, 'log-entry player-skill', notes.filter(Boolean).join(' · '));
 }
 if (m.hp > 0) tryApplyWeaponTrait(weaponCategory, weapon, 1, Math.round(totalDamage / Math.max(1, parts.length)));
 }
@@ -18209,13 +20174,9 @@ const mixtureData = getActiveMixtureData();
 if (mixtureData && mixtureData.chargeType === 'playerAttacks') tickMixtureCharge();
 }
 else if (skill.isHeal) {
-let heal = Math.min(rollHealAmount(data.multiplier), p.maxHp - p.hp);
-if (heal <= 0) {
-logCombat(`🌿 ${skill.name}: HP уже полное.`, 'log-entry');
-} else {
-p.hp += heal; spawnFloatDamage('fighter-player', heal, 'heal');
-logCombat(`🌿 ${skill.name}: +${heal} HP`, 'log-entry potion');
-}
+const heal = aoeHeal(rollHealAmount(data.multiplier));
+if (heal <= 0) logCombat(`🌿 ${skill.name}: HP уже полное.`, 'log-entry');
+else logCombat(`🌿 ${skill.name}: +${heal} HP`, 'log-entry potion');
 addLifeXP();
 const mixtureData = getActiveMixtureData();
 if (mixtureData && mixtureData.chargeType === 'playerAttacks') tickMixtureCharge();
@@ -18247,7 +20208,7 @@ if (mixtureData && mixtureData.chargeType === 'playerAttacks') tickMixtureCharge
 let atbReduction = data.atbReduction / 100;
 const charged = !!getDebuff('player', 'stormCharge');
 if (charged) removeDebuff('player', 'stormCharge');
-const zeroed = charged || state.battle.monstersATB <= atbReduction;
+const zeroed = charged || state.battle.monstersATB <= atbReduction || (typeof subclassDischargeParalyze === 'function' && subclassDischargeParalyze(m));
 cutMonstersATB(atbReduction);
 if (zeroed && typeof onDischargeZeroed === 'function') onDischargeZeroed(m);
 spawnFloatDamage('fighter-monster', dmg, 'magic');
@@ -18256,13 +20217,15 @@ const chainLvl = p.learnedSkills['chainMind'] || 0;
 if (chainLvl > 0 && SKILLS['chainMind']) {
 const chainData = SKILLS['chainMind'].levels[chainLvl - 1];
 if (chainData && chainData.chance) {
-if (Math.random() * 100 < chainData.chance) {
+if (Math.random() * 100 < chainData.chance + (typeof subclassChainMindBonus === 'function' ? subclassChainMindBonus() : 0)) {
 state.battle.skillCooldowns[skill.id] = Math.max(0, (state.battle.skillCooldowns[skill.id] || 0) - 1);
 notes.push('🧠 Цепной разум: КД −1');
+if (typeof subclassOnChainMind === 'function') subclassOnChainMind();
 }
 }
 }
-logCombat(`⚡ Разряд: ${dmg}`, 'log-entry player-magic', notes.join(' · '));
+if (typeof subclassAfterDischarge === 'function') notes.push(subclassAfterDischarge(m, dmg));
+logCombat(`⚡ ${skill.name}: ${dmg}`, 'log-entry player-magic', notes.filter(Boolean).join(' · '));
 }
 else if (skill.id === 'fireball' || skill.id === 'spiritWrath' || skill.id === 'iceArrow' || skill.id === 'dwarfGreedMagic') {
 if (!playerHit) {
@@ -18282,20 +20245,23 @@ let baseDmg = Math.max(1, raw - monsterMDef);
 let dmg = Math.floor(baseDmg * data.multiplier);
 let elemId = 'fire';
 if (skill.id === 'iceArrow') elemId = 'ice';
+if (typeof subclassSpellElem === 'function') elemId = subclassSpellElem(skill.id, elemId);
 else if (skill.id === 'spiritWrath') elemId = 'death';
 const elemBonus = getElementDamageBonus(elemId);
 if (elemBonus > 0) dmg = Math.floor(dmg * (1 + elemBonus / 100));
 if (mixtureAtkMult > 1.0) dmg = Math.floor(dmg * mixtureAtkMult);
 dmg = withSkillFlat(Math.max(1, dmg));
 if (skill.id === 'spiritWrath') dmg += deathMagicMaxHpBonus(m, 1);
+if (typeof subclassSpellDmg === 'function') dmg = subclassSpellDmg(skill, m, dmg);
 dmg = monsterTagDmg(m, dmg, ['magic', elemId]);
 m.hp -= dmg;
 const mixtureData = getActiveMixtureData();
 if (mixtureData && mixtureData.chargeType === 'playerAttacks') tickMixtureCharge();
-if (skill.id === 'spiritWrath') {
+if (typeof subclassSpellAfter === 'function' && subclassSpellAfter(skill, m, dmg)) {
+} else if (skill.id === 'spiritWrath') {
 if (typeof addRotWrathStack === 'function') addRotWrathStack();
 spawnFloatDamage('fighter-monster', dmg, 'magic');
-logCombat(`🌑 Гнев: ${dmg}`, 'log-entry player-skill');
+logCombat(`🌑 ${skill.name}: ${dmg}`, 'log-entry player-skill');
 if (applySkillRecoil(skill, m.hp <= 0)) { updateTopStatus(); updateBattleUI(); if (m.hp <= 0) onMonsterDeath(m); onPlayerDeath(); return; }
 } else if (skill.id === 'iceArrow') {
 spawnFloatDamage('fighter-monster', dmg, 'magic');
@@ -18304,7 +20270,7 @@ if (Math.random() * 100 < skill.freezeChance) {
 addDebuff('monster', 'freeze', idx, { turnsLeft: 1 });
 note = '❄ заморожен — пропустит удар';
 }
-logCombat(`❄ Ледяная стрела: ${dmg}`, 'log-entry player-magic', note);
+logCombat(`❄ ${skill.name}: ${dmg}`, 'log-entry player-magic', note);
 } else if (skill.id === 'dwarfGreedMagic') {
 spawnFloatDamage('fighter-monster', dmg, 'magic');
 let note = '';
@@ -18318,7 +20284,7 @@ spawnFloatDamage('fighter-monster', dmg, 'fire');
 const pureMAtk = Math.floor(5 + p.INT * 0.8);
 const burnDmg = Math.max(1, Math.floor(pureMAtk * (data.burnPercent / 100)));
 addDebuff('monster', 'burn', idx, { turnsLeft: skill.burnTurns, damage: burnDmg });
-logCombat(`🔥 Огненный шар: ${dmg}`, 'log-entry player-skill', `🔥 поджог ${burnDmg} × ${skill.burnTurns} хода`);
+logCombat(`🔥 ${skill.name}: ${dmg}`, 'log-entry player-skill', `🔥 поджог ${burnDmg} × ${skill.burnTurns} хода`);
 }
 }
 updateBattleUI();
@@ -18374,6 +20340,11 @@ if (execMult > 1) dmg = Math.floor(dmg * execMult);
 const isCrit = Math.random() * 100 < critChance;
 if (isCrit) dmg = Math.floor(dmg * critMult);
 dmg = Math.max(1, dmg);
+if (isCrit && typeof subclassOnCrit === 'function') subclassOnCrit(m);
+if (!isMage() && typeof subclassOnWeaponHit === 'function') {
+const light = subclassOnWeaponHit(m);
+if (light > 0) { dmg += light; notes.push(`✴ свет +${light}`); }
+}
 const cleave = (!isMage() && typeof planWeaponCleave === 'function') ? planWeaponCleave(weaponCategory, m) : null;
 const fullDmg = dmg;
 if (cleave && cleave.mainMult < 1) dmg = Math.max(1, Math.floor(dmg * cleave.mainMult));
@@ -18440,7 +20411,9 @@ const grip = getTwoHandGripBonus();
 if (grip > 0) dmg = Math.floor(dmg * (1 + grip / 100));
 const crit = Math.random() * 100 < getCritChance(cat);
 if (crit) dmg = Math.floor(dmg * getCritMultiplier(cat));
-return { miss: false, dmg: monsterTagDmg(m, applyWoundMult(m, withSkillFlat(Math.max(1, dmg))), heroPhysKinds(cat)), crit };
+if (crit && typeof subclassOnCrit === 'function') subclassOnCrit(m);
+const light = typeof subclassOnWeaponHit === 'function' ? subclassOnWeaponHit(m) : 0;
+return { miss: false, dmg: monsterTagDmg(m, applyWoundMult(m, withSkillFlat(Math.max(1, dmg)) + light), heroPhysKinds(cat)), crit };
 }
 function aoeMagHit(m, mult, elemId) {
 const p = state.player;
@@ -18504,11 +20477,12 @@ if (tryBonusProficiencyXP()) { addElementXP(e); logCombat(`🍺 Бонусный
 }
 function aoeHeal(amount) {
 const p = state.player;
-const heal = Math.min(Math.floor(amount), p.maxHp - p.hp);
-if (heal <= 0) return 0;
-p.hp += heal;
-spawnFloatDamage('fighter-player', heal, 'heal');
-return heal;
+const want = Math.max(0, Math.floor(amount));
+const heal = Math.min(want, p.maxHp - p.hp);
+if (heal > 0) { p.hp += heal; spawnFloatDamage('fighter-player', heal, 'heal'); }
+if (typeof subclassOnHeroHeal === 'function') subclassOnHeroHeal(Math.max(0, heal), want - Math.max(0, heal));
+if (p.hp > p.maxHp) p.hp = p.maxHp;
+return Math.max(0, heal);
 }
 function performAoeSkill(skill, data) {
 const p = state.player;
@@ -18518,15 +20492,20 @@ let line = '';
 const notes = [];
 switch (kind) {
 case 'whirlwind': {
-const hits = aoeTargets(data.targets).map(m => ({ m, ...aoePhysHit(m, data.multiplier, 0), fx: 'slash' }))
+let hits = aoeTargets(data.targets).map(m => ({ m, ...aoePhysHit(m, data.multiplier, 0), fx: 'slash' }))
 .map(h => ({ ...h, type: h.crit ? 'crit' : 'dmg' }));
+const targetsN = hits.length;
+if (typeof subclassWhirlExtraHits === 'function') hits = hits.concat(subclassWhirlExtraHits(hits, data));
 const r = aoeApply(hits);
 aoeGiveXp(skill, []);
-line = `🌀 Круговой удар: ${r.total} (целей: ${hits.length})`;
+line = `🌀 ${skill.name}: ${r.total} (целей: ${targetsN})`;
 if (r.kills > 0 && typeof humanCycleOnKill === 'function') notes.push(humanCycleOnKill('whirlwind'));
+if (typeof subclassAfterWhirl === 'function') notes.push(subclassAfterWhirl(hits, data));
 break;
 }
 case 'volley': {
+const sv = typeof subclassVolley === 'function' ? subclassVolley(skill, data) : null;
+if (sv) { line = sv.line; notes.push(...sv.notes); break; }
 const ELEM = ['fire', 'ice', 'lightning'];
 const used = new Set();
 const hits = [];
@@ -18567,7 +20546,8 @@ break;
 }
 case 'harvest': {
 const eb = getElementDamageBonus('death');
-const hits = aoeTargets(data.targets).map(m => ({ m, ...aoePhysHit(m, data.multiplier, eb), fx: 'slash-red' }))
+const hv = typeof subclassHarvest === 'function' ? subclassHarvest(data) : { targets: data.targets, mult: data.multiplier };
+const hits = aoeTargets(hv.targets).map(m => ({ m, ...aoePhysHit(m, hv.mult, eb), fx: 'slash-red' }))
 .map(h => ({ ...h, type: h.crit ? 'crit' : 'dmg' }));
 const r = aoeApply(hits);
 aoeGiveXp(skill);
@@ -18576,12 +20556,14 @@ const healed = aoeHeal(p.maxHp * data.healPercent / 100 * r.kills);
 notes.push(`убито: ${r.kills}`);
 if (healed > 0) notes.push(`🩸 +${healed} HP`);
 }
-line = `🩸 Кровавая жатва: ${r.total} (целей: ${hits.length})`;
+if (typeof subclassAfterHarvest === 'function') notes.push(subclassAfterHarvest(hits));
+line = `🩸 ${skill.name}: ${r.total} (целей: ${hits.length})`;
 break;
 }
 case 'pestilence': {
 const eb = getElementDamageBonus('death');
-const perTurn = Math.max(1, Math.floor(p.mAtk * data.dotPercent / 100 * (1 + eb / 100)));
+let perTurn = Math.max(1, Math.floor(p.mAtk * data.dotPercent / 100 * (1 + eb / 100)));
+if (typeof subclassPestilencePerTurn === 'function') perTurn = subclassPestilencePerTurn(perTurn);
 const targets = aoeTargets(data.targets);
 let doubled = 0;
 targets.forEach(m => {
@@ -18590,13 +20572,13 @@ const two = rotLayers(getDebuff('monster', 'rot', m.index)).length > 1;
 spawnFloatDamage('fighter-monster', 0, 'poison', { mon: m, fx: 'toxic', text: two ? '☠ Гниение ×2' : '☠ Гниение' });
 });
 aoeGiveXp(skill);
-line = `☠ Мор: гниение на ${targets.length} врагах, ${perTurn} × ${data.turns} хода`;
-if (doubled) notes.push(`второй слой: ${doubled}`);
+line = `☠ ${skill.name}: гниение на ${targets.length} врагах, ${perTurn} × ${data.turns} хода`;
+if (doubled) notes.push(`ещё слой: ${doubled}`);
 break;
 }
 case 'thorns': {
 const eb = getElementDamageBonus('life');
-const hits = aoeTargets(data.targets).map(m => ({ m, ...aoePhysHit(m, data.multiplier, eb), fx: 'slash-green' }))
+const hits = aoeTargets(typeof subclassThorns === 'function' ? subclassThorns(data).targets : data.targets).map(m => ({ m, ...aoePhysHit(m, data.multiplier, eb), fx: 'slash-green' }))
 .map(h => ({ ...h, type: h.crit ? 'crit' : 'dmg' }));
 hits.forEach(h => {
 if (h.miss) return;
@@ -18604,12 +20586,15 @@ addDebuff('monster', 'entangle', h.m.index, { turnsLeft: data.turns, accReductio
 });
 const r = aoeApply(hits);
 aoeGiveXp(skill);
-line = `🌿 Терновый вихрь: ${r.total} (целей: ${hits.length})`;
-notes.push(`опутаны: точность −${data.accReduction}%`);
+line = `🌿 ${skill.name}: ${r.total} (целей: ${hits.length})`;
+const thornNote = typeof subclassAfterThorns === 'function' ? subclassAfterThorns(hits, data) : '';
+notes.push(thornNote || `опутаны: точность −${data.accReduction}%`);
 if (r.kills > 0 && typeof triggerNatureBreath === 'function') triggerNatureBreath(r.kills);
 break;
 }
 case 'drain': {
+const sd = typeof subclassDrain === 'function' ? subclassDrain(skill, data) : null;
+if (sd) { line = sd.line; notes.push(...sd.notes); break; }
 const fall = skill.aoe.falloff;
 const healCd = (state.battle.skillCooldowns && state.battle.skillCooldowns.heal) || 0;
 const comboMult = (healCd > 0 && p.learnedSkills.heal) ? 1 + (skill.healCdBonusPercent || 50) / 100 : 1;
@@ -18624,18 +20609,19 @@ break;
 }
 case 'spark': {
 const eb = getElementDamageBonus('lightning');
-const hits = aoeTargets(data.targets).map((m, i) => ({ m, ...aoePhysHit(m, data.multiplier, eb), fx: i === 0 ? 'slash-blue' : 'bolt' }))
+const hits = aoeTargets(typeof subclassSpark === 'function' ? subclassSpark(data).targets : data.targets).map((m, i) => ({ m, ...aoePhysHit(m, data.multiplier, eb), fx: i === 0 ? 'slash-blue' : 'bolt' }))
 .map(h => ({ ...h, type: h.crit ? 'crit' : (h.fx === 'bolt' ? 'magic' : 'dmg') }));
 const r = aoeApply(hits);
 cutMonstersATB(data.atbCut / 100);
 aoeGiveXp(skill);
-line = `⚡ Искровой разрез: ${r.total}`;
+line = `⚡ ${skill.name}: ${r.total}`;
+if (typeof subclassAfterSpark === 'function') notes.push(subclassAfterSpark(hits));
 notes.push(`ATB стаи −${data.atbCut}%`);
 break;
 }
 case 'chain': {
 const fall = skill.aoe.falloff;
-const chainTargets = aoeTargets(data.targets);
+const chainTargets = aoeTargets(typeof subclassChainTargets === 'function' ? subclassChainTargets(data) : data.targets);
 const conductor = chainTargets.some(m => getDebuff('monster', 'paralysis', m.index));
 const hits = chainTargets.map((m, i) => {
 const k = conductor ? 1 : (fall[i] || fall[fall.length - 1]);
@@ -18647,12 +20633,14 @@ if (conductor) notes.push('проводник: молния не слабеет'
 const chainLvl = p.learnedSkills['chainMind'] || 0;
 if (chainLvl > 0 && SKILLS['chainMind']) {
 const cd = SKILLS['chainMind'].levels[chainLvl - 1];
-if (cd && cd.chance && Math.random() * 100 < cd.chance) {
+if (cd && cd.chance && Math.random() * 100 < cd.chance + (typeof subclassChainMindBonus === 'function' ? subclassChainMindBonus() : 0)) {
 state.battle.skillCooldowns[skill.id] = Math.max(0, (state.battle.skillCooldowns[skill.id] || 0) - 1);
 notes.push('🧠 Цепной разум: КД −1');
+if (typeof subclassOnChainMind === 'function') subclassOnChainMind();
 }
 }
-line = `⚡ Цепная молния: ${r.total} (прыжков: ${hits.length})`;
+line = `⚡ ${skill.name}: ${r.total} (прыжков: ${hits.length})`;
+if (typeof subclassAfterChain === 'function') notes.push(subclassAfterChain(hits));
 break;
 }
 case 'quake': {
@@ -18660,17 +20648,19 @@ const eb = getElementDamageBonus('ice');
 const hits = aoeTargets(data.targets).map(m => ({ m, ...aoePhysHit(m, data.multiplier, eb), fx: 'ice' }))
 .map(h => ({ ...h, type: h.crit ? 'crit' : 'magic' }));
 if (typeof copyGreedMarks === 'function') copyGreedMarks(hits.filter(h => !h.miss).map(h => h.m), 'warrior');
+if (typeof subclassQuakeHit === 'function') hits.forEach(subclassQuakeHit);
 let frozen = 0;
 hits.forEach(h => {
 if (h.miss || h.m.hp - h.dmg <= 0) return;
-if (Math.random() * 100 < data.freezeChance) {
+if (!h.shattered && Math.random() * 100 < data.freezeChance + (typeof subclassQuakeFreezeBonus === 'function' ? subclassQuakeFreezeBonus() : 0)) {
 addDebuff('monster', 'freeze', h.m.index, { turnsLeft: 1 });
 frozen++;
 }
 });
 const r = aoeApply(hits);
 aoeGiveXp(skill);
-line = `❄ Ледяной раскол: ${r.total} (целей: ${hits.length})`;
+line = `❄ ${skill.name}: ${r.total} (целей: ${hits.length})`;
+{ const sh = hits.filter(h => h.shattered).length; if (sh) notes.push(`💥 раскол: ${sh}`); }
 if (frozen) notes.push(`❄ заморожено: ${frozen}`);
 break;
 }
@@ -18708,11 +20698,12 @@ const rest = alive.filter(m => !marked.includes(m));
 const targets = [...marked, ...rest].slice(0, rune.targets);
 alive.forEach(m => { if (getDebuff('monster', 'rune', m.index)) removeDebuff('monster', 'rune', m.index); });
 if (!targets.length) return;
-const hits = targets.map(m => ({ m, ...aoeMagHit(m, rune.multiplier, 'ice'), type: 'magic', fx: 'blizzard' }));
+const hits = targets.map(m => ({ m, ...aoeMagHit(m, rune.multiplier * (typeof subclassRuneMult === 'function' ? subclassRuneMult(m) : 1), 'ice'), type: 'magic', fx: 'blizzard' }));
 if (typeof copyGreedMarks === 'function') copyGreedMarks(hits.filter(h => !h.miss).map(h => h.m), 'mage');
 const r = aoeApply(hits);
 cutMonstersATB(rune.atbCut / 100);
 logCombat(`🌨 Буран: ${r.total}`, 'log-entry player-magic', `ATB стаи −${rune.atbCut}%`);
+if (typeof subclassAfterRune === 'function') subclassAfterRune(targets);
 updateBattleUI();
 }
 function rotLayers(rot) {
@@ -18779,6 +20770,7 @@ if (!hits.length) return;
 const r = aoeApply(hits);
 const wr = w > 1 ? ` (Гнев +${Math.round((w - 1) * 100)}%)` : '';
 logCombat(`☠ Гниение: ${r.total} урона${wr}${r.kills ? `, сгнило: ${r.kills}` : ''}.`, 'log-entry poison');
+if (typeof subclassOnRotTick === 'function') subclassOnRotTick(r.total);
 updateBattleUI();
 }
 function trySpreadRot(dead) {
@@ -18900,6 +20892,7 @@ logCombat(`⚡ ${m.name} пока невосприимчив к параличу
 } else if (!getDebuff('monster', 'paralysis', m.index)) {
 addDebuff('monster', 'paralysis', m.index, { turnsLeft: 1 });
 logCombat(`⚡ ПАРАЛИЧ! Шкала стаи сбита в ноль — ${m.name} пропустит удар.`, 'log-entry player-skill');
+if (typeof subclassOnParalyze === 'function') subclassOnParalyze(m);
 }
 }
 if (p.learnedSkills.sparkSlash && (state.battle.skillCooldowns.sparkSlash || 0) > 0) {
@@ -18940,6 +20933,3490 @@ return true;
 
 ;
 
+// ==== ФАЙЛ js/systems/battle-allies.js ====
+const ALLY_MAX = 3;
+const ALLY_INTERCEPT_PER = 20;
+const ALLY_INTERCEPT_MAX = 50;
+const ALLY_PDEF_FACTOR = 0.3;
+let ALLY_UID = 0;
+function alliesList() {
+return (state.battle.allies || []).filter(a => a.hp > 0);
+}
+function alliesHasRoom() {
+return alliesList().length < ALLY_MAX;
+}
+function alliesAdd(a) {
+if (!state.battle.allies) state.battle.allies = [];
+if (!alliesHasRoom()) return null;
+a.uid = ++ALLY_UID;
+a.hp = Math.max(1, Math.floor(a.hp));
+a.maxHp = Math.max(1, Math.floor(a.maxHp || a.hp));
+a.atk = a.atk > 0 ? Math.max(1, Math.floor(a.atk)) : 0;
+state.battle.allies.push(a);
+alliesRender(true);
+return a;
+}
+function alliesClear() {
+state.battle.allies = [];
+alliesRender(true);
+}
+function alliesReap() {
+const b = state.battle;
+if (!b.allies || !b.allies.length) return;
+const dead = b.allies.filter(a => a.hp <= 0);
+if (!dead.length) return;
+b.allies = b.allies.filter(a => a.hp > 0);
+dead.forEach(a => {
+logCombat(`💀 ${a.name} рассыпается.`, 'log-entry loss');
+if (typeof subclassOnAllyDeath === 'function') subclassOnAllyDeath(a);
+});
+alliesRender(true);
+}
+function alliesAct() {
+const b = state.battle;
+if (!b.active) return;
+alliesReap();
+const list = alliesList();
+if (!list.length) return;
+const hits = [];
+const parts = [];
+const p = state.player;
+list.filter(a => a.healHp || a.healMp).forEach(a => {
+const hp = a.healHp ? aoeHeal(p.maxHp * a.healHp / 100) : 0;
+const mp = a.healMp ? Math.min(Math.floor(p.maxMp * a.healMp / 100), p.maxMp - p.mp) : 0;
+if (mp > 0) p.mp += mp;
+if (hp > 0 || mp > 0) logCombat(`✚ ${a.name}: ${hp > 0 ? `+${hp} HP` : ''}${hp > 0 && mp > 0 ? ', ' : ''}${mp > 0 ? `+${mp} MP` : ''}`, 'log-entry potion');
+});
+list.forEach(a => {
+if (!a.atk) return;
+if (a.slow) { a.skip = !a.skip; if (a.skip) return; }
+const m = getCurrentMonster();
+if (!m || m.hp <= 0) return;
+const variance = Math.floor(a.atk * 0.2);
+const raw = a.atk + Math.floor(Math.random() * variance * 2) - variance;
+const dmg = monsterTagDmg(m, Math.max(1, Math.floor(raw - (m.pDef || 0) * ALLY_PDEF_FACTOR)), ['physical']);
+hits.push({ m, miss: false, dmg, type: 'dmg', fx: 'slash' });
+parts.push(dmg);
+if (typeof subclassOnAllyHit === 'function') subclassOnAllyHit(a, m);
+});
+if (!hits.length) return;
+const r = aoeApply(hits);
+const who = list.some(a => a.totem) ? 'Тотемы' : list.some(a => a.spider) ? 'Пауки' : list.some(a => a.elemental) ? 'Элементали' : (list.length === 1 && list[0].druid ? list[0].name : 'Слуги');
+logCombat(`👥 ${who}: ${parts.length > 1 ? parts.join(' + ') + ' = ' + r.total : r.total}`, 'log-entry player', r.kills ? `убито: ${r.kills}` : '');
+}
+function alliesTryIntercept(m, skill) {
+const list = alliesList();
+if (!list.length || !m || m.hp <= 0) return false;
+const taunts = list.filter(a => a.taunt);
+const chance = Math.min(ALLY_INTERCEPT_MAX + (taunts.length ? 20 : 0), ALLY_INTERCEPT_PER * list.length + (taunts.length ? 30 : 0));
+if (Math.random() * 100 >= chance) return false;
+const pool = taunts.length ? taunts : list;
+const a = pool[Math.floor(Math.random() * pool.length)];
+if (a.dodge && Math.random() * 100 < a.dodge) {
+logCombat(`💨 ${m.name} бьёт ${a.name} — мимо.`, 'log-entry');
+return true;
+}
+allyTakeHit(a, m, skill);
+return true;
+}
+function allyTakeHit(a, m, skill) {
+const base = m.mpDry ? Math.floor(m.atk * MONSTER_DRY_ATK_MULT) : m.atk;
+const variance = Math.floor(base * 0.3);
+let raw = base + Math.floor(Math.random() * variance * 2) - variance;
+if (typeof monsterKitRaw === 'function') raw = monsterKitRaw(m, skill, raw);
+const mult = typeof subclassMonsterWeakMult === 'function' ? subclassMonsterWeakMult(m) : 1;
+const dmg = Math.max(1, Math.floor(raw * mult) - (a.absorb || 0));
+a.hp -= dmg;
+logCombat(`🩸 ${m.name} бьёт ${a.name}: ${dmg}`, 'log-entry monster', a.hp > 0 ? `осталось ${Math.max(0, Math.floor(a.hp))}/${a.maxHp}` : '');
+alliesReap();
+alliesRender();
+}
+function allyTakeDamageFor(dmg) {
+const list = alliesList();
+if (!list.length) return null;
+const a = list.reduce((best, x) => (x.hp > best.hp ? x : best), list[0]);
+a.hp -= dmg;
+alliesReap();
+alliesRender();
+return a;
+}
+let ALLY_SIG = '';
+function alliesRender(force) {
+const hero = document.getElementById('fighter-player');
+if (!hero) return;
+let box = document.getElementById('bx-allies');
+const list = (state.battle && state.battle.active) ? alliesList() : [];
+if (!list.length) {
+if (box) { box.remove(); ALLY_SIG = ''; }
+return;
+}
+if (!box) {
+box = document.createElement('div');
+box.id = 'bx-allies';
+box.className = 'bx-allies';
+hero.appendChild(box);
+force = true;
+}
+const sig = list.map(a => `${a.uid}:${Math.max(0, Math.floor(a.hp))}/${a.maxHp}`).join('|');
+if (!force && sig === ALLY_SIG) return;
+ALLY_SIG = sig;
+box.innerHTML = list.map(a => {
+const pct = Math.max(0, Math.min(100, a.hp / a.maxHp * 100));
+const role = a.atk ? ` · удар ${a.atk}` : (a.healHp ? ' · лечит' : (a.taunt ? ' · принимает удары' : ''));
+return `<div class="bx-ally" title="${a.name} · ${Math.max(0, Math.floor(a.hp))}/${a.maxHp} HP${role}${a.slow ? ' · медленный' : ''}${a.dodge ? ` · уворот ${a.dodge}%` : ''}">
+      <img src="${a.img}" alt="">
+      <div class="bx-ally-hp"><i style="width:${pct.toFixed(1)}%"></i></div>
+    </div>`;
+}).join('');
+}
+
+;
+
+// ==== ФАЙЛ js/systems/subclass.js ====
+if (typeof ANNALS_FIRSTS !== 'undefined') ANNALS_FIRSTS.subclass = SUBCLASS_ANNAL;
+const SC_MOD_FIELDS = ['name', 'levels', 'maxLevel', 'getDesc', 'getNextDesc', 'stunChance', 'challengeTurns', 'challengePct', 'hits', 'useCheck', 'freezeChance', 'minHpPercent', 'rotMaxLayers', 'isHeal'];
+const SC_BASE = {};
+let scAppliedFor = undefined;
+function getPlayerSubclass() {
+const p = state.player;
+return (p && p.subclass && SUBCLASSES[p.subclass]) ? SUBCLASSES[p.subclass] : null;
+}
+function hasSubclass(id) {
+try { return !!(state.player && state.player.subclass === id); } catch (e) { return false; }
+}
+function subclassesForPlayer() {
+const p = state.player;
+return Object.values(SUBCLASSES).filter(s => s.race === p.raceId && s.cls === p.classId);
+}
+function applySubclassSkills() {
+const sc = getPlayerSubclass();
+const want = sc ? sc.id : null;
+if (scAppliedFor === want) return;
+Object.keys(SC_BASE).forEach(id => {
+const s = SKILLS[id], base = SC_BASE[id];
+SC_MOD_FIELDS.forEach(f => { if (base[f] === undefined) delete s[f]; else s[f] = base[f]; });
+});
+if (sc) {
+Object.keys(sc.mods).forEach(id => {
+const s = SKILLS[id], mod = sc.mods[id];
+if (!s) return;
+if (!SC_BASE[id]) {
+SC_BASE[id] = {};
+SC_MOD_FIELDS.forEach(f => { SC_BASE[id][f] = s[f]; });
+}
+SC_MOD_FIELDS.forEach(f => { if (mod[f] !== undefined) s[f] = mod[f]; });
+s.maxLevel = mod.levels ? mod.levels.length : s.maxLevel;
+});
+}
+scAppliedFor = want;
+}
+function isSubclassSkillAvailable(skill, player) {
+return !skill.subclassId || player.subclass === skill.subclassId;
+}
+const SKILL_POINTS_BOOST_FROM = SUBCLASS_MIN_LEVEL + 1;
+function skillPointsForLevel(level) {
+if (level >= SKILL_POINTS_BOOST_FROM) return 3;
+return level >= 9 ? 2 : 1;
+}
+function subclassOnLoad() {
+const p = state.player;
+if (!p) return;
+if (p.subclass) {
+const sc = SUBCLASSES[p.subclass];
+if (!sc || sc.race !== p.raceId || sc.cls !== p.classId) p.subclass = null;
+}
+const owed = Math.max(0, (p.level || 1) - SUBCLASS_MIN_LEVEL);
+const paid = p.skillPts26 || 0;
+if (owed > paid) {
+const add = owed - paid;
+p.skillPoints = (p.skillPoints || 0) + add;
+p.skillPts26 = owed;
+setTimeout(() => {
+if (typeof showToast === 'function') showToast('✦', `+${add} очков навыков: с 26 уровня теперь по 3`);
+if (typeof logLoot === 'function') logLoot(`✦ С 26 уровня за уровень даётся 3 очка навыков. Начислено за прошлые уровни: +${add}.`, 'log-info');
+}, 2100);
+}
+if (typeof ensureSkillSlotsLength === 'function') ensureSkillSlotsLength();
+scAppliedFor = undefined;
+applySubclassSkills();
+}
+let scPicked = null;
+let scJustDedicated = null;
+function ensureSubclassOverlay() {
+let ov = document.getElementById('sc-overlay');
+if (ov) return ov;
+ov = document.createElement('div');
+ov.className = 'sc-overlay overlay-base';
+ov.id = 'sc-overlay';
+ov.innerHTML = `
+    <div class="sc-window window-base">
+      <div class="window-header">
+        <div class="window-title">✦ ХРАМ · ПОСВЯЩЕНИЕ</div>
+        <div class="window-header-actions"><button class="btn danger" onclick="closeSubclassTemple()">Закрыть</button></div>
+      </div>
+      <div class="window-content"><div class="sc-pane" id="sc-pane"></div></div>
+    </div>`;
+ov.addEventListener('click', e => { if (e.target === ov) closeSubclassTemple(); });
+document.body.appendChild(ov);
+return ov;
+}
+function openSubclassTemple() {
+if (state.player.currentLocation !== 'ilgrad') return;
+if (typeof cancelWaitingForResume === 'function') cancelWaitingForResume('открыт храм');
+scPicked = null;
+scJustDedicated = null;
+ensureSubclassOverlay().classList.add('active');
+renderSubclassTemple();
+}
+function closeSubclassTemple() {
+const ov = document.getElementById('sc-overlay');
+if (ov) ov.classList.remove('active');
+}
+function scCardHtml(sc, mode) {
+const role = SUBCLASS_ROLES[sc.role] || { name: '', icon: '' };
+const p = state.player;
+const mine = p.subclass === sc.id;
+let action = '';
+if (mode === 'locked') action = '';
+else if (!sc.ready) action = `<button class="btn" disabled>Путь ещё не открыт</button>`;
+else if (mine) action = `<div class="sc-mine">✦ Твой путь</div>`;
+else if (p.subclass) action = `<button class="btn" onclick="scPick('${sc.id}')">Просить иного знака — ${SUBCLASS_CHANGE_PRICE.toLocaleString('ru-RU')} 🪙</button>`;
+else action = `<button class="btn success" onclick="scPick('${sc.id}')">Смотреть на эту свечу</button>`;
+const cls = 'sc-card' + (mine ? ' sc-card-mine' : '') + (!sc.ready ? ' sc-card-closed' : '') + (scPicked === sc.id ? ' sc-card-picked' : '');
+return `<div class="${cls}">
+    <div class="sc-portrait"><img src="${sc.portrait}" alt="" loading="lazy"><div class="sc-candle"></div></div>
+    <div class="sc-role">${role.icon} ${role.name}</div>
+    <div class="sc-name">${sc.name}</div>
+    <div class="sc-blurb">${sc.blurb}</div>
+    <div class="sc-action">${action}</div>
+  </div>`;
+}
+function renderSubclassTemple() {
+const pane = document.getElementById('sc-pane');
+if (!pane) return;
+const p = state.player;
+const list = subclassesForPlayer();
+const cur = getPlayerSubclass();
+if (scJustDedicated) {
+const sc = SUBCLASSES[scJustDedicated];
+pane.innerHTML = `
+      <div class="sc-dedicated">
+        <div class="sc-portrait sc-portrait-big"><img src="${sc.portrait}" alt=""><div class="sc-candle sc-candle-lit"></div></div>
+        <div class="sc-dedicated-text">
+          <div class="sc-name">${sc.name}</div>
+          <p>*Свеча у образа горит ровно и ярко. Мать Исмера касается твоего плеча.*</p>
+          <p>— Боги сказали своё слово. Отныне ты — <b>${sc.name}</b>. Таинство откроет тебе новые приёмы.</p>
+          <p class="sc-hint">Изменились три приёма класса (теперь до 7 уровня), открылись новые навыки подкласса. Очки — в Таинстве.</p>
+          <div class="sc-buttons">
+            <button class="btn success" onclick="closeSubclassTemple(); openMentor(); if (typeof applyTownWindowTitles === 'function') applyTownWindowTitles();">✦ Открыть Таинство</button>
+            <button class="btn" onclick="closeSubclassTemple()">Закрыть</button>
+          </div>
+        </div>
+      </div>`;
+return;
+}
+let intro, mode = '';
+if (p.level < SUBCLASS_MIN_LEVEL) {
+mode = 'locked';
+intro = `*У алтаря три свечи — каждая у своего образа. Ни одна не горит.*<br>Мать Исмера качает головой: — Рано. Боги говорят с теми, кто прошёл долгий путь. Приходи, когда окрепнешь. <span class="sc-req">С ${SUBCLASS_MIN_LEVEL} уровня</span>`;
+} else if (!cur) {
+intro = `*У алтаря три свечи — каждая у своего образа.*<br>Мать Исмера: — Встань и смотри. Боги сами укажут тебе путь — та свеча, что вспыхнет, и есть твой знак.`;
+} else {
+intro = `*Свеча у образа «${cur.name}» горит ровно.*<br>Мать Исмера: — Знак тебе уже дан. Но боги милостивы — если сердце просит иного, принеси дар храму, и мы спросим снова.`;
+}
+let confirmHtml = '';
+if (scPicked && SUBCLASSES[scPicked]) {
+const sc = SUBCLASSES[scPicked];
+const price = cur ? SUBCLASS_CHANGE_PRICE : 0;
+const priceTxt = price ? ` Дар храму — <b>${price.toLocaleString('ru-RU')} 🪙</b>. Вложенные в прежний путь очки вернутся.` : '';
+confirmHtml = `<div class="sc-confirm">
+      <p>*Свеча у образа «${sc.name}» вспыхивает ярче остальных.*${priceTxt}</p>
+      <div class="sc-buttons">
+        <button class="btn success" onclick="scAccept()">✦ Принять знак</button>
+        <button class="btn" onclick="scPick(null)">Отвести взгляд</button>
+      </div>
+    </div>`;
+}
+pane.innerHTML = `
+    <div class="sc-intro">${intro}</div>
+    <div class="sc-grid">${list.map(sc => scCardHtml(sc, mode)).join('')}</div>
+    ${confirmHtml}
+    <div class="sc-foot">Пока игра в бете, путь можно сменить: ${SUBCLASS_CHANGE_PRICE.toLocaleString('ru-RU')} 🪙, вложенные очки возвращаются.</div>`;
+if (confirmHtml) {
+const c = pane.querySelector('.sc-confirm');
+if (c && c.scrollIntoView) c.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+}
+}
+function scPick(id) {
+if (id && (!SUBCLASSES[id] || !SUBCLASSES[id].ready)) return;
+scPicked = id;
+renderSubclassTemple();
+}
+function subclassRefund(oldId) {
+const p = state.player;
+const sc = SUBCLASSES[oldId];
+if (!sc) return 0;
+let back = 0;
+Object.keys(sc.mods).forEach(id => {
+const lvl = p.learnedSkills[id] || 0;
+if (lvl > 5) { back += lvl - 5; p.learnedSkills[id] = 5; }
+});
+Object.values(SKILLS).forEach(s => {
+if (s.subclassId !== oldId) return;
+const lvl = p.learnedSkills[s.id] || 0;
+if (lvl > 0) back += lvl;
+delete p.learnedSkills[s.id];
+if (Array.isArray(p.skillSlots)) p.skillSlots = p.skillSlots.map(x => (x === s.id ? null : x));
+if (state.battle && state.battle.skillToggles) delete state.battle.skillToggles[s.id];
+});
+p.skillPoints = (p.skillPoints || 0) + back;
+return back;
+}
+function scAccept() {
+const p = state.player;
+const id = scPicked;
+const sc = SUBCLASSES[id];
+if (!sc || !sc.ready || sc.race !== p.raceId || sc.cls !== p.classId) return;
+if (p.level < SUBCLASS_MIN_LEVEL) return;
+if (p.subclass === id) return;
+if (state.battle && state.battle.active) { showToast('⚔', 'Сначала закончи бой'); return; }
+const changing = !!p.subclass;
+if (changing) {
+if (p.gold < SUBCLASS_CHANGE_PRICE) { showToast('🪙', `Нужен дар храму: ${SUBCLASS_CHANGE_PRICE.toLocaleString('ru-RU')} Оболов`); return; }
+p.gold -= SUBCLASS_CHANGE_PRICE;
+const back = subclassRefund(p.subclass);
+logCombat(`✦ Иной знак. Возвращено очков навыков: ${back}. (−${SUBCLASS_CHANGE_PRICE} 🪙)`, 'log-entry levelup');
+}
+p.subclass = id;
+if (typeof ensureSkillSlotsLength === 'function') ensureSkillSlotsLength();
+applySubclassSkills();
+recalcStats();
+updateCharacterPanel();
+updateTopStatus();
+updateSkillPointsBadge();
+if (typeof renderSkillSlots === 'function') renderSkillSlots();
+if (typeof renderSkillLoadout === 'function') renderSkillLoadout();
+if (typeof annalsFirst === 'function') annalsFirst('subclass', { name: sc.name }, { loc: 'ilgrad' });
+logCombat(`✦ Посвящение: ${p.name} — ${sc.name}.`, 'log-entry levelup');
+if (!changing) logCombat('✦ Открылась 4-я ячейка навыков. Поставить навык в неё можно в Инвентаре.', 'log-entry levelup');
+showToast('✦', `Посвящение: ${sc.name}`);
+if (sc.role === 'hybrid' && typeof bagMet === 'function' && bagMet() && typeof addChronicleEntry === 'function') {
+const c = p.chronicle;
+if (c && !(c.firsts && c.firsts.bagHybrid)) {
+if (!c.firsts) c.firsts = {};
+c.firsts.bagHybrid = Date.now();
+addChronicleEntry('Знал я когда-то одного такого. Нет. Не знал.', { speaker: 'bag', loc: 'ilgrad' });
+setTimeout(() => showToast('🎒', `${bagSpeakerName()}: «Знал я когда-то одного такого. Нет. Не знал.»`), 1800);
+}
+}
+scPicked = null;
+scJustDedicated = id;
+renderSubclassTemple();
+saveCurrentSlot();
+}
+DEBUFF_DEFS.challenged = { icon: '📣', name: 'Вызов', cssClass: 'debuff-confused',
+tooltip: (d) => `Вызов · бьёт только героя, получает +${SKILLS.whirlwind.challengePct || 15}% урона · осталось ${d.turnsLeft} ход.` };
+DEBUFF_DEFS.holdLine = { icon: '🛡', name: 'Глухая оборона', cssClass: 'debuff-guard',
+tooltip: (d) => `Глухая оборона · входящий урон −${d.cut}% · осталось ${d.turnsLeft} ход.` };
+DEBUFF_DEFS.lastStand = { icon: '🏰', name: 'Последний рубеж', cssClass: 'debuff-guard',
+tooltip: (d) => `Последний рубеж · входящий урон −${d.cut}% · осталось ${d.turnsLeft} ход.` };
+DEBUFF_DEFS.retortCd = { icon: '⏳', name: 'Ответ щита: перезарядка', cssClass: 'debuff-paraimmune',
+tooltip: (d) => `Ответ щита перезаряжается · ещё ${d.turnsLeft} ход.` };
+DEBUFF_DEFS.zeal = { icon: '🎲', name: 'Азарт', cssClass: 'debuff-rune',
+displayCount: (d) => d.stacks || 0,
+tooltip: (d) => `Азарт ${d.stacks || 0}/${JAEGER_ZEAL_MAX} · копится на критах, тратят Добивание и Ускользнуть. Сгорает после боя.` };
+DEBUFF_DEFS.jgMark = { icon: '🎯', name: 'Метка егеря', cssClass: 'debuff-confused',
+displayCount: () => '',
+tooltip: () => { const l = state.player.learnedSkills.jgMark || 1; return `Метка егеря · +${SKILLS.jgMark.levels[l - 1].bonus}% урона героя, крит по ней — 2 заряда Азарта.`; } };
+DEBUFF_DEFS.evade = { icon: '💨', name: 'Ускользнуть', cssClass: 'debuff-guard',
+displayCount: (d) => d.charges || 0,
+tooltip: (d) => `Ускользнуть · ещё ${d.charges || 0} атак(и) твари пройдут мимо.` };
+DEBUFF_DEFS.seal = { icon: '✴', name: 'Печать света', cssClass: 'debuff-rune',
+tooltip: (d) => `Печать света · удар оружием +${d.pct}% силы света · осталось ${d.turnsLeft} ход.` };
+DEBUFF_DEFS.radiance = { icon: '☀', name: 'Сияние', cssClass: 'debuff-rune',
+displayCount: (d) => d.turn || 0,
+tooltip: (d) => `Сияние · ход ${d.turn || 0}/${SKILLS.tpRadiance.maxTurns} разгона.` };
+function scIsUndead(m) {
+return !!(m && m.tags && m.tags.includes('dead'));
+}
+function scSkillLvl(id) { return state.player.learnedSkills[id] || 0; }
+function scSkillData(id) { const l = scSkillLvl(id); return l ? SKILLS[id].levels[l - 1] : null; }
+function scMod(subId, skillId) {
+return hasSubclass(subId) ? SUBCLASSES[subId].mods[skillId] : null;
+}
+function subclassOnBattleStart() {
+const b = state.battle;
+b.scLastStandUsed = false;
+b.tpRadTurn = 0;
+b.elLastElem = null;
+b.prBarrier = 0;
+b.prCleanseAcc = 0;
+b.nmCorpse = null;
+b.bkPaid = 0; b.bkThirst = false;
+if (typeof alliesClear === 'function') alliesClear();
+if (scIsElf()) elfOnBattleStart(); else { b.drSpirit = null; b.drGrowth = 0; }
+if (scIsDrow()) drowOnBattleStart();
+if (scIsDwarf()) dwarfOnBattleStart();
+}
+const SC_PLAYER_TIMERS = ['holdLine', 'lastStand', 'retortCd', 'seal', 'intercedeCd', 'trance', 'frenzy', 'ancestor', 'bondCd', 'guardianCd', 'thirstCd', 'bark', 'rooting', 'wind', 'budCd', 'stormArmor', 'double', 'haste', 'mistCd', 'shadowStep', 'stormFront', 'closeArmor', 'bellows', 'runeGuard', 'wardCd'];
+const SC_MONSTER_TIMERS = ['challenged', 'weakened', 'shock', 'curseAche', 'rooted', 'webbed'];
+function subclassOnHeroTurn() {
+const b = state.battle;
+if (!b || !b.debuffs) return;
+SC_PLAYER_TIMERS.forEach(id => {
+const d = getDebuff('player', id);
+if (!d) return;
+d.turnsLeft = (d.turnsLeft || 1) - 1;
+if (d.turnsLeft <= 0) removeDebuff('player', id);
+else renderDebuffBar('player');
+});
+const mons = b.debuffs.monsters || {};
+let changed = false;
+Object.keys(mons).forEach(idx => {
+SC_MONSTER_TIMERS.forEach(id => {
+const d = mons[idx] && mons[idx][id];
+if (!d) return;
+d.turnsLeft = (d.turnsLeft || 1) - 1;
+if (d.turnsLeft <= 0) delete mons[idx][id];
+changed = true;
+});
+});
+if (changed) renderDebuffBar('monster');
+if (scIsOrc()) orcOnHeroTurn();
+if (scIsElf()) elfOnHeroTurn();
+if (scIsDrow()) drowOnHeroTurn();
+if (scIsDwarf()) dwarfOnHeroTurn();
+templarRadianceTick();
+priestBlessingTick();
+if (typeof alliesAct === 'function') alliesAct();
+}
+function subclassMonsterWeakMult(m) {
+const w = m ? getDebuff('monster', 'weakened', m.index) : null;
+return w ? 1 - (w.pct || 0) / 100 : 1;
+}
+function subclassDamageTakenMult(attacker) {
+if (scIsDwarf()) return dwarfDamageTakenMult(attacker);
+if (scIsDrow()) return drowDamageTakenMult(attacker, arguments[1]);
+if (scIsElf()) return elfDamageTakenMult(attacker);
+if (scIsOrc()) return orcDamageTakenMult(attacker);
+let mult = 1;
+const hold = getDebuff('player', 'holdLine');
+if (hold) mult *= 1 - (hold.cut || 0) / 100;
+const ls = getDebuff('player', 'lastStand');
+if (ls) mult *= 1 - (ls.cut || 0) / 100;
+const bl = getDebuff('player', 'blessing');
+if (bl) mult *= 1 - (bl.cut || 0) / 100;
+if (attacker && hasSubclass('human_templar') && scIsUndead(attacker)) {
+const v = scSkillData('tpVow');
+if (v) mult *= 1 - v.pct / 100;
+}
+if (attacker) mult *= subclassMonsterWeakMult(attacker);
+return mult;
+}
+function subclassBlockBonus() {
+return (getDebuff('player', 'holdLine') && getEquippedShield()) ? (SKILLS.wgHoldLine.shieldBlock || 0) : 0;
+}
+function subclassHeroDmgMult(m) {
+if (scIsDwarf()) return dwarfHeroDmgMult(m);
+if (scIsDrow()) return drowHeroDmgMult(m);
+if (scIsElf()) return elfHeroDmgMult(m);
+if (scIsOrc()) return orcHeroDmgMult(m);
+if (!m) return 1;
+const p = state.player;
+let mult = 1;
+if (p.subclass === 'human_wallguard') {
+if (getDebuff('monster', 'challenged', m.index)) mult *= 1 + (SKILLS.whirlwind.challengePct || 15) / 100;
+} else if (p.subclass === 'human_huntsman') {
+if (getDebuff('monster', 'jgMark', m.index) && semiPassiveReady('jgMark')) mult *= 1 + scSkillData('jgMark').bonus / 100;
+if (scIsUndead(m) && scSkillData('jgSilver')) mult *= 1 + scSkillData('jgSilver').undead / 100;
+} else if (p.subclass === 'human_templar') {
+if (scIsUndead(m) && scSkillData('tpVow')) mult *= 1 + scSkillData('tpVow').pct / 100;
+} else if (p.subclass === 'human_elementalist') {
+const f = scSkillData('elFusion');
+if (f && elementalistEffectsOn(m) >= 2) mult *= 1 + f.pct / 100;
+}
+return mult;
+}
+function subclassChallengeMult(m) { return subclassHeroDmgMult(m); }
+function subclassCritMultBonus(cat) {
+if (scIsOrc()) return orcCritMultBonus(cat);
+if (!hasSubclass('human_huntsman') || !JAEGER_WEAPONS.includes(cat)) return 0;
+const d = scSkillData('jgEye');
+return d ? d.critDmg / 100 : 0;
+}
+function wallguardShieldStats() {
+const sh = getEquippedShield();
+if (!sh) return null;
+const def = getItemStat(sh, 'pDef') || 0;
+const absorb = (sh.stats && sh.stats.flatDamageReduce) || 0;
+const mLvl = state.player.learnedSkills.wgShieldMastery || 0;
+const pct = mLvl > 0 ? SKILLS.wgShieldMastery.levels[mLvl - 1].shieldPct : 0;
+return { def: def * (1 + pct / 100), absorb: absorb * (1 + pct / 100), pct };
+}
+function subclassApplyPassives(p) {
+if (scIsDwarf()) { dwarfApplyPassives(p); return; }
+if (scIsDrow()) { drowApplyPassives(p); return; }
+if (scIsElf()) { elfApplyPassives(p); return; }
+if (scIsOrc()) { orcApplyPassives(p); return; }
+if (p.subclass === 'human_wallguard') {
+const mLvl = p.learnedSkills.wgShieldMastery || 0;
+if (mLvl > 0 && getEquippedShield()) {
+const d = SKILLS.wgShieldMastery.levels[mLvl - 1];
+const sh = getEquippedShield();
+const addDef = Math.round((getItemStat(sh, 'pDef') || 0) * d.shieldPct / 100);
+const addAbs = ((sh.stats && sh.stats.flatDamageReduce) || 0) * d.shieldPct / 100;
+p.blockChance += d.block;
+p.pDef += addDef;
+p.flatDamageReduce += addAbs;
+p.skillBonuses.push(`Мастер щита (ур.${mLvl}): +${d.block}% блока, защита щита +${addDef}, поглощение +${addAbs.toFixed(1)}`);
+}
+const lsLvl = p.learnedSkills.wgLastStand || 0;
+if (lsLvl > 0) p.skillBonuses.push(`Последний рубеж (ур.${lsLvl}): раз за бой выжить с 1 HP`);
+} else if (p.subclass === 'human_huntsman') {
+const eye = p.learnedSkills.jgEye || 0;
+const w = p.equipment.weapon;
+const cat = w ? getWeaponCategory(w.name) : null;
+if (eye > 0) {
+const d = SKILLS.jgEye.levels[eye - 1];
+if (JAEGER_WEAPONS.includes(cat)) {
+p.critChance += d.crit;
+p.skillBonuses.push(`Глаз егеря (ур.${eye}): +${d.crit}% крита, +${d.critDmg}% урона крита`);
+} else {
+p.skillBonuses.push(`Глаз егеря (ур.${eye}): не действует — нужен лук, арбалет или кинжал`);
+}
+}
+const sil = p.learnedSkills.jgSilver || 0;
+if (sil > 0) p.skillBonuses.push(`Серебряный наконечник (ур.${sil}): +${SKILLS.jgSilver.levels[sil - 1].undead}% по нежити`);
+} else if (p.subclass === 'human_templar') {
+const vow = p.learnedSkills.tpVow || 0;
+if (vow > 0) { const v = SKILLS.tpVow.levels[vow - 1].pct; p.skillBonuses.push(`Обет против тьмы (ур.${vow}): нежить бьёт на ${v}% слабее, по ней +${v}%`); }
+const bal = p.learnedSkills.tpBalance || 0;
+if (bal > 0) p.skillBonuses.push(`Равновесие (ур.${bal}): +${SKILLS.tpBalance.levels[bal - 1].mp} MP за удар оружием`);
+}
+}
+function subclassHitAtk(skillId, hitIndex) {
+if (scIsDwarf()) return dwarfHitAtk(skillId);
+if (scIsDrow()) return drowHitAtk(skillId);
+if (scIsElf()) return elfHitAtk(skillId);
+if (scIsOrc()) return orcHitAtk(skillId);
+const p = state.player;
+if (p.subclass === 'human_wallguard') {
+const sh = wallguardShieldStats();
+if (sh && (skillId === 'powerStrike' || (skillId === 'doubleStrike' && hitIndex === 1))) {
+return Math.floor(sh.def * WALLGUARD_SHIELD_DEF_MULT);
+}
+} else if (p.subclass === 'human_templar' && skillId === 'powerStrike') {
+return Math.floor(p.mAtk * SUBCLASSES.human_templar.mods.powerStrike.magPart);
+}
+return 0;
+}
+function wallguardHitAtk(skillId, hitIndex) { return subclassHitAtk(skillId, hitIndex); }
+function subclassStrikeMult(skill, data, m, notes) {
+if (scIsDrow()) return drowStrikeMult(skill, data, m, notes);
+if (scIsOrc()) return orcStrikeMult(skill, data, m, notes);
+const mod = scMod('human_huntsman', 'powerStrike');
+if (!mod || skill.id !== 'powerStrike') return data.multiplier;
+const z = jaegerZealTake();
+let mult = data.multiplier + mod.perCharge * z;
+if (m && m.maxHp > 0 && m.hp / m.maxHp * 100 < mod.lowHpPct) { mult *= 1 + mod.lowHpBonus / 100; notes.push('добивание раненого'); }
+notes.push(`🎲 Азарт ×${z}`);
+return mult;
+}
+function subclassAfterStrike(skill, m, hitsLanded, totalDamage) {
+if (scIsDwarf()) return dwarfAfterStrike(skill, m, hitsLanded, totalDamage);
+if (scIsDrow()) return drowAfterStrike(skill, m, hitsLanded, totalDamage);
+if (scIsElf()) return elfAfterStrike(skill, m, hitsLanded, totalDamage);
+if (scIsOrc()) return orcAfterStrike(skill, m, hitsLanded, totalDamage);
+const p = state.player;
+if (p.subclass === 'human_wallguard') {
+if (skill.id !== 'doubleStrike' || hitsLanded < 2 || !m || m.hp <= 0 || !getEquippedShield()) return '';
+if (Math.random() * 100 >= (SKILLS.doubleStrike.stunChance || 0)) return '';
+addDebuff('monster', 'stun', m.index, { turnsLeft: 1 });
+return '💫 оглушён щитом';
+}
+if (p.subclass === 'human_templar') {
+if (skill.id === 'doubleStrike') {
+const d = getSkillData('doubleStrike');
+const heal = aoeHeal(totalDamage * (d.heal || 0) / 100);
+return heal > 0 ? `✚ +${heal} HP` : '';
+}
+if (skill.id === 'powerStrike' && m && m.hp > 0 && scIsUndead(m) &&
+Math.random() * 100 < SUBCLASSES.human_templar.mods.powerStrike.stunUndead) {
+addDebuff('monster', 'stun', m.index, { turnsLeft: 1 });
+return '💫 нежить оглушена светом';
+}
+}
+return '';
+}
+function subclassWhirlExtraHits(hits, data) {
+if (!hasSubclass('human_templar')) return [];
+const part = SUBCLASSES.human_templar.mods.whirlwind.magPart;
+return hits.filter(h => !h.miss && h.m).map(h => ({ m: h.m, ...aoeMagHit(h.m, data.multiplier * part, null), type: 'magic', fx: 'slash' }));
+}
+function subclassAfterWhirl(hits, data) {
+const p = state.player;
+if (p.subclass === 'human_wallguard') {
+const turns = SKILLS.whirlwind.challengeTurns || 3;
+let n = 0;
+hits.forEach(h => {
+if (h.miss || !h.m || h.m.hp <= 0) return;
+addDebuff('monster', 'challenged', h.m.index, { turnsLeft: turns });
+n++;
+});
+return n ? `📣 вызов: ${n}` : '';
+}
+if (p.subclass === 'human_templar') {
+const touched = new Set(hits.filter(h => !h.miss && h.m).map(h => h.m)).size;
+if (!touched) return '';
+const heal = aoeHeal(p.maxHp * (data.heal || 0) / 100 * touched);
+return heal > 0 ? `✚ +${heal} HP` : '';
+}
+return '';
+}
+function wallguardAfterWhirl(hits) { return subclassAfterWhirl(hits, {}); }
+function jaegerZeal() {
+const d = getDebuff('player', 'zeal');
+return d ? (d.stacks || 0) : 0;
+}
+function jaegerZealAdd(n) {
+if (n <= 0) return;
+const cur = jaegerZeal();
+const next = Math.min(JAEGER_ZEAL_MAX, cur + n);
+if (next === cur) return;
+addDebuff('player', 'zeal', { stacks: next, turnsLeft: 999 });
+}
+function jaegerZealSpend(n) {
+const cur = jaegerZeal();
+const next = Math.max(0, cur - n);
+if (next > 0) addDebuff('player', 'zeal', { stacks: next, turnsLeft: 999 });
+else removeDebuff('player', 'zeal');
+}
+function jaegerZealTake() {
+const z = jaegerZeal();
+removeDebuff('player', 'zeal');
+return z;
+}
+function subclassOnCrit(m) {
+if (!hasSubclass('human_huntsman') || !m) return;
+let gain = 1;
+const marked = !!getDebuff('monster', 'jgMark', m.index);
+const markOn = semiPassiveReady('jgMark');
+if (marked && markOn) gain = 2;
+if (scIsUndead(m) && scSkillData('jgSilver')) gain += 1;
+jaegerZealAdd(gain);
+if (markOn && !marked && m.hp > 0) {
+const mons = state.battle.debuffs && state.battle.debuffs.monsters || {};
+Object.keys(mons).forEach(idx => { if (mons[idx] && mons[idx].jgMark) delete mons[idx].jgMark; });
+addDebuff('monster', 'jgMark', m.index, { turnsLeft: 999 });
+}
+}
+function subclassOnWeaponHit(m) {
+if (scIsDwarf()) return dwarfOnWeaponHit(m);
+if (scIsDrow()) return drowOnWeaponHit(m);
+if (scIsElf()) return elfOnWeaponHit(m);
+const p = state.player;
+if (p.subclass !== 'human_templar') return 0;
+const bal = scSkillData('tpBalance');
+if (bal) {
+let mp = Math.floor(bal.mp);
+if (Math.random() < bal.mp - mp) mp++;
+if (mp > 0) p.mp = Math.min(p.maxMp, p.mp + mp);
+}
+const seal = getDebuff('player', 'seal');
+return seal ? Math.floor(scHybridPower() * seal.pct / 100) : 0;
+}
+function scHybridPower() { const p = state.player; return (p.mAtk || 0) + (p.pAtk || 0) * 0.5; }
+function templarRadianceTick() {
+const p = state.player;
+const b = state.battle;
+if (!b.active || !hasSubclass('human_templar') || !semiPassiveReady('tpRadiance')) return;
+const s = SKILLS.tpRadiance;
+const d = scSkillData('tpRadiance');
+const alive = (b.monsters || []).filter(m => m.hp > 0);
+if (!alive.length) return;
+if (p.mp < d.mp) {
+if (b.tpRadTurn > 0) {
+b.tpRadTurn = 0;
+removeDebuff('player', 'radiance');
+logCombat(`☀ Сияние гаснет — нет маны.`, 'log-entry');
+}
+return;
+}
+p.mp -= d.mp;
+b.tpRadTurn = Math.min(s.maxTurns, (b.tpRadTurn || 0) + 1);
+const pct = d.base + s.ramp * (b.tpRadTurn - 1);
+addDebuff('player', 'radiance', { turn: b.tpRadTurn, turnsLeft: 999 });
+const hits = alive.map(m => {
+let dmg = Math.max(1, Math.floor(scHybridPower() * pct / 100));
+if (scIsUndead(m)) dmg *= s.undeadMult;
+return { m, miss: false, dmg: monsterTagDmg(m, dmg, ['magic', 'life']), type: 'magic', fx: 'slash' };
+});
+const r = aoeApply(hits);
+logCombat(`☀ Сияние: ${r.total} (${pct}% силы света, целей: ${hits.length})`, 'log-entry player-magic', r.kills ? `убито: ${r.kills}` : '');
+}
+function semiPassiveReady(id) {
+const p = state.player;
+return !!(p.learnedSkills[id] && Array.isArray(p.skillSlots) && p.skillSlots.includes(id) && SKILLS[id] &&
+(!SKILLS[id].subclassId || p.subclass === SKILLS[id].subclassId));
+}
+function subclassTryEvade(m) {
+const ev = getDebuff('player', 'evade');
+if (!ev || !(ev.charges > 0)) return false;
+const p = state.player;
+ev.charges -= 1;
+if (ev.charges <= 0) removeDebuff('player', 'evade'); else renderDebuffBar('player');
+const atb = (ev.atb || 0) / 100;
+if (atb > 0) state.battle.playerATB = Math.min(1, (state.battle.playerATB || 0) + atb);
+spawnFloatDamage('fighter-player', 0, 'dodge');
+logCombat(`💨 ${p.name} ускользает от ${m.name}.`, 'log-entry player-skill', atb > 0 ? `ATB +${ev.atb}%` : '');
+updateBattleUI();
+return true;
+}
+function wallguardRetort(m, cause) {
+const p = state.player;
+if (!m || m.hp <= 0 || p.hp <= 0 || !state.battle.active) return false;
+if (!semiPassiveReady('wgShieldRetort') || getDebuff('player', 'retortCd')) return false;
+const sh = wallguardShieldStats();
+if (!sh) return false;
+const s = SKILLS.wgShieldRetort;
+const d = s.levels[p.learnedSkills.wgShieldRetort - 1];
+if (cause === 'block' && Math.random() * 100 >= d.blockChance) return false;
+const base = p.pAtk + (sh.def + sh.absorb) * WALLGUARD_SHIELD_DEF_MULT;
+const variance = Math.floor(base * 0.2);
+const raw = base + Math.floor(Math.random() * variance * 2) - variance;
+let dmg = Math.floor(Math.max(1, raw - (m.pDef || 0)) * d.power);
+dmg = monsterTagDmg(m, withSkillFlat(Math.max(1, dmg)), ['physical', 'blunt']);
+m.hp -= dmg;
+spawnFloatDamage('fighter-monster', dmg, 'crit', { mon: m });
+addDebuff('player', 'retortCd', { turnsLeft: s.retortEvery || 3 });
+const notes = [cause === 'crit' ? 'в ответ на крит' : 'после блока'];
+if (m.hp > 0) { addDebuff('monster', 'stun', m.index, { turnsLeft: 1 }); notes.push('💫 оглушён'); }
+logCombat(`🛡 Ответ щита: ${dmg}`, 'log-entry player-skill', notes.join(' · '));
+if (m.hp <= 0) { m.hp = 0; onMonsterDeath(m); return true; }
+return false;
+}
+function subclassTryLastStand() {
+const p = state.player;
+const b = state.battle;
+if (!b || !b.active || b.scLastStandUsed || p.hp > 0) return false;
+if (!hasSubclass('human_wallguard')) return false;
+const lvl = p.learnedSkills.wgLastStand || 0;
+if (!lvl) return false;
+const s = SKILLS.wgLastStand;
+const d = s.levels[lvl - 1];
+b.scLastStandUsed = true;
+p.hp = 1;
+addDebuff('player', 'lastStand', { turnsLeft: s.turns, cut: d.cut });
+spawnFloatDamage('fighter-player', 0, 'block', { text: 'РУБЕЖ' });
+logCombat(`🏰 Последний рубеж! ${p.name} стоит на 1 HP: ${s.turns} хода урон −${d.cut}%.`, 'log-entry player-skill');
+updateTopStatus();
+updateBattleUI();
+return true;
+}
+function scStrongMonster(m) {
+return !!m && ((m.variantId && m.variantId !== 'normal') || (m.level || 0) >= (state.player.level || 1) + 2);
+}
+SKILLS.wgHoldLine.autoCheck = function () {
+if (getDebuff('player', 'holdLine')) return false;
+const alive = (state.battle.monsters || []).filter(m => m.hp > 0);
+return alive.length >= 2 || alive.some(scStrongMonster);
+};
+SKILLS.jgEvade.autoCheck = function () {
+const p = state.player;
+return !getDebuff('player', 'evade') && p.maxHp > 0 && p.hp / p.maxHp < 0.5;
+};
+SKILLS.tpSeal.autoCheck = function () {
+return !getDebuff('player', 'seal');
+};
+function performSubclassActive(skill, data) {
+const ok = scPerformActive(skill, data);
+if (ok && skill.freeTurn && state.battle && state.battle.active) state.battle.playerATB = Math.max(state.battle.playerATB || 0, skill.freeTurn === true ? 1 : skill.freeTurn);
+return ok;
+}
+function scPerformActive(skill, data) {
+if (scIsDwarf()) { if (!dwarfPerformActive(skill, data)) return false; updateBattleUI(); checkHealPotion(); return true; }
+if (scIsDrow()) { if (!drowPerformActive(skill, data)) return false; updateBattleUI(); checkHealPotion(); return true; }
+if (scIsElf()) { if (!elfPerformActive(skill, data)) return false; updateBattleUI(); checkHealPotion(); return true; }
+if (scIsOrc()) { if (!orcPerformActive(skill, data)) return false; updateBattleUI(); checkHealPotion(); return true; }
+const p = state.player;
+if (skill.id === 'wgHoldLine') {
+addDebuff('player', 'holdLine', { turnsLeft: skill.turns, cut: data.cut });
+const blk = getEquippedShield() ? ` и +${skill.shieldBlock}% блока` : '';
+logCombat(`🛡 Глухая оборона: ${skill.turns} ходов урон −${data.cut}%${blk}.`, 'log-entry player-skill');
+spawnFloatDamage('fighter-player', 0, 'block', { text: 'ОБОРОНА' });
+} else if (skill.id === 'jgEvade') {
+jaegerZealSpend(skill.zealCost);
+addDebuff('player', 'evade', { charges: skill.misses, atb: data.atb, turnsLeft: 999 });
+logCombat(`💨 Ускользнуть: две следующие атаки пройдут мимо.`, 'log-entry player-skill', `🎲 −${skill.zealCost} Азарта`);
+spawnFloatDamage('fighter-player', 0, 'dodge', { text: 'УХОД' });
+} else if (skill.id === 'tpSeal') {
+addDebuff('player', 'seal', { turnsLeft: skill.turns, pct: data.pct });
+logCombat(`✴ Печать света: ${skill.turns} ходов удары оружием +${data.pct}% маг. атаки светом.`, 'log-entry player-skill');
+spawnFloatDamage('fighter-player', 0, 'magic', { text: 'ПЕЧАТЬ' });
+} else if (skill.id === 'elLightning') {
+elementalistLightning(skill, data);
+} else if (skill.id === 'prBlessing') {
+addDebuff('player', 'blessing', { cut: data.cut, regen: data.regen, turnsLeft: 999 });
+logCombat(`✚ Благословение: до конца боя урон −${data.cut}%, ${data.regen}% HP за ход.`, 'log-entry player-skill');
+spawnFloatDamage('fighter-player', 0, 'heal', { text: 'БЛАГОСЛОВЕНИЕ' });
+addElementXP('life');
+} else if (skill.id === 'nmRaise') {
+const c = state.battle.nmCorpse;
+const a = necroRaise(c, data.power, 'skill');
+if (c) state.battle.nmCorpse = null;
+if (!a) logCombat(`💀 Поднять павшего: нет места для слуги.`, 'log-entry');
+addElementXP('death');
+} else {
+return false;
+}
+updateBattleUI();
+checkHealPotion();
+return true;
+}
+DEBUFF_DEFS.shock = { icon: '⚡', name: 'Под током', cssClass: 'debuff-paralysis',
+tooltip: (d) => `Под током · эффект Молнии для Сплава стихий · осталось ${d.turnsLeft} ход.` };
+DEBUFF_DEFS.weakened = { icon: '🕸', name: 'Ослаблен', cssClass: 'debuff-confused',
+tooltip: (d) => `Ослаблен · бьёт на ${d.pct}% слабее · осталось ${d.turnsLeft} ход.` };
+DEBUFF_DEFS.blessing = { icon: '✚', name: 'Благословение', cssClass: 'debuff-regen',
+displayCount: () => '',
+tooltip: (d) => `Благословение · входящий урон −${d.cut}%, ${d.regen}% HP за ход · до конца боя.` };
+DEBUFF_DEFS.barrier = { icon: '🔆', name: 'Барьер Благодати', cssClass: 'debuff-guard',
+displayCount: (d) => d.amount || 0,
+tooltip: (d) => `Барьер Благодати · примет ещё ${d.amount || 0} урона · пропадёт после боя.` };
+DEBUFF_DEFS.intercedeCd = { icon: '⏳', name: 'Заступничество: перезарядка', cssClass: 'debuff-paraimmune',
+tooltip: (d) => `Заступничество перезаряжается · ещё ${d.turnsLeft} ход.` };
+function elementalistEffectsOn(m) {
+if (!m) return 0;
+return ['burn', 'freeze', 'shock'].filter(id => getDebuff('monster', id, m.index)).length;
+}
+const SC_SPELL_ELEM = { fireball: 'fire', iceArrow: 'ice', elLightning: 'lightning', elementalVolley: 'storm' };
+function subclassSpellElem(skillId, elemId) {
+if (scIsDrow()) return drowSpellElem(skillId, elemId);
+if (scIsElf()) return (hasSubclass('elf_grovekeeper') && skillId === 'fireball') ? 'life' : elemId;
+if (scIsOrc()) return orcSpellElem(skillId, elemId);
+const p = state.player;
+if (skillId !== 'fireball' && skillId !== 'iceArrow') return elemId;
+if (p.subclass === 'human_priest') return 'life';
+if (p.subclass === 'human_necromancer') return 'death';
+return elemId;
+}
+function subclassMpCost(skill, cost) {
+if (scIsDwarf()) return dwarfMpCost(skill, cost);
+if (scIsDrow()) return drowMpCost(skill, cost);
+if (scIsOrc()) return orcMpCost(skill, cost);
+const p = state.player;
+if (p.subclass !== 'human_elementalist' || !cost) return cost;
+const elem = SC_SPELL_ELEM[skill.id];
+if (!elem) return cost;
+const b = state.battle;
+const prev = b.elLastElem;
+b.elLastElem = elem;
+const d = scSkillData('elShift');
+if (d && prev && prev !== elem) return Math.max(1, Math.ceil(cost * (1 - d.pct / 100)));
+return cost;
+}
+function subclassSpellDmg(skill, m, dmg) {
+if (scIsOrc()) return orcSpellDmg(skill, m, dmg);
+const p = state.player;
+if (!m) return dmg;
+if (p.subclass === 'human_elementalist' && skill.id === 'fireball' && getDebuff('monster', 'freeze', m.index)) {
+removeDebuff('monster', 'freeze', m.index);
+m._elShatter = true;
+return Math.floor(dmg * SUBCLASSES.human_elementalist.mods.fireball.shatterMult);
+}
+if (p.subclass === 'elf_grovekeeper' && skill.id === 'fireball') return Math.floor(dmg * SUBCLASSES.elf_grovekeeper.mods.fireball.dmgMult);
+if (p.subclass === 'human_priest' && skill.id === 'fireball' && scIsUndead(m)) {
+return Math.floor(dmg * SUBCLASSES.human_priest.mods.fireball.undeadMult);
+}
+if (p.subclass === 'human_necromancer' && skill.id === 'fireball') m._nmRaise = true;
+return dmg;
+}
+function subclassSpellAfter(skill, m, dmg) {
+if (scIsDwarf()) return dwarfSpellAfter(skill, m, dmg);
+if (scIsDrow()) return drowSpellAfter(skill, m, dmg);
+if (scIsElf()) return elfSpellAfter(skill, m, dmg);
+if (scIsOrc()) return orcSpellAfter(skill, m, dmg);
+const p = state.player;
+const sc = p.subclass;
+if (skill.id !== 'fireball' && skill.id !== 'iceArrow') return false;
+if (sc === 'human_elementalist' && skill.id === 'fireball') {
+spawnFloatDamage('fighter-monster', dmg, 'fire');
+const d = getSkillData('fireball');
+const pureMAtk = Math.floor(5 + p.INT * 0.8);
+const burnDmg = Math.max(1, Math.floor(pureMAtk * (d.burnPercent / 100)));
+const notes = [];
+if (m._elShatter) { notes.push('❄🔥 Раскол ×1.5'); m._elShatter = false; }
+if (m.hp > 0) { addDebuff('monster', 'burn', m.index, { turnsLeft: skill.burnTurns, damage: burnDmg }); notes.push(`🔥 поджог ${burnDmg} × ${skill.burnTurns} хода`); }
+logCombat(`🔥 ${skill.name}: ${dmg}`, 'log-entry player-skill', notes.join(' · '));
+return true;
+}
+if (sc === 'human_priest') {
+spawnFloatDamage('fighter-monster', dmg, 'magic');
+const notes = [];
+if (skill.id === 'fireball') {
+const heal = aoeHeal(dmg * SUBCLASSES.human_priest.mods.fireball.healPct / 100);
+if (scIsUndead(m)) notes.push('нежить ×1.5');
+if (heal > 0) notes.push(`✚ +${heal} HP`);
+logCombat(`✚ ${skill.name}: ${dmg}`, 'log-entry player-magic', notes.join(' · '));
+} else {
+const d = getSkillData('iceArrow');
+const mod = SUBCLASSES.human_priest.mods.iceArrow;
+if (m.hp > 0) {
+if (Math.random() * 100 < d.stun) { addDebuff('monster', 'stun', m.index, { turnsLeft: 1 }); notes.push('💫 оглушён'); }
+addDebuff('monster', 'weakened', m.index, { turnsLeft: mod.weakTurns, pct: mod.weakPct });
+notes.push(`бьёт слабее на ${mod.weakPct}%`);
+}
+logCombat(`✚ ${skill.name}: ${dmg}`, 'log-entry player-magic', notes.join(' · '));
+}
+return true;
+}
+if (sc === 'human_necromancer') {
+spawnFloatDamage('fighter-monster', dmg, 'magic');
+const notes = [];
+if (skill.id === 'fireball') {
+if (m.hp > 0) m._nmRaise = false;
+else notes.push(alliesHasRoom() ? '💀 встанет слугой' : 'места для слуги нет');
+} else if (m.hp > 0) {
+const d = getSkillData('iceArrow');
+addDebuff('monster', 'weakened', m.index, { turnsLeft: SUBCLASSES.human_necromancer.mods.iceArrow.weakTurns, pct: d.weak });
+notes.push(`бьёт слабее на ${d.weak}%`);
+}
+logCombat(`💀 ${skill.name}: ${dmg}`, 'log-entry player-magic', notes.join(' · '));
+return true;
+}
+return false;
+}
+function subclassVolley(skill, data) {
+const p = state.player;
+const sc = p.subclass;
+if (sc === 'human_elementalist') {
+const ELEM = ['fire', 'ice', 'lightning'];
+const hits = [];
+let burned = 0, froze = 0, shocked = 0;
+for (let i = 0; i < data.shots; i++) {
+const alive = aoeAlive();
+if (!alive.length) break;
+const m = alive[Math.floor(Math.random() * alive.length)];
+const el = i < 3 ? ELEM[i] : ELEM[Math.floor(Math.random() * 3)];
+const h = aoeMagHit(m, data.multiplier, el);
+hits.push({ m, ...h, type: el === 'fire' ? 'fire' : 'magic', fx: 'proj:' + (el === 'fire' ? 'fire' : el === 'ice' ? 'ice' : 'arcane') });
+if (h.miss) continue;
+if (el === 'lightning') addDebuff('monster', 'shock', m.index, { turnsLeft: SKILLS.elLightning.shockTurns });
+if (Math.random() * 100 < data.effectChance) {
+if (el === 'fire') { addDebuff('monster', 'burn', m.index, { turnsLeft: 3, damage: Math.max(1, Math.floor(Math.floor(5 + p.INT * 0.8) * 0.12)) }); burned++; }
+else if (el === 'ice') { addDebuff('monster', 'freeze', m.index, { turnsLeft: 1 }); froze++; }
+else { cutMonstersATB(0.15); shocked++; }
+}
+}
+const r = aoeApply(hits);
+aoeGiveXp(skill, ELEM);
+const notes = [];
+if (burned) notes.push(`🔥 подожжено: ${burned}`);
+if (froze) notes.push(`❄ заморожено: ${froze}`);
+if (shocked) notes.push(`⚡ ATB стаи −${15 * shocked}%`);
+if (!getDebuff('player', 'resonance')) { addDebuff('player', 'resonance', { turnsLeft: 1 }); notes.push('✦ резонанс: следующий Шар или Стрела без маны'); }
+return { line: `✦ ${skill.name}: ${r.total} (снарядов: ${hits.length})`, notes };
+}
+if (sc === 'human_priest') {
+const hits = [];
+let healed = 0;
+for (let i = 0; i < data.shots; i++) {
+const alive = aoeAlive();
+if (!alive.length) break;
+const m = alive[Math.floor(Math.random() * alive.length)];
+const h = aoeMagHit(m, data.multiplier, 'life');
+hits.push({ m, ...h, type: 'magic', fx: 'proj:arcane' });
+if (!h.miss) healed += aoeHeal(p.maxHp * data.heal / 100);
+}
+const r = aoeApply(hits);
+aoeGiveXp(skill, ['life']);
+return { line: `✚ ${skill.name}: ${r.total} (капель: ${hits.length})`, notes: healed > 0 ? [`✚ +${healed} HP`] : [] };
+}
+if (sc === 'human_necromancer') {
+const targets = aoeTargets(data.targets);
+targets.forEach(m => { m._nmRaise = true; });
+const hits = targets.map(m => ({ m, ...aoeMagHit(m, data.multiplier, 'death'), type: 'magic', fx: 'proj:arcane' }));
+const before = alliesList().length;
+const r = aoeApply(hits);
+targets.forEach(m => { if (m.hp > 0) m._nmRaise = false; });
+aoeGiveXp(skill, ['death']);
+const risen = alliesList().length - before;
+return { line: `💀 ${skill.name}: ${r.total} (целей: ${hits.length})`, notes: risen > 0 ? [`встало слуг: ${risen}`] : [] };
+}
+return null;
+}
+function elementalistLightning(skill, data) {
+const m = getCurrentMonster();
+if (!m || m.hp <= 0) return;
+const h = aoeMagHit(m, data.multiplier, 'lightning');
+const hits = [{ m, ...h, type: 'magic', fx: 'proj:arcane' }];
+const notes = [];
+addElementXP('lightning');
+if (!h.miss) {
+cutMonstersATB(data.atbCut / 100);
+notes.push(`ATB −${data.atbCut}%`);
+if (m.maxMp > 0 && m.mp > 0) {
+const burn = Math.min(m.mp, Math.ceil(m.maxMp * data.manaBurn / 100));
+m.mp -= burn;
+if (m.mp <= 0 && typeof monsterManaBroke === 'function') monsterManaBroke(m);
+notes.push(`мана −${burn}`);
+}
+if (getDebuff('monster', 'burn', m.index)) {
+const burst = Math.max(1, Math.floor(h.dmg * skill.burstPct / 100));
+aoeAlive().filter(x => x !== m).forEach(x => hits.push({ m: x, miss: false, dmg: monsterTagDmg(x, burst, ['magic', 'fire']), type: 'fire', fx: 'proj:fire' }));
+if (hits.length > 1) notes.push(`💥 взрыв: ${hits.length - 1}`);
+}
+addDebuff('monster', 'shock', m.index, { turnsLeft: skill.shockTurns });
+}
+const r = aoeApply(hits);
+logCombat(`⚡ ${skill.name}: ${h.miss ? 'промах' : r.total}`, 'log-entry player-magic', notes.join(' · '));
+}
+function subclassOnMonsterDeath(m) {
+if (scIsDwarf()) { dwarfOnMonsterDeath(m); return; }
+if (scIsDrow()) { drowOnMonsterDeath(m); return; }
+if (scIsElf()) { elfOnMonsterDeath(m); return; }
+if (scIsOrc()) { orcOnMonsterDeath(m); return; }
+const p = state.player;
+const b = state.battle;
+if (p.subclass === 'human_elementalist' && semiPassiveReady('elEcho')) {
+const d = scSkillData('elEcho');
+const others = (b.monsters || []).filter(x => x !== m && x.hp > 0);
+if (others.length && Math.random() * 100 < d.chance) {
+const jumped = [];
+[['burn', '🔥'], ['freeze', '❄'], ['shock', '⚡']].forEach(([id, ic]) => {
+const deb = getDebuff('monster', id, m.index);
+if (!deb) return;
+const t = others[Math.floor(Math.random() * others.length)];
+addDebuff('monster', id, t.index, Object.assign({}, deb));
+jumped.push(`${ic} → ${t.name}`);
+});
+if (jumped.length) logCombat(`✦ Отголосок: ${jumped.join(', ')}`, 'log-entry player-magic');
+}
+}
+if (p.subclass === 'human_necromancer') {
+const snap = { name: m.name, maxHp: m.maxHp, atk: m.atk, tags: (m.tags || []).slice() };
+if (m._nmRaise && alliesHasRoom()) { m._nmRaise = false; necroRaise(snap, necroRaisePower(), 'free'); }
+else b.nmCorpse = snap;
+}
+}
+function subclassOnHeroHeal(healed, overflow) {
+if (scIsDwarf()) return;
+if (scIsDrow()) { drowOnHeroHeal(healed, overflow); return; }
+if (scIsElf()) { elfOnHeroHeal(healed, overflow); return; }
+if (scIsOrc()) { orcOnHeroHeal(healed, overflow); return; }
+const p = state.player;
+const b = state.battle;
+if (p.subclass !== 'human_priest' || !b || !b.active) return;
+const g = scSkillData('prGrace');
+if (g && overflow > 0) {
+const cap = Math.floor(p.maxHp * g.cap / 100);
+const next = Math.min(cap, (b.prBarrier || 0) + Math.floor(overflow));
+if (next !== b.prBarrier) {
+b.prBarrier = next;
+if (next > 0) addDebuff('player', 'barrier', { amount: next, turnsLeft: 999 });
+}
+}
+const c = scSkillData('prCleanse');
+if (c && healed > 0) {
+b.prCleanseAcc = (b.prCleanseAcc || 0) + healed;
+const step = p.maxHp * c.step / 100;
+while (b.prCleanseAcc >= step) {
+b.prCleanseAcc -= step;
+const bad = ['poison', 'bleed', 'web'].find(id => getDebuff('player', id));
+if (!bad) { b.prCleanseAcc = Math.min(b.prCleanseAcc, step); break; }
+removeDebuff('player', bad);
+logCombat(`✚ Очищение: снят эффект «${DEBUFF_DEFS[bad].name}».`, 'log-entry potion');
+}
+}
+}
+function priestBlessingTick() {
+const bl = getDebuff('player', 'blessing');
+if (!bl || !state.battle.active) return;
+aoeHeal(state.player.maxHp * bl.regen / 100);
+}
+function subclassAbsorbHit(dmg) {
+if (scIsDwarf()) return (dmg > 0 && state.battle && state.battle.active) ? dwarfAbsorbHit(dmg) : dmg;
+if (scIsDrow()) return dmg;
+if (scIsElf()) return (dmg > 0 && state.battle && state.battle.active) ? elfAbsorbHit(dmg) : dmg;
+if (scIsOrc()) return (dmg > 0 && state.battle && state.battle.active) ? orcAbsorbHit(dmg) : dmg;
+const p = state.player;
+const b = state.battle;
+if (dmg <= 0 || !b || !b.active) return dmg;
+if (p.subclass === 'human_priest' && b.prBarrier > 0) {
+const take = Math.min(b.prBarrier, dmg);
+b.prBarrier -= take;
+dmg -= take;
+if (b.prBarrier > 0) addDebuff('player', 'barrier', { amount: b.prBarrier, turnsLeft: 999 });
+else removeDebuff('player', 'barrier');
+logCombat(`🔆 Барьер Благодати принял ${take} урона.`, 'log-entry potion', b.prBarrier > 0 ? `осталось ${b.prBarrier}` : 'барьер рассыпался');
+return dmg;
+}
+if (p.subclass === 'human_necromancer' && semiPassiveReady('nmBonePlate')) {
+const d = scSkillData('nmBonePlate');
+if (dmg > p.maxHp * d.over / 100) {
+const a = allyTakeDamageFor(dmg);
+if (a) {
+logCombat(`🦴 Костяная плата: удар в ${dmg} принял ${a.name}.`, 'log-entry player-skill');
+return 0;
+}
+}
+}
+return dmg;
+}
+function subclassAfterHeroHit() {
+if (scIsDwarf()) { dwarfAfterHeroHit(arguments[0], arguments[1], arguments[2]); return; }
+if (scIsDrow()) { drowAfterHeroHit(arguments[0], arguments[1], arguments[2]); return; }
+if (scIsElf()) { elfAfterHeroHit(arguments[0], arguments[1], arguments[2]); return; }
+if (scIsOrc()) { orcAfterHeroHit(); return; }
+const p = state.player;
+if (p.hp <= 0 || p.subclass !== 'human_priest' || !semiPassiveReady('prIntercede')) return;
+const s = SKILLS.prIntercede;
+if (getDebuff('player', 'intercedeCd') || p.hp / p.maxHp * 100 >= s.threshold) return;
+const d = scSkillData('prIntercede');
+const heal = aoeHeal(p.maxHp * d.heal / 100);
+addDebuff('player', 'intercedeCd', { turnsLeft: s.every });
+logCombat(`✚ Заступничество: +${heal} HP.`, 'log-entry potion');
+}
+SKILLS.prBlessing.autoCheck = function () { return !getDebuff('player', 'blessing'); };
+function necroAllies() { return typeof alliesList === 'function' ? alliesList() : []; }
+function necroRaisePower() {
+const d = scSkillData('nmRaise');
+return d ? d.power : SKILLS.nmRaise.levels[0].power;
+}
+function necroKindFor(tags) {
+if (tags.includes('flesh')) return 'zombie';
+if (tags.includes('construct') || tags.includes('stone') || tags.includes('wood')) return 'spirit';
+return 'skeleton';
+}
+function necroRaise(src, powerPct, how) {
+const p = state.player;
+if (!alliesHasRoom()) return null;
+const f = powerPct / 100;
+let a;
+if (src) {
+const kind = necroKindFor(src.tags || []);
+const K = NECRO_KINDS[kind];
+a = { kind, name: K.name, img: K.img, hp: src.maxHp * K.hp * f, atk: src.atk * K.atk * f * 2, dodge: K.dodge, slow: K.slow, from: src.name };
+} else {
+const K = NECRO_KINDS.skeleton;
+a = { kind: 'skeleton', name: 'Скелет-страж', img: K.img, hp: p.maxHp * 0.4, atk: p.mAtk * 0.5, dodge: K.dodge, slow: false };
+}
+const bonds = scSkillData('nmBonds');
+if (bonds) { a.atk += p.mAtk * bonds.atk / 100; a.hp += p.maxHp * bonds.hp / 100; }
+a.maxHp = a.hp;
+const added = alliesAdd(a);
+if (added) {
+logCombat(`💀 Встаёт ${added.name}${added.from ? ` (из «${added.from}»)` : ''}: ${added.hp} HP, удар ${added.atk}.`, 'log-entry player-skill', how === 'free' ? 'бесплатно' : '');
+spawnFloatDamage('fighter-player', 0, 'magic', { text: 'ВСТАНЬ' });
+}
+return added;
+}
+function subclassOnAllyDeath(a) {
+if (scIsDwarf()) { dwarfOnAllyDeath(a); return; }
+if (scIsElf()) { elfOnAllyDeath(a); return; }
+if (scIsOrc()) { orcOnAllyDeath(a); return; }
+const p = state.player;
+if (p.subclass !== 'human_necromancer') return;
+const d = scSkillData('nmFeast');
+if (!d) return;
+const mp = Math.floor(p.maxMp * d.mp / 100);
+const got = Math.min(mp, p.maxMp - p.mp);
+p.mp += got;
+if (got > 0) logCombat(`💀 Пир смерти: +${got} MP.`, 'log-entry player-magic');
+}
+SKILLS.nmRaise.autoCheck = function () { return alliesHasRoom(); };
+function scIsOrc() {
+const p = state.player;
+return !!(p && p.raceId === 'orc' && p.subclass);
+}
+function scHpPct() {
+const p = state.player;
+return p.maxHp > 0 ? p.hp / p.maxHp * 100 : 100;
+}
+function scTwoHanded() {
+return typeof isTwoHandGripWeapon === 'function' && isTwoHandGripWeapon(state.player.equipment.weapon);
+}
+function scTotems() { return (typeof alliesList === 'function' ? alliesList() : []).filter(a => a.totem); }
+DEBUFF_DEFS.trance = { icon: '🥁', name: 'Боевой транс', cssClass: 'debuff-regen',
+tooltip: (d) => `Боевой транс · реген ×${d.mult}, ${d.heal}% HP за ход · осталось ${d.turnsLeft} ход.` };
+DEBUFF_DEFS.frenzy = { icon: '🩸', name: 'Неистовство', cssClass: 'debuff-bleed',
+tooltip: (d) => `Неистовство · ATB +${d.atb}%, урон +${d.dmg}%, входящий +${d.def}% · осталось ${d.turnsLeft} ход.` };
+DEBUFF_DEFS.ancestor = { icon: '🐺', name: 'Дух предка', cssClass: 'debuff-rune',
+displayCount: (d) => d.turnsLeft,
+tooltip: (d) => d.form === 'wolf' ? `Волк · ATB и урон +${d.pct}% · осталось ${d.turnsLeft} ход.` : `Медведь · входящий урон −${d.pct}%, 2% HP за ход · осталось ${d.turnsLeft} ход.` };
+DEBUFF_DEFS.warpaint = { icon: '🎨', name: 'Боевая раскраска', cssClass: 'debuff-rune',
+displayCount: () => '',
+tooltip: (d) => `Боевая раскраска · урон +${d.dmg}%, входящий −${d.cut}% · до конца боя.` };
+DEBUFF_DEFS.bondCd = { icon: '⏳', name: 'Кровная связь: перезарядка', cssClass: 'debuff-paraimmune',
+tooltip: (d) => `Кровная связь перезаряжается · ещё ${d.turnsLeft} ход.` };
+DEBUFF_DEFS.guardianCd = { icon: '⏳', name: 'Дух-хранитель: перезарядка', cssClass: 'debuff-paraimmune',
+tooltip: (d) => `Дух-хранитель отдыхает · ещё ${d.turnsLeft} ход.` };
+DEBUFF_DEFS.thirstCd = { icon: '⏳', name: 'Жажда крови: перезарядка', cssClass: 'debuff-paraimmune',
+tooltip: (d) => `Жажда крови · ещё ${d.turnsLeft} ход.` };
+DEBUFF_DEFS.curseWither = { icon: '🥀', name: 'Сухотка', cssClass: 'debuff-rot',
+tooltip: (d) => `Сухотка · ${Math.floor(d.dmg)} урона в следующий ход, растёт ×1.5 · осталось ${d.turnsLeft} ход.` };
+DEBUFF_DEFS.curseAche = { icon: '🦴', name: 'Ломота', cssClass: 'debuff-rot',
+tooltip: (d) => `Ломота · ${Math.floor(d.dmg)} урона каждый раз, когда тварь действует · осталось ${d.turnsLeft} ход.` };
+DEBUFF_DEFS.curseDoom = { icon: '⚖', name: 'Приговор', cssClass: 'debuff-rot',
+displayCount: (d) => Math.floor(d.stored || 0),
+tooltip: (d) => `Приговор · накоплено ${Math.floor(d.stored || 0)} урона, выдаст через ${d.turnsLeft} ход.` };
+function orcHeroDmgMult(m) {
+const p = state.player;
+let mult = 1;
+const fr = getDebuff('player', 'frenzy');
+if (fr) mult *= 1 + fr.dmg / 100;
+const an = getDebuff('player', 'ancestor');
+if (an && an.form === 'wolf') mult *= 1 + an.pct / 100;
+const wp = getDebuff('player', 'warpaint');
+if (wp) mult *= 1 + wp.dmg / 100;
+if (p.subclass === 'orc_berserker' && scTwoHanded()) {
+const d = scSkillData('bkTwoHand');
+if (d) mult *= 1 + d.dmg / 100;
+}
+return mult;
+}
+function orcDamageTakenMult(attacker) {
+let mult = 1;
+const fr = getDebuff('player', 'frenzy');
+if (fr) mult *= 1 + fr.def / 100;
+const an = getDebuff('player', 'ancestor');
+if (an && an.form === 'bear') mult *= 1 - an.pct / 100;
+const wp = getDebuff('player', 'warpaint');
+if (wp) mult *= 1 - wp.cut / 100;
+if (attacker) mult *= subclassMonsterWeakMult(attacker);
+return mult;
+}
+function orcCritMultBonus(cat) {
+if (!hasSubclass('orc_berserker') || !scTwoHanded()) return 0;
+const d = scSkillData('bkTwoHand');
+return d ? d.crit / 100 : 0;
+}
+function subclassAtbMult() {
+let mult = 1;
+const fr = getDebuff('player', 'frenzy');
+if (fr) mult *= 1 + fr.atb / 100;
+const an = getDebuff('player', 'ancestor');
+if (an && an.form === 'wolf') mult *= 1 + an.pct / 100;
+const wd = getDebuff('player', 'wind');
+if (wd) mult *= 1 + wd.atb / 100;
+if (typeof drowAtbMult === 'function') mult *= drowAtbMult();
+return mult;
+}
+function subclassRegen() {
+const p = state.player;
+let mult = 1, add = 0;
+const tr = getDebuff('player', 'trance');
+if (tr) mult = tr.mult;
+if (p.subclass === 'orc_rock') {
+const d = scSkillData('rkBoil');
+if (d) add += d.regen * Math.floor((100 - scHpPct()) / 10);
+}
+if (typeof drowRegenMult === 'function') mult *= drowRegenMult();
+return { mult, add };
+}
+function orcApplyPassives(p) {
+if (p.subclass === 'orc_berserker') {
+const d = scSkillData('bkTwoHand');
+if (d && scTwoHanded()) {
+p.evasionBonus += TWO_HAND_EVASION_PENALTY / 2;
+p.skillBonuses.push(`Двуручник (ур.${scSkillLvl('bkTwoHand')}): +${d.dmg}% урона, +${d.crit}% урона крита, штраф уворота вдвое меньше`);
+} else if (d) p.skillBonuses.push(`Двуручник: не действует — нужно двуручное оружие`);
+const e = scSkillData('bkEdge');
+if (e) p.skillBonuses.push(`На краю (ур.${scSkillLvl('bkEdge')}): ниже 50% HP вампиризм ${e.steal}%, ниже 25% — ${e.steal * 2}%`);
+} else if (p.subclass === 'orc_chieftain') {
+const d = scSkillData('chAncestralBlood');
+if (d) {
+const add = Math.floor(p.maxHp * d.pct / 100);
+p.scMAtkAdd = (p.scMAtkAdd || 0) + add;
+p.skillBonuses.push(`Кровь предков (ур.${scSkillLvl('chAncestralBlood')}): +${add} маг. атаки от макс. HP`);
+}
+} else if (p.subclass === 'orc_rock') {
+const h = scSkillData('rkHide');
+if (h) p.skillBonuses.push(`Шкура вместо щита (ур.${scSkillLvl('rkHide')}): ${h.chance}% принять удар на шкуру (−50%)${getEquippedShield() ? ' — не действует со щитом' : ''}`);
+}
+}
+function orcStrikeMult(skill, data, m, notes) {
+const p = state.player;
+let mult = data.multiplier;
+if (skill.id !== 'orcRage') return mult;
+const lost = Math.max(0, 100 - scHpPct());
+if (p.subclass === 'orc_rock') {
+mult *= 1 + lost / 100;
+if (lost >= 10) notes.push(`ярость ×${(1 + lost / 100).toFixed(2)}`);
+} else if (p.subclass === 'orc_berserker') {
+const bonus = Math.min(SUBCLASSES.orc_berserker.mods.orcRage.maxBonus, lost);
+mult *= 1 + bonus / 100;
+if (bonus >= 5) notes.push(`безумие +${Math.round(bonus)}%`);
+}
+return mult;
+}
+function orcHitAtk(skillId) {
+const p = state.player;
+if (p.subclass === 'orc_chieftain' && skillId === 'powerStrike') return Math.floor(p.mAtk * SUBCLASSES.orc_chieftain.mods.powerStrike.magPart);
+return 0;
+}
+function subclassStrikeDef(skill, def, m) {
+const p = state.player;
+if (p.subclass === 'elf_pathfinder') {
+let cut = 0;
+if (skill.id === 'powerStrike') cut += getSkillData('powerStrike').pierce || 0;
+const h = scSkillData('pfHawk'); if (h) cut += h.ignore;
+return Math.floor(def * Math.max(0, 1 - cut / 100));
+}
+if (p.subclass === 'orc_berserker' && skill.id === 'powerStrike' && scTwoHanded()) {
+const d = getSkillData('powerStrike');
+return Math.floor(def * (1 - (d.pierce || 0) / 100));
+}
+if (p.subclass === 'orc_chieftain' && skill.id === 'orcRage' && m) {
+return Math.floor((def + (m.mDef || 0)) / 2);
+}
+return def;
+}
+function subclassStrikeFlat(skill, m) {
+const p = state.player;
+if (p.subclass === 'orc_rock' && skill.id === 'powerStrike') {
+const d = getSkillData('powerStrike');
+return Math.floor(p.maxHp * (d.hpPct || 0) / 100);
+}
+if (p.subclass === 'orc_chieftain' && skill.id === 'powerStrike' && m) {
+return Math.floor((m.maxHp || 0) * SUBCLASSES.orc_chieftain.mods.powerStrike.enemyHpPct / 100);
+}
+return 0;
+}
+function orcAfterStrike(skill, m, hitsLanded, totalDamage) {
+const p = state.player;
+if (p.subclass === 'orc_rock') {
+if (skill.id === 'powerStrike' && m && m.hp > 0 && Math.random() * 100 < SUBCLASSES.orc_rock.mods.powerStrike.stun) {
+addDebuff('monster', 'stun', m.index, { turnsLeft: 1 });
+return '💫 оглушён тараном';
+}
+if (skill.id === 'orcRage' && totalDamage > 0) {
+const heal = aoeHeal(totalDamage * SUBCLASSES.orc_rock.mods.orcRage.lifePct / 100);
+return heal > 0 ? `🩸 +${heal} HP` : '';
+}
+}
+return '';
+}
+function subclassRecoilHook(skill, recoil) {
+const p = state.player;
+if (p.subclass === 'orc_berserker' && skill.id === 'orcRage' && scHpPct() < SUBCLASSES.orc_berserker.mods.orcRage.noRecoilBelow) {
+logCombat(`🩸 На краю безумия — отдачи нет.`, 'log-entry player-skill');
+return true;
+}
+if (p.subclass === 'orc_shaman' && skill.id === 'spiritWrath') {
+const t = scTotems();
+if (t.length) {
+const tot = t.reduce((a, b) => (b.hp > a.hp ? b : a), t[0]);
+tot.hp -= recoil;
+logCombat(`🗿 Отдачу Гнева (${recoil}) принял ${tot.name}.`, 'log-entry player-skill');
+alliesReap(); alliesRender();
+return true;
+}
+}
+return false;
+}
+function subclassHarvest(data) {
+const p = state.player;
+if (p.subclass === 'orc_berserker' && scTwoHanded()) {
+const mod = SUBCLASSES.orc_berserker.mods.bloodHarvest;
+return { targets: data.targets + mod.twoHandTargets, mult: data.multiplier * mod.twoHandMult };
+}
+return { targets: data.targets, mult: data.multiplier };
+}
+function subclassAfterHarvest(hits) {
+const p = state.player;
+const alive = hits.filter(h => !h.miss && h.m && h.m.hp > 0).map(h => h.m);
+if (!alive.length) return '';
+if (p.subclass === 'orc_rock') {
+const mod = SUBCLASSES.orc_rock.mods.bloodHarvest;
+alive.forEach(m => addDebuff('monster', 'weakened', m.index, { turnsLeft: mod.roarTurns, pct: mod.roarPct }));
+return `📣 рык: ${alive.length}`;
+}
+if (p.subclass === 'orc_chieftain') {
+const d = getSkillData('bloodHarvest');
+const per = Math.max(1, Math.floor(p.mAtk * SUBCLASSES.orc_chieftain.mods.bloodHarvest.rotPct / 100));
+alive.forEach(m => addRotLayer(m, d.rotTurns || 2, per, 2));
+return `☠ гниение: ${alive.length}`;
+}
+return '';
+}
+function orcMpCost(skill, cost) {
+const p = state.player;
+if (p.subclass !== 'orc_berserker' || skill.id === 'bkFrenzy') return cost;
+if (scHpPct() <= BERSERK_FREE_BELOW) return 0;
+const hp = Math.min(Math.floor(p.maxHp * BERSERK_HP_COST / 100), Math.max(0, p.hp - 1));
+if (hp > 0) {
+p.hp -= hp;
+state.battle.bkPaid = (state.battle.bkPaid || 0) + hp;
+spawnFloatDamage('fighter-player', hp, 'dmg');
+}
+return 0;
+}
+let scDoomRelease = false;
+function subclassOnHeroDamage(m, dmg) {
+if (scIsDrow()) { drowOnHeroDamage(m, dmg); return; }
+if (scIsElf()) { elfOnHeroDamage(m, dmg); return; }
+const p = state.player;
+if (!m || dmg <= 0 || !scIsOrc()) return;
+if (p.subclass === 'orc_berserker') {
+const e = scSkillData('bkEdge');
+const hp = scHpPct();
+if (e && hp < 50) {
+const pct = e.steal * (hp < 25 ? 2 : 1);
+const want = Math.floor(dmg * pct / 100);
+if (want > 0) { const got = Math.min(want, p.maxHp - p.hp); if (got > 0) p.hp += got; }
+}
+} else if (p.subclass === 'orc_hexer' && !scDoomRelease) {
+const doom = getDebuff('monster', 'curseDoom', m.index);
+if (doom) doom.stored = (doom.stored || 0) + dmg * 0.3;
+}
+}
+const HEX_CURSES = ['curseWither', 'curseAche', 'curseDoom'];
+function hexerCursesOn(m) {
+if (!m) return 0;
+return HEX_CURSES.concat(['rot']).filter(id => getDebuff('monster', id, m.index)).length;
+}
+function hexerNextCurse(m) {
+if (!m || m.hp <= 0) return null;
+return HEX_CURSES.find(id => !getDebuff('monster', id, m.index)) || null;
+}
+function hexerCurseMult(m) {
+const d = scSkillData('hxBlackBook');
+return d ? 1 + d.pct / 100 * hexerCursesOn(m) : 1;
+}
+function hexerCurseHit(m, raw, label) {
+const dmg = monsterTagDmg(m, Math.max(1, Math.floor(raw * hexerCurseMult(m))), ['magic', 'death']);
+return { m, miss: false, dmg, type: 'poison', fx: 'toxic-small', label };
+}
+function hexerCastCurse(skill, data) {
+const p = state.player;
+const m = getCurrentMonster();
+const id = hexerNextCurse(m);
+if (!id) { logCombat(`☠ ${skill.name}: на цели уже все проклятия.`, 'log-entry'); return; }
+const base = p.mAtk * data.base / 100;
+if (id === 'curseWither') addDebuff('monster', id, m.index, { turnsLeft: 6, dmg: base * 0.3 });
+else if (id === 'curseAche') addDebuff('monster', id, m.index, { turnsLeft: 5, dmg: base });
+else addDebuff('monster', id, m.index, { turnsLeft: 3, stored: 0 });
+addElementXP('death');
+spawnFloatDamage('fighter-monster', 0, 'poison', { mon: m, fx: 'toxic', text: DEBUFF_DEFS[id].name.toUpperCase() });
+logCombat(`☠ ${skill.name}: ${DEBUFF_DEFS[id].icon} ${DEBUFF_DEFS[id].name} на ${m.name}.`, 'log-entry poison', `проклятий на цели: ${hexerCursesOn(m)}`);
+}
+function hexerCurseTick() {
+const b = state.battle;
+if (!b.active) return;
+const hits = [];
+const notes = [];
+(b.monsters || []).filter(m => m.hp > 0).forEach(m => {
+const w = getDebuff('monster', 'curseWither', m.index);
+if (w) {
+hits.push(hexerCurseHit(m, w.dmg, 'Сухотка'));
+w.dmg *= 1.5;
+w.turnsLeft -= 1;
+if (w.turnsLeft <= 0) removeDebuff('monster', 'curseWither', m.index);
+}
+const d = getDebuff('monster', 'curseDoom', m.index);
+if (d) {
+d.turnsLeft -= 1;
+if (d.turnsLeft <= 0) {
+removeDebuff('monster', 'curseDoom', m.index);
+if (d.stored >= 1) { hits.push(hexerCurseHit(m, d.stored, 'Приговор')); notes.push(`⚖ приговор ${m.name}`); }
+}
+}
+});
+if (!hits.length) return;
+scDoomRelease = true;
+const r = aoeApply(hits);
+scDoomRelease = false;
+logCombat(`☠ Проклятия: ${r.total}`, 'log-entry poison', notes.concat(r.kills ? [`убито: ${r.kills}`] : []).join(' · '));
+renderDebuffBar('monster');
+}
+function subclassOnMonsterAct(m) {
+if (scIsDwarf()) { if (m && m.hp > 0) dwarfOnMonsterAct(m); return; }
+if (!hasSubclass('orc_hexer') || !m || m.hp <= 0) return;
+const a = getDebuff('monster', 'curseAche', m.index);
+if (!a) return;
+const h = hexerCurseHit(m, a.dmg, 'Ломота');
+scDoomRelease = true;
+const r = aoeApply([h]);
+scDoomRelease = false;
+logCombat(`🦴 Ломота: ${r.total}`, 'log-entry poison', r.kills ? 'тварь сломалась' : '');
+}
+function orcSpellElem(skillId, elemId) {
+if (hasSubclass('orc_healer') && skillId === 'fireball') return 'death';
+return elemId;
+}
+function orcSpellDmg(skill, m, dmg) {
+const p = state.player;
+if (!m) return dmg;
+if (p.subclass === 'orc_hexer' && skill.id === 'spiritWrath') {
+const rot = getDebuff('monster', 'rot', m.index);
+const layers = rot ? rotLayers(rot).length : 0;
+return Math.floor(dmg * (1 + 0.10 * hexerCursesOn(m) + 0.05 * layers));
+}
+if (p.subclass === 'orc_shaman' && skill.id === 'fireball') {
+return Math.floor(dmg * (1 + SUBCLASSES.orc_shaman.mods.fireball.perTotem / 100 * scTotems().length));
+}
+return dmg;
+}
+function orcSpellAfter(skill, m, dmg) {
+const p = state.player;
+if (p.subclass === 'orc_hexer' && skill.id === 'fireball') {
+spawnFloatDamage('fighter-monster', dmg, 'fire');
+const d = getSkillData('fireball');
+const mod = SUBCLASSES.orc_hexer.mods.fireball;
+const notes = [];
+if (m.hp > 0) {
+const burnDmg = Math.max(1, Math.floor(Math.floor(5 + p.INT * 0.8) * d.burnPercent / 100));
+addDebuff('monster', 'burn', m.index, { turnsLeft: skill.burnTurns, damage: burnDmg });
+addRotLayer(m, mod.rotTurns, Math.max(1, Math.floor(p.mAtk * mod.rotPct / 100)), skill.rotMaxLayers || 4);
+notes.push(`🔥 поджог ${burnDmg}`, '☠ слой Гниения');
+}
+logCombat(`🔥 ${skill.name}: ${dmg}`, 'log-entry player-skill', notes.join(' · '));
+return true;
+}
+if (p.subclass === 'orc_healer' && skill.id === 'fireball') {
+spawnFloatDamage('fighter-monster', dmg, 'magic');
+const d = getSkillData('fireball');
+if (m.hp > 0) addDebuff('monster', 'weakened', m.index, { turnsLeft: SUBCLASSES.orc_healer.mods.fireball.weakTurns, pct: d.weak });
+logCombat(`🌑 ${skill.name}: ${dmg}`, 'log-entry player-magic', m.hp > 0 ? `бьёт слабее на ${d.weak}%` : '');
+return true;
+}
+if (p.subclass === 'orc_healer' && skill.id === 'spiritWrath') {
+if (typeof addRotWrathStack === 'function') addRotWrathStack();
+spawnFloatDamage('fighter-monster', dmg, 'magic');
+const d = getSkillData('spiritWrath');
+const heal = aoeHeal(dmg * d.heal / 100);
+logCombat(`🩸 ${skill.name}: ${dmg}`, 'log-entry player-skill', heal > 0 ? `🩸 +${heal} HP` : '');
+return true;
+}
+return false;
+}
+function subclassPestilencePerTurn(perTurn) {
+if (!hasSubclass('orc_shaman')) return perTurn;
+return Math.floor(perTurn * (1 + SUBCLASSES.orc_shaman.mods.pestilence.perTotem / 100 * scTotems().length));
+}
+function subclassOnRotTick(total) {
+if (!hasSubclass('orc_healer') || total <= 0) return;
+const d = getSkillData('pestilence');
+if (!d || !d.heal) return;
+const heal = aoeHeal(total * d.heal / 100);
+if (heal > 0) logCombat(`🩸 Иссушение: +${heal} HP.`, 'log-entry potion');
+}
+let scVitalityBusy = false;
+function orcOnHeroHeal(healed, overflow) {
+const p = state.player;
+if (p.subclass !== 'orc_healer' || !state.battle.active || healed <= 0 || scVitalityBusy) return;
+const v = scSkillData('hlVitality');
+if (v) {
+const extra = Math.min(Math.floor(healed * v.pct / 100), p.maxHp - p.hp);
+if (extra > 0) p.hp += extra;
+}
+const br = scSkillData('hlBrews');
+if (br) {
+const mp = Math.min(Math.floor(healed * br.pct / 100), p.maxMp - p.mp);
+if (mp > 0) p.mp += mp;
+}
+}
+function orcAfterHeroHit() {
+const p = state.player;
+if (p.hp <= 0 || p.subclass !== 'orc_healer' || !semiPassiveReady('hlBloodBond')) return;
+const s = SKILLS.hlBloodBond;
+if (getDebuff('player', 'bondCd') || scHpPct() >= s.threshold) return;
+const d = scSkillData('hlBloodBond');
+const alive = (state.battle.monsters || []).filter(m => m.hp > 0);
+if (!alive.length) return;
+const per = Math.max(1, Math.floor(p.mAtk * d.pct / 100));
+const hits = alive.map(m => ({ m, miss: false, dmg: monsterTagDmg(m, per, ['magic', 'death']), type: 'poison', fx: 'toxic-small' }));
+const r = aoeApply(hits);
+const heal = aoeHeal(r.total);
+addDebuff('player', 'bondCd', { turnsLeft: s.every });
+logCombat(`🩸 Кровная связь: −${r.total} врагам, +${heal} HP вам.`, 'log-entry potion');
+}
+function orcAbsorbHit(dmg) {
+const p = state.player;
+if (p.subclass !== 'orc_rock') return dmg;
+if (semiPassiveReady('rkGuardian') && !getDebuff('player', 'guardianCd') && dmg > p.maxHp * SKILLS.rkGuardian.over / 100) {
+const d = scSkillData('rkGuardian');
+const take = Math.floor(dmg * d.take / 100);
+dmg -= take;
+addDebuff('player', 'guardianCd', { turnsLeft: SKILLS.rkGuardian.every });
+logCombat(`👻 Дух-хранитель забрал ${take} урона.`, 'log-entry player-skill');
+}
+const h = scSkillData('rkHide');
+if (h && !getEquippedShield() && Math.random() * 100 < h.chance) {
+const before = dmg;
+dmg = Math.max(1, Math.floor(dmg / 2));
+logCombat(`🐗 На шкуру: ${before} → ${dmg}.`, 'log-entry player-skill');
+}
+return dmg;
+}
+function subclassOnMonsterCrit(m) {
+if (!hasSubclass('orc_chieftain') || !semiPassiveReady('chBloodCurse') || !m || m.hp <= 0) return;
+const d = scSkillData('chBloodCurse');
+addRotLayer(m, SKILLS.chBloodCurse.turns, Math.max(1, Math.floor(state.player.mAtk * d.pct / 100)), 2);
+logCombat(`🩸 Проклятие крови: ${m.name} гниёт.`, 'log-entry poison');
+}
+function orcOnMonsterDeath(m) {
+const p = state.player;
+const b = state.battle;
+if (p.subclass === 'orc_berserker') {
+if (b.bkPaid > 0) { const back = aoeHeal(b.bkPaid * BERSERK_HP_BACK / 100); b.bkPaid = 0; if (back > 0) logCombat(`🩸 Кровь возвращается: +${back} HP.`, 'log-entry potion'); }
+if (semiPassiveReady('bkThirst') && !getDebuff('player', 'thirstCd')) b.bkThirst = true;
+} else if (p.subclass === 'orc_chieftain') {
+const d = scSkillData('chTribute');
+if (d) {
+const mp = Math.min(Math.floor(p.maxMp * d.mp / 100), p.maxMp - p.mp);
+if (mp > 0) p.mp += mp;
+aoeHeal(p.maxHp * d.hp / 100);
+}
+} else if (p.subclass === 'orc_hexer') {
+const on = HEX_CURSES.concat(['rot']).filter(id => getDebuff('monster', id, m.index));
+if (!on.length) return;
+const c = scSkillData('hxCarrion');
+if (c) { const mp = Math.min(Math.floor(p.maxMp * c.mp / 100), p.maxMp - p.mp); if (mp > 0) p.mp += mp; }
+if (semiPassiveReady('hxBurst')) {
+const others = (b.monsters || []).filter(x => x !== m && x.hp > 0);
+if (!others.length) return;
+const t = others[Math.floor(Math.random() * others.length)];
+HEX_CURSES.forEach(id => { const deb = getDebuff('monster', id, m.index); if (deb && !getDebuff('monster', id, t.index)) addDebuff('monster', id, t.index, Object.assign({}, deb)); });
+const d = scSkillData('hxBurst');
+const per = Math.max(1, Math.floor(p.mAtk * d.pct / 100 * on.length));
+const hits = others.map(x => ({ m: x, miss: false, dmg: monsterTagDmg(x, per, ['magic', 'death']), type: 'poison', fx: 'toxic' }));
+hits.forEach(h => { h.m.hp = Math.max(1, h.m.hp - h.dmg); spawnFloatDamage('fighter-monster', h.dmg, 'poison', { mon: h.m }); });
+logCombat(`💥 Взрыв проклятий: ${per} каждому рядом`, 'log-entry poison', `проклятия → ${t.name}`);
+}
+}
+}
+function orcOnHeroTurn() {
+const p = state.player;
+const b = state.battle;
+if (!b.active) return;
+b.bkPaid = 0;
+const tr = getDebuff('player', 'trance');
+if (tr) aoeHeal(p.maxHp * tr.heal / 100);
+const an = getDebuff('player', 'ancestor');
+if (an && an.form === 'bear') aoeHeal(p.maxHp * 0.02);
+if (p.subclass === 'orc_hexer') hexerCurseTick();
+if (b.bkThirst) {
+b.bkThirst = false;
+const d = scSkillData('bkThirst');
+const n = scTwoHanded() ? 2 : 1;
+const targets = aoeAlive().slice(0, n);
+if (d && targets.length) {
+addDebuff('player', 'thirstCd', { turnsLeft: SKILLS.bkThirst.every });
+const hits = targets.map(m => ({ m, ...aoePhysHit(m, d.mult, 0), fx: 'slash-red' })).map(h => ({ ...h, type: h.crit ? 'crit' : 'dmg' }));
+const r = aoeApply(hits);
+logCombat(`🩸 Жажда крови: ${r.total}`, 'log-entry player-skill', r.kills ? `убито: ${r.kills}` : '');
+}
+}
+}
+function shamanSummonTotem(data) {
+const p = state.player;
+const kinds = Object.keys(TOTEM_KINDS);
+const kind = kinds[Math.floor(Math.random() * kinds.length)];
+const K = TOTEM_KINDS[kind];
+const f = data.power / 100;
+const oak = scSkillData('smOak');
+const voice = scSkillData('smVoice');
+const vm = voice ? 1 + voice.pct / 100 : 1;
+const hp = p.maxHp * K.hp * f * (oak ? 1 + oak.pct / 100 : 1);
+const a = { kind, totem: true, name: K.name, img: K.img, hp, maxHp: hp, atk: K.atk ? p.mAtk * K.atk * f * vm : 0,
+taunt: !!K.taunt, healHp: K.healHp ? K.healHp * vm : 0, healMp: K.healMp ? K.healMp * vm : 0, dodge: 0, slow: false };
+if (!alliesHasRoom()) {
+const old = scTotems()[0];
+if (old) { state.battle.allies = state.battle.allies.filter(x => x !== old); logCombat(`🗿 ${old.name} уходит в землю.`, 'log-entry'); }
+}
+const added = alliesAdd(a);
+if (added) logCombat(`🗿 ${added.name}: ${K.desc}. ${added.hp} HP${added.atk ? `, выстрел ${added.atk}` : ''}.`, 'log-entry player-skill');
+addElementXP('death');
+}
+function orcOnAllyDeath(a) {
+const p = state.player;
+if (p.subclass !== 'orc_shaman' || !a.totem || !semiPassiveReady('smVengeance')) return;
+const d = scSkillData('smVengeance');
+const alive = (state.battle.monsters || []).filter(m => m.hp > 0);
+if (!alive.length) return;
+const per = Math.max(1, Math.floor(p.mAtk * d.pct / 100));
+const hits = alive.map(m => ({ m, miss: false, dmg: monsterTagDmg(m, per, ['magic', 'death']), type: 'poison', fx: 'toxic' }));
+const r = aoeApply(hits);
+logCombat(`💥 Месть тотема: ${r.total}`, 'log-entry poison', r.kills ? `убито: ${r.kills}` : '');
+}
+function orcPerformActive(skill, data) {
+const p = state.player;
+if (skill.id === 'rkTrance') {
+addDebuff('player', 'trance', { turnsLeft: skill.turns, mult: data.mult, heal: data.heal });
+logCombat(`🥁 Боевой транс: ${skill.turns} ходов реген ×${data.mult} и ${data.heal}% HP за ход.`, 'log-entry player-skill');
+spawnFloatDamage('fighter-player', 0, 'heal', { text: 'ТРАНС' });
+} else if (skill.id === 'bkFrenzy') {
+const cost = Math.min(Math.floor(p.maxHp * skill.hpCost / 100), Math.max(0, p.hp - 1));
+p.hp -= cost;
+addDebuff('player', 'frenzy', { turnsLeft: skill.turns, atb: data.atb, dmg: data.dmg, def: skill.defCut });
+logCombat(`🩸 Неистовство: ${skill.turns} хода ATB +${data.atb}%, урон +${data.dmg}%.`, 'log-entry player-skill', `−${cost} HP`);
+spawnFloatDamage('fighter-player', cost, 'dmg');
+} else if (skill.id === 'chAncestor') {
+const form = scHpPct() > 50 ? 'wolf' : 'bear';
+addDebuff('player', 'ancestor', { turnsLeft: skill.turns, form, pct: form === 'wolf' ? data.wolf : data.bear });
+DEBUFF_DEFS.ancestor.icon = form === 'wolf' ? '🐺' : '🐻';
+logCombat(form === 'wolf' ? `🐺 Зов предка: пришёл Волк — ATB и урон +${data.wolf}%.` : `🐻 Зов предка: пришёл Медведь — урон по вам −${data.bear}%, 2% HP за ход.`, 'log-entry player-skill');
+addElementXP('death');
+} else if (skill.id === 'hxCurse') {
+hexerCastCurse(skill, data);
+} else if (skill.id === 'hlWarpaint') {
+addDebuff('player', 'warpaint', { turnsLeft: 999, dmg: data.dmg, cut: data.cut });
+logCombat(`🎨 Боевая раскраска: до конца боя урон +${data.dmg}%, входящий −${data.cut}%.`, 'log-entry player-skill');
+} else if (skill.id === 'smTotem') {
+shamanSummonTotem(data);
+} else {
+return false;
+}
+return true;
+}
+SKILLS.rkTrance.autoCheck = function () { return !getDebuff('player', 'trance') && scHpPct() < 60; };
+SKILLS.bkFrenzy.autoCheck = function () {
+if (getDebuff('player', 'frenzy') || scHpPct() <= 50) return false;
+const alive = (state.battle.monsters || []).filter(m => m.hp > 0);
+return alive.length >= 2 || alive.some(scStrongMonster);
+};
+SKILLS.chAncestor.autoCheck = function () { return !getDebuff('player', 'ancestor'); };
+SKILLS.hlWarpaint.autoCheck = function () { return !getDebuff('player', 'warpaint'); };
+SKILLS.smTotem.autoCheck = function () { return scTotems().length < ALLY_MAX; };
+function scIsElf() {
+const p = state.player;
+return !!(p && p.raceId === 'elf' && p.subclass);
+}
+DEBUFF_DEFS.rooted = { icon: '🌿', name: 'Опутан', cssClass: 'debuff-entangle',
+tooltip: (d) => `Опутан корнями · шкала хода медленнее на ${d.pct}% · осталось ${d.turnsLeft} ход.` };
+DEBUFF_DEFS.bark = { icon: '🪵', name: 'Кора', cssClass: 'debuff-guard',
+tooltip: (d) => `Кора · входящий урон −${d.cut}% · осталось ${d.turnsLeft} ход.` };
+DEBUFF_DEFS.rooting = { icon: '🌳', name: 'Укоренение', cssClass: 'debuff-guard',
+tooltip: (d) => `Укоренение · ${d.share}% удара уходит в корни, половина рассасывается · осталось ${d.turnsLeft} ход.` };
+DEBUFF_DEFS.rootPool = { icon: '🍂', name: 'Отложенный урон', cssClass: 'debuff-bleed',
+displayCount: (d) => Math.ceil(d.amount || 0),
+tooltip: (d) => `Отложенный урон · ${Math.ceil(d.amount || 0)} придёт за ближайшие ходы. Лечение гасит его первым.` };
+DEBUFF_DEFS.seeds = { icon: '🌱', name: 'Семена терна', cssClass: 'debuff-entangle',
+displayCount: (d) => (d.list || []).length,
+tooltip: (d) => `Семена терна × ${(d.list || []).length} · ближайшее распустится через ${Math.min(...(d.list || [{ t: 0 }]).map(x => x.t))} ход.` };
+DEBUFF_DEFS.song = { icon: '🎵', name: 'Песнь', cssClass: 'debuff-rune',
+displayCount: (d) => d.level || 0,
+tooltip: (d) => `Песнь ${d.level || 0}/${SONG_MAX} · урон +${(d.level || 0) * SONG_DMG}%, уворот +${(d.level || 0) * SONG_EVA}. Чередуйте удар оружием и навык.` };
+DEBUFF_DEFS.wind = { icon: '🍃', name: 'Песнь ветра', cssClass: 'debuff-regen',
+tooltip: (d) => `Песнь ветра · шкала хода +${d.atb}%, Песнь не падает · осталось ${d.turnsLeft} ход.` };
+DEBUFF_DEFS.lifeEdge = { icon: '🌸', name: 'Клинок Жизни', cssClass: 'debuff-regen',
+displayCount: (d) => d.charges || 0,
+tooltip: (d) => `Клинок Жизни · ещё ${d.charges || 0} удара с уроном Жизнью.` };
+DEBUFF_DEFS.star = { icon: '🌠', name: 'Падающая звезда', cssClass: 'debuff-rune',
+displayCount: (d) => d.turnsLeft,
+tooltip: (d) => `Падающая звезда · упадёт через ${d.turnsLeft} ход.` };
+DEBUFF_DEFS.hot = { icon: '🌿', name: 'Лечение во времени', cssClass: 'debuff-regen',
+displayCount: (d) => d.count || 0,
+tooltip: (d) => `Лечение во времени · ростков: ${d.count || 0}, ещё ~${Math.round(d.total || 0)} HP.` };
+DEBUFF_DEFS.grove = { icon: '🌳', name: 'Дар рощи', cssClass: 'debuff-regen',
+displayCount: () => '',
+tooltip: (d) => `Дар рощи · ${d.regen}% HP за ход, лечение +${d.heal}%, урон +${d.dmg || 0}% · до конца боя.` };
+DEBUFF_DEFS.budCd = { icon: '⏳', name: 'Бутон: перезарядка', cssClass: 'debuff-paraimmune',
+tooltip: (d) => `Бутон набирается · ещё ${d.turnsLeft} ход.` };
+function elfHeroDmgMult(m) {
+const p = state.player;
+let mult = 1;
+if (p.subclass === 'elf_bladesinger') {
+const s = getDebuff('player', 'song');
+if (s) mult *= 1 + s.level * SONG_DMG / 100;
+} else if (p.subclass === 'elf_grovekeeper') {
+const g = getDebuff('player', 'grove');
+if (g && g.dmg) mult *= 1 + g.dmg / 100;
+} else if (p.subclass === 'elf_stargazer' && m) {
+const f = scSkillData('sgFocus');
+const b = state.battle;
+if (f && b.sgFocus && b.sgFocus.idx === m.index) mult *= 1 + f.pct / 100 * b.sgFocus.n;
+const c = scSkillData('sgClear');
+if (c && (m.mDef || 0) > 0) mult *= 1 + c.pct / 100 * Math.min(1, (m.mDef || 0) / 40);
+}
+return mult;
+}
+function elfDamageTakenMult(attacker) {
+let mult = 1;
+const bark = getDebuff('player', 'bark');
+if (bark) mult *= 1 - bark.cut / 100;
+if (hasSubclass('elf_thornguard') && semiPassiveReady('tgBarbs')) { const tb = scSkillData('tgBarbs'); if (tb && tb.cut) mult *= 1 - tb.cut / 100; }
+if (attacker) mult *= subclassMonsterWeakMult(attacker);
+return mult;
+}
+function subclassEvasionBonus() {
+if (!hasSubclass('elf_bladesinger')) return 0;
+const s = getDebuff('player', 'song');
+return s ? s.level * SONG_EVA : 0;
+}
+function subclassAccuracyBonus() {
+if (scIsDrow()) return drowAccuracyBonus();
+if (!hasSubclass('elf_pathfinder')) return 0;
+const d = scSkillData('pfHawk');
+return d ? d.acc : 0;
+}
+function subclassMonsterAtbMult(m) {
+const web = m ? getDebuff('monster', 'webbed', m.index) : null;
+const r = m ? getDebuff('monster', 'rooted', m.index) : null;
+return (r ? 1 - r.pct / 100 : 1) * (web ? 1 - web.pct / 100 : 1);
+}
+function subclassManaShieldMult() {
+if (!hasSubclass('elf_stargazer')) return 1;
+const c = scSkillData('sgClear');
+return c ? 1 - c.pct / 100 : 1;
+}
+function subclassHealHurtsAny() {
+return hasSubclass('elf_stargazer');
+}
+function subclassFinalAtk(p) {
+if (p.subclass !== 'elf_bladesinger') return;
+const d = scSkillData('bsHarmony');
+if (!d) return;
+const pa = p.pAtk, ma = p.mAtk;
+p.mAtk = ma + Math.floor(pa * d.pct / 100);
+p.pAtk = pa + Math.floor(ma * d.pct / 100);
+}
+function elfApplyPassives(p) {
+if (p.subclass === 'elf_pathfinder') {
+const h = scSkillData('pfHawk');
+if (h) p.skillBonuses.push(`Глаз ястреба (ур.${scSkillLvl('pfHawk')}): +${h.acc} точности, навыки пробивают ${h.ignore}% защиты`);
+} else if (p.subclass === 'elf_thornguard') {
+const r = scSkillData('tgRoots');
+if (r) p.skillBonuses.push(`Корни принимают удар (ур.${scSkillLvl('tgRoots')}): ${r.share}% удара приходит за 3 хода, половина рассасывается`);
+const s = scSkillData('tgSap');
+if (s) p.skillBonuses.push(`Сок древа (ур.${scSkillLvl('tgSap')}): лечение +${s.pct}%`);
+} else if (p.subclass === 'elf_bladesinger') {
+const h = scSkillData('bsHarmony');
+if (h) p.skillBonuses.push(`Гармония (ур.${scSkillLvl('bsHarmony')}): ${h.pct}% физ. атаки → маг. и обратно`);
+}
+}
+function elfHitAtk(skillId) {
+const p = state.player;
+if (p.subclass === 'elf_bladesinger' && skillId === 'powerStrike') return Math.floor(p.mAtk * SUBCLASSES.elf_bladesinger.mods.powerStrike.magPart);
+return 0;
+}
+function subclassNeverMiss(skill) {
+return hasSubclass('elf_pathfinder') && skill.id === 'powerStrike';
+}
+function elfAfterStrike(skill, m, hitsLanded, totalDamage) {
+const p = state.player;
+if (p.subclass === 'elf_thornguard' && skill.id === 'powerStrike' && m && m.hp > 0) {
+const mod = SUBCLASSES.elf_thornguard.mods.powerStrike;
+addDebuff('monster', 'rooted', m.index, { turnsLeft: mod.slowTurns, pct: mod.slowPct });
+return '🌿 опутан: ход медленнее';
+}
+if (p.subclass === 'elf_pathfinder' && skill.id === 'powerStrike' && m && m.hp > 0) {
+const n = pathfinderPlant(m, SUBCLASSES.elf_pathfinder.mods.powerStrike.seeds, true);
+return n ? `🌱 семян: ${n}` : '';
+}
+if (p.subclass === 'elf_bladesinger' && skill.id === 'powerStrike' && totalDamage > 0) {
+bladesingerLivingHeal(totalDamage);
+}
+return '';
+}
+function subclassThorns(data) {
+const p = state.player;
+if (p.subclass === 'elf_thornguard') return { targets: data.targets + SUBCLASSES.elf_thornguard.mods.thornWhirl.extraTargets };
+if (p.subclass === 'elf_pathfinder') return { targets: SUBCLASSES.elf_pathfinder.mods.thornWhirl.fixedTargets };
+return { targets: data.targets };
+}
+function subclassAfterThorns(hits, data) {
+const p = state.player;
+const touched = hits.filter(h => !h.miss && h.m && h.m.hp > 0).map(h => h.m);
+if (p.subclass === 'elf_thornguard') {
+const pct = SUBCLASSES.elf_thornguard.mods.thornWhirl.slowPct;
+touched.forEach(m => { removeDebuff('monster', 'entangle', m.index); addDebuff('monster', 'rooted', m.index, { turnsLeft: data.turns, pct }); });
+return touched.length ? `🌿 корни: ход медленнее на ${pct}%` : '';
+}
+if (p.subclass === 'elf_pathfinder') {
+let n = 0;
+touched.forEach(m => { n += pathfinderPlant(m, 1, true); });
+return n ? `🌱 семян: ${n}` : '';
+}
+if (p.subclass === 'elf_bladesinger') {
+const d = getSkillData('thornWhirl');
+const all = new Set(hits.filter(h => !h.miss && h.m).map(h => h.m)).size;
+const heal = all ? aoeHeal(p.maxHp * (d.heal || 0) / 100 * all) : 0;
+return heal > 0 ? `🌸 +${heal} HP` : '';
+}
+return '';
+}
+function pathfinderSeeds(m) {
+const d = m ? getDebuff('monster', 'seeds', m.index) : null;
+return d ? (d.list || []) : [];
+}
+function pathfinderPlant(m, n, force) {
+const p = state.player;
+if (!m || m.hp <= 0 || p.subclass !== 'elf_pathfinder') return 0;
+const seedLvl = scSkillLvl('pfSeed');
+const power = seedLvl ? SKILLS.pfSeed.levels[seedLvl - 1].power : SKILLS.pfSeed.levels[0].power;
+const grow = scSkillData('pfGrowth');
+const turns = SKILLS.pfSeed.turns - (grow ? 1 : 0);
+const dmg = p.pAtk * power / 100 * (grow ? 1 + grow.pct / 100 : 1);
+let deb = getDebuff('monster', 'seeds', m.index);
+const list = deb ? deb.list : [];
+let planted = 0;
+for (let i = 0; i < n && list.length < SEED_MAX; i++) { list.push({ t: turns, dmg }); planted++; }
+if (planted) {
+if (deb) { deb.list = list; renderDebuffBar('monster'); }
+else addDebuff('monster', 'seeds', m.index, { list, turnsLeft: 999 });
+}
+return planted;
+}
+function pathfinderBloom(m, all, mult) {
+const list = pathfinderSeeds(m);
+if (!list.length) return null;
+const ripe = all ? list.slice() : list.filter(x => x.t <= 0);
+if (!ripe.length) return null;
+const rest = all ? [] : list.filter(x => x.t > 0);
+const raw = ripe.reduce((s, x) => s + x.dmg, 0) * (mult || 1);
+if (rest.length) getDebuff('monster', 'seeds', m.index).list = rest;
+else removeDebuff('monster', 'seeds', m.index);
+return { m, miss: false, dmg: monsterTagDmg(m, Math.max(1, Math.floor(raw)), ['physical', 'life']), type: 'dmg', fx: 'slash-green', n: ripe.length };
+}
+function pathfinderTick() {
+const b = state.battle;
+const hits = [];
+(b.monsters || []).filter(m => m.hp > 0).forEach(m => {
+const list = pathfinderSeeds(m);
+if (!list.length) return;
+list.forEach(x => { x.t -= 1; });
+const h = pathfinderBloom(m, false, 1);
+if (h) hits.push(h);
+});
+if (!hits.length) { renderDebuffBar('monster'); return; }
+const r = aoeApply(hits);
+logCombat(`🌱 Семена распустились: ${r.total}`, 'log-entry player', `семян: ${hits.reduce((s, h) => s + h.n, 0)}${r.kills ? ` · убито: ${r.kills}` : ''}`);
+renderDebuffBar('monster');
+}
+function subclassOnHeroAction(kind) {
+if (scIsDrow()) { subclassOnHeroActionDrow(kind, arguments[1]); return; }
+const p = state.player;
+if (p.subclass !== 'elf_bladesinger') return;
+const b = state.battle;
+const cur = getDebuff('player', 'song');
+let level = cur ? cur.level : 0;
+if (b.bsLast && b.bsLast !== kind) level = Math.min(SONG_MAX, level + 1);
+else if (b.bsLast === kind && !getDebuff('player', 'wind')) level = Math.max(0, level - 2);
+b.bsLast = kind;
+if (level > 0) addDebuff('player', 'song', { level, turnsLeft: 999 });
+else removeDebuff('player', 'song');
+}
+function bladesingerLivingHeal(dmg) {
+const d = scSkillData('bsLiving');
+if (d && dmg > 0) aoeHeal(dmg * d.pct / 100);
+}
+function elfOnWeaponHit(m) {
+const p = state.player;
+if (p.subclass === 'elf_pathfinder') {
+if (m && semiPassiveReady('pfSeed') && Math.random() * 100 < SKILLS.pfSeed.chance) pathfinderPlant(m, 1, false);
+return 0;
+}
+if (p.subclass === 'elf_bladesinger') {
+const e = getDebuff('player', 'lifeEdge');
+if (!e) return 0;
+e.charges -= 1;
+if (e.charges <= 0) removeDebuff('player', 'lifeEdge'); else renderDebuffBar('player');
+const add = Math.floor(p.mAtk * e.pct / 100 * (1 + getElementDamageBonus('life') / 100));
+bladesingerLivingHeal(add);
+return add;
+}
+return 0;
+}
+function subclassOverrideSkill(skill, data, m) {
+if (scIsDwarf()) return dwarfOverrideSkill(skill, data, m);
+if (scIsDrow()) return drowOverrideSkill(skill, data, m);
+if (!scIsElf()) return false;
+const p = state.player;
+const sc = p.subclass;
+if (sc === 'elf_pathfinder' && skill.id === 'natureHeal') {
+const mod = SUBCLASSES.elf_pathfinder.mods.natureHeal;
+const h = pathfinderBloom(m, true, mod.bloomMult);
+if (!h) { logCombat(`🌸 ${skill.name}: на цели нет семян.`, 'log-entry'); return true; }
+const r = aoeApply([h]);
+const heal = aoeHeal(r.total * mod.lifePct / 100);
+addLifeXP();
+logCombat(`🌸 ${skill.name}: ${r.total}`, 'log-entry player-skill', `семян: ${h.n}${heal > 0 ? ` · +${heal} HP` : ''}`);
+updateBattleUI(); checkHealPotion();
+return true;
+}
+if (skill.id === 'natureHeal' && (sc === 'elf_thornguard' || sc === 'elf_bladesinger')) {
+const healed = aoeHeal(rollHealAmount(data.multiplier));
+addLifeXP();
+const notes = [];
+if (sc === 'elf_thornguard') {
+addDebuff('player', 'bark', { turnsLeft: SUBCLASSES.elf_thornguard.mods.natureHeal.barkTurns, cut: data.bark });
+notes.push(`🪵 кора −${data.bark}%`);
+} else {
+const mod = SUBCLASSES.elf_bladesinger.mods.natureHeal;
+addDebuff('player', 'lifeEdge', { charges: mod.edgeHits, pct: mod.edgePct, turnsLeft: 999 });
+notes.push(`🌸 2 удара Жизнью`);
+}
+logCombat(`🌿 ${skill.name}: +${healed} HP`, 'log-entry potion', notes.join(' · '));
+updateTopStatus(); updateBattleUI(); checkHealPotion();
+return true;
+}
+if (sc === 'elf_stargazer' && skill.id === 'fireball') {
+if (!m || m.hp <= 0) return true;
+addDebuff('monster', 'star', m.index, { turnsLeft: SUBCLASSES.elf_stargazer.mods.fireball.delay, mult: data.starMult });
+stargazerFocus(m);
+addElementXP('fire');
+logCombat(`🌠 ${skill.name}: упадёт на ${m.name} через 2 хода.`, 'log-entry player-magic');
+spawnFloatDamage('fighter-monster', 0, 'magic', { mon: m, text: '🌠' });
+updateBattleUI();
+return true;
+}
+if (sc === 'elf_grovekeeper' && skill.id === 'heal' && !(typeof healStrikeApplies === 'function' && healStrikeApplies(m))) {
+const mod = SUBCLASSES.elf_grovekeeper.mods.heal;
+const total = rollHealAmount(data.multiplier) * mod.hotBonus;
+grovekeeperAddHot(total, mod.hotTurns, 'Росток');
+addLifeXP();
+logCombat(`🌱 ${skill.name}: ~${Math.round(total)} HP за ${mod.hotTurns} хода.`, 'log-entry potion');
+updateBattleUI();
+return true;
+}
+if (sc === 'elf_druid' && skill.id === 'heal' && !(typeof healStrikeApplies === 'function' && healStrikeApplies(m))) {
+const amount = rollHealAmount(data.multiplier);
+const healed = aoeHeal(amount);
+const sp = druidSpirit();
+let sh = 0;
+if (sp) { sh = Math.min(amount, sp.maxHp - sp.hp); sp.hp += sh; alliesRender(); }
+addLifeXP();
+logCombat(`🌿 ${skill.name}: +${healed} HP${sp ? `, духу +${Math.floor(sh)}` : ''}`, 'log-entry potion');
+druidSharedHunt(m);
+updateBattleUI(); checkHealPotion();
+return true;
+}
+return false;
+}
+function subclassDrain(skill, data) {
+const p = state.player;
+const sc = p.subclass;
+const fall = skill.aoe.falloff;
+if (sc === 'elf_stargazer') {
+const hits = aoeTargets(data.targets).map(m => ({ m, ...aoeMagHit(m, data.multiplier * 0.7, 'life'), type: 'magic', fx: 'proj:life' }));
+const r = aoeApply(hits);
+aoeGiveXp(skill);
+const healed = aoeHeal(r.total * data.healPercent / 200);
+return { line: `🌠 ${skill.name}: ${r.total} (целей: ${hits.length})`, notes: healed > 0 ? [`+${healed} HP`] : [] };
+}
+if (sc === 'elf_grovekeeper') {
+const hits = aoeTargets(data.targets).map((m, i) => ({ m, ...aoeMagHit(m, data.multiplier * (fall[i] || fall[fall.length - 1]), 'life'), type: 'magic', fx: 'proj:life' }));
+const r = aoeApply(hits);
+aoeGiveXp(skill);
+const mod = SUBCLASSES.elf_grovekeeper.mods.lifeDrain;
+const total = r.total * data.healPercent / 100 * mod.hotBonus;
+if (total >= 1) grovekeeperAddHot(total, mod.hotTurns, 'Дыхание рощи');
+return { line: `🌿 ${skill.name}: ${r.total}`, notes: total >= 1 ? [`~${Math.round(total)} HP за ${mod.hotTurns} хода`] : [] };
+}
+if (sc === 'elf_druid') {
+const hits = aoeTargets(data.targets).map((m, i) => ({ m, ...aoeMagHit(m, data.multiplier * (fall[i] || fall[fall.length - 1]), 'life'), type: 'magic', fx: 'proj:life' }));
+const r = aoeApply(hits);
+aoeGiveXp(skill);
+const amount = r.total * data.healPercent / 100;
+const healed = aoeHeal(amount);
+const sp = druidSpirit();
+if (sp) { sp.hp = Math.min(sp.maxHp, sp.hp + amount); alliesRender(); }
+druidSharedHunt(hits[0] && hits[0].m);
+return { line: `🌿 ${skill.name}: ${r.total}`, notes: healed > 0 ? [`+${healed} HP`] : [] };
+}
+return null;
+}
+function elfSpellAfter(skill, m, dmg) {
+if (hasSubclass('elf_grovekeeper') && skill.id === 'fireball') {
+const mod = SUBCLASSES.elf_grovekeeper.mods.fireball;
+spawnFloatDamage('fighter-monster', dmg, 'magic');
+const total = dmg * mod.hotPct / 100;
+if (total >= 1) grovekeeperAddHot(total, mod.hotTurns, skill.name);
+logCombat(`🌿 ${skill.name}: ${dmg}`, 'log-entry player-magic', total >= 1 ? `~${Math.round(total)} HP за ${mod.hotTurns} хода` : '');
+return true;
+}
+if (hasSubclass('elf_druid') && skill.id === 'fireball') {
+const sp = druidSpirit();
+if (sp && m && m.hp > 0) druidSpiritStrike(m, SUBCLASSES.elf_druid.mods.fireball.spiritPct / 100, 'по зову');
+druidSharedHunt(m);
+}
+return false;
+}
+function stargazerFocus(m) {
+const b = state.battle;
+if (!m || !hasSubclass('elf_stargazer')) return;
+if (b.sgFocus && b.sgFocus.idx === m.index) b.sgFocus.n = Math.min(5, b.sgFocus.n + 1);
+else b.sgFocus = { idx: m.index, n: 0 };
+}
+function stargazerTick() {
+const b = state.battle;
+const hits = [];
+const sgRelease = [];
+(b.monsters || []).forEach(m => {
+const st = getDebuff('monster', 'star', m.index);
+if (!st) return;
+st.turnsLeft -= 1;
+if (st.turnsLeft > 0) return;
+removeDebuff('monster', 'star', m.index);
+let target = m.hp > 0 ? m : aoeAlive()[0];
+if (!target) return;
+sgRelease.push(target);
+hits.push({ m: target, ...aoeMagHit(target, st.mult, 'fire'), type: 'fire', fx: 'proj:fire' });
+});
+if (b.sgOverflow > 0 && semiPassiveReady('sgReflect')) {
+const t = aoeAlive()[0];
+if (t) hits.push({ m: t, miss: false, dmg: monsterTagDmg(t, Math.floor(b.sgOverflow), ['magic']), type: 'magic', fx: 'proj:arcane', reflect: true });
+}
+b.sgOverflow = 0;
+if (!hits.length) return;
+const r = aoeApply(hits);
+const fell = hits.filter(h => !h.reflect).length;
+if (fell) logCombat(`🌠 Звезда упала: ${hits.filter(h => !h.reflect).reduce((s, h) => s + (h.dmg || 0), 0)}`, 'log-entry player-magic', r.kills ? `убито: ${r.kills}` : '');
+if (hits.some(h => h.reflect)) logCombat(`✨ Отражённый свет: ${hits.find(h => h.reflect).dmg}`, 'log-entry player-magic');
+}
+function grovekeeperAddHot(total, turns, src) {
+const b = state.battle;
+if (!b.gkHots) b.gkHots = [];
+b.gkHots.push({ per: total / turns, turns, src });
+grovekeeperHotBadge();
+}
+function grovekeeperHotBadge() {
+const b = state.battle;
+const list = b.gkHots || [];
+if (!list.length) { removeDebuff('player', 'hot'); return; }
+addDebuff('player', 'hot', { count: list.length, total: list.reduce((s, h) => s + h.per * h.turns, 0), turnsLeft: 999 });
+}
+function grovekeeperTick() {
+const p = state.player;
+const b = state.battle;
+const gift = getDebuff('player', 'grove');
+if (gift) aoeHeal(p.maxHp * gift.regen / 100);
+const list = b.gkHots || [];
+if (!list.length) return;
+const dew = scSkillData('gkDew');
+let sum = 0;
+list.forEach(h => {
+sum += h.per;
+h.turns -= 1;
+if (dew && h.turns >= 0 && Math.random() * 100 < dew.chance) h.turns += 1;
+});
+b.gkHots = list.filter(h => h.turns > 0);
+const healed = aoeHeal(sum);
+if (healed > 0) logCombat(`🌿 Лечение во времени: +${healed} HP.`, 'log-entry potion');
+grovekeeperHotBadge();
+}
+function druidSpirit() {
+return (typeof alliesList === 'function' ? alliesList() : []).find(a => a.druid) || null;
+}
+function druidPowerMult() {
+const b = state.battle;
+return 1 + (b.drGrowth || 0) / 100;
+}
+function druidSummon(data) {
+const p = state.player;
+const kinds = Object.keys(DRUID_KINDS);
+const kind = kinds[Math.floor(Math.random() * kinds.length)];
+const K = DRUID_KINDS[kind];
+const f = data.power / 100;
+const bonds = scSkillData('drBonds');
+let hp = p.maxHp * K.hp * f + (bonds ? p.maxHp * bonds.hp / 100 : 0);
+let atk = p.mAtk * K.atk * f + (bonds ? p.mAtk * bonds.atk / 100 : 0);
+const a = { kind, druid: true, name: K.name, img: K.img, hp, maxHp: hp, atk, baseAtk: atk, baseHp: hp,
+healHp: K.healHp || 0, healMp: K.healMp || 0, atbCut: K.atbCut || 0, dodge: 10, slow: false };
+const added = alliesAdd(a);
+if (added) {
+druidApplyGrowth();
+state.battle.drSpirit = added;
+logCombat(`🐾 Приходит дух: ${added.name} — ${K.desc}. ${added.hp} HP, удар ${added.atk}.`, 'log-entry player-skill');
+}
+}
+function druidApplyGrowth() {
+const sp = druidSpirit();
+if (!sp) return;
+const k = druidPowerMult();
+const lost = sp.maxHp - sp.hp;
+sp.atk = Math.max(1, Math.floor(sp.baseAtk * k));
+sp.maxHp = Math.max(1, Math.floor(sp.baseHp * k));
+sp.hp = Math.max(1, sp.maxHp - lost);
+alliesRender(true);
+}
+function druidSpiritStrike(m, mult, why) {
+const sp = druidSpirit();
+if (!sp || !m || m.hp <= 0) return 0;
+const raw = sp.atk * mult;
+const dmg = monsterTagDmg(m, Math.max(1, Math.floor(raw - (m.pDef || 0) * ALLY_PDEF_FACTOR)), ['physical']);
+if (sp.atbCut) cutMonstersATB(sp.atbCut / 100);
+const r = aoeApply([{ m, miss: false, dmg, type: 'dmg', fx: 'slash' }]);
+logCombat(`🐾 ${sp.name}${why ? ` (${why})` : ''}: ${r.total}`, 'log-entry player', r.kills ? 'добыча!' : '');
+return r.total;
+}
+function druidSharedHunt(m) {
+if (!hasSubclass('elf_druid') || !semiPassiveReady('drHunt') || !druidSpirit()) return;
+if (Math.random() * 100 >= (state.player.critChance || 10)) return;
+const t = (m && m.hp > 0) ? m : aoeAlive()[0];
+if (t) druidSpiritStrike(t, scSkillData('drHunt').mult, 'общая охота');
+}
+function elfAbsorbHit(dmg) {
+const p = state.player;
+const b = state.battle;
+if (p.subclass !== 'elf_thornguard') return dmg;
+let share = 0;
+const rooting = getDebuff('player', 'rooting');
+const roots = scSkillData('tgRoots');
+if (rooting) share = rooting.share; else if (roots) share = roots.share;
+if (!share) return dmg;
+const moved = Math.floor(dmg * share / 100);
+if (moved <= 0) return dmg;
+const kept = Math.floor(moved / 2);
+b.tgPool = (b.tgPool || 0) + kept;
+addDebuff('player', 'rootPool', { amount: b.tgPool, turnsLeft: 999 });
+return dmg - moved;
+}
+function thornguardPoolTick() {
+const p = state.player;
+const b = state.battle;
+if (!(b.tgPool > 0)) return;
+let part = b.tgPool <= 5 ? b.tgPool : Math.ceil(b.tgPool / 3);
+b.tgPool -= part;
+part = Math.floor(part);
+if (b.tgPool > 0.5) addDebuff('player', 'rootPool', { amount: b.tgPool, turnsLeft: 999 });
+else { b.tgPool = 0; removeDebuff('player', 'rootPool'); }
+if (part <= 0) return;
+p.hp -= part;
+spawnFloatDamage('fighter-player', part, 'dmg');
+logCombat(`🍂 Корни отдают урон: ${part}.`, 'log-entry monster', b.tgPool > 0 ? `в корнях ещё ${Math.ceil(b.tgPool)}` : '');
+if (p.hp <= 0) { p.hp = 0; onPlayerDeath(); }
+}
+let scElfHealBusy = false;
+function elfOnHeroHeal(healed, overflow) {
+const p = state.player;
+const b = state.battle;
+if (!b.active || scElfHealBusy) return;
+scElfHealBusy = true;
+try {
+if (p.subclass === 'elf_thornguard') {
+const s = scSkillData('tgSap');
+if (s && healed > 0) { const extra = Math.min(Math.floor(healed * s.pct / 100), p.maxHp - p.hp); if (extra > 0) { p.hp += extra; healed += extra; } }
+if (b.tgPool > 0 && healed > 0) {
+const take = Math.min(b.tgPool, healed);
+b.tgPool -= take;
+p.hp -= take;
+if (b.tgPool > 0.5) addDebuff('player', 'rootPool', { amount: b.tgPool, turnsLeft: 999 });
+else { b.tgPool = 0; removeDebuff('player', 'rootPool'); }
+}
+} else if (p.subclass === 'elf_grovekeeper') {
+const g = getDebuff('player', 'grove');
+if (g && healed > 0) { const extra = Math.min(Math.floor(healed * g.heal / 100), p.maxHp - p.hp); if (extra > 0) { p.hp += extra; healed += extra; } }
+const c = scSkillData('gkCycle');
+if (c && healed > 0) { const mp = Math.min(Math.floor(healed * c.pct / 100), p.maxMp - p.mp); if (mp > 0) p.mp += mp; }
+} else if (p.subclass === 'elf_bladesinger' && overflow >= 1 && semiPassiveReady('bsSprout')) {
+const m = getCurrentMonster();
+if (m && m.hp > 0) {
+const d = scSkillData('bsSprout');
+const dmg = monsterTagDmg(m, Math.max(1, Math.floor(overflow * d.pct / 100)), ['magic', 'life']);
+m.hp -= Math.min(dmg, m.hp - 1);
+spawnFloatDamage('fighter-monster', dmg, 'magic', { mon: m });
+bladesingerLivingHeal(dmg);
+}
+}
+} finally { scElfHealBusy = false; }
+}
+function elfAfterHeroHit(m, dmg, crit) {
+const p = state.player;
+if (p.hp <= 0) return;
+if (p.subclass === 'elf_thornguard' && m && m.hp > 0 && dmg > 0 && semiPassiveReady('tgBarbs')) {
+const d = scSkillData('tgBarbs');
+const back = monsterTagDmg(m, Math.max(1, Math.floor(dmg * d.pct / 100 * (crit ? 2 : 1))), ['physical', 'life']);
+m.hp -= back;
+spawnFloatDamage('fighter-monster', back, 'dmg', { mon: m });
+logCombat(`🌵 Шипастая кора: ${back}${crit ? ' (за крит ×2)' : ''}`, 'log-entry player');
+if (m.hp <= 0) { m.hp = 0; onMonsterDeath(m); }
+}
+if (p.subclass === 'elf_grovekeeper' && semiPassiveReady('gkBud') && !getDebuff('player', 'budCd') && p.hp / p.maxHp * 100 < SKILLS.gkBud.threshold) {
+const d = scSkillData('gkBud');
+grovekeeperAddHot(p.maxHp * d.total / 100, SKILLS.gkBud.turns, 'Бутон');
+addDebuff('player', 'budCd', { turnsLeft: SKILLS.gkBud.every });
+logCombat(`🌷 Бутон раскрылся: ${d.total}% HP за 3 хода.`, 'log-entry potion');
+}
+}
+function elfOnMonsterDeath(m) {
+const p = state.player;
+const b = state.battle;
+if (p.subclass === 'elf_druid' && druidSpirit()) {
+const g = scSkillData('drGrowing');
+if (g) {
+const before = b.drGrowth || 0;
+b.drGrowth = Math.min(g.cap, before + g.per);
+if (b.drGrowth !== before) druidApplyGrowth();
+}
+}
+}
+function elfOnHeroDamage(m, dmg) {
+if (!hasSubclass('elf_stargazer') || !m) return;
+const over = dmg - m.hp;
+const d = scSkillData('sgReflect');
+if (over > 0 && d && semiPassiveReady('sgReflect')) state.battle.sgOverflow = (state.battle.sgOverflow || 0) + over * d.pct / 100;
+}
+function elfOnHeroTurn() {
+const p = state.player;
+const b = state.battle;
+if (!b.active) return;
+if (p.subclass === 'elf_thornguard') thornguardPoolTick();
+else if (p.subclass === 'elf_pathfinder') pathfinderTick();
+else if (p.subclass === 'elf_stargazer') stargazerTick();
+else if (p.subclass === 'elf_grovekeeper') grovekeeperTick();
+}
+function elfOnBattleStart() {
+const b = state.battle;
+b.tgPool = 0; b.bsLast = null; b.sgFocus = null; b.sgOverflow = 0; b.gkHots = [];
+if (hasSubclass('elf_druid') && b.drSpirit && b.drSpirit.hp > 0) {
+const sp = b.drSpirit;
+sp.hp = sp.maxHp;
+if (!state.battle.allies) state.battle.allies = [];
+state.battle.allies.push(sp);
+alliesRender(true);
+} else if (!hasSubclass('elf_druid')) {
+b.drSpirit = null; b.drGrowth = 0;
+}
+}
+function elfOnAllyDeath(a) {
+if (a.druid) {
+state.battle.drSpirit = null;
+state.battle.drGrowth = 0;
+logCombat(`🐾 Дух-зверь уходит в лес. Связь придётся растить заново.`, 'log-entry loss');
+}
+}
+function elfPerformActive(skill, data) {
+const p = state.player;
+const m = getCurrentMonster();
+if (skill.id === 'tgRoot') {
+addDebuff('player', 'rooting', { turnsLeft: skill.turns, share: data.share });
+logCombat(`🌳 Укоренение: ${skill.turns} ходов ${data.share}% удара уходит в корни.`, 'log-entry player-skill');
+spawnFloatDamage('fighter-player', 0, 'block', { text: 'КОРНИ' });
+} else if (skill.id === 'pfLeaves') {
+const hits = aoeAlive().map(x => ({ m: x, ...aoePhysHit(x, data.multiplier, getElementDamageBonus('life')), fx: 'slash-green' })).map(h => ({ ...h, type: h.crit ? 'crit' : 'dmg' }));
+hits.forEach(h => { if (!h.miss) pathfinderPlant(h.m, 1, true); });
+const r = aoeApply(hits);
+addLifeXP();
+logCombat(`🍃 ${skill.name}: ${r.total} (целей: ${hits.length})`, 'log-entry player-skill', 'каждому семя');
+} else if (skill.id === 'bsWind') {
+addDebuff('player', 'wind', { turnsLeft: skill.turns, atb: data.atb });
+logCombat(`🍃 Песнь ветра: ${skill.turns} ходов шкала хода +${data.atb}%, Песнь не падает.`, 'log-entry player-skill');
+addLifeXP();
+} else if (skill.id === 'sgStarfall') {
+if (!m) return true;
+const hits = [{ m, ...aoeMagHit(m, data.multiplier, 'life'), type: 'magic', fx: 'proj:life' }];
+const st = getDebuff('monster', 'star', m.index);
+if (st) { removeDebuff('monster', 'star', m.index); hits.push({ m, ...aoeMagHit(m, st.mult, 'fire'), type: 'fire', fx: 'proj:fire' }); }
+stargazerFocus(m);
+const r = aoeApply(hits);
+addLifeXP();
+logCombat(`✨ ${skill.name}: ${r.total}`, 'log-entry player-magic', st ? '🌠 звезда упала сразу' : '');
+} else if (skill.id === 'gkGift') {
+addDebuff('player', 'grove', { turnsLeft: 999, regen: data.regen, heal: data.heal, dmg: data.dmg || 0 });
+logCombat(`🌳 Дар рощи: до конца боя ${data.regen}% HP за ход и лечение +${data.heal}%.`, 'log-entry player-skill');
+addLifeXP();
+} else if (skill.id === 'drSpirit') {
+const sp = druidSpirit();
+if (!sp) druidSummon(data);
+else if (m) druidSpiritStrike(m, data.rage, 'ярость духа');
+addLifeXP();
+} else {
+return false;
+}
+return true;
+}
+SKILLS.tgRoot.autoCheck = function () {
+if (getDebuff('player', 'rooting')) return false;
+const alive = (state.battle.monsters || []).filter(m => m.hp > 0);
+return alive.length >= 2 || alive.some(scStrongMonster);
+};
+SKILLS.bsWind.autoCheck = function () { return !getDebuff('player', 'wind'); };
+SKILLS.gkGift.autoCheck = function () { return !getDebuff('player', 'grove'); };
+function scIsDrow() {
+const p = state.player;
+return !!(p && p.raceId === 'drow' && p.subclass);
+}
+DEBUFF_DEFS.static = { icon: '⚡', name: 'Статика', cssClass: 'debuff-paralysis',
+displayCount: (d) => d.stacks || 0,
+tooltip: (d) => `Статика ${d.stacks || 0}/${STATIC_MAX} · на ${STATIC_MAX} — разряд молнии и шкала хода −50%.` };
+DEBUFF_DEFS.stormArmor = { icon: '🌩', name: 'Грозовой доспех', cssClass: 'debuff-guard',
+tooltip: (d) => `Грозовой доспех · входящий урон −${d.cut || 0}%, удар по вам даёт 2 заряда Статики и молнию в ответ · осталось ${d.turnsLeft} ход.` };
+DEBUFF_DEFS.venom = { icon: '🕷', name: 'Яд', cssClass: 'debuff-poison',
+displayCount: (d) => d.stacks || 0,
+tooltip: (d) => `Яд × ${d.stacks || 0} · ${Math.floor((d.per || 0) * (d.stacks || 0))} урона в ход.` };
+DEBUFF_DEFS.shadowStep = { icon: '👣', name: 'Шаг тени', cssClass: 'debuff-rune',
+tooltip: (d) => `Шаг тени · этот ход урон +${d.dmg}%.` };
+DEBUFF_DEFS.double = { icon: '👥', name: 'Теневой двойник', cssClass: 'debuff-rune',
+displayCount: (d) => d.turnsLeft,
+tooltip: (d) => `Теневой двойник · повторяет удары на ${d.pct}% · осталось ${d.turnsLeft} ход.` };
+DEBUFF_DEFS.chargedBlade = { icon: '🗡', name: 'Заряженный клинок', cssClass: 'debuff-paralysis',
+displayCount: () => '',
+tooltip: (d) => `Заряженный клинок · следующий удар оружием +${d.pct}% силы молнии.` };
+DEBUFF_DEFS.tension = { icon: '🌩', name: 'Напряжение', cssClass: 'debuff-paralysis',
+displayCount: (d) => d.stacks || 0,
+tooltip: (d) => (d.stacks || 0) >= 5 ? `Напряжение готово · следующая молния усилена и без маны.` : `Напряжение ${d.stacks || 0}/5 · молнии подряд.` };
+DEBUFF_DEFS.stormFront = { icon: '⛈', name: 'Грозовой фронт', cssClass: 'debuff-paralysis',
+tooltip: (d) => `Грозовой фронт · молния каждый ход · осталось ${d.turnsLeft} ход.` };
+DEBUFF_DEFS.sleep = { icon: '💤', name: 'Сон', cssClass: 'debuff-freeze',
+displayCount: (d) => d.turnsLeft,
+tooltip: (d) => `Сон · пропускает ходы, пока её не ударят · ещё ${d.turnsLeft} ход.` };
+DEBUFF_DEFS.haste = { icon: '💨', name: 'Ускорение', cssClass: 'debuff-regen',
+tooltip: (d) => `Ускорение · шкала хода +${d.atb}% · осталось ${d.turnsLeft} ход.` };
+DEBUFF_DEFS.mistCd = { icon: '⏳', name: 'Сонная дымка: перезарядка', cssClass: 'debuff-paraimmune',
+tooltip: (d) => `Сонная дымка собирается · ещё ${d.turnsLeft} ход.` };
+DEBUFF_DEFS.webbed = { icon: '🕸', name: 'Паутина', cssClass: 'debuff-web',
+tooltip: (d) => `Паутина · шкала хода медленнее на ${d.pct}% · осталось ${d.turnsLeft} ход.` };
+function drowAddVenom(m, n, per) {
+if (!m || m.hp <= 0) return;
+const v = getDebuff('monster', 'venom', m.index);
+const stacks = Math.min(5, (v ? v.stacks : 0) + n);
+addDebuff('monster', 'venom', m.index, { stacks, per: Math.max(per, v ? v.per : 0), turnsLeft: 999 });
+}
+function drowVenomTick() {
+const hits = [];
+aoeAlive().forEach(m => {
+const v = getDebuff('monster', 'venom', m.index);
+if (!v || !v.stacks) return;
+hits.push({ m, miss: false, dmg: monsterTagDmg(m, Math.max(1, Math.floor(v.per * v.stacks)), ['poison']), type: 'poison', fx: 'toxic-small' });
+});
+if (!hits.length) return;
+const r = aoeApply(hits);
+logCombat(`🕷 Яд: ${r.total}`, 'log-entry poison', r.kills ? `убито: ${r.kills}` : '');
+}
+function drowAnyAsleep() {
+return (state.battle.monsters || []).some(m => m.hp > 0 && getDebuff('monster', 'sleep', m.index));
+}
+function drowSleep(m, turns) {
+if (!m || m.hp <= 0) return false;
+if (monsterHasTagFlag(m, 'stunImmune')) return false;
+addDebuff('monster', 'sleep', m.index, { turnsLeft: turns });
+spawnFloatDamage('fighter-monster', 0, 'block', { mon: m, text: 'СОН' });
+return true;
+}
+function subclassMonsterSkip(m) {
+const s = getDebuff('monster', 'sleep', m.index);
+if (!s) return false;
+s.turnsLeft -= 1;
+if (s.turnsLeft <= 0) removeDebuff('monster', 'sleep', m.index); else renderDebuffBar('monster');
+logCombat(`💤 ${m.name} спит.`, 'log-entry magic');
+return true;
+}
+function drowHeroDmgMult(m) {
+const p = state.player;
+const b = state.battle;
+let mult = 1;
+if (p.subclass === 'drow_assassin') {
+const st = getDebuff('player', 'shadowStep');
+if (st) mult *= 1 + st.dmg / 100;
+const v = m ? getDebuff('monster', 'venom', m.index) : null;
+if (v && semiPassiveReady('asSting')) mult *= 1 + 0.03 * v.stacks;
+} else if (p.subclass === 'drow_shadowweaver') {
+const d = getDebuff('player', 'double');
+if (d) mult *= 1 + d.pct / 100;
+} else if (p.subclass === 'drow_stormcaller') {
+if (b.scSurge) mult *= scSkillData('scTension').mult;
+} else if (p.subclass === 'drow_dreamweaver') {
+const n = scSkillData('dwNightmare');
+if (n && m && getDebuff('monster', 'sleep', m.index)) mult *= 1 + n.pct / 100;
+}
+return mult;
+}
+function drowDamageTakenMult(attacker, isMagic) {
+const p = state.player;
+let mult = 1;
+if (attacker) mult *= subclassMonsterWeakMult(attacker);
+if (p.subclass === 'drow_stormguard') {
+const g = scSkillData('sgGround');
+if (g) {
+if (isMagic) mult *= 1 - g.magic / 100;
+const st = attacker ? getDebuff('monster', 'static', attacker.index) : null;
+if (st) mult *= 1 - 0.05 * st.stacks;
+}
+const arm = getDebuff('player', 'stormArmor');
+if (arm && arm.cut) mult *= 1 - arm.cut / 100;
+}
+return mult;
+}
+function drowAtbMult() {
+let mult = 1;
+const h = getDebuff('player', 'haste');
+if (h) mult *= 1 + h.atb / 100;
+return mult;
+}
+function drowApplyPassives(p) {
+if (p.subclass === 'drow_assassin') {
+const d = scSkillData('asDual');
+const off = getOffhandWeapon();
+if (d && off) {
+p.offhandPAtk = Math.floor(getItemStat(off, 'pAtk') * d.off / 100);
+p.skillBonuses.push(`Парные клинки (ур.${scSkillLvl('asDual')}): вторая рука ${d.off}% (+${p.offhandPAtk}), без штрафа точности`);
+} else if (d) p.skillBonuses.push(`Парные клинки: не действует — нужно оружие во второй руке`);
+} else if (p.subclass === 'drow_shadowweaver') {
+const f = scSkillData('swFlesh');
+if (f) { p.maxMp = Math.floor(p.maxMp * (1 + f.mp / 100)); p.skillBonuses.push(`Плоть грозы (ур.${scSkillLvl('swFlesh')}): +${f.mp}% макс. MP`); }
+} else if (p.subclass === 'drow_stormguard') {
+const g = scSkillData('sgGround');
+if (g) p.skillBonuses.push(`Заземление (ур.${scSkillLvl('sgGround')}): маг. урон по вам −${g.magic}%`);
+}
+}
+function drowAccuracyBonus() {
+if (hasSubclass('drow_assassin') && scSkillData('asDual') && getOffhandWeapon()) return DUAL_WIELD_ACCURACY_PENALTY;
+return 0;
+}
+function drowHitAtk(skillId) {
+const p = state.player;
+if (p.subclass === 'drow_shadowweaver' && skillId === 'powerStrike') return Math.floor(p.mAtk * SUBCLASSES.drow_shadowweaver.mods.powerStrike.magPart);
+return 0;
+}
+function drowStrikeMult(skill, data, m, notes) {
+if (hasSubclass('drow_assassin') && skill.id === 'powerStrike' && m && (m.atb || 0) < SUBCLASSES.drow_assassin.mods.powerStrike.backAtb / 100) {
+notes.push('🗡 в спину ×1.5');
+return data.multiplier * SUBCLASSES.drow_assassin.mods.powerStrike.backMult;
+}
+return data.multiplier;
+}
+function drowAfterStrike(skill, m, hitsLanded, totalDamage) {
+const p = state.player;
+if (skill.id !== 'powerStrike' || !m || m.hp <= 0) return '';
+if (p.subclass === 'drow_stormguard') { m.atb = Math.max(0, (m.atb || 0) - SUBCLASSES.drow_stormguard.mods.powerStrike.atbCut / 100); return '⚡ ход −30%'; }
+if (p.subclass === 'drow_shadowweaver') { m.atb = Math.max(0, (m.atb || 0) - SUBCLASSES.drow_shadowweaver.mods.powerStrike.atbCut / 100); return '⚡ ход −20%'; }
+return '';
+}
+function drowOnWeaponHit(m) {
+const p = state.player;
+if (!m) return 0;
+if (p.subclass === 'drow_assassin' && semiPassiveReady('asSting')) {
+drowAddVenom(m, 1, p.pAtk * scSkillData('asSting').tick / 100);
+return 0;
+}
+if (p.subclass === 'drow_shadowweaver') {
+const cb = getDebuff('player', 'chargedBlade');
+if (!cb) return 0;
+removeDebuff('player', 'chargedBlade');
+m.atb = Math.max(0, (m.atb || 0) - 0.10);
+return Math.floor(scHybridPower() * cb.pct / 100 * (1 + getElementDamageBonus('lightning') / 100));
+}
+return 0;
+}
+function subclassDischargeParalyze(m) {
+return hasSubclass('drow_stormguard') && !!m && !!getDebuff('monster', 'static', m.index);
+}
+function subclassAfterDischarge(m, dmg) {
+const p = state.player;
+if (p.subclass === 'drow_assassin') {
+state.battle.playerATB = Math.min(1, (state.battle.playerATB || 0) + SUBCLASSES.drow_assassin.mods.discharge.selfAtb / 100);
+return 'ваш ход +30%';
+}
+if (p.subclass === 'drow_shadowweaver' && semiPassiveReady('swBlade')) {
+addDebuff('player', 'chargedBlade', { pct: scSkillData('swBlade').pct, turnsLeft: 999 });
+return '🗡 клинок заряжен';
+}
+return '';
+}
+function subclassOnParalyze(m) {
+const p = state.player;
+if (p.subclass === 'drow_shadowweaver') {
+const f = scSkillData('swFlesh');
+if (f) { const mp = Math.min(Math.floor(p.maxMp * 0.05), p.maxMp - p.mp); if (mp > 0) p.mp += mp; }
+const d = getDebuff('player', 'double');
+if (d) { d.turnsLeft += 2; renderDebuffBar('player'); logCombat(`👥 Двойник держится дольше: +2 хода.`, 'log-entry player-skill'); }
+else { addDebuff('player', 'double', { turnsLeft: 2, pct: shadowDoublePct() }); logCombat(`👥 Из тени шагает двойник на 2 хода.`, 'log-entry player-skill'); }
+} else if (p.subclass === 'drow_spiderlord' && m && m.hp > 0) {
+spiderList().forEach(s => { if (m.hp > 0) spiderBite(s, m, 'на парализованного'); });
+}
+}
+function shadowDoublePct() {
+const lvl = scSkillLvl('swDouble');
+let pct = lvl ? SKILLS.swDouble.levels[lvl - 1].pct : SKILLS.swDouble.levels[0].pct;
+const deep = scSkillData('swDeep');
+if (deep) pct += deep.pct;
+return pct;
+}
+function subclassSpark(data) {
+const p = state.player;
+const mod = getPlayerSubclass() && getPlayerSubclass().mods.sparkSlash;
+if (!scIsDrow() || !mod) return { targets: data.targets };
+if (mod.fixedTargets) return { targets: mod.fixedTargets };
+if (mod.extraTargets) return { targets: data.targets + mod.extraTargets };
+return { targets: data.targets };
+}
+function subclassAfterSpark(hits) {
+if (!hasSubclass('drow_stormguard')) return '';
+let n = 0;
+hits.forEach(h => { if (!h.miss && h.m && h.m.hp > 0) { stormguardStatic(h.m, 1, true); n++; } });
+return n ? `⚡ Статика: ${n}` : '';
+}
+function stormguardStatic(m, n, quiet) {
+const p = state.player;
+if (!m || m.hp <= 0) return;
+const st = getDebuff('monster', 'static', m.index);
+const stacks = (st ? st.stacks : 0) + n;
+if (stacks >= STATIC_MAX && semiPassiveReady('sgStatic')) {
+removeDebuff('monster', 'static', m.index);
+const d = scSkillData('sgStatic');
+const dmg = monsterTagDmg(m, Math.max(1, Math.floor(p.pAtk * d.pct / 100)), ['magic', 'lightning']);
+m.atb = Math.max(0, (m.atb || 0) * 0.5);
+m.hp -= dmg;
+spawnFloatDamage('fighter-monster', dmg, 'magic', { mon: m });
+logCombat(`⚡ Статика разрядилась: ${dmg}`, 'log-entry player-magic', 'ход твари −50%');
+if (m.hp <= 0) { m.hp = 0; onMonsterDeath(m); }
+} else {
+addDebuff('monster', 'static', m.index, { stacks: Math.min(STATIC_MAX, stacks), turnsLeft: 999 });
+}
+}
+function subclassStormLegacyFreq(freq) {
+return (hasSubclass('drow_stormguard') && scSkillData('sgConductor')) ? Math.max(1, freq - 1) : freq;
+}
+function subclassStormLegacyBonus() {
+const d = hasSubclass('drow_stormguard') ? scSkillData('sgConductor') : null;
+return d ? Math.floor(state.player.pDef * d.def / 100) : 0;
+}
+function drowAfterHeroHit(m, dmg, crit) {
+const p = state.player;
+if (p.hp <= 0 || !m) return;
+if (p.subclass === 'drow_stormguard' && m.hp > 0) {
+const arm = getDebuff('player', 'stormArmor');
+if (arm) {
+const bolt = monsterTagDmg(m, Math.max(1, Math.floor(p.pAtk * arm.pct / 100)), ['magic', 'lightning']);
+m.hp -= bolt;
+spawnFloatDamage('fighter-monster', bolt, 'magic', { mon: m });
+logCombat(`🌩 Грозовой доспех: ${bolt}`, 'log-entry player-magic');
+if (m.hp <= 0) { m.hp = 0; onMonsterDeath(m); return; }
+stormguardStatic(m, 2);
+} else if (semiPassiveReady('sgStatic')) {
+stormguardStatic(m, 1);
+}
+}
+if (p.subclass === 'drow_dreamweaver' && semiPassiveReady('dwMist') && !getDebuff('player', 'mistCd') && p.hp / p.maxHp * 100 < SKILLS.dwMist.threshold) {
+let n = 0;
+aoeAlive().forEach(x => { if (drowSleep(x, 1)) n++; });
+addDebuff('player', 'mistCd', { turnsLeft: scSkillData('dwMist').every });
+logCombat(`💤 Сонная дымка: уснули ${n}.`, 'log-entry player-magic');
+}
+}
+function drowOnHeroDamage(m, dmg) {
+if (m && dmg > 0 && getDebuff('monster', 'sleep', m.index)) {
+removeDebuff('monster', 'sleep', m.index);
+logCombat(`💤 ${m.name} просыпается.`, 'log-entry');
+}
+}
+function drowOnMonsterDeath(m) {
+if (hasSubclass('drow_assassin')) {
+const d = scSkillData('asLight');
+if (d) state.battle.playerATB = Math.min(1, (state.battle.playerATB || 0) + d.atb / 100);
+}
+}
+function subclassOnHeroActionDrow(kind, skill) {
+const b = state.battle;
+b.scSurge = false;
+if (!hasSubclass('drow_stormcaller')) return;
+const isBolt = skill && LIGHTNING_SPELLS.includes(skill.id);
+const t = getDebuff('player', 'tension');
+const stacks = t ? t.stacks : 0;
+if (!isBolt) { if (t) removeDebuff('player', 'tension'); return; }
+const ten = scSkillData('scTension');
+if (ten && stacks >= 5) {
+b.scSurge = true;
+removeDebuff('player', 'tension');
+logCombat(`🌩 Напряжение: молния ×${ten.mult} и без маны!`, 'log-entry player-skill');
+return;
+}
+if (ten) addDebuff('player', 'tension', { stacks: Math.min(5, stacks + 1), turnsLeft: 999 });
+}
+function drowMpCost(skill, cost) {
+return state.battle.scSurge ? 0 : cost;
+}
+function subclassChainMindBonus() {
+const d = hasSubclass('drow_stormcaller') ? scSkillData('scBlood') : null;
+return d ? d.chance : 0;
+}
+function subclassOnChainMind() {
+const p = state.player;
+if (!hasSubclass('drow_stormcaller') || !semiPassiveReady('scSpark')) return;
+const alive = aoeAlive();
+if (!alive.length) return;
+const t = alive[Math.floor(Math.random() * alive.length)];
+const d = scSkillData('scSpark');
+const h = aoeMagHit(t, d.pct / 100, 'lightning');
+const r = aoeApply([{ m: t, ...h, type: 'magic', fx: 'bolt' }]);
+logCombat(`✨ Искрение: ${h.miss ? 'мимо' : r.total}`, 'log-entry player-magic');
+}
+function stormcallerFrontTick() {
+const f = getDebuff('player', 'stormFront');
+if (!f) return;
+const alive = aoeAlive();
+if (!alive.length) return;
+const t = alive[Math.floor(Math.random() * alive.length)];
+const h = aoeMagHit(t, f.pct / 100, 'lightning');
+const r = aoeApply([{ m: t, ...h, type: 'magic', fx: 'bolt' }]);
+logCombat(`⛈ Грозовой фронт: ${h.miss ? 'мимо' : r.total}`, 'log-entry player-magic');
+}
+function drowSpellElem(skillId, elemId) {
+if (skillId !== 'fireball') return elemId;
+if (hasSubclass('drow_stormcaller')) return 'lightning';
+if (hasSubclass('drow_spiderlord')) return 'death';
+return elemId;
+}
+function drowSpellAfter(skill, m, dmg) {
+const p = state.player;
+if (skill.id !== 'fireball') return false;
+if (p.subclass === 'drow_stormcaller') {
+spawnFloatDamage('fighter-monster', dmg, 'magic');
+const other = aoeAlive().find(x => x !== m);
+const notes = [];
+if (other) {
+const splash = monsterTagDmg(other, Math.max(1, Math.floor(dmg * SUBCLASSES.drow_stormcaller.mods.fireball.splash / 100)), ['magic', 'lightning']);
+other.hp -= Math.min(splash, other.hp - 1);
+spawnFloatDamage('fighter-monster', splash, 'magic', { mon: other });
+notes.push(`отскок в ${other.name}: ${splash}`);
+}
+logCombat(`⚡ ${skill.name}: ${dmg}`, 'log-entry player-magic', notes.join(' · '));
+return true;
+}
+if (p.subclass === 'drow_spiderlord') {
+spawnFloatDamage('fighter-monster', dmg, 'poison');
+const lvl = scSkillLvl('slVenom');
+const tick = lvl ? SKILLS.slVenom.levels[lvl - 1].tick : 4;
+if (m.hp > 0) drowAddVenom(m, 2, p.mAtk * tick / 100);
+logCombat(`🕷 ${skill.name}: ${dmg}`, 'log-entry player-magic', m.hp > 0 ? '🕷 яд ×2' : '');
+return true;
+}
+return false;
+}
+function drowOverrideSkill(skill, data, m) {
+const p = state.player;
+if (p.subclass !== 'drow_dreamweaver') return false;
+if (skill.id === 'fireball') {
+const alive = aoeAlive().filter(x => !getDebuff('monster', 'sleep', x.index));
+const t = alive.find(x => x !== m) || alive[0];
+if (!t || (t === m && alive.length === 1)) {
+if (!m || m.hp <= 0) return true;
+const h = aoeMagHit(m, data.multiplier, 'lightning');
+const r = aoeApply([{ m, ...h, type: 'magic', fx: 'bolt' }]);
+addElementXP('lightning');
+logCombat(`💤 Кошмар: ${h.miss ? 'мимо' : r.total}`, 'log-entry player-magic', r.kills ? `убито: ${r.kills}` : '');
+updateBattleUI();
+return true;
+}
+const ok = drowSleep(t, SUBCLASSES.drow_dreamweaver.mods.fireball.sleepTurns);
+logCombat(ok ? `💤 ${skill.name}: ${t.name} засыпает.` : `💤 ${t.name} не поддаётся сну.`, 'log-entry player-magic');
+updateBattleUI();
+return true;
+}
+if (skill.id === 'discharge') {
+const mod = SUBCLASSES.drow_dreamweaver.mods.discharge;
+const notes = [];
+if (m && m.hp > 0) {
+const h = aoeMagHit(m, data.multiplier * mod.dmgPart, 'lightning');
+const r = aoeApply([{ m, ...h, type: 'magic', fx: 'bolt' }]);
+notes.push(h.miss ? 'искра мимо' : `искра ${r.total}`);
+}
+const heal = aoeHeal(rollHealAmount(data.multiplier));
+state.battle.playerATB = Math.min(1, (state.battle.playerATB || 0) + mod.selfAtb / 100);
+addElementXP('lightning');
+logCombat(`✨ ${skill.name}: +${heal} HP`, 'log-entry potion', notes.concat(['ваш ход +30%']).join(' · '));
+updateBattleUI(); checkHealPotion();
+return true;
+}
+return false;
+}
+function subclassChainTargets(data) {
+if (hasSubclass('drow_spiderlord')) return data.targets + spiderList().length;
+return data.targets;
+}
+function subclassAfterChain(hits) {
+const p = state.player;
+const cur = getCurrentMonster();
+if (p.subclass === 'drow_dreamweaver') {
+let n = 0;
+hits.forEach(h => { if (!h.miss && h.m && h.m.hp > 0 && h.m !== cur && drowSleep(h.m, SUBCLASSES.drow_dreamweaver.mods.chainLightning.sleepTurns)) n++; });
+return n ? `💤 уснули: ${n}` : '';
+}
+return '';
+}
+let scDrowHealBusy = false;
+function drowOnHeroHeal(healed, overflow) {
+const p = state.player;
+if (p.subclass !== 'drow_dreamweaver' || !state.battle.active || healed <= 0 || scDrowHealBusy) return;
+const l = scSkillData('dwLullaby');
+if (!l || !drowAnyAsleep()) return;
+scDrowHealBusy = true;
+const extra = Math.min(Math.floor(healed * l.heal / 100), p.maxHp - p.hp);
+if (extra > 0) p.hp += extra;
+scDrowHealBusy = false;
+}
+function drowRegenMult() {
+const l = hasSubclass('drow_dreamweaver') ? scSkillData('dwLullaby') : null;
+return (l && drowAnyAsleep()) ? l.regen : 1;
+}
+function spiderList() { return (typeof alliesList === 'function' ? alliesList() : []).filter(a => a.spider); }
+function spiderMother() { return spiderList().find(a => a.kind === 'mother') || null; }
+function spiderMake(kind, power) {
+const p = state.player;
+const K = SPIDER_KINDS[kind];
+const brood = kind === 'spawn' ? scSkillData('slBrood') : null;
+const k = power / 100 * (brood ? 1 + brood.pct / 100 : 1);
+const hp = p.maxHp * K.hp * k;
+return { kind, spider: true, name: K.name, img: K.img, hp, maxHp: hp, atk: p.mAtk * K.atk * k, dodge: 10, slow: false };
+}
+function spiderPower() {
+const d = scSkillData('slMother');
+return d ? d.power : SKILLS.slMother.levels[0].power;
+}
+function spiderLay(why) {
+if (!spiderMother() || !alliesHasRoom()) return null;
+const a = alliesAdd(spiderMake('spawn', spiderPower()));
+if (a) logCombat(`🕷 Матка откладывает паучонка${why ? ` (${why})` : ''}: ${a.hp} HP.`, 'log-entry player-skill');
+return a;
+}
+function spiderBite(s, m, why) {
+if (!s || !m || m.hp <= 0) return;
+const dmg = monsterTagDmg(m, Math.max(1, Math.floor(s.atk - (m.pDef || 0) * ALLY_PDEF_FACTOR)), ['physical', 'poison']);
+const r = aoeApply([{ m, miss: false, dmg, type: 'dmg', fx: 'slash' }]);
+subclassOnAllyHit(s, m);
+logCombat(`🕷 ${s.name}${why ? ` (${why})` : ''}: ${r.total}`, 'log-entry player');
+}
+function subclassOnAllyHit(a, m) {
+if (scIsDwarf()) { dwarfOnAllyHit(a, m); return; }
+const p = state.player;
+if (!a.spider || !m || m.hp <= 0) return;
+const silk = scSkillData('slSilk');
+addDebuff('monster', 'webbed', m.index, { turnsLeft: 2, pct: silk ? silk.slow : 15 });
+if (semiPassiveReady('slVenom')) drowAddVenom(m, 1, p.mAtk * scSkillData('slVenom').tick / 100);
+}
+function drowOnHeroTurn() {
+const p = state.player;
+const b = state.battle;
+if (!b.active) return;
+drowVenomTick();
+if (p.subclass === 'drow_stormcaller') stormcallerFrontTick();
+if (p.subclass === 'drow_spiderlord' && spiderMother()) {
+b.slLayTimer = (b.slLayTimer || 0) + 1;
+if (b.slLayTimer >= SKILLS.slMother.layEvery) { b.slLayTimer = 0; spiderLay(); }
+}
+}
+function drowOnBattleStart() {
+const b = state.battle;
+b.scSurge = false;
+b.slLayTimer = 0;
+}
+function drowPerformActive(skill, data) {
+const p = state.player;
+const m = getCurrentMonster();
+if (skill.id === 'sgArmor') {
+addDebuff('player', 'stormArmor', { turnsLeft: skill.turns, pct: data.pct, cut: data.cut || 0 });
+logCombat(`🌩 Грозовой доспех: ${skill.turns} ходов удары по вам дают Статику и молнию в ответ.`, 'log-entry player-skill');
+spawnFloatDamage('fighter-player', 0, 'magic', { text: 'ДОСПЕХ' });
+} else if (skill.id === 'asStep') {
+addDebuff('player', 'shadowStep', { turnsLeft: 2, dmg: data.dmg });
+state.battle.playerATB = 1;
+logCombat(`👣 Шаг тени: ход прямо сейчас, урон +${data.dmg}%.`, 'log-entry player-skill');
+spawnFloatDamage('fighter-player', 0, 'dodge', { text: 'ШАГ' });
+} else if (skill.id === 'swDouble') {
+const deep = scSkillData('swDeep');
+addDebuff('player', 'double', { turnsLeft: skill.turns + (deep ? 1 : 0), pct: shadowDoublePct() });
+logCombat(`👥 Теневой двойник: ${skill.turns + (deep ? 1 : 0)} ходов повторяет удары на ${shadowDoublePct()}%.`, 'log-entry player-skill');
+} else if (skill.id === 'scStormFront') {
+addDebuff('player', 'stormFront', { turnsLeft: skill.turns + 1, pct: data.pct });
+logCombat(`⛈ Грозовой фронт: ${skill.turns} хода молнии бьют сами.`, 'log-entry player-magic');
+addElementXP('lightning');
+} else if (skill.id === 'dwHaste') {
+addDebuff('player', 'haste', { turnsLeft: skill.turns, atb: data.atb });
+logCombat(`💨 Ускорение: ${skill.turns} ходов шкала хода +${data.atb}%.`, 'log-entry player-skill');
+} else if (skill.id === 'slMother') {
+if (!spiderMother()) {
+if (!alliesHasRoom()) { const old = spiderList().find(s => s.kind === 'spawn'); if (old) old.hp = 0; alliesReap(); }
+const a = alliesAdd(spiderMake('mother', data.power));
+if (a) logCombat(`🕷 Паучиха-матка выходит из тени: ${a.hp} HP, укус ${a.atk}.`, 'log-entry player-skill');
+state.battle.slLayTimer = 0;
+} else if (!spiderLay('по приказу')) {
+if (m) spiderBite(spiderMother(), m, 'по приказу');
+}
+addElementXP('death');
+} else {
+return false;
+}
+return true;
+}
+SKILLS.sgArmor.autoCheck = function () {
+if (getDebuff('player', 'stormArmor')) return false;
+const alive = (state.battle.monsters || []).filter(m => m.hp > 0);
+return alive.length >= 2 || alive.some(scStrongMonster);
+};
+SKILLS.swDouble.autoCheck = function () { return !getDebuff('player', 'double'); };
+SKILLS.scStormFront.autoCheck = function () { return !getDebuff('player', 'stormFront'); };
+SKILLS.dwHaste.autoCheck = function () { return !getDebuff('player', 'haste'); };
+function scIsDwarf() {
+const p = state.player;
+return !!(p && p.raceId === 'dwarf' && p.subclass);
+}
+DEBUFF_DEFS.breach = { icon: '🔨', name: 'Пролом', cssClass: 'debuff-wound',
+displayCount: (d) => d.stacks || 0,
+tooltip: (d) => `Пролом × ${d.stacks || 0} · защита −${(d.stacks || 0) * BREACH_PCT}%.` };
+DEBUFF_DEFS.heat = { icon: '🔥', name: 'Жар', cssClass: 'debuff-burn',
+displayCount: (d) => d.stacks || 0,
+tooltip: (d) => `Жар ${d.stacks || 0}/${HEAT_MAX} · защита −${(d.stacks || 0) * 5}%.` };
+DEBUFF_DEFS.closeArmor = { icon: '🛡', name: 'Сомкнутая броня', cssClass: 'debuff-guard',
+tooltip: (d) => `Сомкнутая броня · поглощение ×${d.mult} · осталось ${d.turnsLeft} ход.` };
+DEBUFF_DEFS.temper = { icon: '⚒', name: 'Закалка', cssClass: 'debuff-guard',
+displayCount: (d) => d.stacks || 0,
+tooltip: (d) => `Закалка · +${d.stacks || 0} поглощения до конца боя.` };
+DEBUFF_DEFS.veinSense = { icon: '💎', name: 'Чутьё жилы', cssClass: 'debuff-rune',
+displayCount: () => '',
+tooltip: (d) => `Чутьё жилы · редкая добыча +${d.rare}% · до конца боя.` };
+DEBUFF_DEFS.bellows = { icon: '🔥', name: 'Раздутые мехи', cssClass: 'debuff-burn',
+tooltip: (d) => `Раздутые мехи · урон +${d.dmg || 0}%, огонь −${d.cut}% маны, Шар +2 Жара · осталось ${d.turnsLeft} ход.` };
+DEBUFF_DEFS.runeStone = { icon: '🪨', name: 'Руна Камня', cssClass: 'debuff-guard', displayCount: () => '',
+tooltip: (d) => `Руна Камня · урон по вам −${d.pct}% · до конца боя.` };
+DEBUFF_DEFS.runePower = { icon: '⚔', name: 'Руна Силы', cssClass: 'debuff-rune', displayCount: () => '',
+tooltip: (d) => `Руна Силы · ваш урон +${d.pct}% · до конца боя.` };
+DEBUFF_DEFS.runeLife = { icon: '✚', name: 'Руна Жизни', cssClass: 'debuff-regen', displayCount: () => '',
+tooltip: (d) => `Руна Жизни · ${d.regen}% HP за ход · до конца боя.` };
+DEBUFF_DEFS.runeGuard = { icon: '❄', name: 'Защита вьюги', cssClass: 'debuff-guard',
+tooltip: (d) => `После бурана · урон по вам −${d.cut}% · осталось ${d.turnsLeft} ход.` };
+DEBUFF_DEFS.trapRune = { icon: '✶', name: 'Руна-ловушка', cssClass: 'debuff-rune', displayCount: () => '',
+tooltip: () => `Руна-ловушка · взорвётся, когда тварь соберётся ударить.` };
+DEBUFF_DEFS.wardShield = { icon: '🔰', name: 'Охранная руна', cssClass: 'debuff-guard',
+displayCount: (d) => d.amount || 0,
+tooltip: (d) => `Охранная руна · примет ещё ${d.amount || 0} урона.` };
+DEBUFF_DEFS.wardCd = { icon: '⏳', name: 'Охранная руна: перезарядка', cssClass: 'debuff-paraimmune',
+tooltip: (d) => `Охранная руна гаснет · ещё ${d.turnsLeft} ход.` };
+function dwarfDefSync(m) {
+if (!m) return;
+if (m._dwBaseP === undefined) { m._dwBaseP = m.pDef || 0; m._dwBaseM = m.mDef || 0; }
+const br = getDebuff('monster', 'breach', m.index);
+const ht = getDebuff('monster', 'heat', m.index);
+const cut = (br ? br.stacks * BREACH_PCT : 0) + (ht ? ht.stacks * 5 : 0);
+const k = Math.max(0, 1 - cut / 100);
+m.pDef = Math.floor(m._dwBaseP * k);
+m.mDef = Math.floor(m._dwBaseM * k);
+}
+function dwarfBreach(m, n) {
+if (!m || m.hp <= 0) return 0;
+const br = getDebuff('monster', 'breach', m.index);
+const stacks = Math.min(BREACH_MAX, (br ? br.stacks : 0) + (n || 1));
+addDebuff('monster', 'breach', m.index, { stacks, turnsLeft: 999 });
+dwarfDefSync(m);
+return stacks;
+}
+function dwarfHeat(m, n) {
+const p = state.player;
+if (!m || m.hp <= 0) return 0;
+const ht = getDebuff('monster', 'heat', m.index);
+let stacks = Math.min(HEAT_MAX, (ht ? ht.stacks : 0) + n);
+if (stacks >= HEAT_MAX && semiPassiveReady('fmSparks')) {
+const d = scSkillData('fmSparks');
+const others = aoeAlive().filter(x => x !== m);
+if (others.length) {
+const per = Math.max(1, Math.floor(p.mAtk * d.pct / 100));
+others.forEach(x => { const dmg = monsterTagDmg(x, per, ['magic', 'fire']); x.hp = Math.max(1, x.hp - dmg); spawnFloatDamage('fighter-monster', dmg, 'fire', { mon: x }); });
+logCombat(`✨ Искры: ${m.name} вспыхивает — ${per} соседям.`, 'log-entry player-magic');
+}
+stacks = 2;
+}
+addDebuff('monster', 'heat', m.index, { stacks, turnsLeft: 999 });
+dwarfDefSync(m);
+return stacks;
+}
+function dwarfGreedCount(m) {
+const g = m ? getDebuff('monster', 'greedMark', m.index) : null;
+return g ? ((Array.isArray(g.marks) && g.marks.length) || 1) : 0;
+}
+function dwarfWeaponCat() {
+const w = state.player.equipment.weapon;
+return w ? getWeaponCategory(w.name) : null;
+}
+function dwarfHeroDmgMult(m) {
+const p = state.player;
+let mult = 1;
+if (p.subclass === 'dwarf_hammerer') {
+const h = scSkillData('hmHeavy');
+const cat = dwarfWeaponCat();
+if (h && (cat === 'maces' || cat === 'axes')) mult *= 1 + h.pct / 100;
+const ice = scSkillData('hmIce');
+if (ice && m && getDebuff('monster', 'freeze', m.index)) mult *= 1 + ice.dmg / 100;
+} else if (p.subclass === 'dwarf_forgemaster') {
+const bw = getDebuff('player', 'bellows');
+if (bw && bw.dmg) mult *= 1 + bw.dmg / 100;
+} else if (p.subclass === 'dwarf_runemaster') {
+const r = getDebuff('player', 'runePower');
+if (r) mult *= 1 + r.pct / 100;
+}
+return mult;
+}
+function dwarfDamageTakenMult(attacker) {
+const p = state.player;
+let mult = 1;
+if (attacker) mult *= subclassMonsterWeakMult(attacker);
+if (p.subclass === 'dwarf_steelwall' && attacker) mult *= Math.max(0.5, 1 - 0.04 * dwarfGreedCount(attacker));
+const rs = getDebuff('player', 'runeStone');
+if (rs) mult *= 1 - rs.pct / 100;
+const rg = getDebuff('player', 'runeGuard');
+if (rg) mult *= 1 - rg.cut / 100;
+return mult;
+}
+function subclassFlatReduce(base) {
+if (!hasSubclass('dwarf_steelwall')) return base;
+const c = getDebuff('player', 'closeArmor');
+const t = getDebuff('player', 'temper');
+return base * (c ? c.mult : 1) + (t ? t.stacks : 0);
+}
+function subclassPlayerUnmovable() {
+return hasSubclass('dwarf_steelwall') && !!scSkillData('swlUnmoved');
+}
+function dwarfApplyPassives(p) {
+if (p.subclass === 'dwarf_steelwall') {
+const s = scSkillData('swlSteel');
+if (s && typeof T4_SETS !== 'undefined') {
+let heavy = 0;
+Object.values(p.equipment).forEach(it => {
+if (!it || !it.setId || !it.stats || !it.stats.pDef) return;
+const set = T4_SETS.find(x => x.id === it.setId);
+if (set && set.weight === 'heavy') heavy += getItemStat(it, 'pDef');
+});
+const add = Math.floor(heavy * s.pct / 100);
+p.pDef += add;
+p.skillBonuses.push(`Гномья сталь (ур.${scSkillLvl('swlSteel')}): +${add} защиты от тяжёлой брони`);
+}
+const u = scSkillData('swlUnmoved');
+if (u) { p.maxHp = Math.floor(p.maxHp * (1 + u.hp / 100)); p.skillBonuses.push(`Несдвигаемый (ур.${scSkillLvl('swlUnmoved')}): не оглушить, +${u.hp}% HP`); }
+} else if (p.subclass === 'dwarf_prospector') {
+const l = scSkillData('prLode'); if (l) p.skillBonuses.push(`Жила (ур.${scSkillLvl('prLode')}): ресурсы +${l.pct}%`);
+const t = scSkillData('prThrift'); if (t) p.skillBonuses.push(`Скупой расчёт (ур.${scSkillLvl('prThrift')}): Оболы +${t.pct}%`);
+} else if (p.subclass === 'dwarf_forgemaster') {
+const s = scSkillData('fmSmith'); if (s) p.skillBonuses.push(`Рука мастера (ур.${scSkillLvl('fmSmith')}): двойной бросок редкости ${s.reroll}%, экономия материалов ${s.save}%`);
+} else if (p.subclass === 'dwarf_runemaster') {
+const s = scSkillData('rmSteady'); if (s) p.skillBonuses.push(`Твёрдая рука (ур.${scSkillLvl('rmSteady')}): подгонка +${s.chance}%, неудача за полцены`);
+}
+}
+function dwarfHitAtk(skillId) {
+const p = state.player;
+if (p.subclass === 'dwarf_steelwall' && skillId === 'powerStrike') return Math.floor(p.pDef * SUBCLASSES.dwarf_steelwall.mods.powerStrike.defPart);
+return 0;
+}
+function dwarfAfterStrike(skill, m, hitsLanded, totalDamage) {
+const p = state.player;
+if (!m) return '';
+if (p.subclass === 'dwarf_hammerer') {
+if (skill.id === 'powerStrike' && m.hp > 0) return `🔨 пролом ×${dwarfBreach(m, 1)}`;
+if (skill.id === 'dwarfGreed' && m.hp > 0 && getDebuff('monster', 'freeze', m.index)) {
+addGreedMark(m, getSkillData('dwarfGreed').markTurns || 3, 'warrior');
+return '💰 по льду — ещё метка';
+}
+}
+if (p.subclass === 'dwarf_prospector' && skill.id === 'powerStrike' && m.hp <= 0) {
+m._dwExtraRoll = (m._dwExtraRoll || 0) + 1;
+return '⛏ лишний бросок добычи';
+}
+return '';
+}
+function dwarfOnWeaponHit(m) {
+const p = state.player;
+if (p.subclass === 'dwarf_hammerer' && m && semiPassiveReady('hmCrack')) {
+const b = state.battle;
+b.hmHits = (b.hmHits || 0) + 1;
+if (b.hmHits >= scSkillData('hmCrack').every) { b.hmHits = 0; dwarfBreach(m, 1); }
+}
+return 0;
+}
+function subclassQuakeHit(h) {
+if (!hasSubclass('dwarf_hammerer') || h.miss || !h.m) return;
+if (getDebuff('monster', 'freeze', h.m.index)) {
+h.dmg = Math.floor(h.dmg * 2);
+removeDebuff('monster', 'freeze', h.m.index);
+h.shattered = true;
+}
+}
+function subclassQuakeFreezeBonus() {
+const d = hasSubclass('dwarf_hammerer') ? scSkillData('hmIce') : null;
+return d ? d.freeze : 0;
+}
+function subclassGreedMax() {
+return hasSubclass('dwarf_prospector') ? PROSPECTOR_GREED_MAX : GREED_MAX_MARKS;
+}
+function subclassGreedPerMark() {
+return hasSubclass('dwarf_prospector') ? PROSPECTOR_GREED_PER : GREED_REWARD_PER_MARK;
+}
+function subclassLootMods(m, greedN) {
+const p = state.player;
+const r = { drop: 1, rare: 1, material: 1, gold: 1, rolls: 0 };
+if (!scIsDwarf() || !m) return r;
+if (m._dwExtraRoll) r.rolls += m._dwExtraRoll;
+if (m._veinTouched) r.rolls += 1;
+if (p.subclass === 'dwarf_prospector') {
+const v = getDebuff('player', 'veinSense');
+if (v) r.rare = 1 + v.rare / 100;
+const l = scSkillData('prLode'); if (l) r.material = 1 + l.pct / 100;
+const t = scSkillData('prThrift'); if (t) r.gold = 1 + t.pct / 100;
+const eye = scSkillData('prEye');
+if (eye && semiPassiveReady('prEye') && greedN >= eye.need) r.rolls += 1;
+}
+return r;
+}
+function subclassBonusLoot(m, greedN) {
+const p = state.player;
+if (!scIsDwarf() || !m) return;
+const giveOre = (why) => {
+addToInventory({ name: 'Руда железа', icon: 'img/materials/iron_ore.webp', type: 'material', sellPrice: 3, qty: 1 });
+logLoot(`⛏ Руда железа`, 'log-loot', why);
+};
+if (p.subclass === 'dwarf_prospector' && greedN > 0 && Math.random() * 100 < 10 * greedN) giveOre(`метки Жадности ×${greedN}`);
+if (p.subclass === 'dwarf_prospector' && m.soul && semiPassiveReady('prEye') && greedN >= scSkillData('prEye').need && typeof addDustToInventory === 'function') {
+addDustToInventory('green', 1);
+logLoot(`✨ Зелёная пыль ×1`, 'log-loot', 'Глаз старателя');
+}
+if (p.subclass === 'dwarf_forgemaster' && greedN > 0 && m._dwHot) giveOre('раскалённая тварь');
+}
+function dwarfMpCost(skill, cost) {
+const b = getDebuff('player', 'bellows');
+if (b && skill.id === 'fireball') return Math.max(1, Math.ceil(cost * (1 - b.cut / 100)));
+return cost;
+}
+function dwarfSpellAfter(skill, m, dmg) {
+const p = state.player;
+if (skill.id !== 'fireball' || !m) return false;
+if (p.subclass === 'dwarf_forgemaster' && m.hp > 0) {
+dwarfHeat(m, getDebuff('player', 'bellows') ? 2 : 1);
+}
+if (p.subclass === 'dwarf_stonecaller') {
+stonecallerElementals().forEach(e => { if (m.hp > 0) stonecallerStrike(e, m, 0.5, 'разгорелся'); });
+}
+return false;
+}
+function dwarfOverrideSkill(skill, data, m) {
+if (hasSubclass('dwarf_runemaster') && skill.id === 'fireball') {
+if (!m || m.hp <= 0) return true;
+if (getDebuff('monster', 'trapRune', m.index)) dwarfOnMonsterAct(m);
+if (m.hp <= 0) return true;
+const nowMod = SUBCLASSES.dwarf_runemaster.mods.fireball;
+const hNow = aoeMagHit(m, data.multiplier * nowMod.nowMult, 'fire');
+const rNow = aoeApply([{ m, ...hNow, type: 'fire', fx: 'proj:fire' }]);
+if (m.hp <= 0) { addElementXP('fire'); logCombat(`✶ ${skill.name}: ${hNow.miss ? 'мимо' : rNow.total}`, 'log-entry player-magic'); updateBattleUI(); return true; }
+addDebuff('monster', 'trapRune', m.index, { mult: data.multiplier * SUBCLASSES.dwarf_runemaster.mods.fireball.trapMult, turnsLeft: 999 });
+addElementXP('fire');
+logCombat(`✶ ${skill.name}: ${hNow.miss ? 'мимо' : rNow.total}, на ${m.name} начерчена ловушка.`, 'log-entry player-magic');
+spawnFloatDamage('fighter-monster', 0, 'magic', { mon: m, text: '✶' });
+updateBattleUI();
+return true;
+}
+return false;
+}
+function dwarfOnMonsterAct(m) {
+const t = getDebuff('monster', 'trapRune', m.index);
+if (!t) return;
+removeDebuff('monster', 'trapRune', m.index);
+const h = aoeMagHit(m, t.mult, 'fire');
+const r = aoeApply([{ m, ...h, type: 'fire', fx: 'proj:fire' }]);
+logCombat(`✶ Руна-ловушка взрывается: ${h.miss ? 'мимо' : r.total}`, 'log-entry player-magic');
+}
+function subclassRuneMult(m) {
+if (!hasSubclass('dwarf_forgemaster') || !m) return 1;
+const ht = getDebuff('monster', 'heat', m.index);
+if (!ht) return 1;
+removeDebuff('monster', 'heat', m.index);
+dwarfBreach(m, 1);
+m._dwTempered = true;
+return SUBCLASSES.dwarf_forgemaster.mods.blizzardRune.temperMult;
+}
+function subclassAfterRune(targets) {
+const p = state.player;
+if (p.subclass === 'dwarf_forgemaster') {
+const n = targets.filter(m => m._dwTempered).length;
+targets.forEach(m => { m._dwTempered = false; });
+if (n) logCombat(`⚒ Закалка: ${n} — ×1.8 и пролом.`, 'log-entry player-magic');
+} else if (p.subclass === 'dwarf_runemaster') {
+const mod = SUBCLASSES.dwarf_runemaster.mods.blizzardRune;
+addDebuff('player', 'runeGuard', { turnsLeft: mod.guardTurns + 1, cut: mod.guardCut });
+} else if (p.subclass === 'dwarf_stonecaller') {
+const lvl = scSkillLvl('scSummon');
+if (lvl) stonecallerSummon(SKILLS.scSummon.levels[lvl - 1], 'из бурана');
+}
+}
+const RUNE_CYCLE = ['runeStone', 'runePower', 'runeLife'];
+function runemasterNextRune() {
+return RUNE_CYCLE.find(id => !getDebuff('player', id)) || null;
+}
+function runemasterAbsorb(dmg) {
+const b = state.battle;
+if (!(b.rmShield > 0)) return dmg;
+const take = Math.min(b.rmShield, dmg);
+b.rmShield -= take;
+if (b.rmShield > 0) addDebuff('player', 'wardShield', { amount: b.rmShield, turnsLeft: 999 }); else removeDebuff('player', 'wardShield');
+logCombat(`🔰 Охранная руна приняла ${take}.`, 'log-entry potion');
+return dmg - take;
+}
+function stonecallerElementals() { return (typeof alliesList === 'function' ? alliesList() : []).filter(a => a.elemental); }
+function stonecallerSummon(data, why) {
+const p = state.player;
+const b = state.battle;
+const list = stonecallerElementals();
+if (list.length >= 3 && !list.some(e => e.kind === 'great')) {
+const fus = scSkillData('scFusion');
+const k = fus ? fus.mult : 1.2;
+const hp = list.reduce((s, e) => s + e.maxHp, 0) * k;
+const atk = list.reduce((s, e) => s + e.atk, 0) * k;
+list.forEach(e => { e.hp = 0; e.fused = true; });
+b.allies = (b.allies || []).filter(a => !a.fused);
+const g = alliesAdd({ kind: 'great', elemental: true, name: 'Великий элементаль', img: 'img/allies/elemental_great.webp', hp, maxHp: hp, atk,
+taunt: true, burn: true, vein: true, absorb: list[0].absorb || 0, dodge: 0, slow: false });
+if (g) logCombat(`🗿 Слияние! Великий элементаль: ${g.hp} HP, удар ${g.atk}.`, 'log-entry player-skill');
+return;
+}
+if (list.some(e => e.kind === 'great')) { logCombat(`🗿 Великий элементаль уже стоит.`, 'log-entry'); return; }
+const kind = ELEMENTAL_ORDER[(b.scNext || 0) % ELEMENTAL_ORDER.length];
+b.scNext = (b.scNext || 0) + 1;
+const K = ELEMENTAL_KINDS[kind];
+const f = data.power / 100;
+const sb = scSkillData('scStoneblood');
+const a = { kind, elemental: true, name: K.name, img: K.img, hp: p.maxHp * K.hp * f, atk: p.mAtk * K.atk * f + (sb ? p.mAtk * sb.atk / 100 : 0),
+taunt: !!K.taunt, burn: !!K.burn, vein: !!K.vein, absorb: sb ? Math.ceil(p.flatDamageReduce || 0) : 0, dodge: 0, slow: false };
+a.maxHp = a.hp;
+if (!alliesHasRoom()) return;
+const added = alliesAdd(a);
+if (added) logCombat(`🗿 ${added.name}${why ? ` (${why})` : ''}: ${K.desc}. ${added.hp} HP, удар ${added.atk}.`, 'log-entry player-skill');
+addElementXP('ice');
+}
+function stonecallerStrike(e, m, mult, why) {
+if (!e || !m || m.hp <= 0) return;
+const dmg = monsterTagDmg(m, Math.max(1, Math.floor(e.atk * mult - (m.pDef || 0) * ALLY_PDEF_FACTOR)), ['physical']);
+dwarfOnAllyHit(e, m);
+const r = aoeApply([{ m, miss: false, dmg, type: 'dmg', fx: 'slash' }]);
+logCombat(`🗿 ${e.name}${why ? ` (${why})` : ''}: ${r.total}`, 'log-entry player');
+}
+function dwarfOnAllyHit(a, m) {
+const p = state.player;
+if (!a.elemental || !m || m.hp <= 0) return;
+addGreedMark(m, 3, 'mage');
+if (a.burn && !getDebuff('monster', 'burn', m.index)) addDebuff('monster', 'burn', m.index, { turnsLeft: 3, damage: Math.max(1, Math.floor(p.mAtk * 0.15)) });
+if (a.vein) {
+m._veinTouched = true;
+const other = aoeAlive().find(x => x !== m);
+if (other) {
+const dmg = monsterTagDmg(other, Math.max(1, Math.floor(a.atk * 0.5)), ['physical']);
+other.hp = Math.max(1, other.hp - dmg);
+other._veinTouched = true;
+spawnFloatDamage('fighter-monster', dmg, 'dmg', { mon: other });
+}
+}
+}
+function dwarfOnAllyDeath(a) {
+const p = state.player;
+if (!a.elemental || a.fused || !semiPassiveReady('scShards')) return;
+const d = scSkillData('scShards');
+const alive = aoeAlive();
+if (!alive.length) return;
+const el = a.kind === 'fire' ? 'fire' : 'ice';
+const per = Math.max(1, Math.floor(p.mAtk * d.pct / 100));
+const hits = alive.map(m => ({ m, miss: false, dmg: monsterTagDmg(m, per, ['magic', el]), type: el === 'fire' ? 'fire' : 'magic', fx: 'slash' }));
+const r = aoeApply(hits);
+logCombat(`💥 Осколки: ${a.name} взрывается — ${r.total}`, 'log-entry player-magic');
+}
+function dwarfAbsorbHit(dmg) {
+if (hasSubclass('dwarf_runemaster')) return runemasterAbsorb(dmg);
+return dmg;
+}
+function dwarfAfterHeroHit(m, dmg, crit) {
+const p = state.player;
+if (p.hp <= 0) return;
+if (p.subclass === 'dwarf_steelwall' && semiPassiveReady('swlTemper')) {
+const t = getDebuff('player', 'temper');
+const max = scSkillData('swlTemper').max;
+const stacks = Math.min(max, (t ? t.stacks : 0) + 1);
+addDebuff('player', 'temper', { stacks, turnsLeft: 999 });
+}
+if (p.subclass === 'dwarf_runemaster' && semiPassiveReady('rmWard') && !getDebuff('player', 'wardCd') && p.hp / p.maxHp * 100 < SKILLS.rmWard.threshold) {
+const d = scSkillData('rmWard');
+const b = state.battle;
+b.rmShield = (b.rmShield || 0) + Math.floor(p.maxHp * d.shield / 100);
+addDebuff('player', 'wardShield', { amount: b.rmShield, turnsLeft: 999 });
+addDebuff('player', 'wardCd', { turnsLeft: d.every });
+logCombat(`🔰 Охранная руна: щит ${b.rmShield}.`, 'log-entry potion');
+}
+}
+function dwarfOnMonsterDeath(m) {
+const p = state.player;
+if (p.subclass === 'dwarf_runemaster' && dwarfGreedCount(m) > 0) {
+const mp = Math.min(Math.floor(p.maxMp * SUBCLASSES.dwarf_runemaster.mods.dwarfGreedMagic.mpBack / 100), p.maxMp - p.mp);
+if (mp > 0) p.mp += mp;
+}
+if (p.subclass === 'dwarf_forgemaster' && getDebuff('monster', 'heat', m.index)) m._dwHot = true;
+}
+function dwarfOnHeroTurn() {
+const life = getDebuff('player', 'runeLife');
+if (life && state.battle.active) aoeHeal(state.player.maxHp * life.regen / 100);
+}
+function dwarfOnBattleStart() {
+const b = state.battle;
+b.hmHits = 0; b.rmShield = 0; b.scNext = 0;
+}
+function dwarfPerformActive(skill, data) {
+const p = state.player;
+const m = getCurrentMonster();
+if (skill.id === 'swlClose') {
+addDebuff('player', 'closeArmor', { turnsLeft: skill.turns, mult: data.mult });
+logCombat(`🛡 Сомкнуть броню: ${skill.turns} ходов поглощение ×${data.mult}.`, 'log-entry player-skill');
+spawnFloatDamage('fighter-player', 0, 'block', { text: 'БРОНЯ' });
+} else if (skill.id === 'hmAnvil') {
+if (!m) return true;
+const br = getDebuff('monster', 'breach', m.index);
+const full = br && br.stacks >= BREACH_MAX;
+const h = aoePhysHit(m, full ? data.full : data.mult, 0);
+const r = aoeApply([{ m, ...h, type: h.crit ? 'crit' : 'dmg', fx: 'slash' }]);
+if (full && m.hp > 0) addDebuff('monster', 'stun', m.index, { turnsLeft: 1 });
+logCombat(`🔨 ${skill.name}: ${h.miss ? 'промах' : r.total}`, 'log-entry player-skill', full ? '3 пролома — ×3 и оглушение' : '');
+} else if (skill.id === 'prVein') {
+addDebuff('player', 'veinSense', { rare: data.rare, turnsLeft: 999 });
+logCombat(`💎 Чутьё жилы: до конца боя редкая добыча +${data.rare}%.`, 'log-entry player-skill');
+} else if (skill.id === 'fmBellows') {
+addDebuff('player', 'bellows', { turnsLeft: skill.turns, cut: data.cut, dmg: data.dmg || 0 });
+logCombat(`🔥 Раздуть мехи: ${skill.turns} ходов огонь дешевле на ${data.cut}%, Шар +2 Жара.`, 'log-entry player-skill');
+} else if (skill.id === 'rmInscribe') {
+if (!runemasterNextRune()) { logCombat(`✶ Все руны уже горят.`, 'log-entry'); return true; }
+RUNE_CYCLE.forEach(id => addDebuff('player', id, { pct: data.pct, regen: data.regen, turnsLeft: 999 }));
+logCombat(`✶ Начертаны руны Камня, Силы и Жизни.`, 'log-entry player-skill');
+} else if (skill.id === 'scSummon') {
+stonecallerSummon(data);
+} else {
+return false;
+}
+return true;
+}
+SKILLS.swlClose.autoCheck = function () {
+if (getDebuff('player', 'closeArmor')) return false;
+const alive = (state.battle.monsters || []).filter(m => m.hp > 0);
+return alive.length >= 2 || alive.some(scStrongMonster);
+};
+SKILLS.prVein.autoCheck = function () { return !getDebuff('player', 'veinSense'); };
+SKILLS.fmBellows.autoCheck = function () { return !getDebuff('player', 'bellows'); };
+SKILLS.scSummon.autoCheck = function () { return !stonecallerElementals().some(e => e.kind === 'great'); };
+function subclassForgeRarity() {
+const r1 = rollRarity();
+const d = hasSubclass('dwarf_forgemaster') ? scSkillData('fmSmith') : null;
+if (!d || Math.random() * 100 >= d.reroll) return r1;
+const r2 = rollRarity();
+return RARITY_ORDER.indexOf(r2) > RARITY_ORDER.indexOf(r1) ? r2 : r1;
+}
+function subclassForgeSaveMaterials() {
+const d = hasSubclass('dwarf_forgemaster') ? scSkillData('fmSmith') : null;
+return !!d && Math.random() * 100 < d.save;
+}
+function subclassRefineChanceBonus() {
+const d = hasSubclass('dwarf_runemaster') ? scSkillData('rmSteady') : null;
+return d ? d.chance : 0;
+}
+function subclassRefineFailRefund(price) {
+const d = hasSubclass('dwarf_runemaster') ? scSkillData('rmSteady') : null;
+return d ? Math.floor(price / 2) : 0;
+}
+const RUNE_WEAVE_RANK = ['mpBonus', 'hpBonus', 'critBonus', 'xpBonusPercent', 'dropBonusPercent', 'goldBonusPercent', 'profBonusPercent', 'mpRegenOutBonus', 'hpRegenOutBonus', 'blockBonus', 'accuracyBonus', 'evasionBonus'];
+function subclassRefinePick(pool) {
+const first = pool[Math.floor(Math.random() * pool.length)];
+const d = hasSubclass('dwarf_runemaster') ? scSkillData('rmWeave') : null;
+if (!d || Math.random() * 100 >= d.chance) return first;
+const second = pool[Math.floor(Math.random() * pool.length)];
+const rank = b => { const i = RUNE_WEAVE_RANK.indexOf(b.key); return i < 0 ? 99 : i; };
+return rank(second) < rank(first) ? second : first;
+}
+function smeltAvailable() {
+return hasSubclass('dwarf_forgemaster') && !!scSkillData('fmSmelt');
+}
+function smeltRecipeFor(item) {
+if (!item || typeof RECIPES === 'undefined') return null;
+for (const cat of Object.keys(RECIPES)) {
+const r = (RECIPES[cat] || []).find(x => x && x.result && x.result.name === item.name && Array.isArray(x.materials));
+if (r) return r;
+}
+return null;
+}
+const SMELT_TYPES = ['weapon', 'shield', 'helmet', 'armorTop', 'armorBottom', 'gloves', 'boots', 'ring', 'earring', 'necklace'];
+function smeltCandidates() {
+return (state.player.inventory || []).map((it, i) => ({ it, i })).filter(x => SMELT_TYPES.includes(x.it.type) && smeltRecipeFor(x.it));
+}
+function smeltReturn(item) {
+const d = scSkillData('fmSmelt');
+const r = smeltRecipeFor(item);
+if (!d || !r) return [];
+return r.materials.map(mt => ({ name: mt.name, qty: Math.floor(mt.qty * d.pct / 100) })).filter(x => x.qty > 0);
+}
+function openSmelt() {
+if (!smeltAvailable()) return;
+let ov = document.getElementById('smelt-overlay');
+if (!ov) {
+ov = document.createElement('div');
+ov.className = 'sc-overlay overlay-base';
+ov.id = 'smelt-overlay';
+ov.innerHTML = `<div class="sc-window window-base"><div class="window-header"><div class="window-title">♨ ПЕРЕПЛАВКА</div>
+      <div class="window-header-actions"><button class="btn danger" onclick="closeSmelt()">Закрыть</button></div></div>
+      <div class="window-content"><div class="sc-pane" id="smelt-pane"></div></div></div>`;
+ov.addEventListener('click', e => { if (e.target === ov) closeSmelt(); });
+document.body.appendChild(ov);
+}
+ov.classList.add('active');
+renderSmelt();
+}
+function closeSmelt() { const ov = document.getElementById('smelt-overlay'); if (ov) ov.classList.remove('active'); }
+function renderSmelt() {
+const pane = document.getElementById('smelt-pane');
+if (!pane) return;
+const d = scSkillData('fmSmelt');
+const list = smeltCandidates();
+const rows = list.map(({ it, i }) => {
+const back = smeltReturn(it);
+const rar = it.rarity && RARITIES[it.rarity] ? ` <span style="color:${RARITIES[it.rarity].color || 'inherit'}">(${RARITIES[it.rarity].name})</span>` : '';
+const ref = it.refineLevel ? ` +${it.refineLevel}` : '';
+const txt = back.length ? back.map(b => `${b.name} ×${b.qty}`).join(', ') : 'слишком мало — ничего не вернётся';
+return `<div class="smelt-row"><div class="smelt-name">${it.name}${ref}${rar}</div><div class="smelt-back">→ ${txt}</div>
+      <button class="btn${back.length ? ' success' : ''}" ${back.length ? '' : 'disabled'} onclick="smeltItem(${i})">Переплавить</button></div>`;
+}).join('');
+pane.innerHTML = `<div class="sc-intro">Гундар ворчит, но уступает тебе горн: «Только не порть мне меха». Снаряжение из сумки (надетое не трогаем) переплавляется в ${d.pct}% материалов своего рецепта. Подгонка и редкость пропадают.</div>
+    ${rows || '<div class="sc-foot">В сумке нет снаряжения, которое можно переплавить.</div>'}`;
+}
+function smeltItem(index) {
+const p = state.player;
+const it = p.inventory[index];
+if (!it || !SMELT_TYPES.includes(it.type)) return;
+const back = smeltReturn(it);
+if (!back.length) return;
+if (!confirm(`Переплавить «${it.name}»?\n\nВернётся: ${back.map(b => `${b.name} ×${b.qty}`).join(', ')}.\nВещь пропадёт вместе с подгонкой.`)) return;
+if ((it.qty || 1) > 1) it.qty -= 1; else p.inventory.splice(index, 1);
+back.forEach(b => {
+const src = smeltSourceItem(b.name);
+for (let k = 0; k < b.qty; k++) addToInventory(Object.assign({}, src, { qty: 1 }));
+});
+logLoot(`♨ Переплавка «${it.name}»: ${back.map(b => `${b.name} ×${b.qty}`).join(', ')}`, 'log-loot');
+showToast('♨', `Переплавлено: ${it.name}`);
+if (typeof renderInventory === 'function') renderInventory();
+if (typeof updateInventoryFooter === 'function') updateInventoryFooter();
+if (typeof renderForgeAll === 'function') renderForgeAll();
+renderSmelt();
+saveCurrentSlot();
+}
+function smeltSourceItem(name) {
+for (const cat of Object.keys(RECIPES)) {
+const r = (RECIPES[cat] || []).find(x => x && x.result && x.result.name === name);
+if (r) return { name, icon: r.result.icon, type: r.result.type || 'material', sellPrice: r.result.sellPrice || 1 };
+}
+const pools = [typeof MONSTERS !== 'undefined' ? MONSTERS : [], typeof MINE_MONSTERS !== 'undefined' ? MINE_MONSTERS : [], typeof OUTSKIRTS_MONSTERS !== 'undefined' ? OUTSKIRTS_MONSTERS : []];
+for (const pool of pools) {
+for (const mon of (Array.isArray(pool) ? pool : Object.values(pool))) {
+const dr = (mon.drops || []).find(x => x.name === name);
+if (dr) return { name, icon: dr.icon, type: dr.type || 'material', sellPrice: dr.sellPrice || 1 };
+}
+}
+return { name, type: 'material', sellPrice: 1 };
+}
+function smeltButtonSync() {
+const actions = document.querySelector('#forge-overlay .window-header-actions');
+if (!actions) return;
+let btn = document.getElementById('btn-smelt');
+if (smeltAvailable()) {
+if (!btn) {
+btn = document.createElement('button');
+btn.className = 'btn';
+btn.id = 'btn-smelt';
+btn.textContent = '♨ Переплавка';
+btn.onclick = openSmelt;
+actions.insertBefore(btn, actions.firstChild);
+}
+} else if (btn) btn.remove();
+}
+
+;
+
 // ==== ФАЙЛ js/systems/battle-manual.js ====
 const MANUAL_TURN_SECONDS = 10;
 const GUARD_DAMAGE_CUT = 40;
@@ -18959,11 +24436,13 @@ Object.keys(b.skillCooldowns).forEach(id => {
 if (b.skillCooldowns[id] > 0) b.skillCooldowns[id] = Math.max(0, b.skillCooldowns[id] - 1);
 });
 renderSkillSlots();
+if (typeof subclassOnHeroTurn === 'function') subclassOnHeroTurn();
 if (getDebuff('player', 'guard')) removeDebuff('player', 'guard');
 const regen = getDebuff('player', 'potionRegen');
 if (regen) {
 const amount = Math.min(regen.perTurn || 10, p.maxHp - p.hp);
 if (amount > 0) { p.hp += amount; spawnFloatDamage('fighter-player', amount, 'heal'); }
+if (typeof subclassOnHeroHeal === 'function') subclassOnHeroHeal(Math.max(0, amount), (regen.perTurn || 10) - Math.max(0, amount));
 logCombat(`🧪 Зелье лечения: +${Math.max(0, amount)} HP (осталось ${(regen.turnsLeft || 1) - 1} ход.)`, 'log-entry potion');
 regen.turnsLeft = (regen.turnsLeft || 1) - 1;
 if (regen.turnsLeft <= 0) removeDebuff('player', 'potionRegen');
@@ -19018,6 +24497,9 @@ function manualSkillCheck(id) {
 const p = state.player;
 const skill = SKILLS[id];
 if (!skill || skill.type !== 'active' || !p.learnedSkills[id]) return { ok: false, why: 'не изучен' };
+if (skill.semiPassive) return { ok: false, why: 'срабатывает сам' };
+if (skill.subclassId && p.subclass !== skill.subclassId) return { ok: false, why: 'не твой путь' };
+{ const why = skill.useCheck ? skill.useCheck() : ''; if (why) return { ok: false, why }; }
 const cd = state.battle.skillCooldowns[id] || 0;
 if (cd > 0) return { ok: false, why: `перезарядка ${Math.ceil(cd)}`, cd };
 const data = getSkillData(id);
@@ -19093,7 +24575,7 @@ txt.textContent = getDebuff('player', 'stun') ? 'Оглушение…' : 'Шк�
 }
 box.classList.toggle('bxm-waiting', waiting);
 const p = state.player;
-const slots = (p.skillSlots || []).filter(id => id && SKILLS[id] && SKILLS[id].type === 'active' && p.learnedSkills[id]);
+const slots = (p.skillSlots || []).filter(id => id && SKILLS[id] && SKILLS[id].type === 'active' && !SKILLS[id].semiPassive && p.learnedSkills[id]);
 const checks = slots.map(id => [id, manualSkillCheck(id)]);
 const pot = manualPotionState();
 const alive = (b.monsters || []).filter(m => m.hp > 0).length;
@@ -19167,6 +24649,10 @@ seen.add(id);
 logCombat(pct > 0 ? `🎯 ${m.name}: уязвимость, +${pct}% урона.` : `🛡 ${m.name}: стойкость, ${pct}% урона.`, 'log-entry');
 }
 function monsterTagDmg(m, dmg, kinds) {
+if (m && typeof subclassHeroDmgMult === 'function') {
+const cm = subclassHeroDmgMult(m);
+if (cm > 1) dmg = Math.max(1, Math.floor(dmg * cm));
+}
 if (!m || !m.tags) return dmg;
 const list = kinds.filter(Boolean);
 let pct = 0;
@@ -19184,11 +24670,12 @@ if (list.includes('fire') && monsterHasTagFlag(m, 'roots')) m.rootBlock = 3;
 const final = monsterManaAbsorb(m, dmg);
 if (m.undying && final >= m.hp) {
 m.undying = false;
-if (Math.random() * 100 >= (MONSTER_TAGS.undying.undyingChance || 100)) return final;
+if (Math.random() * 100 >= (MONSTER_TAGS.undying.undyingChance || 100)) { if (typeof subclassOnHeroDamage === 'function') subclassOnHeroDamage(m, final); return final; }
 spawnFloatDamage('fighter-monster', 0, 'block', { mon: m, text: 'НЕ УПОКОЕН' });
 logCombat(`💀 ${m.name} не падает!`, 'log-entry monster');
 return Math.max(0, m.hp - 1);
 }
+if (typeof subclassOnHeroDamage === 'function') subclassOnHeroDamage(m, final);
 return final;
 }
 function monsterTagConditionalPct(m, kinds) {
@@ -19275,7 +24762,7 @@ const MONSTER_MANA_SHIELD_PERCENT = 50;
 const MONSTER_DRY_ATK_MULT = 0.7;
 function monsterManaAbsorb(m, dmg) {
 if (!m.maxMp || m.mp <= 0 || dmg <= 0) return dmg;
-const mp = Math.min(Math.ceil(m.mp), Math.round(dmg * MONSTER_MANA_SHIELD_PERCENT / 100));
+const mp = Math.min(Math.ceil(m.mp), Math.round(dmg * MONSTER_MANA_SHIELD_PERCENT / 100 * (typeof subclassManaShieldMult === 'function' ? subclassManaShieldMult() : 1)));
 if (mp <= 0) return dmg;
 m.mp = Math.max(0, m.mp - mp);
 if (m.mp <= 0) monsterManaBroke(m);
@@ -19300,7 +24787,7 @@ return !!tag && Math.random() * 100 < tag.trueDodge;
 const HEAL_STRIKE_MIN_HP = 70;
 function healStrikeApplies(m) {
 const p = state.player;
-return isMage() && !!m && m.hp > 0 && p.maxHp > 0 && (p.hp / p.maxHp) * 100 >= HEAL_STRIKE_MIN_HP && monsterHasTagFlag(m, 'healHurts');
+return isMage() && !!m && m.hp > 0 && p.maxHp > 0 && (p.hp / p.maxHp) * 100 >= HEAL_STRIKE_MIN_HP && (monsterHasTagFlag(m, 'healHurts') || (typeof subclassHealHurtsAny === 'function' && subclassHealHurtsAny()));
 }
 function monsterThorns(m, cat) {
 if (!m || m.hp <= 0 || !monsterHasTagFlag(m, 'thorns') || isMage() || cat === 'bows' || cat === 'crossbows') return 0;
@@ -19407,7 +24894,7 @@ logCombat(`🩸 ${m.name} восстанавливает ${heal} HP.`, 'log-entr
 }
 }
 if (skill.atbCut && landed > 0) {
-state.battle.playerATB = Math.max(0, (state.battle.playerATB || 0) - skill.atbCut);
+if (!(typeof subclassPlayerUnmovable === 'function' && subclassPlayerUnmovable())) state.battle.playerATB = Math.max(0, (state.battle.playerATB || 0) - skill.atbCut);
 logCombat(`⚡ ${m.name} сбивает вашу шкалу хода на ${Math.round(skill.atbCut * 100)}%.`, 'log-entry monster');
 }
 }
@@ -19437,6 +24924,7 @@ renderDebuffBar('player');
 function monsterAttack(attacker) {
 if (!attacker) return;
 if (monsterTagsOnTurn(attacker)) return;
+if (typeof subclassOnMonsterAct === 'function') { subclassOnMonsterAct(attacker); if (attacker.hp <= 0 || !state.battle.active) return; }
 monsterManaTurn(attacker);
 const skill = monsterKitPickSkill(attacker);
 const hits = (skill && skill.hits) || 1;
@@ -19453,9 +24941,14 @@ function monsterStrike(attacker, skill) {
 const p = state.player;
 const m = attacker;
 if (!m || m.hp <= 0 || p.hp <= 0) return;
-if (p.blockChance > 0 && Math.random() * 100 < p.blockChance) {
+if (typeof subclassTryEvade === 'function' && subclassTryEvade(m)) return;
+if (typeof alliesTryIntercept === 'function' && alliesTryIntercept(m, skill)) { updateBattleUI(); return; }
+const blockChance = p.blockChance + (typeof subclassBlockBonus === 'function' ? subclassBlockBonus() : 0);
+if (blockChance > 0 && Math.random() * 100 < blockChance) {
 spawnFloatDamage('fighter-player', 0, 'block');
 logCombat(`🛡 Блок! Удар поглощён.`, 'log-entry block');
+if (typeof wallguardRetort === 'function') wallguardRetort(m, 'block');
+updateBattleUI();
 return;
 }
 const entangleMult = (typeof getEntangleAccMult === 'function') ? getEntangleAccMult(m) : 1;
@@ -19508,30 +25001,34 @@ const mixtureDefMult = getMixtureDefMult();
 const guardMult = typeof getGuardMult === 'function' ? getGuardMult() : 1;
 const guardInfo = guardMult < 1 ? ` (защита −${GUARD_DAMAGE_CUT}%)` : '';
 const stanceMult = getShieldStanceMult();
+const scMult = typeof subclassDamageTakenMult === 'function' ? subclassDamageTakenMult(m, hitIsMagic) : 1;
+const scInfo = scMult < 1 ? ` (оборона −${Math.round((1 - scMult) * 100)}%)` : '';
 let msAbsorbed = 0;
 let rawHit = 0;
 if (hitIsMagic) {
 dmg = Math.max(1, raw - Math.floor(p.mDef * 0.5 * armorLeft));
 if (stanceMult < 1) dmg = Math.max(1, Math.floor(dmg * stanceMult));
 if (guardMult < 1) dmg = Math.max(1, Math.floor(dmg * guardMult));
+if (scMult < 1) dmg = Math.max(1, Math.floor(dmg * scMult));
 rawHit = dmg;
 { const sh = manaShieldAbsorb(dmg); dmg = sh.hp; msAbsorbed += sh.mp; }
 p.hp -= dmg;
 spawnFloatDamage('fighter-player', dmg, 'magic');
-logCombat(`✦ ${m.name} бьёт магией на ${dmg} урона.${guardInfo}`, 'log-entry magic');
+logCombat(`✦ ${m.name} бьёт магией на ${dmg} урона.${guardInfo}${scInfo}`, 'log-entry magic');
 } else {
-const flatReduce = Math.ceil(p.flatDamageReduce || 0);
+const flatReduce = Math.ceil(typeof subclassFlatReduce === 'function' ? subclassFlatReduce(p.flatDamageReduce || 0) : (p.flatDamageReduce || 0));
 dmg = Math.max(1, raw - Math.floor(p.pDef * 0.3 * armorLeft) - flatReduce);
 if (mixtureDefMult < 1.0) dmg = Math.max(1, Math.floor(dmg * mixtureDefMult));
 if (stanceMult < 1) dmg = Math.max(1, Math.floor(dmg * stanceMult));
 if (guardMult < 1) dmg = Math.max(1, Math.floor(dmg * guardMult));
+if (scMult < 1) dmg = Math.max(1, Math.floor(dmg * scMult));
 rawHit = dmg;
 { const sh = manaShieldAbsorb(dmg); dmg = sh.hp; msAbsorbed += sh.mp; }
 p.hp -= dmg;
 spawnFloatDamage('fighter-player', dmg, 'dmg');
 const reduceInfo = (flatReduce > 0 ? ` (щит/шкура -${flatReduce})` : '') + (stanceMult < 1 ? ` (стойка −${SHIELD_STANCE_DAMAGE_CUT}%)` : '');
 const mixtureInfo = mixtureDefMult < 1.0 ? ` (крепость −30%)` : '';
-logCombat(`🩸 ${m.name} наносит ${dmg} урона.${reduceInfo}${mixtureInfo}${guardInfo}`, 'log-entry monster');
+logCombat(`🩸 ${m.name} наносит ${dmg} урона.${reduceInfo}${mixtureInfo}${guardInfo}${scInfo}`, 'log-entry monster');
 const mixtureData = getActiveMixtureData();
 if (mixtureData && mixtureData.chargeType === 'enemyAttacks') tickMixtureCharge();
 }
@@ -19540,6 +25037,7 @@ const chanceMult = m.traitChanceMult || 1.0;
 let hitDamageForBleed = dmg;
 monsterKitOnHit(m, skill, dmg, chanceMult);
 monsterTagOnHit(m);
+let monsterCrit = false;
 if (traits && traits.critChance) {
 const critChance = traits.critChance * chanceMult;
 if (Math.random() * 100 < critChance) {
@@ -19549,6 +25047,7 @@ const bonus = sh.hp; msAbsorbed += sh.mp;
 p.hp -= bonus; hitDamageForBleed += bonus;
 spawnFloatDamage('fighter-player', bonus, 'crit');
 logCombat(`⚔ КРИТ! ${m.name} наносит дополнительно ${bonus} урона!`, 'log-entry monster');
+monsterCrit = true;
 }
 }
 if (traits && traits.elementChance && !m.mpDry) {
@@ -19557,7 +25056,7 @@ if (Math.random() * 100 < elementChance) {
 const elements = ['fire', 'ice', 'lightning'];
 const elemId = elements[Math.floor(Math.random() * elements.length)];
 const bonusPercent = traits.elementBonusPercent || 30;
-const sh = manaShieldAbsorb(Math.max(1, Math.floor(m.atk * (bonusPercent / 100) * guardMult * stanceMult)));
+const sh = manaShieldAbsorb(Math.max(1, Math.floor(m.atk * (bonusPercent / 100) * guardMult * stanceMult * scMult)));
 const elemDmg = sh.hp; msAbsorbed += sh.mp;
 p.hp -= elemDmg; hitDamageForBleed += elemDmg;
 const icon = elemId === 'fire' ? '🔥' : elemId === 'ice' ? '❄' : '⚡';
@@ -19616,10 +25115,10 @@ const stormData = SKILLS['stormLegacy'].levels[stormLvl - 1];
 if (stormData && stormData.frequency) {
 if (!state.battle.drowHitCounter) state.battle.drowHitCounter = 0;
 state.battle.drowHitCounter++;
-if (state.battle.drowHitCounter >= stormData.frequency) {
+if (state.battle.drowHitCounter >= (typeof subclassStormLegacyFreq === 'function' ? subclassStormLegacyFreq(stormData.frequency) : stormData.frequency)) {
 state.battle.drowHitCounter = 0;
 const lightningLvl = getElementLevel('lightning');
-const stormDmg = monsterTagDmg(m, 5 + lightningLvl, ['magic', 'lightning']);
+const stormDmg = monsterTagDmg(m, 5 + lightningLvl + (typeof subclassStormLegacyBonus === 'function' ? subclassStormLegacyBonus() : 0), ['magic', 'lightning']);
 m.hp -= stormDmg;
 spawnFloatDamage('fighter-monster', stormDmg, 'magic');
 logCombat(`⚡ Наследие Грозы! Ответный удар Молнией на ${stormDmg} урона!`, 'log-entry player-magic');
@@ -19643,6 +25142,11 @@ return;
 }
 }
 }
+if (monsterCrit && typeof subclassOnMonsterCrit === 'function') subclassOnMonsterCrit(m);
+if (monsterCrit && p.hp > 0 && typeof wallguardRetort === 'function' && wallguardRetort(m, 'crit')) {
+updateTopStatus(); updateBattleUI(); return;
+}
+if (typeof subclassAfterHeroHit === 'function') subclassAfterHeroHit(m, hitDamageForBleed, monsterCrit);
 const heroDied = p.hp <= 0;
 if (heroDied) { p.hp = 0; onPlayerDeath(); }
 updateTopStatus();
@@ -19689,11 +25193,13 @@ if (!m) return;
 if (m._deathProcessed) return;
 m._deathProcessed = true;
 m.hp = 0;
+if (typeof subclassOnMonsterDeath === 'function') subclassOnMonsterDeath(m);
 const mult_ = mult();
 const greedMark = getDebuff('monster', 'greedMark', m.index);
 const greedN = greedMark ? ((Array.isArray(greedMark.marks) && greedMark.marks.length) || 1) : 0;
-const greedDropMult = (greedMark && greedMark.type === 'warrior') ? 1 + greedN * GREED_REWARD_PER_MARK / 100 : 1.0;
-const greedGoldMult = (greedMark && greedMark.type === 'mage')    ? 1 + greedN * GREED_REWARD_PER_MARK / 100 : 1.0;
+const greedPer = typeof subclassGreedPerMark === 'function' ? subclassGreedPerMark() : GREED_REWARD_PER_MARK;
+const greedDropMult = (greedMark && greedMark.type === 'warrior') ? 1 + greedN * greedPer / 100 : 1.0;
+const greedGoldMult = (greedMark && greedMark.type === 'mage')    ? 1 + greedN * greedPer / 100 : 1.0;
 const greedXpMult = 1 + greedN * GREED_XP_PER_MARK / 100;
 const titleMult = getTitleDropMultiplier(m.id, m.variantId);
 const luckMult = getMixtureLuckMult();
@@ -19703,6 +25209,7 @@ const refineGoldMult = 1 + (p.goldBonusFromRefine || 0) / 100;
 const packBonus = getPackRewardBonus();
 const packDropMult = 1 + packBonus.drop / 100;
 const packGoldMult = 1 + packBonus.gold / 100;
+const scLoot = typeof subclassLootMods === 'function' ? subclassLootMods(m, greedN) : { drop: 1, rare: 1, material: 1, gold: 1, rolls: 0 };
 const tavernXpMult = getXpMultiplierFromTavern();
 const xpBonusTotal = Math.round(((p.xpBonus || 0) + (p.xpBonusFromRefine || 0)) * 10) / 10;
 const skillXpMult = 1 + xpBonusTotal / 100;
@@ -19716,16 +25223,16 @@ const goldCount = rollDropCount(goldChance);
 let totalGold = 0;
 for (let i = 0; i < goldCount; i++) {
 const baseGold = m.goldMin + Math.floor(Math.random() * (m.goldMax - m.goldMin + 1));
-const goldRaw = baseGold * mult_ * greedGoldMult * refineGoldMult * packGoldMult;
+const goldRaw = baseGold * mult_ * greedGoldMult * refineGoldMult * packGoldMult * scLoot.gold;
 let gold = Math.floor(goldRaw) + (Math.random() < goldRaw % 1 ? 1 : 0);
 if (p.currentLocation === 'mine' || p.currentLocation === 'outskirts') gold = Math.max(10, Math.round(gold / 10) * 10);
 p.gold += gold;
 totalGold += gold;
 }
 const goldNotes = [], dropNotes = [];
-if (greedGoldMult > 1.0) goldNotes.push(`💰 жадность ×${greedN}: +${greedN * GREED_REWARD_PER_MARK}%`);
+if (greedGoldMult > 1.0) goldNotes.push(`💰 жадность ×${greedN}: +${greedN * greedPer}%`);
 if (packBonus.gold > 0)  goldNotes.push(`🐾 стая ×${packBonus.size}: +${packBonus.gold}%`);
-if (greedDropMult > 1.0) dropNotes.push(`💰 жадность ×${greedN}: дроп +${greedN * GREED_REWARD_PER_MARK}%`);
+if (greedDropMult > 1.0) dropNotes.push(`💰 жадность ×${greedN}: дроп +${greedN * greedPer}%`);
 if (packBonus.drop > 0)  dropNotes.push(`🐾 стая ×${packBonus.size}: дроп +${packBonus.drop}%`);
 if (totalGold > 0) {
 logLoot(`🪙 +${totalGold} Оболов`, 'log-gold', goldNotes.join(' · '));
@@ -19739,7 +25246,10 @@ const lootFilterLevel = p.lootFilterLevel || 0;
 const lootGroups = new Map();
 m.drops.forEach(d => {
 const dropChance = d.chance * mult_ * totalDropMult * greedDropMult * packDropMult;
-const count = rollDropCount(dropChance);
+const scMat = d.type === 'material' ? scLoot.material : 1;
+const scRare = d.chance <= 2 ? scLoot.rare : 1;
+let count = rollDropCount(dropChance * scMat * scRare);
+for (let k = 0; k < scLoot.rolls; k++) count += rollDropCount(dropChance * scMat * scRare);
 if (count <= 0) return;
 for (let i = 0; i < count; i++) {
 if (CAPPED_TYPES.includes(d.type) && CAPPED_COPIES > 0) {
@@ -19785,6 +25295,7 @@ logLoot(`📦 ${group.name}${countStr}`, 'log-loot', dropNote);
 }
 dropNote = '';
 });
+if (typeof subclassBonusLoot === 'function') subclassBonusLoot(m, greedN);
 if (m.soul && typeof soulsOnMonsterDeath === 'function') soulsOnMonsterDeath(m);
 checkLevelUp();
 const countsAsKill = !m.fled;
@@ -19932,6 +25443,7 @@ let deathReturnTimer = null;
 function onPlayerDeath() {
 const p = state.player;
 if (state.battle.breakthrough) { breakthroughOnHeroDown(); return; }
+if (typeof subclassTryLastStand === 'function' && subclassTryLastStand()) return;
 const lostXp = Math.floor(p.xp * 0.1);
 p.xp = Math.max(0, p.xp - lostXp);
 logCombat(`☠ ${p.name} погиб. Потеряно ${lostXp} опыта (10%).`, 'log-entry loss');
@@ -19994,8 +25506,9 @@ p.xpNext = Infinity;
 } else {
 p.xpNext = getXpForLevel(p.level + 1);
 }
-const gain = (p.level >= 9) ? 2 : 1;
+const gain = typeof skillPointsForLevel === 'function' ? skillPointsForLevel(p.level) : ((p.level >= 9) ? 2 : 1);
 p.skillPoints += gain;
+if (p.level > SUBCLASS_MIN_LEVEL) p.skillPts26 = p.level - SUBCLASS_MIN_LEVEL;
 recalcStats();
 p.hp = p.maxHp;
 p.mp = p.maxMp;
@@ -20261,6 +25774,7 @@ Object.keys(state.battle.skillToggles).forEach(id => {
 state.battle.skillCooldowns[id] = 0;
 });
 clearAllDebuffs();
+if (typeof subclassOnBattleStart === 'function') subclassOnBattleStart();
 document.getElementById('battle-window').classList.add('active');
 document.getElementById('hunt-hint').style.display = 'none';
 const countSuffix = count > 1 ? ` ×${count}` : '';
@@ -20418,7 +25932,8 @@ const heal = Math.min(rate, p.maxHp - p.hp);
 p.hp += heal;
 if (inBattle) spawnFloatDamage('fighter-player', Math.floor(heal), 'food');
 else REGEN_SHOW.hp += heal;
-}
+if (inBattle && typeof subclassOnHeroHeal === 'function') subclassOnHeroHeal(heal, rate - heal);
+} else if (inBattle && typeof subclassOnHeroHeal === 'function') subclassOnHeroHeal(0, rate);
 if (k.mp && p.mp < p.maxMp) {
 const mp = Math.min(k.mp, p.maxMp - p.mp);
 p.mp += mp;
@@ -20505,15 +26020,18 @@ REGEN_SHOW.mp += state.player.mp - before;
 }
 }
 }
-if (state.player.hpRegenIn && state.player.hpRegenIn > 0) {
-state.battle.hpRegenAccum = (state.battle.hpRegenAccum || 0) + dt * state.player.hpRegenIn;
+const scRg = typeof subclassRegen === 'function' ? subclassRegen() : { mult: 1, add: 0 };
+const regenIn = (state.player.hpRegenIn || 0) * scRg.mult + scRg.add;
+if (regenIn > 0) {
+state.battle.hpRegenAccum = (state.battle.hpRegenAccum || 0) + dt * regenIn;
 while (state.battle.hpRegenAccum >= 1) {
 state.battle.hpRegenAccum -= 1;
 if (state.player.hp < state.player.maxHp) {
 const heal = Math.min(1, state.player.maxHp - state.player.hp);
 state.player.hp += heal;
 spawnFloatDamage('fighter-player', Math.floor(heal), 'heal');
-}
+if (typeof subclassOnHeroHeal === 'function') subclassOnHeroHeal(heal, 1 - heal);
+} else if (typeof subclassOnHeroHeal === 'function') subclassOnHeroHeal(0, 1);
 }
 }
 renderEffectsPanel();
@@ -20549,7 +26067,7 @@ const p = state.player;
 const locMult = (LOCATION_PLAYER_ATB_MULT && LOCATION_PLAYER_ATB_MULT[p.currentLocation]) || 1.0;
 const webDebuff = getDebuff('player', 'web');
 const webMult = (webDebuff && webDebuff.atbMult) ? webDebuff.atbMult : 1.0;
-const playerSpeed = p.atbSpeed * 0.5 * locMult * webMult;
+const playerSpeed = p.atbSpeed * 0.5 * locMult * webMult * (typeof subclassAtbMult === 'function' ? subclassAtbMult() : 1);
 const monsterSpeed = 0.7 * 0.5;
 if (!state.battle.autoBattle && state.battle.manualWait) {
 setText(document.getElementById('battle-status'), 'Ваш ход');
@@ -20558,7 +26076,7 @@ manualTick(dt);
 state.battle.playerATB += playerSpeed * dt;
 state.battle.monstersATB += monsterSpeed * dt;
 for (const m of state.battle.monsters) {
-if (m.hp > 0) m.atb = (m.atb || 0) + monsterSpeed * dt * (m.atbMult || 1);
+if (m.hp > 0) m.atb = (m.atb || 0) + monsterSpeed * dt * (m.atbMult || 1) * (typeof subclassMonsterAtbMult === 'function' ? subclassMonsterAtbMult(m) : 1);
 }
 setText(document.getElementById('battle-status'), 'ATB заряжается...');
 if (state.battle.playerATB >= 1) {
@@ -20584,6 +26102,7 @@ if (paraImm) {
 paraImm.turnsLeft = (paraImm.turnsLeft || 1) - 1;
 if (paraImm.turnsLeft <= 0) removeDebuff('monster', 'paraImmune', attacker.index);
 }
+if (typeof subclassMonsterSkip === 'function' && subclassMonsterSkip(attacker)) { spawnFloatDamage('fighter-monster', 0, 'block', { mon: attacker, text: 'СОН' }); continue; }
 const freeze = getDebuff('monster', 'freeze', attacker.index);
 const stun   = getDebuff('monster', 'stun', attacker.index);
 if (freeze) {
@@ -20731,7 +26250,9 @@ if (idx >= 0) p.inventory.splice(idx, 1);
 }
 const def = POTION_HEAL[potion.shopId] || POTION_HEAL.healPotion;
 const heal = def.heal;
+const hpBefore = p.hp;
 p.hp = Math.min(p.maxHp, p.hp + heal);
+if (typeof subclassOnHeroHeal === 'function') subclassOnHeroHeal(p.hp - hpBefore, heal - (p.hp - hpBefore));
 eff.healPotionUsed = true;
 spawnFloatDamage('fighter-player', heal, 'heal');
 logCombat(`🧪 ${potion.name}: +${heal} HP${def.hotTurns ? ` и ещё +${def.hotPerTurn} HP на ${def.hotTurns} ходов` : ''}`, 'log-entry potion');
@@ -25388,7 +30909,8 @@ const has = !!p.classId;
 syncCharGroups();
 const race = (typeof RACES !== 'undefined' && p.raceId) ? RACES[p.raceId] : null;
 setCsText('cs-name', escCs(p.name || '—'));
-setCsText('cs-class', has ? `${CLASSES[p.classId].name}${race ? ' · ' + race.name : ''}` : '—');
+const scName = (has && typeof getPlayerSubclass === 'function' && getPlayerSubclass()) ? ' · ' + getPlayerSubclass().name : '';
+setCsText('cs-class', has ? `${CLASSES[p.classId].name}${race ? ' · ' + race.name : ''}${scName}` : '—');
 document.getElementById('cs-level').textContent = p.level;
 const portrait = document.getElementById('cs-portrait');
 if (portrait) {

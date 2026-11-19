@@ -221,6 +221,7 @@ function addDebuff(target, id, index, data) {
   if (!state.battle.debuffs.player) state.battle.debuffs.player = {};
 
   if (target === 'player') {
+    if (id === 'stun' && typeof subclassPlayerUnmovable === 'function' && subclassPlayerUnmovable()) return;   // v0.38: Несдвигаемый (Стальная стена)
     state.battle.debuffs.player[id] = { ...data };
     renderDebuffBar('player');
     return;

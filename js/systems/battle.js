@@ -140,7 +140,9 @@ function checkHealPotion(force) {
   // v0.20: у зелий своё лечение (POTION_HEAL), у большого — ещё и лечение по ходам
   const def = POTION_HEAL[potion.shopId] || POTION_HEAL.healPotion;
   const heal = def.heal;
+  const hpBefore = p.hp;
   p.hp = Math.min(p.maxHp, p.hp + heal);
+  if (typeof subclassOnHeroHeal === 'function') subclassOnHeroHeal(p.hp - hpBefore, heal - (p.hp - hpBefore));   // v0.38: Благодать, Очищение
   eff.healPotionUsed = true;
 
   spawnFloatDamage('fighter-player', heal, 'heal');

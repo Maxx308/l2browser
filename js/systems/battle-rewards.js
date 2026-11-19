@@ -94,6 +94,7 @@ function onMonsterDeath(deadMonster) {
   if (m._deathProcessed) return;
   m._deathProcessed = true;
   m.hp = 0;
+  if (typeof subclassOnMonsterDeath === 'function') subclassOnMonsterDeath(m);   // v0.38: Отголосок, трупы Некроманта (до очистки дебаффов)
 
   const mult_ = mult();
 
@@ -103,8 +104,9 @@ function onMonsterDeath(deadMonster) {
   // v0.19.1: каждая метка +25% (дроп у воина / Оболы у мага) и +10% опыта, до 5 меток.
   const greedMark = getDebuff('monster', 'greedMark', m.index);
   const greedN = greedMark ? ((Array.isArray(greedMark.marks) && greedMark.marks.length) || 1) : 0;
-  const greedDropMult = (greedMark && greedMark.type === 'warrior') ? 1 + greedN * GREED_REWARD_PER_MARK / 100 : 1.0;
-  const greedGoldMult = (greedMark && greedMark.type === 'mage')    ? 1 + greedN * GREED_REWARD_PER_MARK / 100 : 1.0;
+  const greedPer = typeof subclassGreedPerMark === 'function' ? subclassGreedPerMark() : GREED_REWARD_PER_MARK;   // v0.38: Старатель — по 30%
+  const greedDropMult = (greedMark && greedMark.type === 'warrior') ? 1 + greedN * greedPer / 100 : 1.0;
+  const greedGoldMult = (greedMark && greedMark.type === 'mage')    ? 1 + greedN * greedPer / 100 : 1.0;
   const greedXpMult = 1 + greedN * GREED_XP_PER_MARK / 100;
 
   const titleMult = getTitleDropMultiplier(m.id, m.variantId);
@@ -118,6 +120,7 @@ function onMonsterDeath(deadMonster) {
   const packBonus = getPackRewardBonus();
   const packDropMult = 1 + packBonus.drop / 100;
   const packGoldMult = 1 + packBonus.gold / 100;
+  const scLoot = typeof subclassLootMods === 'function' ? subclassLootMods(m, greedN) : { drop: 1, rare: 1, material: 1, gold: 1, rolls: 0 };   // v0.38: гном
 
   // ---- ОПЫТ ----
   const tavernXpMult = getXpMultiplierFromTavern();
@@ -140,7 +143,7 @@ function onMonsterDeath(deadMonster) {
   for (let i = 0; i < goldCount; i++) {
     const baseGold = m.goldMin + Math.floor(Math.random() * (m.goldMax - m.goldMin + 1));
     // дробная часть — шансом на +1, иначе +1% на кучке в 5 Оболов съедался округлением
-    const goldRaw = baseGold * mult_ * greedGoldMult * refineGoldMult * packGoldMult;
+    const goldRaw = baseGold * mult_ * greedGoldMult * refineGoldMult * packGoldMult * scLoot.gold;   // v0.38: Скупой расчёт
     let gold = Math.floor(goldRaw) + (Math.random() < goldRaw % 1 ? 1 : 0);
     // v0.25: в Копях суммы круглые — до десятков (+60, а не +57)
     if (p.currentLocation === 'mine' || p.currentLocation === 'outskirts') gold = Math.max(10, Math.round(gold / 10) * 10);
@@ -150,9 +153,9 @@ function onMonsterDeath(deadMonster) {
   // v0.31: бонусы жадности и стаи — не отдельными строками, а припиской к своей строке:
   // к Оболам — их часть, к первой выпавшей вещи — часть про дроп. Не выпало — и приписки нет.
   const goldNotes = [], dropNotes = [];
-  if (greedGoldMult > 1.0) goldNotes.push(`💰 жадность ×${greedN}: +${greedN * GREED_REWARD_PER_MARK}%`);
+  if (greedGoldMult > 1.0) goldNotes.push(`💰 жадность ×${greedN}: +${greedN * greedPer}%`);
   if (packBonus.gold > 0)  goldNotes.push(`🐾 стая ×${packBonus.size}: +${packBonus.gold}%`);
-  if (greedDropMult > 1.0) dropNotes.push(`💰 жадность ×${greedN}: дроп +${greedN * GREED_REWARD_PER_MARK}%`);
+  if (greedDropMult > 1.0) dropNotes.push(`💰 жадность ×${greedN}: дроп +${greedN * greedPer}%`);
   if (packBonus.drop > 0)  dropNotes.push(`🐾 стая ×${packBonus.size}: дроп +${packBonus.drop}%`);
 
   if (totalGold > 0) {
@@ -171,7 +174,11 @@ function onMonsterDeath(deadMonster) {
 
   m.drops.forEach(d => {
     const dropChance = d.chance * mult_ * totalDropMult * greedDropMult * packDropMult;
-    const count = rollDropCount(dropChance);
+    // v0.38: подкласс гнома — редкая добыча, ресурсы, лишние броски (Удар кайлом, Глаз старателя, жила)
+    const scMat = d.type === 'material' ? scLoot.material : 1;
+    const scRare = d.chance <= 2 ? scLoot.rare : 1;
+    let count = rollDropCount(dropChance * scMat * scRare);
+    for (let k = 0; k < scLoot.rolls; k++) count += rollDropCount(dropChance * scMat * scRare);
     if (count <= 0) return;
 
     for (let i = 0; i < count; i++) {
@@ -225,6 +232,8 @@ function onMonsterDeath(deadMonster) {
     }
     dropNote = '';
   });
+
+  if (typeof subclassBonusLoot === 'function') subclassBonusLoot(m, greedN);   // v0.38: руда и пыль гнома
 
   // ---- v0.33: КАМЕНЬ ДУШИ ----
   if (m.soul && typeof soulsOnMonsterDeath === 'function') soulsOnMonsterDeath(m);
@@ -436,6 +445,7 @@ let deathReturnTimer = null;
 function onPlayerDeath() {
   const p = state.player;
   if (state.battle.breakthrough) { breakthroughOnHeroDown(); return; }   // v0.36: в прорыве нельзя проиграть
+  if (typeof subclassTryLastStand === 'function' && subclassTryLastStand()) return;   // v0.38: Последний рубеж
   const lostXp = Math.floor(p.xp * 0.1);
   p.xp = Math.max(0, p.xp - lostXp);
   logCombat(`☠ ${p.name} погиб. Потеряно ${lostXp} опыта (10%).`, 'log-entry loss');
@@ -532,8 +542,10 @@ function checkLevelUp() {
       p.xpNext = getXpForLevel(p.level + 1);
     }
 
-    const gain = (p.level >= 9) ? 2 : 1;
+    // v0.38: с 26 уровня по 3 очка (подклассы)
+    const gain = typeof skillPointsForLevel === 'function' ? skillPointsForLevel(p.level) : ((p.level >= 9) ? 2 : 1);
     p.skillPoints += gain;
+    if (p.level > SUBCLASS_MIN_LEVEL) p.skillPts26 = p.level - SUBCLASS_MIN_LEVEL;
     recalcStats();
     p.hp = p.maxHp;
     p.mp = p.maxMp;

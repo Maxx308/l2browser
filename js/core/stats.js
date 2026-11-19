@@ -22,6 +22,7 @@ function isSetRefinedTo(set, lvl) {
 
 function recalcStats() {
   const p = state.player;
+  if (typeof applySubclassSkills === 'function') applySubclassSkills();   // v0.38: навыки под подкласс текущего героя
 
   if (!p.classId) {
     p.maxHp = 0; p.maxMp = 0; p.pAtk = 0; p.mAtk = 0;
@@ -264,6 +265,10 @@ function recalcStats() {
     }
   }
 
+  // v0.38: пассивки подкласса (Мастер щита и т. п.)
+  p.scMAtkAdd = 0;   // прибавка подкласса к маг. атаке — вписывается ниже, после расчёта p.mAtk
+  if (typeof subclassApplyPassives === 'function') subclassApplyPassives(p);
+
   // v0.27: двуручный хват — показываем в окне персонажа рядом с пассивками
   const gripBonus = (typeof getTwoHandGripBonus === 'function') ? getTwoHandGripBonus() : 0;
   if (gripBonus > 0) p.skillBonuses.push(`Двуручный хват: +${gripBonus}% к урону навыков, уворот −${TWO_HAND_EVASION_PENALTY}`);
@@ -281,7 +286,8 @@ function recalcStats() {
   p.pAtk = finalPAtk;
   let finalMAtk = baseMAtk + bonusMAtk;
   if (passiveMAtkPercent > 0) finalMAtk = Math.floor(finalMAtk * (1 + passiveMAtkPercent / 100));   // v0.35
-  p.mAtk = finalMAtk + passiveMAtkFlat;
+  p.mAtk = finalMAtk + passiveMAtkFlat + (p.scMAtkAdd || 0);   // v0.38: Кровь предков (Вождь)
+  if (typeof subclassFinalAtk === 'function') subclassFinalAtk(p);   // v0.38: Гармония (Певец клинка)
 
   // ---- Сеты ----
   p.setBonuses = [];

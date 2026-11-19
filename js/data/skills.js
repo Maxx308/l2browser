@@ -506,7 +506,7 @@ const SKILLS = {
 
 const GUILD_BUFFS = {
   berserk: {
-    id: 'berserk', name: 'Берсерк', iconKey: 'buffBerserk', iconPng: 'img/buffs/berserk.webp',
+    id: 'berserk', name: 'Боевое безумие', iconKey: 'buffBerserk', iconPng: 'img/buffs/berserk.webp',
     price: BUFF_PRICE, duration: BUFF_DURATION,
     effects: { pAtkPercent: 4, mAtkPercent: 8, atbPercent: 5, pDefPercent: -4, mDefPercent: -8 },
     desc: 'Ярость берсерка: мощнее, но уязвимее.'

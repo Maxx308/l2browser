@@ -56,8 +56,11 @@ function aoePhysHit(m, mult, elemBonusPct) {
 
   const crit = Math.random() * 100 < getCritChance(cat);
   if (crit) dmg = Math.floor(dmg * getCritMultiplier(cat));
+  if (crit && typeof subclassOnCrit === 'function') subclassOnCrit(m);   // v0.38: Азарт / Метка Егеря
+  // v0.38: Печать света, Равновесие (Храмовник)
+  const light = typeof subclassOnWeaponHit === 'function' ? subclassOnWeaponHit(m) : 0;
   // v0.36.3: зарубка — у каждой цели своя (раньше массовые навыки её не учитывали)
-  return { miss: false, dmg: monsterTagDmg(m, applyWoundMult(m, withSkillFlat(Math.max(1, dmg))), heroPhysKinds(cat)), crit };
+  return { miss: false, dmg: monsterTagDmg(m, applyWoundMult(m, withSkillFlat(Math.max(1, dmg)) + light), heroPhysKinds(cat)), crit };
 }
 
 // Магический удар по одному мобу. Возвращает { miss, dmg }.
@@ -137,11 +140,13 @@ function aoeGiveXp(skill, extraElems) {
 
 function aoeHeal(amount) {
   const p = state.player;
-  const heal = Math.min(Math.floor(amount), p.maxHp - p.hp);
-  if (heal <= 0) return 0;
-  p.hp += heal;
-  spawnFloatDamage('fighter-player', heal, 'heal');
-  return heal;
+  const want = Math.max(0, Math.floor(amount));
+  const heal = Math.min(want, p.maxHp - p.hp);
+  if (heal > 0) { p.hp += heal; spawnFloatDamage('fighter-player', heal, 'heal'); }
+  // v0.38: пассивки подклассов видят лечение уже после прибавки (Благодать, Очищение, Сок древа, Живучесть…)
+  if (typeof subclassOnHeroHeal === 'function') subclassOnHeroHeal(Math.max(0, heal), want - Math.max(0, heal));
+  if (p.hp > p.maxHp) p.hp = p.maxHp;
+  return Math.max(0, heal);
 }
 
 // ========================================================
@@ -159,17 +164,23 @@ function performAoeSkill(skill, data) {
 
     // ---- Человек-воин: Круговой удар ----
     case 'whirlwind': {
-      const hits = aoeTargets(data.targets).map(m => ({ m, ...aoePhysHit(m, data.multiplier, 0), fx: 'slash' }))
+      let hits = aoeTargets(data.targets).map(m => ({ m, ...aoePhysHit(m, data.multiplier, 0), fx: 'slash' }))
         .map(h => ({ ...h, type: h.crit ? 'crit' : 'dmg' }));
+      const targetsN = hits.length;
+      if (typeof subclassWhirlExtraHits === 'function') hits = hits.concat(subclassWhirlExtraHits(hits, data));   // v0.38: Волна света
       const r = aoeApply(hits);
       aoeGiveXp(skill, []);
-      line = `🌀 Круговой удар: ${r.total} (целей: ${hits.length})`;
+      line = `🌀 ${skill.name}: ${r.total} (целей: ${targetsN})`;
       if (r.kills > 0 && typeof humanCycleOnKill === 'function') notes.push(humanCycleOnKill('whirlwind'));   // v0.19.1: Цикл мастера
+      if (typeof subclassAfterWhirl === 'function') notes.push(subclassAfterWhirl(hits, data));   // v0.38: Вызов / лечение Волной
       break;
     }
 
     // ---- Человек-маг: Стихийный залп ----
     case 'volley': {
+      // v0.38: Буря стихий / Благодатный дождь / Зов могил (subclass.js)
+      const sv = typeof subclassVolley === 'function' ? subclassVolley(skill, data) : null;
+      if (sv) { line = sv.line; notes.push(...sv.notes); break; }
       const ELEM = ['fire', 'ice', 'lightning'];
       const used = new Set();
       const hits = [];
@@ -214,7 +225,8 @@ function performAoeSkill(skill, data) {
     // ---- Орк-воин: Кровавая жатва ----
     case 'harvest': {
       const eb = getElementDamageBonus('death');
-      const hits = aoeTargets(data.targets).map(m => ({ m, ...aoePhysHit(m, data.multiplier, eb), fx: 'slash-red' }))
+      const hv = typeof subclassHarvest === 'function' ? subclassHarvest(data) : { targets: data.targets, mult: data.multiplier };   // v0.38: Кровавый размах
+      const hits = aoeTargets(hv.targets).map(m => ({ m, ...aoePhysHit(m, hv.mult, eb), fx: 'slash-red' }))
         .map(h => ({ ...h, type: h.crit ? 'crit' : 'dmg' }));
       const r = aoeApply(hits);
       aoeGiveXp(skill);
@@ -223,14 +235,16 @@ function performAoeSkill(skill, data) {
         notes.push(`убито: ${r.kills}`);
         if (healed > 0) notes.push(`🩸 +${healed} HP`);
       }
-      line = `🩸 Кровавая жатва: ${r.total} (целей: ${hits.length})`;
+      if (typeof subclassAfterHarvest === 'function') notes.push(subclassAfterHarvest(hits));   // v0.38: Рык, Гниение Вождя
+      line = `🩸 ${skill.name}: ${r.total} (целей: ${hits.length})`;
       break;
     }
 
     // ---- Орк-маг: Мор ----
     case 'pestilence': {
       const eb = getElementDamageBonus('death');
-      const perTurn = Math.max(1, Math.floor(p.mAtk * data.dotPercent / 100 * (1 + eb / 100)));
+      let perTurn = Math.max(1, Math.floor(p.mAtk * data.dotPercent / 100 * (1 + eb / 100)));
+      if (typeof subclassPestilencePerTurn === 'function') perTurn = subclassPestilencePerTurn(perTurn);   // v0.38: Круг гнили
       const targets = aoeTargets(data.targets);
       let doubled = 0;
       targets.forEach(m => {
@@ -239,15 +253,15 @@ function performAoeSkill(skill, data) {
         spawnFloatDamage('fighter-monster', 0, 'poison', { mon: m, fx: 'toxic', text: two ? '☠ Гниение ×2' : '☠ Гниение' });
       });
       aoeGiveXp(skill);
-      line = `☠ Мор: гниение на ${targets.length} врагах, ${perTurn} × ${data.turns} хода`;
-      if (doubled) notes.push(`второй слой: ${doubled}`);
+      line = `☠ ${skill.name}: гниение на ${targets.length} врагах, ${perTurn} × ${data.turns} хода`;
+      if (doubled) notes.push(`ещё слой: ${doubled}`);
       break;
     }
 
     // ---- Эльф-воин: Терновый вихрь ----
     case 'thorns': {
       const eb = getElementDamageBonus('life');
-      const hits = aoeTargets(data.targets).map(m => ({ m, ...aoePhysHit(m, data.multiplier, eb), fx: 'slash-green' }))
+      const hits = aoeTargets(typeof subclassThorns === 'function' ? subclassThorns(data).targets : data.targets).map(m => ({ m, ...aoePhysHit(m, data.multiplier, eb), fx: 'slash-green' }))
         .map(h => ({ ...h, type: h.crit ? 'crit' : 'dmg' }));
       hits.forEach(h => {
         if (h.miss) return;
@@ -255,8 +269,9 @@ function performAoeSkill(skill, data) {
       });
       const r = aoeApply(hits);
       aoeGiveXp(skill);
-      line = `🌿 Терновый вихрь: ${r.total} (целей: ${hits.length})`;
-      notes.push(`опутаны: точность −${data.accReduction}%`);
+      line = `🌿 ${skill.name}: ${r.total} (целей: ${hits.length})`;
+      const thornNote = typeof subclassAfterThorns === 'function' ? subclassAfterThorns(hits, data) : '';   // v0.38: корни, семена, лечение
+      notes.push(thornNote || `опутаны: точность −${data.accReduction}%`);
       // v0.19.1: комбо — враг погиб от Вихря → бесплатное Дыхание природы
       // (без маны, без отката, при любом HP; один раз за Вихрь, ×1.5 если убито 2+).
       if (r.kills > 0 && typeof triggerNatureBreath === 'function') triggerNatureBreath(r.kills);
@@ -265,6 +280,9 @@ function performAoeSkill(skill, data) {
 
     // ---- Эльф-маг: Похищение жизни ----
     case 'drain': {
+      // v0.38: Звездопад, Дыхание рощи, Похищение Друида (subclass.js)
+      const sd = typeof subclassDrain === 'function' ? subclassDrain(skill, data) : null;
+      if (sd) { line = sd.line; notes.push(...sd.notes); break; }
       const fall = skill.aoe.falloff;
       // v0.19.1: комбо — пока Исцеление на перезарядке, урон (и лечение) +50%
       const healCd = (state.battle.skillCooldowns && state.battle.skillCooldowns.heal) || 0;
@@ -282,12 +300,13 @@ function performAoeSkill(skill, data) {
     // ---- Дроу-воин: Искровой разрез ----
     case 'spark': {
       const eb = getElementDamageBonus('lightning');
-      const hits = aoeTargets(data.targets).map((m, i) => ({ m, ...aoePhysHit(m, data.multiplier, eb), fx: i === 0 ? 'slash-blue' : 'bolt' }))
+      const hits = aoeTargets(typeof subclassSpark === 'function' ? subclassSpark(data).targets : data.targets).map((m, i) => ({ m, ...aoePhysHit(m, data.multiplier, eb), fx: i === 0 ? 'slash-blue' : 'bolt' }))   // v0.38: цели подкласса
         .map(h => ({ ...h, type: h.crit ? 'crit' : (h.fx === 'bolt' ? 'magic' : 'dmg') }));
       const r = aoeApply(hits);
       cutMonstersATB(data.atbCut / 100);
       aoeGiveXp(skill);
-      line = `⚡ Искровой разрез: ${r.total}`;
+      line = `⚡ ${skill.name}: ${r.total}`;
+      if (typeof subclassAfterSpark === 'function') notes.push(subclassAfterSpark(hits));   // v0.38: Статика
       notes.push(`ATB стаи −${data.atbCut}%`);
       break;
     }
@@ -296,7 +315,7 @@ function performAoeSkill(skill, data) {
     case 'chain': {
       const fall = skill.aoe.falloff;
       // v0.19.1: если в цепи есть парализованный Разрядом — он проводник, молния не слабеет на прыжках
-      const chainTargets = aoeTargets(data.targets);
+      const chainTargets = aoeTargets(typeof subclassChainTargets === 'function' ? subclassChainTargets(data) : data.targets);   // v0.38: + пауки
       const conductor = chainTargets.some(m => getDebuff('monster', 'paralysis', m.index));
       const hits = chainTargets.map((m, i) => {
         const k = conductor ? 1 : (fall[i] || fall[fall.length - 1]);
@@ -309,12 +328,14 @@ function performAoeSkill(skill, data) {
       const chainLvl = p.learnedSkills['chainMind'] || 0;
       if (chainLvl > 0 && SKILLS['chainMind']) {
         const cd = SKILLS['chainMind'].levels[chainLvl - 1];
-        if (cd && cd.chance && Math.random() * 100 < cd.chance) {
+        if (cd && cd.chance && Math.random() * 100 < cd.chance + (typeof subclassChainMindBonus === 'function' ? subclassChainMindBonus() : 0)) {
           state.battle.skillCooldowns[skill.id] = Math.max(0, (state.battle.skillCooldowns[skill.id] || 0) - 1);
           notes.push('🧠 Цепной разум: КД −1');
+          if (typeof subclassOnChainMind === 'function') subclassOnChainMind();   // v0.38: Искрение
         }
       }
-      line = `⚡ Цепная молния: ${r.total} (прыжков: ${hits.length})`;
+      line = `⚡ ${skill.name}: ${r.total} (прыжков: ${hits.length})`;
+      if (typeof subclassAfterChain === 'function') notes.push(subclassAfterChain(hits));   // v0.38: Цепь сна
       break;
     }
 
@@ -325,17 +346,19 @@ function performAoeSkill(skill, data) {
         .map(h => ({ ...h, type: h.crit ? 'crit' : 'magic' }));
       // v0.19.1: Раскол разносит Метки Жадности на всех задетых (до урона — чтобы убитые тоже считались)
       if (typeof copyGreedMarks === 'function') copyGreedMarks(hits.filter(h => !h.miss).map(h => h.m), 'warrior');
+      if (typeof subclassQuakeHit === 'function') hits.forEach(subclassQuakeHit);   // v0.38: Раскол — замороженные ×2 и оттаивают
       let frozen = 0;
       hits.forEach(h => {
         if (h.miss || h.m.hp - h.dmg <= 0) return;
-        if (Math.random() * 100 < data.freezeChance) {
+        if (!h.shattered && Math.random() * 100 < data.freezeChance + (typeof subclassQuakeFreezeBonus === 'function' ? subclassQuakeFreezeBonus() : 0)) {   // v0.38: Лёд и сталь
           addDebuff('monster', 'freeze', h.m.index, { turnsLeft: 1 });
           frozen++;
         }
       });
       const r = aoeApply(hits);
       aoeGiveXp(skill);
-      line = `❄ Ледяной раскол: ${r.total} (целей: ${hits.length})`;
+      line = `❄ ${skill.name}: ${r.total} (целей: ${hits.length})`;
+      { const sh = hits.filter(h => h.shattered).length; if (sh) notes.push(`💥 раскол: ${sh}`); }
       if (frozen) notes.push(`❄ заморожено: ${frozen}`);
       break;
     }
@@ -387,12 +410,13 @@ function tickBlizzardRune() {
   alive.forEach(m => { if (getDebuff('monster', 'rune', m.index)) removeDebuff('monster', 'rune', m.index); });
   if (!targets.length) return;
 
-  const hits = targets.map(m => ({ m, ...aoeMagHit(m, rune.multiplier, 'ice'), type: 'magic', fx: 'blizzard' }));
+  const hits = targets.map(m => ({ m, ...aoeMagHit(m, rune.multiplier * (typeof subclassRuneMult === 'function' ? subclassRuneMult(m) : 1), 'ice'), type: 'magic', fx: 'blizzard' }));   // v0.38: Закалка (Мастер горна)
   // v0.19.1: Буран разносит Метки Жадности мага на всех задетых
   if (typeof copyGreedMarks === 'function') copyGreedMarks(hits.filter(h => !h.miss).map(h => h.m), 'mage');
   const r = aoeApply(hits);
   cutMonstersATB(rune.atbCut / 100);
   logCombat(`🌨 Буран: ${r.total}`, 'log-entry player-magic', `ATB стаи −${rune.atbCut}%`);
+  if (typeof subclassAfterRune === 'function') subclassAfterRune(targets);   // v0.38: защита, элементаль, закалка
   updateBattleUI();
 }
 
@@ -474,6 +498,7 @@ function applyRotTicks() {
   const r = aoeApply(hits);
   const wr = w > 1 ? ` (Гнев +${Math.round((w - 1) * 100)}%)` : '';
   logCombat(`☠ Гниение: ${r.total} урона${wr}${r.kills ? `, сгнило: ${r.kills}` : ''}.`, 'log-entry poison');
+  if (typeof subclassOnRotTick === 'function') subclassOnRotTick(r.total);   // v0.38: Иссушение (Костоправ)
   updateBattleUI();
 }
 

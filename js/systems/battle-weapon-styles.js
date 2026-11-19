@@ -85,6 +85,7 @@ function onDischargeZeroed(m) {
     } else if (!getDebuff('monster', 'paralysis', m.index)) {
       addDebuff('monster', 'paralysis', m.index, { turnsLeft: 1 });
       logCombat(`⚡ ПАРАЛИЧ! Шкала стаи сбита в ноль — ${m.name} пропустит удар.`, 'log-entry player-skill');
+      if (typeof subclassOnParalyze === 'function') subclassOnParalyze(m);   // v0.38: двойник, пауки, Плоть грозы
     }
   }
   if (p.learnedSkills.sparkSlash && (state.battle.skillCooldowns.sparkSlash || 0) > 0) {

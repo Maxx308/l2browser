@@ -38,6 +38,7 @@ function applySkillRecoil(skill, killed) {
   }
   const recoil = Math.floor(p.maxHp * pct / 100);
   if (recoil <= 0) return false;
+  if (typeof subclassRecoilHook === 'function' && subclassRecoilHook(skill, recoil)) return false;   // v0.38: На краю, тотем Шамана
   p.hp -= recoil;
   spawnFloatDamage('fighter-player', recoil, 'dmg');
   logCombat(`💢 Отдача от ${label}: ${recoil} HP.`, 'log-entry loss');
@@ -64,6 +65,10 @@ function tryUseActiveSkill() {
     const skill = SKILLS[skillId];
     if (!skill || skill.type !== 'active') continue;
     if (!p.learnedSkills[skillId]) continue;
+    if (skill.semiPassive) continue;   // v0.38: полупассивка срабатывает сама
+    if (skill.subclassId && p.subclass !== skill.subclassId) continue;
+    if (skill.useCheck && skill.useCheck()) continue;      // v0.38: нужен ресурс (Азарт Егеря)
+    if (skill.autoCheck && !skill.autoCheck()) continue;   // v0.38: свои условия автобоя (Глухая оборона)
 
     const enabled = state.battle.skillToggles[skillId] !== false;
     const cd = state.battle.skillCooldowns[skillId] || 0;
@@ -145,7 +150,8 @@ function applyWoundMult(m, dmg) {
 }
 
 function getCritMultiplier(weaponCategory) {
-  return (weaponCategory === 'daggers' ? 2.2 : 1.8) + (state.player.critMultBonus || 0);   // v0.37: сила крита от сета
+  return (weaponCategory === 'daggers' ? 2.2 : 1.8) + (state.player.critMultBonus || 0)   // v0.37: сила крита от сета
+    + (typeof subclassCritMultBonus === 'function' ? subclassCritMultBonus(weaponCategory) : 0);   // v0.38: Глаз егеря
 }
 
 function getCritChance(weaponCategory) {

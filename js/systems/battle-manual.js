@@ -36,6 +36,7 @@ function doPlayerTurn(action) {
     if (b.skillCooldowns[id] > 0) b.skillCooldowns[id] = Math.max(0, b.skillCooldowns[id] - 1);
   });
   renderSkillSlots();
+  if (typeof subclassOnHeroTurn === 'function') subclassOnHeroTurn();   // v0.38: таймеры подкласса
 
   // «Защита» держится до следующего своего хода
   if (getDebuff('player', 'guard')) removeDebuff('player', 'guard');
@@ -45,6 +46,7 @@ function doPlayerTurn(action) {
   if (regen) {
     const amount = Math.min(regen.perTurn || 10, p.maxHp - p.hp);
     if (amount > 0) { p.hp += amount; spawnFloatDamage('fighter-player', amount, 'heal'); }
+    if (typeof subclassOnHeroHeal === 'function') subclassOnHeroHeal(Math.max(0, amount), (regen.perTurn || 10) - Math.max(0, amount));   // v0.38
     logCombat(`🧪 Зелье лечения: +${Math.max(0, amount)} HP (осталось ${(regen.turnsLeft || 1) - 1} ход.)`, 'log-entry potion');
     regen.turnsLeft = (regen.turnsLeft || 1) - 1;
     if (regen.turnsLeft <= 0) removeDebuff('player', 'potionRegen');
@@ -110,6 +112,9 @@ function manualSkillCheck(id) {
   const p = state.player;
   const skill = SKILLS[id];
   if (!skill || skill.type !== 'active' || !p.learnedSkills[id]) return { ok: false, why: 'не изучен' };
+  if (skill.semiPassive) return { ok: false, why: 'срабатывает сам' };   // v0.38
+  if (skill.subclassId && p.subclass !== skill.subclassId) return { ok: false, why: 'не твой путь' };
+  { const why = skill.useCheck ? skill.useCheck() : ''; if (why) return { ok: false, why }; }   // v0.38: Азарт Егеря
   const cd = state.battle.skillCooldowns[id] || 0;
   if (cd > 0) return { ok: false, why: `перезарядка ${Math.ceil(cd)}`, cd };
   const data = getSkillData(id);
@@ -200,7 +205,7 @@ function renderManualPanel(force) {
   box.classList.toggle('bxm-waiting', waiting);
 
   const p = state.player;
-  const slots = (p.skillSlots || []).filter(id => id && SKILLS[id] && SKILLS[id].type === 'active' && p.learnedSkills[id]);
+  const slots = (p.skillSlots || []).filter(id => id && SKILLS[id] && SKILLS[id].type === 'active' && !SKILLS[id].semiPassive && p.learnedSkills[id]);
   const checks = slots.map(id => [id, manualSkillCheck(id)]);
   const pot = manualPotionState();
   const alive = (b.monsters || []).filter(m => m.hp > 0).length;

@@ -77,6 +77,7 @@ function playerAttack() {
   const playerHit = rollHit(playerAcc, monsterEva) && !monsterTrueDodge(m);   // v0.36: бесплотные
 
   const skill = tryUseActiveSkill();
+  if (typeof subclassOnHeroAction === 'function') subclassOnHeroAction(skill ? 'skill' : 'weapon', skill);   // v0.38: Песнь (Певец клинка)
   if (skill) {
     const data = getSkillData(skill.id);
     // v0.19.1: Стихийный резонанс (Стихийный залп человека) — один Шар / Ледяная стрела без маны
@@ -84,9 +85,14 @@ function playerAttack() {
       removeDebuff('player', 'resonance');
       logCombat(`✦ Стихийный резонанс: ${skill.name} без маны!`, 'log-entry player-skill');
     } else {
-      p.mp -= data.mpCost;
+      p.mp -= typeof subclassMpCost === 'function' ? subclassMpCost(skill, data.mpCost) : data.mpCost;   // v0.38: Смена стихий
     }
     state.battle.skillCooldowns[skill.id] = skill.cooldown;
+
+    // ---- v0.38: новые активки подклассов (subclass.js) ----
+    if (skill.subclassId && typeof performSubclassActive === 'function' && performSubclassActive(skill, data)) return;
+    // ---- v0.38: подкласс переопределяет навык целиком (Цветение, Падающая звезда, Росток, Кора) ----
+    if (typeof subclassOverrideSkill === 'function' && subclassOverrideSkill(skill, data, m)) return;
 
     // ---- v0.19: МАССОВЫЕ НАВЫКИ — своя логика в battle-aoe.js ----
     if (skill.aoe && typeof performAoeSkill === 'function') {
@@ -108,7 +114,8 @@ function playerAttack() {
       addElementXP('death');
       if (tryBonusProficiencyXP()) { addElementXP('death'); logCombat(`🍺 Бонусный опыт стихии!`, 'log-entry levelup'); }
     } else if (skill.id === 'fireball' || skill.id === 'iceArrow' || skill.id === 'dwarfGreedMagic') {
-      const elemId = (skill.id === 'iceArrow') ? 'ice' : 'fire';
+      let elemId = (skill.id === 'iceArrow') ? 'ice' : 'fire';
+      if (typeof subclassSpellElem === 'function') elemId = subclassSpellElem(skill.id, elemId);   // v0.38: свет / Смерть
       addElementXP(elemId);
       if (tryBonusProficiencyXP()) { addElementXP(elemId); logCombat(`🍺 Бонусный опыт стихии!`, 'log-entry levelup'); }
     } else if (skill.id === 'spiritWrath') {
@@ -123,7 +130,7 @@ function playerAttack() {
     // ---- ВОИНСКИЕ СКИЛЛЫ ----
     if (skill.id === 'powerStrike' || skill.id === 'orcRage' || skill.id === 'doubleStrike' || skill.id === 'dwarfGreed') {
       const hits = skill.hits || 1;
-      if (!playerHit) {
+      if (!playerHit && !(typeof subclassNeverMiss === 'function' && subclassNeverMiss(skill))) {   // v0.38: Прицельный выстрел не промахивается
         spawnFloatDamage('fighter-monster', 0, 'miss');
         logCombat(`⚔ ${skill.name} — промах.`, 'log-entry');
         const mixtureData = getActiveMixtureData();
@@ -143,18 +150,25 @@ function playerAttack() {
       const gripBonus = getTwoHandGripBonus();   // v0.27: двуручный хват
       let totalDamage = 0, thornsTaken = 0;
       const parts = [];
+      // v0.38: подкласс — множитель навыка (Добивание Егеря тратит Азарт)
+      const skillMult = typeof subclassStrikeMult === 'function' ? subclassStrikeMult(skill, data, m, notes) : data.multiplier;
       for (let h = 0; h < hits; h++) {
-        const variance = Math.floor(basePAtk * 0.2);
-        let raw = basePAtk + Math.floor(Math.random() * variance * 2) - variance;
-        let baseDmg = Math.max(1, raw - pierce.effectivePDef);
-        let dmg = Math.floor(baseDmg * data.multiplier);
+        // v0.38: подкласс — к атаке удара прибавляется защита щита (Страж стены) или маг. атака (Храмовник)
+        const hitAtk = basePAtk + (typeof subclassHitAtk === 'function' ? subclassHitAtk(skill.id, h) : 0);
+        const variance = Math.floor(hitAtk * 0.2);
+        let raw = hitAtk + Math.floor(Math.random() * variance * 2) - variance;
+        let baseDmg = Math.max(1, raw - (typeof subclassStrikeDef === 'function' ? subclassStrikeDef(skill, pierce.effectivePDef, m) : pierce.effectivePDef));   // v0.38: Сокрушить, Клинок духов
+        let dmg = Math.floor(baseDmg * skillMult);
         if (weaponBonusPercent > 0) dmg = Math.floor(dmg * (1 + weaponBonusPercent / 100));
         if (deathBonus > 0) dmg = Math.floor(dmg * (1 + deathBonus / 100));
         if (gripBonus > 0) dmg = Math.floor(dmg * (1 + gripBonus / 100));
         if (mixtureAtkMult > 1.0) dmg = Math.floor(dmg * mixtureAtkMult);
         const isCrit = Math.random() * 100 < critChance;
         if (isCrit) dmg = Math.floor(dmg * critMult);
+        if (isCrit && typeof subclassOnCrit === 'function') subclassOnCrit(m);   // v0.38: Азарт / Метка Егеря
         dmg = withSkillFlat(Math.max(1, dmg));
+        if (typeof subclassStrikeFlat === 'function') dmg += subclassStrikeFlat(skill, m);   // v0.38: Таран (% HP героя), Удар предков (% HP врага)
+        if (typeof subclassOnWeaponHit === 'function') dmg += subclassOnWeaponHit(m);   // v0.38: Печать света, Равновесие
         dmg = applyWoundMult(m, dmg);   // v0.36.3: зарубка — последней, по этой цели
         dmg = monsterTagDmg(m, dmg, heroPhysKinds(weaponCategory).concat(skill.id === 'orcRage' ? ['death'] : []));   // v0.36: теги твари
         m.hp -= dmg; totalDamage += dmg;
@@ -164,6 +178,7 @@ function playerAttack() {
         if (m.hp <= 0) break;
       }
       if (thornsTaken > 0) notes.push(`🌵 шипы −${thornsTaken} HP`);
+      if (typeof subclassAfterStrike === 'function') notes.push(subclassAfterStrike(skill, m, parts.length, totalDamage));   // v0.38
       const dmgText = parts.length > 1 ? `${parts.join(' + ')} = ${totalDamage}` : parts[0];
       const mixtureData = getActiveMixtureData();
       if (mixtureData && mixtureData.chargeType === 'playerAttacks') tickMixtureCharge(parts.length);   // v0.31: заряд на каждый удар
@@ -174,21 +189,21 @@ function playerAttack() {
           state.battle.skillCooldowns.bloodHarvest = Math.max(0, state.battle.skillCooldowns.bloodHarvest - cut);
           notes.push(`🩸 КД Кровавой жатвы −${cut}`);
         }
-        logCombat(`🌑 Ярость: ${dmgText}`, 'log-entry player-skill', notes.join(' · '));
+        logCombat(`🌑 ${skill.name}: ${dmgText}`, 'log-entry player-skill', notes.filter(Boolean).join(' · '));
         if (applySkillRecoil(skill, m.hp <= 0)) { updateTopStatus(); updateBattleUI(); if (m.hp <= 0) onMonsterDeath(m); onPlayerDeath(); return; }
       } else if (skill.id === 'doubleStrike') {
         if (m.hp <= 0 && typeof humanCycleOnKill === 'function') notes.push(humanCycleOnKill('doubleStrike'));
-        logCombat(`⚔ Двойной удар: ${dmgText}`, 'log-entry player-skill', notes.filter(Boolean).join(' · '));
+        logCombat(`⚔ ${skill.name}: ${dmgText}`, 'log-entry player-skill', notes.filter(Boolean).join(' · '));
       } else if (skill.id === 'dwarfGreed') {
         if (skill.greedMarkType) {
           // v0.19.1: метки складываются (до 5)
           const n = addGreedMark(m, m.hp > 0 ? (data.markTurns || skill.greedMarkTurns || 3) : 1, skill.greedMarkType);
           notes.push(`💰 метка${n > 1 ? ` ×${n}` : ''}`);
         }
-        logCombat(`💰 Жадность: ${dmgText}`, 'log-entry player-skill', notes.join(' · '));
+        logCombat(`💰 Жадность: ${dmgText}`, 'log-entry player-skill', notes.filter(Boolean).join(' · '));
       } else {
         if (m.hp <= 0 && typeof humanCycleOnKill === 'function') notes.push(humanCycleOnKill('powerStrike'));
-        logCombat(`⚔ Сильный удар: ${dmgText}`, 'log-entry player-skill', notes.filter(Boolean).join(' · '));
+        logCombat(`⚔ ${skill.name}: ${dmgText}`, 'log-entry player-skill', notes.filter(Boolean).join(' · '));
       }
       if (m.hp > 0) tryApplyWeaponTrait(weaponCategory, weapon, 1, Math.round(totalDamage / Math.max(1, parts.length)));   // v0.36.3: от урона одного удара навыка
     }
@@ -210,13 +225,10 @@ function playerAttack() {
     // ---- НОВОЕ (v0.16): ЛЕЧЕБНЫЕ СКИЛЛЫ ----
     else if (skill.isHeal) {
       // v0.19.1: магия Жизни усиливает лечение (rollHealAmount)
-      let heal = Math.min(rollHealAmount(data.multiplier), p.maxHp - p.hp);
-      if (heal <= 0) {
-        logCombat(`🌿 ${skill.name}: HP уже полное.`, 'log-entry');
-      } else {
-        p.hp += heal; spawnFloatDamage('fighter-player', heal, 'heal');
-        logCombat(`🌿 ${skill.name}: +${heal} HP`, 'log-entry potion');
-      }
+      // v0.38: через aoeHeal — чтобы лечение видели пассивки подклассов (Сок древа, Благодать, Живучесть…)
+      const heal = aoeHeal(rollHealAmount(data.multiplier));
+      if (heal <= 0) logCombat(`🌿 ${skill.name}: HP уже полное.`, 'log-entry');
+      else logCombat(`🌿 ${skill.name}: +${heal} HP`, 'log-entry potion');
       addLifeXP();
       const mixtureData = getActiveMixtureData();
       if (mixtureData && mixtureData.chargeType === 'playerAttacks') tickMixtureCharge();
@@ -256,7 +268,7 @@ function playerAttack() {
       // v0.19.1: сбили шкалу стаи до нуля ИЛИ Разряд заряжен уворотом (Скорость молнии)
       const charged = !!getDebuff('player', 'stormCharge');
       if (charged) removeDebuff('player', 'stormCharge');
-      const zeroed = charged || state.battle.monstersATB <= atbReduction;
+      const zeroed = charged || state.battle.monstersATB <= atbReduction || (typeof subclassDischargeParalyze === 'function' && subclassDischargeParalyze(m));   // v0.38: Статика — паралич гарантирован
       cutMonstersATB(atbReduction);   // v0.23: сбивает шкалу каждому мобу стаи
       if (zeroed && typeof onDischargeZeroed === 'function') onDischargeZeroed(m);
       
@@ -268,13 +280,15 @@ function playerAttack() {
       if (chainLvl > 0 && SKILLS['chainMind']) {
         const chainData = SKILLS['chainMind'].levels[chainLvl - 1];
         if (chainData && chainData.chance) {
-          if (Math.random() * 100 < chainData.chance) {
+          if (Math.random() * 100 < chainData.chance + (typeof subclassChainMindBonus === 'function' ? subclassChainMindBonus() : 0)) {   // v0.38: Буря в крови
             state.battle.skillCooldowns[skill.id] = Math.max(0, (state.battle.skillCooldowns[skill.id] || 0) - 1);
             notes.push('🧠 Цепной разум: КД −1');
+            if (typeof subclassOnChainMind === 'function') subclassOnChainMind();   // v0.38: Искрение
           }
         }
       }
-      logCombat(`⚡ Разряд: ${dmg}`, 'log-entry player-magic', notes.join(' · '));
+      if (typeof subclassAfterDischarge === 'function') notes.push(subclassAfterDischarge(m, dmg));   // v0.38: Искра в клинке, Заряженный клинок
+      logCombat(`⚡ ${skill.name}: ${dmg}`, 'log-entry player-magic', notes.filter(Boolean).join(' · '));
     }
     // ---- МАГИЧЕСКИЕ СКИЛЛЫ ----
     else if (skill.id === 'fireball' || skill.id === 'spiritWrath' || skill.id === 'iceArrow' || skill.id === 'dwarfGreedMagic') {
@@ -295,22 +309,26 @@ function playerAttack() {
       let dmg = Math.floor(baseDmg * data.multiplier);
       let elemId = 'fire';
       if (skill.id === 'iceArrow') elemId = 'ice';
+      if (typeof subclassSpellElem === 'function') elemId = subclassSpellElem(skill.id, elemId);   // v0.38: Жрец — свет, Некромант — Смерть
       else if (skill.id === 'spiritWrath') elemId = 'death';
       const elemBonus = getElementDamageBonus(elemId);
       if (elemBonus > 0) dmg = Math.floor(dmg * (1 + elemBonus / 100));
       if (mixtureAtkMult > 1.0) dmg = Math.floor(dmg * mixtureAtkMult);
       dmg = withSkillFlat(Math.max(1, dmg));
       if (skill.id === 'spiritWrath') dmg += deathMagicMaxHpBonus(m, 1);   // v0.36: Гнев — % от макс. HP врага
+      if (typeof subclassSpellDmg === 'function') dmg = subclassSpellDmg(skill, m, dmg);   // v0.38: Раскол, Кара по нежити
       dmg = monsterTagDmg(m, dmg, ['magic', elemId]);   // v0.36: теги твари
       m.hp -= dmg;
       const mixtureData = getActiveMixtureData();
       if (mixtureData && mixtureData.chargeType === 'playerAttacks') tickMixtureCharge();
       // v0.31: одна строка на навык, эффекты (заморозка, поджог, метка) — припиской
-      if (skill.id === 'spiritWrath') {
+      if (typeof subclassSpellAfter === 'function' && subclassSpellAfter(skill, m, dmg)) {
+        // v0.38: подкласс мага сам показал удар и наложил свои эффекты
+      } else if (skill.id === 'spiritWrath') {
         // v0.19.1: комбо с Мором — каждый Гнев усиливает Гниение до конца боя
         if (typeof addRotWrathStack === 'function') addRotWrathStack();
         spawnFloatDamage('fighter-monster', dmg, 'magic');
-        logCombat(`🌑 Гнев: ${dmg}`, 'log-entry player-skill');
+        logCombat(`🌑 ${skill.name}: ${dmg}`, 'log-entry player-skill');
         if (applySkillRecoil(skill, m.hp <= 0)) { updateTopStatus(); updateBattleUI(); if (m.hp <= 0) onMonsterDeath(m); onPlayerDeath(); return; }
       } else if (skill.id === 'iceArrow') {
         spawnFloatDamage('fighter-monster', dmg, 'magic');
@@ -319,7 +337,7 @@ function playerAttack() {
           addDebuff('monster', 'freeze', idx, { turnsLeft: 1 });
           note = '❄ заморожен — пропустит удар';
         }
-        logCombat(`❄ Ледяная стрела: ${dmg}`, 'log-entry player-magic', note);
+        logCombat(`❄ ${skill.name}: ${dmg}`, 'log-entry player-magic', note);
       } else if (skill.id === 'dwarfGreedMagic') {
         spawnFloatDamage('fighter-monster', dmg, 'magic');
         let note = '';
@@ -333,7 +351,7 @@ function playerAttack() {
         const pureMAtk = Math.floor(5 + p.INT * 0.8);
         const burnDmg = Math.max(1, Math.floor(pureMAtk * (data.burnPercent / 100)));
         addDebuff('monster', 'burn', idx, { turnsLeft: skill.burnTurns, damage: burnDmg });
-        logCombat(`🔥 Огненный шар: ${dmg}`, 'log-entry player-skill', `🔥 поджог ${burnDmg} × ${skill.burnTurns} хода`);
+        logCombat(`🔥 ${skill.name}: ${dmg}`, 'log-entry player-skill', `🔥 поджог ${burnDmg} × ${skill.burnTurns} хода`);
       }
     }
 
@@ -401,6 +419,11 @@ function playerAttack() {
   const isCrit = Math.random() * 100 < critChance;
   if (isCrit) dmg = Math.floor(dmg * critMult);
   dmg = Math.max(1, dmg);
+  if (isCrit && typeof subclassOnCrit === 'function') subclassOnCrit(m);   // v0.38: Азарт / Метка Егеря
+  if (!isMage() && typeof subclassOnWeaponHit === 'function') {   // v0.38: Печать света, Равновесие
+    const light = subclassOnWeaponHit(m);
+    if (light > 0) { dmg += light; notes.push(`✴ свет +${light}`); }
+  }
   // ---- v0.19: топор / копьё — удар задевает второго ----
   const cleave = (!isMage() && typeof planWeaponCleave === 'function') ? planWeaponCleave(weaponCategory, m) : null;
   const fullDmg = dmg;
@@ -411,7 +434,7 @@ function playerAttack() {
   const thorns = monsterThorns(m, weaponCategory);   // v0.36: шипы
   if (thorns > 0) notes.push(`🌵 шипы −${thorns} HP`);
   // Парное: показываем вклад каждой руки (по доле атаки второй руки в общей).
-  // v0.37.2: и на арене — две цифры, два попадания (урон тот же, это только показ).
+  // v0.38: и на арене — две цифры, два попадания (урон тот же, это только показ).
   let dmgText = String(dmg);
   let offPart = 0;
   if (offhand && p.offhandPAtk > 0) {

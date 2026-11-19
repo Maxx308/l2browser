@@ -23,6 +23,7 @@ function getSkillData(skillId) {
 function isSkillAvailableForPlayer(skill, player) {
   if (skill.classId && skill.classId !== player.classId) return false;
   if (skill.raceId && skill.raceId !== player.raceId) return false;
+  if (skill.subclassId && player.subclass !== skill.subclassId) return false;   // v0.38: навыки подкласса
   return true;
 }
 
@@ -82,6 +83,7 @@ function resetSkills() {
   // Очищаем слоты активных навыков, так как скиллов больше нет
   if (p.skillSlots) {
     p.skillSlots = [null, null, null];
+    if (typeof ensureSkillSlotsLength === 'function') ensureSkillSlotsLength();   // v0.38: 4-я ячейка у подкласса
   }
   
   // Пересчитываем статы (чтобы убрать бонусы от пассивок)
@@ -115,9 +117,13 @@ function renderMentorSkills() {
   for (const id in p.learnedSkills) totalSpent += p.learnedSkills[id];
   
   // Хедер с очками и кнопкой сброса
+  const sc = (typeof getPlayerSubclass === 'function') ? getPlayerSubclass() : null;   // v0.38
+  const scLine = sc ? `<div class="mentor-subclass">✦ Путь: <b>${sc.name}</b></div>`
+    : (p.level >= (typeof SUBCLASS_MIN_LEVEL === 'number' ? SUBCLASS_MIN_LEVEL : 99) && p.underwoodFallen
+        ? `<div class="mentor-subclass mentor-subclass-hint">Путь ещё не выбран — посвящение в Храме Ильграда.</div>` : '');
   const header = `
-    <div class="skill-points-header" style="display:flex; justify-content:space-between; align-items:center;">
-      <div>Свободных очков: <b>${p.skillPoints}</b></div>
+    <div class="skill-points-header" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px;">
+      <div>Свободных очков: <b>${p.skillPoints}</b>${scLine}</div>
       ${totalSpent > 0 ? `<button class="btn danger" onclick="resetSkills()">🔄 Сбросить навыки (5000 🪙)</button>` : ''}
     </div>
   `;
@@ -177,6 +183,7 @@ function upgradeSkill(skillId) {
   if (curLvl >= skill.maxLevel) return;
   if (p.skillPoints < 1) return;
   if (skill.minLevel && p.level < skill.minLevel) return;   // v0.19: массовые — с 10 уровня
+  if (!isSkillAvailableForPlayer(skill, p)) return;          // v0.38: чужой подкласс
 
   p.skillPoints -= 1;
   p.learnedSkills[skillId] = curLvl + 1;

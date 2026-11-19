@@ -389,7 +389,8 @@ function updateCharacterPanel() {
   // ---- Герой ----
   const race = (typeof RACES !== 'undefined' && p.raceId) ? RACES[p.raceId] : null;
   setCsText('cs-name', escCs(p.name || '—'));
-  setCsText('cs-class', has ? `${CLASSES[p.classId].name}${race ? ' · ' + race.name : ''}` : '—');
+  const scName = (has && typeof getPlayerSubclass === 'function' && getPlayerSubclass()) ? ' · ' + getPlayerSubclass().name : '';   // v0.38
+  setCsText('cs-class', has ? `${CLASSES[p.classId].name}${race ? ' · ' + race.name : ''}${scName}` : '—');
   document.getElementById('cs-level').textContent = p.level;
 
   const portrait = document.getElementById('cs-portrait');

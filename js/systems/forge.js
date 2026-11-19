@@ -32,6 +32,7 @@ function openForge() {
   }
 
   document.getElementById('forge-overlay').classList.add('active');
+  if (typeof smeltButtonSync === 'function') smeltButtonSync();   // v0.38: Переплавка (Мастер горна)
   state.currentArmorSetTab = 'all';
   state.currentJewelrySetTab = 'all';
   state.currentWeaponCategory = 'swords';
@@ -548,7 +549,10 @@ function craftItem(category, recipeId) {
   }
 
   // ---- Списываем материалы (инвентарь, потом склад) ----
-  takeRecipeMaterials(recipe, 1);
+  // v0.38: Рука мастера — с шансом материалы не тратятся
+  const scSaved = typeof subclassForgeSaveMaterials === 'function' && subclassForgeSaveMaterials();
+  if (!scSaved) takeRecipeMaterials(recipe, 1);
+  else logLoot(`⚒ Рука мастера: материалы на «${res.name}» не потрачены.`, 'log-info');
 
   // ---- Списываем Оболы СРАЗУ (до броска редкости и фильтра) ----
   state.player.gold -= price;
@@ -567,7 +571,7 @@ function craftItem(category, recipeId) {
   let bonusStats = {};
 
   if (RARITY_TYPES.includes(res.type)) {
-    rarityId = rollRarity();
+    rarityId = typeof subclassForgeRarity === 'function' ? subclassForgeRarity() : rollRarity();   // v0.38: Рука мастера
     const rarity = RARITIES[rarityId];
     const profile = getRarityStatProfile(res);
     bonusStats = rollRarityStats(rarity.statPoints, profile);
