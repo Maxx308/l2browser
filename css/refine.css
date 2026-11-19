@@ -298,6 +298,41 @@
   font-weight: 700;
 }
 
+/* ---- v0.38: вычёркивание бонусов (Т4+) ---- */
+.refine-strike-chips {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: calc(4 * var(--u));
+}
+.refine-strike-chip {
+  padding: calc(3 * var(--u)) calc(7 * var(--u));
+  background: rgba(0,0,0,0.3);
+  border: 1px solid var(--border);
+  border-radius: calc(3 * var(--u));
+  color: #a0d080;
+  font-family: 'Cinzel', serif;
+  font-size: var(--fs-tiny);
+  cursor: pointer;
+}
+.refine-strike-chip:hover:not(:disabled) { border-color: var(--gold); }
+.refine-strike-chip.off {
+  color: var(--text-dim);
+  text-decoration: line-through;
+  text-decoration-color: #c05050;
+  text-decoration-thickness: 2px;
+  opacity: 0.6;
+  border-style: dashed;
+}
+.refine-strike-chip:disabled { cursor: default; }
+.refine-strike-note {
+  font-size: var(--fs-tiny);
+  color: var(--text-dim);
+  text-align: center;
+  line-height: 1.35;
+}
+.refine-strike-extra { color: var(--gold-bright); font-size: var(--fs-tiny); }
+
 /* ---- Ряд кнопок: Подогнать + Сбросить (v0.11) ---- */
 .refine-action {
   display: flex;

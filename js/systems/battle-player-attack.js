@@ -410,12 +410,19 @@ function playerAttack() {
   m.hp -= dmg;
   const thorns = monsterThorns(m, weaponCategory);   // v0.36: шипы
   if (thorns > 0) notes.push(`🌵 шипы −${thorns} HP`);
-  spawnFloatDamage('fighter-monster', dmg, isCrit ? 'crit' : dmgType);
-  // Парное: показываем вклад каждой руки (по доле атаки второй руки в общей)
+  // Парное: показываем вклад каждой руки (по доле атаки второй руки в общей).
+  // v0.37.2: и на арене — две цифры, два попадания (урон тот же, это только показ).
   let dmgText = String(dmg);
+  let offPart = 0;
   if (offhand && p.offhandPAtk > 0) {
     const off = Math.round(dmg * p.offhandPAtk / (p.pAtk + p.offhandPAtk));
-    if (off >= 1) dmgText = `${dmg - off} + ${off} = ${dmg}`;   // слабая вторая рука (+0) — одним числом
+    if (off >= 1 && off < dmg) { offPart = off; dmgText = `${dmg - off} + ${off} = ${dmg}`; }   // слабая вторая рука (+0) — одним числом
+  }
+  if (offPart > 0) {
+    spawnFloatDamage('fighter-monster', dmg - offPart, isCrit ? 'crit' : dmgType);
+    spawnFloatDamage('fighter-monster', offPart, isCrit ? 'crit' : dmgType);
+  } else {
+    spawnFloatDamage('fighter-monster', dmg, isCrit ? 'crit' : dmgType);
   }
   if (isCrit) dmgText += ' (крит!)';
   if (execMult > 1) notes.push('добивание');

@@ -59,8 +59,11 @@ function tryRefineItem(item) {
   }
 
   const price = getRefinePrice(tier);
+  // v0.38: доплата за вычеркнутые бонусы — только если следующий уровень не веха (на вехе пул не нужен).
+  // Проверяем, хватит ли и на неё, чтобы при удаче не остаться в минусе.
+  const strikeExtra = isMilestoneLevel(currentLevel + 1) ? 0 : getRefineStrikeExtra(item);
 
-  if (p.gold < price) {
+  if (p.gold < price + strikeExtra) {
     return { success: false, reason: 'Мало Оболов', price: 0, bonus: null, isMilestone: false, newLevel: currentLevel, chance: 0 };
   }
 
@@ -74,10 +77,12 @@ function tryRefineItem(item) {
 
   if (!success) {
     if (typeof markDeed === 'function') markDeed('refine.failed');   // v0.31: тема у мастерицы
+    const scBack = typeof subclassRefineFailRefund === 'function' ? subclassRefineFailRefund(price) : 0;   // v0.38: Твёрдая рука — неудача за полцены
+    if (scBack > 0) p.gold += scBack;
     return {
       success: false,
       reason: 'Неудача',
-      price,
+      price: price - scBack,   // v0.38: показываем, сколько реально ушло
       bonus: null,
       isMilestone: false,
       newLevel: currentLevel,
@@ -97,9 +102,11 @@ function tryRefineItem(item) {
     const milestoneIndex = Math.floor(newLevel / 5);
     bonus = getMilestoneBonus(item, milestoneIndex);
   } else {
-    const pool = getRefineBonusPool(item);
-    bonus = pool[Math.floor(Math.random() * pool.length)];
+    const pool = getRefineRollPool(item);   // v0.38: без вычеркнутого
+    bonus = typeof subclassRefinePick === 'function' ? subclassRefinePick(pool) : pool[Math.floor(Math.random() * pool.length)];   // v0.38: Руническая вязь
+    if (strikeExtra > 0) p.gold -= strikeExtra;   // v0.38: доплата за вычёркивание — только при удаче
   }
+  const paid = price + (isMilestone ? 0 : strikeExtra);
 
   // Применяем бонус к накопленным refineBonuses (СКЛАДЫВАЕТСЯ).
   if (!item.refineBonuses) item.refineBonuses = {};
@@ -120,7 +127,8 @@ function tryRefineItem(item) {
   return {
     success: true,
     reason: 'Успех',
-    price,
+    price: paid,
+    strikeExtra: isMilestone ? 0 : strikeExtra,
     bonus,
     isMilestone,
     newLevel,
@@ -342,9 +350,11 @@ function renderRefinePreview() {
   const isMax = lvl >= maxRef;
   const price = getRefinePrice(tier);
   const chance = isMax ? 0 : getRefineChance(lvl);
-  const canAfford = state.player.gold >= price;
   const nextLevel = lvl + 1;
   const nextIsMilestone = !isMax && isMilestoneLevel(nextLevel);
+  // v0.38: доплата за вычеркнутые бонусы (только при удаче и не на вехе)
+  const strikeExtra = (isMax || nextIsMilestone) ? 0 : getRefineStrikeExtra(item);
+  const canAfford = state.player.gold >= price + strikeExtra;
 
   // Бонусы, уже накопленные.
   const bonusLines = getRefineBonusLines(item);
@@ -431,7 +441,7 @@ function renderRefinePreview() {
     </div>
     <div class="refine-stats-row">
       <span class="label">Стоимость</span>
-      <span class="value">🪙 ${price}</span>
+      <span class="value">🪙 ${price}${strikeExtra ? ` <small class="refine-strike-extra">+${strikeExtra} при удаче</small>` : ''}</span>
     </div>
     ${milestoneInfo}
 
@@ -440,8 +450,52 @@ function renderRefinePreview() {
       ${resetBtnHtml}
     </div>
 
+    ${isMax ? '' : renderRefineStrikes(item, !!batch)}
+
     ${bonusHtml}
   `;
+}
+
+// v0.38: «Что может выпасть» — плашки бонусов пула; клик вычёркивает / возвращает.
+// Только для вещей Т4+ (Ильград). Доплата — только при удачном броске.
+function renderRefineStrikes(item, locked) {
+  if (!canStrikeRefine(item)) return '';
+  const pool = getRefineBonusPool(item);
+  const strikes = getRefineStrikes(item);
+  const mult = getRefineStrikeMult(item);
+  const left = pool.length - strikes.length;
+  const multStr = String(mult).replace('.', ',');
+  const note = strikes.length
+    ? `Вычеркнуто ${strikes.length} из ${pool.length}. Удачный бросок дороже в ×${multStr} — неудача и вехи по обычной цене.`
+    : 'Нажмите на бонус, чтобы вычеркнуть. Платить больше придётся только при удаче.';
+  const chips = pool.map(b => {
+    const off = strikes.includes(b.key);
+    const last = !off && left <= 1;   // последний оставшийся вычеркнуть нельзя
+    const dis = locked || last;
+    return `<button class="refine-strike-chip${off ? ' off' : ''}" ${dis ? 'disabled' : `onclick="toggleRefineStrike('${b.key}')"`} title="${off ? 'Вернуть в список' : (last ? 'Должен остаться хотя бы один' : 'Вычеркнуть')}">${b.label}</button>`;
+  }).join('');
+  return `
+    <div class="refine-bonus-title">ЧТО МОЖЕТ ВЫПАСТЬ</div>
+    <div class="refine-strike-chips">${chips}</div>
+    <div class="refine-strike-note">${note}</div>
+  `;
+}
+
+function toggleRefineStrike(key) {
+  if (__refineBatch) { showToast('⏩', 'Идёт подгонка — сначала «Стоп»'); return; }
+  if (!__refineSelectedSlot) return;
+  const item = state.player.equipment[__refineSelectedSlot];
+  if (!canStrikeRefine(item)) return;
+  const strikes = getRefineStrikes(item);
+  const i = strikes.indexOf(key);
+  if (i >= 0) strikes.splice(i, 1);
+  else {
+    if (getRefineBonusPool(item).length - strikes.length <= 1) return;
+    strikes.push(key);
+  }
+  item.refineStrikes = strikes.length ? strikes : undefined;
+  if (typeof saveCurrentSlot === 'function') saveCurrentSlot();
+  renderRefinePreview();
 }
 
 // История.
@@ -481,7 +535,7 @@ function renderRefineHistory() {
       const pre = h.batchTry ? `#${h.batchTry} ` : '';
       const ch = h.chance ? ` · шанс ${h.chance}%` : '';
       text = h.success
-        ? `${pre}${h.itemName}: +${h.newLevel} → ${h.bonus.label}${h.isMilestone && !/веха/.test(h.bonus.label) ? ' (веха!)' : ''}${ch}`
+        ? `${pre}${h.itemName}: +${h.newLevel} → ${h.bonus.label}${h.isMilestone && !/веха/.test(h.bonus.label) ? ' (веха!)' : ''}${ch}${h.strikeExtra ? ` · доплата −${h.strikeExtra} 🪙` : ''}`
         : `${pre}${h.itemName}: Неудача (−${h.price} 🪙)${ch}`;
     }
     el.className = cls;
@@ -516,6 +570,7 @@ function applyRefine() {
       bonus: result.bonus,
       isMilestone: result.isMilestone,
       price: result.price,
+      strikeExtra: result.strikeExtra,
       chance: result.chance,
     });
     showToast('🔧', `Успех! +${result.newLevel}: ${result.bonus.label}`);
@@ -584,12 +639,14 @@ function confirmResetRefine() {
 // Ожидаемое число попыток и цена, чтобы дойти с from до to.
 function estimateRefineBatch(item, from, to) {
   const price = getRefinePrice(getItemTier(item));
-  let tries = 0;
+  const extra = getRefineStrikeExtra(item);   // v0.38: доплата за каждый удачный НЕ-вешечный уровень
+  let tries = 0, extraGold = 0;
   for (let l = from; l < to; l++) {
     const ch = Math.max(1, getRefineChance(l));
     tries += 100 / ch;
+    if (!isMilestoneLevel(l + 1)) extraGold += extra;
   }
-  return { tries: Math.ceil(tries), gold: Math.ceil(tries) * price, price };
+  return { tries: Math.ceil(tries), gold: Math.ceil(tries) * price + extraGold, price, extra, extraGold };
 }
 
 // v0.29.2: пачка идёт по одной попытке в REFINE_BATCH_STEP_MS — каждая видна в истории,
@@ -610,12 +667,13 @@ function applyRefineBatch(levels) {
   if (target <= fromLevel) { showToast('⚠', 'Максимум подгонки'); return; }
 
   const est = estimateRefineBatch(item, fromLevel, target);
-  if (p.gold < est.price) { showToast('⚠', 'Мало Оболов'); return; }
+  if (p.gold < est.price + (isMilestoneLevel(fromLevel + 1) ? 0 : est.extra)) { showToast('⚠', 'Мало Оболов'); return; }
 
   const ok = confirm(
     `Подгонять «${item.name}» с +${fromLevel} до +${target}?\n\n` +
     `Ожидаемо: ~${est.tries} попыток, ~${est.gold} Оболов (у вас ${p.gold}).\n` +
     `Одна попытка — ${est.price} Оболов, шанс бросается на каждую отдельно.\n` +
+    (est.extra ? `За вычеркнутые бонусы: +${est.extra} Оболов к каждой удаче (кроме вех).\n` : '') +
     `Неудача уровень не снимает. Остановить можно в любой момент.\n` +
     `Если Оболы кончатся — подгонка остановится.`
   );
@@ -650,7 +708,7 @@ function refineBatchStep() {
     b.fails++;
   }
   __refineHistory.unshift(r.success
-    ? { success: true, itemName: item.name, newLevel: r.newLevel, bonus: r.bonus, isMilestone: r.isMilestone, price: r.price, chance: r.chance, batchTry: b.tries }
+    ? { success: true, itemName: item.name, newLevel: r.newLevel, bonus: r.bonus, isMilestone: r.isMilestone, price: r.price, strikeExtra: r.strikeExtra, chance: r.chance, batchTry: b.tries }
     : { success: false, itemName: item.name, price: r.price, chance: r.chance, batchTry: b.tries });
   if (__refineHistory.length > 20) __refineHistory.length = 20;
 

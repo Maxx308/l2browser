@@ -1,4 +1,4 @@
-// L2 BROWSER — СБОРКА v0.37.1 (build.js; правки — в js/**, а не сюда). Файлов: 98
+// L2 BROWSER — СБОРКА v0.37.2 (build.js; правки — в js/**, а не сюда). Файлов: 98
 // ==== ФАЙЛ js/data/config.js ====
 const CHEAT_MULTIPLIER = 10;
 const MP_COST_PER_ATTACK = 5;
@@ -169,6 +169,7 @@ const nextLevel = (level || 0) + 1;
 const steps = Math.floor((nextLevel - 1) / REFINE_CHANCE_STEP);
 let chance = REFINE_CHANCE_START - steps * REFINE_CHANCE_DROP;
 if (chance < REFINE_CHANCE_MIN) chance = REFINE_CHANCE_MIN;
+if (typeof subclassRefineChanceBonus === 'function') chance = Math.min(100, chance + subclassRefineChanceBonus());
 return chance;
 }
 function getRefinePrice(tier) {
@@ -335,6 +336,33 @@ base.push({ key: 'blockBonus', value: 1, label: '+1% Блок' });
 }
 return base;
 }
+const REFINE_STRIKE_MIN_TIER = 4;
+const REFINE_STRIKE_MARKUP = 1.5;
+function canStrikeRefine(item) {
+return !!item && getItemTier(item) >= REFINE_STRIKE_MIN_TIER;
+}
+function getRefineStrikes(item) {
+if (!canStrikeRefine(item) || !Array.isArray(item.refineStrikes)) return [];
+const keys = getRefineBonusPool(item).map(b => b.key);
+return item.refineStrikes.filter(k => keys.includes(k));
+}
+function getRefineRollPool(item) {
+const pool = getRefineBonusPool(item);
+const strikes = getRefineStrikes(item);
+const left = pool.filter(b => !strikes.includes(b.key));
+return left.length ? left : pool;
+}
+function getRefineStrikeMult(item) {
+const total = getRefineBonusPool(item).length;
+const left = getRefineRollPool(item).length;
+if (left >= total) return 1;
+return Math.round(total / left * REFINE_STRIKE_MARKUP * 100) / 100;
+}
+function getRefineStrikeExtra(item) {
+const m = getRefineStrikeMult(item);
+if (m <= 1) return 0;
+return Math.round(getRefinePrice(getItemTier(item)) * (m - 1) / 10) * 10;
+}
 const RARITIES = {
 white:  { id: 'white',  name: 'Обычное',     color: '#c8c0b0', colorGlow: 'rgba(200,192,176,0.5)', points: 0, statPoints: 0, statPercent: 0,  chance: 65,  cssClass: 'rarity-white' },
 green:  { id: 'green',  name: 'Необычное',   color: '#80e080', colorGlow: 'rgba(128,224,128,0.6)', points: 1, statPoints: 1, statPercent: 5,  chance: 22,  cssClass: 'rarity-green' },
@@ -356,6 +384,8 @@ return base + getRarityStatBonus(item, stat);
 }
 function getRarityStatProfile(item) {
 const cls = state.player && state.player.classId;
+const sc = state.player && state.player.subclass && typeof SUBCLASSES !== 'undefined' ? SUBCLASSES[state.player.subclass] : null;
+if (sc && sc.rarityProfile) return sc.rarityProfile;
 if (cls === 'mage') return 'magic';
 if (cls) return 'warrior';
 return 'neutral';
@@ -1341,15 +1371,24 @@ const EXPEDITION_MIN_PACE_KILLS = 10;
 const HUNT_PACE_WINDOW_SEC = 7200;
 const HUNT_PACE_MAX_GAP_SEC = 300;
 const EXPEDITION_EARLY_REASONS = [
-{ text: 'Кончилась провизия — пришлось повернуть к Андервуду раньше, чем собирал{ся|ась}.' },
+{ text: 'Кончилась провизия — пришлось повернуть к %townTo% раньше, чем собирал{ся|ась}.' },
 { text: 'Хлынул ливень. Тропы раскисли, и охоту пришлось свернуть.' },
-{ text: 'Налетела гроза. Пересидеть её в Андервуде показалось умнее, чем под открытым небом.' },
+{ text: 'Налетела гроза. Пересидеть её в %townIn% показалось умнее, чем под открытым небом.' },
+{ text: 'С тракта пополз туман, густой, как молоко. В таком мёртвые видят лучше живых, и пришлось отступить к стенам.', loc: ['outskirts'] },
+{ text: 'Со стены затрубили сбор. Когда трубят так, лучше быть по эту сторону ворот.', loc: ['outskirts'] },
+{ text: 'Мёртвых вдруг стало вдвое больше. Откуда лезут — не разглядеть, и проверять не хотелось.', loc: ['outskirts'] },
+{ text: 'О кости клинок тупится быстрее, чем о шкуру. Пришлось вернуться к точилу.', loc: ['outskirts'] },
+{ text: 'Ночью на Окраинах не охотятся даже те, кто давно ничего не боится.', loc: ['outskirts'], night: true },
 { text: 'Набрёл{|а} на следы чего-то очень крупного и решил{|а} не испытывать судьбу.' },
 { text: 'Порвался ремень на снаряжении — без него далеко не уйдёшь.' },
 { text: 'Твари вдруг затихли и попрятались. Слишком тихо — пришлось вернуться.' },
 { text: 'Заплечник ныл всю дорогу. На третий час сдал{ся|ась} и повернул{|а} домой.', bag: true },
 { text: 'Стемнело, а ночевать среди тварей не хотелось.', night: true },
 ];
+const EXPEDITION_TOWN_CASES = {
+town:   { to: 'Андервуду', in: 'Андервуде' },
+ilgrad: { to: 'Ильграду',  in: 'Ильграде' },
+};
 const EXPEDITION_SUPPLY_OUT_REASON = 'Припасы подошли к концу: «%name%» больше не осталось. Соваться к тварям с пустыми руками не стал{|а} и повернул{|а} в город.';
 const EXPEDITION_BAG_LINES = {
 full: [
@@ -2794,6 +2833,21 @@ return Math.min(50, total);
 // ==== ФАЙЛ js/data/changelog.js ====
 const CHANGELOG = [
 {
+version: 'v0.37.2',
+date: '19.11.2026',
+title: '🛠 Подгонка на выбор и экспедиции к Ильграду',
+changes: [
+{ icon: '🛠', text: 'Подгонка вещей Т4: в окне подгонки появился список «Что может выпасть». Ненужные бонусы можно вычеркнуть, и случайный бросок выбирает только из оставшихся. Доплата берётся только при удаче, и чем меньше бонусов осталось, тем она больше: вычеркнуть 1 из 11 — ×1,65 к цене, оставить один — ×16,5. Неудача и вехи стоят как обычно. Вычеркнутое запоминается на вещи, вернуть бонус можно бесплатно' },
+{ icon: '⛺', text: 'Экспедиции на Окраины Ильграда: кнопка ⛺ теперь есть и на карточке Окраин. Правила прежние: тварь убита 50 раз, 5 минут замера, отправляемся из города. Добыча Т4 по обычной таблице, душ нет. Герой возвращается в Ильград, а у Окраин свои причины вернуться раньше' },
+{ icon: '💎', text: 'Души самоцветов: шанс теперь зависит от силы твари. Полный шанс (5% у зелёного камня) — у самой крепкой твари локации: Голема в Копях и Колосса на Окраинах. У слабых тварей камни падают реже, у Гоблина примерно втрое. Раньше камни выгоднее всего было выбивать из самой слабой твари' },
+{ icon: '⚔', text: 'Парное оружие: обычный удар на арене виден как два — две цифры урона и два попадания, второе картинкой оружия во второй руке. Урон тот же, изменился только показ' },
+{ icon: '📦', text: 'Склад: у сумки видны все ячейки. Под сеткой кнопки страниц, ещё не открытые ячейки с замком. Раньше было видно только первые 30' },
+{ icon: '🧪', text: 'Клик по зелью или микстуре в сумке ставит их в слот слева, подсказка видна при наведении. Раньше клик только писал в журнал «расходник»' },
+{ icon: '🤝', text: 'Прорыв к Ильграду: спутники помогают тем сильнее, чем ближе вы с ними — сколько тем обсудили и выполнили ли их поручение. С самыми близкими помощь в 1,6 раза сильнее, откат на четверть короче, и в бою они говорят теплее' },
+{ icon: '🎒', text: 'Заплечник стал добрее: его «голод» теперь любопытство, а не жадность. Переписаны его просьбы, ответы и реплики, ирония осталась' },
+],
+},
+{
 version: 'v0.37.1',
 date: '16.11.2026',
 title: '🚪 Новый экран входа и игра без регистрации',
@@ -3862,7 +3916,7 @@ naming: 'Как меня звать?.. Погоди. Вертится что-т�
 name: [
 { text: 'Подходит', trust: 1, reply: 'Вот и я думаю. Как влитое.' },
 { text: 'Странное имя', trust: 0, reply: 'Вишу за плечом — значит, Заплечник. Всё логично. Наверное.' },
-{ text: 'Буду звать тебя мешком', trust: -1, reply: 'Попробуй.' },
+{ text: 'Буду звать тебя мешком', trust: -1, reply: 'Мешок… Ну, мешок. Я ведь и правда мешок. Обидно, но честно.' },
 ],
 final: 'Договоримся так: ты складываешь, я храню. Остальное — потом.',
 };
@@ -5300,7 +5354,7 @@ desc: 'Потёртая, латаная — но заплатки свежие: 
 const BAG_QUESTS = [
 { id: 'bag1', minLevel: 2, name: 'Пустой я лёгкий',
 kill: { n: 10, what: 'Убить любых тварей' },
-ask: 'Слушай. Я пустой. Совсем. Пустой я лёгкий — неприятно лёгкий. Будто меня и нет.\n\nНабей десяток тварей. Добыча — мне, опыт — тебе. Честная сделка.',
+ask: 'Слушай. Я пустой. Совсем. Пустой я лёгкий — неприятно лёгкий. Будто меня и нет.\n\nСходи на охоту. Десяток тварей — и я хоть почувствую, что я есть. Добыча — нам обоим, опыт — тебе. По-моему, честно.',
 yes: 'Вот и договорились. Я буду считать. Я вообще люблю считать.',
 nag: 'Считаю. Пока негусто.',
 give: 'Десять тварей. Ну как, полегчало?',
@@ -5319,13 +5373,13 @@ yes: 'Не морщись. Жабья кожа воду не пускает. Э�
 nag: 'Хлюпает. Не так громко, как раньше, но я всё слышу.',
 give: 'Пять жабьих шкур. Держи.',
 thanks: '*Снизу что-то чавкает — и затихает.*\n\nСухо. Сухо — это роскошь. Я сто лет… *Пауза.* Ладно, не сто. Не помню сколько.' },
-{ id: 'bag4', minLevel: 5, name: 'Ещё',
+{ id: 'bag4', minLevel: 5, name: 'Сто разных',
 kill: { n: 100, loc: 'field', what: 'Убить тварей на Зелёной поляне' },
-ask: 'Знаешь, что я понял? Мне мало.\n\nСотня тварей на Поляне. Не спрашивай зачем. Мне надо.',
-yes: 'Хорошо. Ещё.',
-nag: 'Ещё.',
-give: 'Сотня. Как ты и просил.',
-thanks: '*Сумка довольно оседает на плечах.*\n\nХорошо.\n\n*Пауза.*\n\nСтранно. Раньше мне хватало одной. Чего одной — не помню.' },
+ask: 'Знаешь, что я понял? Я ничего не знаю про этот мир. Совсем.\n\nСотня тварей на Поляне. Хочу понять, какие они. Каждая ведь чуть-чуть другая.',
+yes: 'Хорошо. Я буду смотреть.',
+nag: 'Смотрю. У одной было белое пятно на ухе. Ты заметил{|а}?',
+give: 'Сотня. Ну что, понял, какие они?',
+thanks: '*Сумка довольно оседает на плечах.*\n\nПонял. Разные. Одни злые, другие просто голодные. Как везде.\n\n*Пауза.*\n\nСтранно. Раньше мне хватало одного взгляда, чтобы понять. На кого — не помню.' },
 { id: 'bag5', minLevel: 6, name: 'Вкус старого',
 kill: { n: 1, variant: 'ancient', what: 'Убить Древнего — любого' },
 ask: 'У старых тварей вкус другой. Помню… кажется.\n\nНайди Древнего. Любого. Хочу проверить, правильно ли помню.',
@@ -5354,7 +5408,7 @@ yes: 'Зелёные — самые простые. Мне хватит прос
 nag: 'Камешек. Зелёный. Я помню.',
 give: '[Отдать изумруд]',
 refuse: '[Не отдавать]',
-refuseReply: 'Жадина.\n\n*Пауза.*\n\nЛадно. Я подожду. Я умею ждать. Это я точно умею.',
+refuseReply: 'Понимаю. Красивый. Я бы тоже не отдал.\n\n*Пауза.*\n\nЯ подожду. Я умею ждать. Это я точно умею.',
 thanks: '*Камень проваливается внутрь — и ничего не происходит. Потом сумка становится тёплой. Совсем чуть-чуть.*\n\nВот. Так лучше.\n\n*Пауза.*\n\nНе смотри так. Я его не съел. Я его… сохранил.' },
 { id: 'bag9', minLevel: 14, name: 'Швы',
 needs: [
@@ -5365,18 +5419,20 @@ ask: 'Швы расходятся. Я расту — а нитки старые.
 yes: 'Железы не нюхай. И не лижи. Я серьёзно.',
 nag: 'Трещу по швам. Буквально.',
 give: 'Хитин и железы. Для швов.',
-thanks: '*Что-то тихо щёлкает — раз, другой, десятый.*\n\nКрепко. Так когда-то шили доспехи. Один… *Пауза.* Один мастер. Был.\n\nНе помню. Иди уже.' },
+thanks: '*Что-то тихо щёлкает — раз, другой, десятый.*\n\nКрепко. Так когда-то шили доспехи. Один… *Пауза.* Один мастер. Был.\n\nНе помню. Ладно. Спасибо тебе. Правда.' },
 { id: 'bag10', minLevel: 17, name: 'Каменное сердце',
 kill: { n: 1, monster: 'golem', variant: 'bloody', what: 'Убить Кровавого голема в Копях' },
-ask: 'Големы в Копях… у них внутри ядро. С узором. Ты видел{|а} узор?\n\nКровавый голем. Самый злой. Убей — я хочу услышать, как замолчит его сердце.',
+ask: 'Големы в Копях… у них внутри ядро. С узором. Ты видел{|а} узор?\n\nКровавый голем. Самый злой. Подберись к нему близко — мне надо услышать, как бьётся его сердце. Кажется, я знаю этот стук.',
 yes: 'Он крепкий. Ты тоже. Ну, почти.',
 nag: 'Его сердце всё ещё бьётся. Я слышу. Отсюда.',
 give: 'Кровавый голем. Слышал?',
 thanks: '*Сумка вздрагивает.*\n\nСлышал.\n\n*Долгая пауза.*\n\nУзор на ядре… я его где-то… Нет. Неважно.\n\n*Ремни натягиваются, будто сумка расправила плечи.*\n\nЗато посмотри на меня. Красавец. Почти как раньше.' },
 ];
 const BAG_IDLE = [
-'Ну? Чего уставил{ся|ась}? Я здесь. Я всегда здесь.',
+'Я здесь. Я всегда здесь. *Пауза.* Это хорошая новость, если что.',
 'Ничего не надо. Пока. Это «пока» я говорю честно.',
+'Слушай, а почему у вас хлеб круглый? Не отвечай. Сам потом догадаюсь.',
+'Ты устал{|а}. Я же чувствую — ремни тянут. Посиди немного, твари подождут.',
 'Иди охоться. Я посчитаю.',
 'Тихо сегодня. Подозрительно тихо. Это я про себя.',
 ];
@@ -9917,6 +9973,13 @@ const k = FOOD_KINDS[getFoodKindId(item)];
 lines.push(`<div class="tt-line food-effect">${k.icon} Сытость: ${foodKindText(k)} · ${buffShopDur(getFoodDuration(item))}</div>`);
 lines.push(`<div class="tt-line type" style="color: #a0d080;">Клик чтобы съесть. Та же еда складывается (макс. 12 ч), другая заменяет.</div>`);
 }
+const consSlot = (typeof consumableSlotType === 'function') ? consumableSlotType(item) : null;
+if (consSlot) {
+const inSlot = getCurrentSlotShopId(consSlot) === item.shopId;
+lines.push(`<div class="tt-line type" style="color: #a0d080;">${inSlot
+      ? `Стоит в слоте ${consSlot === 'potion' ? 'зелья' : 'микстуры'}.`
+      : `Клик — поставить в слот ${consSlot === 'potion' ? 'зелья' : 'микстуры'}.`}</div>`);
+}
 if (item.shopId === 'teleportScroll') {
 lines.push(`<div class="tt-line type" style="color: #c0a0ff;">Больше не используется — теперь магические тропы. Заберите со склада: +${(item.qty || 1) * TELEPORT_SCROLL_REFUND} Оболов.</div>`);
 }
@@ -12329,7 +12392,7 @@ slot.innerHTML = `${item.icon}<div class="item-name">${item.name}${refineSuffix}
 slot.onclick = () => {
 if (slot._skipClick) { slot._skipClick = false; return; }
 if (item.type === 'food') useFood(item);
-else if (isConsumable) logLoot(`${item.name} — расходник.`, 'log-info');
+else if (isConsumable) useConsumableFromBag(item);
 else equipItem(item);
 };
 slot.oncontextmenu = (e) => e.preventDefault();
@@ -12579,6 +12642,28 @@ renderEquipSlots();
 saveCurrentSlot();
 const shopItem = SHOP_ITEMS.find(s => s.id === shopId);
 showToast('✅', `В слот: ${shopItem ? shopItem.name : shopId}`);
+}
+function consumableSlotType(item) {
+if (!item || !item.shopId || typeof SHOP_ITEMS === 'undefined') return null;
+const shopItem = SHOP_ITEMS.find(s => s.id === item.shopId);
+return shopItem && (shopItem.slotType === 'potion' || shopItem.slotType === 'mixture') ? shopItem.slotType : null;
+}
+function useConsumableFromBag(item) {
+const slotType = consumableSlotType(item);
+if (!slotType) { logLoot(`${item.name} — расходник.`, 'log-info'); return; }
+const where = slotType === 'potion' ? 'зелья' : 'микстуры';
+if (getCurrentSlotShopId(slotType) === item.shopId) {
+showToast('✅', `${item.name} уже в слоте ${where}`);
+return;
+}
+setSlotShopId(slotType, item.shopId);
+closeSlotPicker();
+renderEquipSlots();
+saveCurrentSlot();
+const how = slotType === 'potion'
+? `выпьется само, когда HP ниже ${state.player.potionThreshold || 40}%`
+: 'сработает сама в начале боя';
+showToast('✅', `В слот ${where}: ${item.name} — ${how}`);
 }
 function clearSlot(slotType) {
 setSlotShopId(slotType, null);
@@ -14065,17 +14150,26 @@ storeEl.title = cloudOn ? 'Склад в облаке — общий для вс
 : 'Склад только в этом браузере (нет входа в аккаунт или облако недоступно)';
 }
 }
+let storageInvPage = 0;
 function renderStorageInventoryPanel() {
 const grid = document.getElementById('storage-inv-grid');
 if (!grid) return;
 grid.innerHTML = '';
 const inv = state.player.inventory;
-const PAGE_SIZE = 30;
-const startIdx = 0;
+const PAGE_SIZE = INVENTORY_PAGE_SIZE;
+const pages = invPages();
+storageInvPage = Math.max(0, Math.min(storageInvPage, pages - 1));
+const startIdx = storageInvPage * PAGE_SIZE;
+const maxSlots = invMaxSlots();
 for (let i = 0; i < PAGE_SIZE; i++) {
-const item = inv[startIdx + i];
+const globalIdx = startIdx + i;
+const item = inv[globalIdx];
 const slot = document.createElement('div');
-if (item) {
+if (!item && globalIdx >= maxSlots) {
+slot.className = 'inv-slot locked';
+slot.title = 'Заплечник ещё не дорос. Его поручения — +1 ячейка';
+slot.innerHTML = '🔒';
+} else if (item) {
 const isConsumable = item.type === 'consumable';
 const isFood = item.type === 'food';
 const rarityClass = (item.rarity && item.rarity !== 'white') ? ' rarity-' + item.rarity : '';
@@ -14088,6 +14182,24 @@ slot.onmouseleave = () => hideTooltip();
 slot.className = 'inv-slot empty';
 }
 grid.appendChild(slot);
+}
+renderStorageInvPages(grid, pages);
+}
+function renderStorageInvPages(grid, pages) {
+let cont = document.getElementById('storage-inv-pages');
+if (!cont) {
+cont = document.createElement('div');
+cont.id = 'storage-inv-pages';
+cont.className = 'storage-pages';
+grid.after(cont);
+}
+cont.innerHTML = '';
+for (let i = 0; i < pages; i++) {
+const btn = document.createElement('button');
+btn.className = 'inventory-page-btn' + (storageInvPage === i ? ' active' : '');
+btn.textContent = (i + 1);
+btn.onclick = () => { storageInvPage = i; renderStorageInventoryPanel(); };
+cont.appendChild(btn);
 }
 }
 function renderStorageStoragePanel() {
@@ -14250,7 +14362,8 @@ if (currentLevel >= maxRefine) {
 return { success: false, reason: 'Максимум подгонки', price: 0, bonus: null, isMilestone: false, newLevel: currentLevel, chance: 0 };
 }
 const price = getRefinePrice(tier);
-if (p.gold < price) {
+const strikeExtra = isMilestoneLevel(currentLevel + 1) ? 0 : getRefineStrikeExtra(item);
+if (p.gold < price + strikeExtra) {
 return { success: false, reason: 'Мало Оболов', price: 0, bonus: null, isMilestone: false, newLevel: currentLevel, chance: 0 };
 }
 p.gold -= price;
@@ -14260,10 +14373,12 @@ const roll = Math.random() * 100;
 const success = roll < chance;
 if (!success) {
 if (typeof markDeed === 'function') markDeed('refine.failed');
+const scBack = typeof subclassRefineFailRefund === 'function' ? subclassRefineFailRefund(price) : 0;
+if (scBack > 0) p.gold += scBack;
 return {
 success: false,
 reason: 'Неудача',
-price,
+price: price - scBack,
 bonus: null,
 isMilestone: false,
 newLevel: currentLevel,
@@ -14278,9 +14393,11 @@ if (isMilestone) {
 const milestoneIndex = Math.floor(newLevel / 5);
 bonus = getMilestoneBonus(item, milestoneIndex);
 } else {
-const pool = getRefineBonusPool(item);
-bonus = pool[Math.floor(Math.random() * pool.length)];
+const pool = getRefineRollPool(item);
+bonus = typeof subclassRefinePick === 'function' ? subclassRefinePick(pool) : pool[Math.floor(Math.random() * pool.length)];
+if (strikeExtra > 0) p.gold -= strikeExtra;
 }
+const paid = price + (isMilestone ? 0 : strikeExtra);
 if (!item.refineBonuses) item.refineBonuses = {};
 const key = bonus.key;
 if (!item.refineBonuses[key]) item.refineBonuses[key] = 0;
@@ -14297,7 +14414,8 @@ if (typeof saveCurrentSlot === 'function') saveCurrentSlot();
 return {
 success: true,
 reason: 'Успех',
-price,
+price: paid,
+strikeExtra: isMilestone ? 0 : strikeExtra,
 bonus,
 isMilestone,
 newLevel,
@@ -14462,9 +14580,10 @@ const lvl = item.refineLevel || 0;
 const isMax = lvl >= maxRef;
 const price = getRefinePrice(tier);
 const chance = isMax ? 0 : getRefineChance(lvl);
-const canAfford = state.player.gold >= price;
 const nextLevel = lvl + 1;
 const nextIsMilestone = !isMax && isMilestoneLevel(nextLevel);
+const strikeExtra = (isMax || nextIsMilestone) ? 0 : getRefineStrikeExtra(item);
+const canAfford = state.player.gold >= price + strikeExtra;
 const bonusLines = getRefineBonusLines(item);
 let bonusHtml = '';
 if (bonusLines.length > 0) {
@@ -14528,7 +14647,7 @@ cont.innerHTML = `
     </div>
     <div class="refine-stats-row">
       <span class="label">Стоимость</span>
-      <span class="value">🪙 ${price}</span>
+      <span class="value">🪙 ${price}${strikeExtra ? ` <small class="refine-strike-extra">+${strikeExtra} при удаче</small>` : ''}</span>
     </div>
     ${milestoneInfo}
 
@@ -14537,8 +14656,48 @@ cont.innerHTML = `
       ${resetBtnHtml}
     </div>
 
+    ${isMax ? '' : renderRefineStrikes(item, !!batch)}
+
     ${bonusHtml}
   `;
+}
+function renderRefineStrikes(item, locked) {
+if (!canStrikeRefine(item)) return '';
+const pool = getRefineBonusPool(item);
+const strikes = getRefineStrikes(item);
+const mult = getRefineStrikeMult(item);
+const left = pool.length - strikes.length;
+const multStr = String(mult).replace('.', ',');
+const note = strikes.length
+? `Вычеркнуто ${strikes.length} из ${pool.length}. Удачный бросок дороже в ×${multStr} — неудача и вехи по обычной цене.`
+: 'Нажмите на бонус, чтобы вычеркнуть. Платить больше придётся только при удаче.';
+const chips = pool.map(b => {
+const off = strikes.includes(b.key);
+const last = !off && left <= 1;
+const dis = locked || last;
+return `<button class="refine-strike-chip${off ? ' off' : ''}" ${dis ? 'disabled' : `onclick="toggleRefineStrike('${b.key}')"`} title="${off ? 'Вернуть в список' : (last ? 'Должен остаться хотя бы один' : 'Вычеркнуть')}">${b.label}</button>`;
+}).join('');
+return `
+    <div class="refine-bonus-title">ЧТО МОЖЕТ ВЫПАСТЬ</div>
+    <div class="refine-strike-chips">${chips}</div>
+    <div class="refine-strike-note">${note}</div>
+  `;
+}
+function toggleRefineStrike(key) {
+if (__refineBatch) { showToast('⏩', 'Идёт подгонка — сначала «Стоп»'); return; }
+if (!__refineSelectedSlot) return;
+const item = state.player.equipment[__refineSelectedSlot];
+if (!canStrikeRefine(item)) return;
+const strikes = getRefineStrikes(item);
+const i = strikes.indexOf(key);
+if (i >= 0) strikes.splice(i, 1);
+else {
+if (getRefineBonusPool(item).length - strikes.length <= 1) return;
+strikes.push(key);
+}
+item.refineStrikes = strikes.length ? strikes : undefined;
+if (typeof saveCurrentSlot === 'function') saveCurrentSlot();
+renderRefinePreview();
 }
 function renderRefineHistory() {
 const cont = document.getElementById('refine-history-list');
@@ -14572,7 +14731,7 @@ text = `⏩ Итого ${h.itemName}: +${h.fromLevel} → +${h.toLevel} (поп�
 const pre = h.batchTry ? `#${h.batchTry} ` : '';
 const ch = h.chance ? ` · шанс ${h.chance}%` : '';
 text = h.success
-? `${pre}${h.itemName}: +${h.newLevel} → ${h.bonus.label}${h.isMilestone && !/веха/.test(h.bonus.label) ? ' (веха!)' : ''}${ch}`
+? `${pre}${h.itemName}: +${h.newLevel} → ${h.bonus.label}${h.isMilestone && !/веха/.test(h.bonus.label) ? ' (веха!)' : ''}${ch}${h.strikeExtra ? ` · доплата −${h.strikeExtra} 🪙` : ''}`
 : `${pre}${h.itemName}: Неудача (−${h.price} 🪙)${ch}`;
 }
 el.className = cls;
@@ -14598,6 +14757,7 @@ newLevel: result.newLevel,
 bonus: result.bonus,
 isMilestone: result.isMilestone,
 price: result.price,
+strikeExtra: result.strikeExtra,
 chance: result.chance,
 });
 showToast('🔧', `Успех! +${result.newLevel}: ${result.bonus.label}`);
@@ -14643,12 +14803,14 @@ renderRefineWindow();
 }
 function estimateRefineBatch(item, from, to) {
 const price = getRefinePrice(getItemTier(item));
-let tries = 0;
+const extra = getRefineStrikeExtra(item);
+let tries = 0, extraGold = 0;
 for (let l = from; l < to; l++) {
 const ch = Math.max(1, getRefineChance(l));
 tries += 100 / ch;
+if (!isMilestoneLevel(l + 1)) extraGold += extra;
 }
-return { tries: Math.ceil(tries), gold: Math.ceil(tries) * price, price };
+return { tries: Math.ceil(tries), gold: Math.ceil(tries) * price + extraGold, price, extra, extraGold };
 }
 const REFINE_BATCH_STEP_MS = 450;
 let __refineBatch = null;
@@ -14663,11 +14825,12 @@ const fromLevel = item.refineLevel || 0;
 const target = Math.min(maxRef, fromLevel + levels);
 if (target <= fromLevel) { showToast('⚠', 'Максимум подгонки'); return; }
 const est = estimateRefineBatch(item, fromLevel, target);
-if (p.gold < est.price) { showToast('⚠', 'Мало Оболов'); return; }
+if (p.gold < est.price + (isMilestoneLevel(fromLevel + 1) ? 0 : est.extra)) { showToast('⚠', 'Мало Оболов'); return; }
 const ok = confirm(
 `Подгонять «${item.name}» с +${fromLevel} до +${target}?\n\n` +
 `Ожидаемо: ~${est.tries} попыток, ~${est.gold} Оболов (у вас ${p.gold}).\n` +
 `Одна попытка — ${est.price} Оболов, шанс бросается на каждую отдельно.\n` +
+(est.extra ? `За вычеркнутые бонусы: +${est.extra} Оболов к каждой удаче (кроме вех).\n` : '') +
 `Неудача уровень не снимает. Остановить можно в любой момент.\n` +
 `Если Оболы кончатся — подгонка остановится.`
 );
@@ -14697,7 +14860,7 @@ b.gained[r.bonus.label] = (b.gained[r.bonus.label] || 0) + 1;
 b.fails++;
 }
 __refineHistory.unshift(r.success
-? { success: true, itemName: item.name, newLevel: r.newLevel, bonus: r.bonus, isMilestone: r.isMilestone, price: r.price, chance: r.chance, batchTry: b.tries }
+? { success: true, itemName: item.name, newLevel: r.newLevel, bonus: r.bonus, isMilestone: r.isMilestone, price: r.price, strikeExtra: r.strikeExtra, chance: r.chance, batchTry: b.tries }
 : { success: false, itemName: item.name, price: r.price, chance: r.chance, batchTry: b.tries });
 if (__refineHistory.length > 20) __refineHistory.length = 20;
 if ((item.refineLevel || 0) >= b.target) { finishRefineBatch(); return; }
@@ -18219,11 +18382,17 @@ dmg = monsterTagDmg(m, dmg, isMage() ? ['magic'] : heroPhysKinds(weaponCategory)
 m.hp -= dmg;
 const thorns = monsterThorns(m, weaponCategory);
 if (thorns > 0) notes.push(`🌵 шипы −${thorns} HP`);
-spawnFloatDamage('fighter-monster', dmg, isCrit ? 'crit' : dmgType);
 let dmgText = String(dmg);
+let offPart = 0;
 if (offhand && p.offhandPAtk > 0) {
 const off = Math.round(dmg * p.offhandPAtk / (p.pAtk + p.offhandPAtk));
-if (off >= 1) dmgText = `${dmg - off} + ${off} = ${dmg}`;
+if (off >= 1 && off < dmg) { offPart = off; dmgText = `${dmg - off} + ${off} = ${dmg}`; }
+}
+if (offPart > 0) {
+spawnFloatDamage('fighter-monster', dmg - offPart, isCrit ? 'crit' : dmgType);
+spawnFloatDamage('fighter-monster', offPart, isCrit ? 'crit' : dmgType);
+} else {
+spawnFloatDamage('fighter-monster', dmg, isCrit ? 'crit' : dmgType);
 }
 if (isCrit) dmgText += ' (крит!)';
 if (execMult > 1) notes.push('добивание');
@@ -20775,7 +20944,8 @@ const def = SOUL_GEM_ITEMS[gemName];
 const on = i <= cap;
 const stones = Object.values(SOUL_STONES_BY_VARIANT);
 const tip = `Душа ${t.gemGen} (${gemName})\n` +
-`Шанс: ${String(t.chance).replace('.', ',')}% на каждого монстра — ${formatSoulFrequency(t.chance)}\n` +
+`Шанс: до ${String(t.chance).replace('.', ',')}% на монстра — ${formatSoulFrequency(t.chance)}\n` +
+`Столько у самой сильной твари локации, у слабых реже\n` +
 `Монстр: здоровье и мана ×${t.hpMult}, точность ×${String(t.accMult).replace('.', ',')}\n` +
 `Камней: ${stones.join(' / ')} (обычный / Древний / Кровавый)\n` +
 (i === 0 ? 'Зелёные души встречаются всегда' : (on ? 'Нажмите, чтобы искать только до предыдущего камня' : 'Нажмите, чтобы искать и такие души'));
@@ -20795,14 +20965,24 @@ setSoulHuntCap(i === cap && i > 0 ? i - 1 : i);
 };
 });
 }
-function rollMonsterSoul() {
+function soulMonsterChanceMult(m) {
+if (!m || typeof getMonstersByLocation !== 'function') return 1;
+const list = getMonstersByLocation(state.player.currentLocation);
+const tpl = list.find(t => t.id === m.id);
+if (!tpl || !list.length) return 1;
+const toughness = t => (t.hp || 0) + (t.mp || 0);
+const max = Math.max(...list.map(toughness));
+return max > 0 ? Math.min(1, toughness(tpl) / max) : 1;
+}
+function rollMonsterSoul(m) {
 if (!getSoulLocation()) return null;
 const cap = getSoulHuntCap();
+const k = soulMonsterChanceMult(m);
 let r = Math.random() * 100;
 for (let i = 0; i <= cap; i++) {
 const t = SOUL_TYPES[SOUL_ORDER[i]];
-if (r < t.chance) return t.id;
-r -= t.chance;
+if (r < t.chance * k) return t.id;
+r -= t.chance * k;
 }
 return null;
 }
@@ -20818,7 +20998,7 @@ m.accMult = t.accMult;
 }
 function soulsTryMonster(m) {
 if (!m || m.soul) return null;
-const soulId = rollMonsterSoul();
+const soulId = rollMonsterSoul(m);
 if (!soulId) return null;
 applySoulToMonster(m, soulId);
 const t = SOUL_TYPES[soulId];
@@ -20956,6 +21136,39 @@ fire:    { below: 0.1, minTargets: 3, survivorHp: 0.1 },
 bruiser: { volleys: 3, volleyMaxHpPercent: 4, volleyMs: 190, firstAt: 20, cooldown: 25 },
 pair:    { allMaxHpPercent: 10, cooldown: 30, cooldownStep: 5 },
 };
+const BREAK_BOND = {
+people: { supply: ['keeper'], healer: ['guildmage'], bruiser: ['mentor'], pair: ['smith', 'refiner'] },
+quest: { smith: 'smithBeard', refiner: 'refinerGift', mentor: 'mentorStone', guildmage: 'lielShard' },
+questShare: 0.4,
+talksFull: 0.8,
+power: 0.6,
+cooldown: 0.25,
+closeAt: 0.6,
+};
+function breakBondNpc(npcId) {
+const chat = OWNER_CHATS[npcId];
+const c = state.player.chronicle || {};
+const lvl = state.player.level || 1;
+const topics = chat ? chat.topics.filter(t => !t.afterFall && (!t.minLevel || t.minLevel <= lvl)) : [];
+const read = topics.filter(t => c.talks && c.talks[npcId + '.' + t.id]).length;
+const talks = topics.length ? Math.min(1, read / (topics.length * BREAK_BOND.talksFull)) : 0;
+const quest = BREAK_BOND.quest[npcId];
+if (!quest || !QUESTS[quest]) return talks;
+return talks * (1 - BREAK_BOND.questShare) + (isQuestDone(quest) ? BREAK_BOND.questShare : 0);
+}
+function breakBondAll() {
+const r = {};
+Object.entries(BREAK_BOND.people).forEach(([role, list]) => {
+r[role] = list.reduce((a, id) => a + breakBondNpc(id), 0) / list.length;
+});
+return r;
+}
+function breakBond(role) {
+const br = state.battle.breakthrough;
+return (br && br.help.bond && br.help.bond[role]) || 0;
+}
+function breakPower(role) { return 1 + BREAK_BOND.power * breakBond(role); }
+function breakCd(role, sec) { return sec * (1 - BREAK_BOND.cooldown * breakBond(role)); }
 function breakTemplate(id) { return OUTSKIRTS_MONSTERS.find(t => t.id === id); }
 function breakWaveQueue(wave) {
 const list = [];
@@ -20990,8 +21203,16 @@ help: {
 cd: { supply: 0, healer: 0, bruiser: BREAK_HELP.bruiser.firstAt, pair: BREAK_HELP.pair.cooldown },
 used: (saved && saved.used) || { supply: 0, healer: 0, bruiser: 0, pair: 0 },
 fireUsed: !!(saved && saved.fireUsed), regen: null, lastAtb: 0,
+bond: breakBondAll(),
 },
 };
+const h = state.battle.breakthrough.help;
+h.cd.bruiser = breakCd('bruiser', h.cd.bruiser);
+h.cd.pair = breakCd('pair', h.cd.pair);
+if (!real) {
+const pc = k => Math.round(h.bond[k] * 100) + '%';
+logCombat(`Близость: Вирна ${pc('supply')}, Лиэль ${pc('healer')}, Урдах ${pc('bruiser')}, Гундар и Хильда ${pc('pair')}`, 'log-entry');
+}
 if (saved) {
 if (saved.wave >= BREAK_WAVES.length) breakFinish(); else breakNextWave();
 return;
@@ -21096,8 +21317,8 @@ if (h.cd.pair <= 0 && getAliveMonstersCount() > 0) breakPair();
 function breakHeal() {
 const br = state.battle.breakthrough, h = br.help, p = state.player, def = BREAK_HELP.healer;
 const step = h.used.healer++;
-h.cd.healer = def.cooldown;
-const pct = def.percent[Math.min(step, def.percent.length - 1)];
+h.cd.healer = breakCd('healer', def.cooldown);
+const pct = Math.round(def.percent[Math.min(step, def.percent.length - 1)] * breakPower('healer'));
 const heal = Math.min(Math.floor(p.maxHp * pct / 100), p.maxHp - p.hp);
 breakAct('healer', step, `+${heal} HP, регенерация ${pct} HP на ${def.regenTurns} ходов`, done => {
 breakBolt('.bx-hero .bx-bar.hp', '#8dffa8');
@@ -21111,8 +21332,8 @@ done();
 function breakSupply() {
 const br = state.battle.breakthrough, h = br.help, p = state.player, def = BREAK_HELP.supply;
 const step = h.used.supply++;
-h.cd.supply = def.cooldown;
-const pct = def.percent[Math.min(step, def.percent.length - 1)];
+h.cd.supply = breakCd('supply', def.cooldown);
+const pct = Math.round(def.percent[Math.min(step, def.percent.length - 1)] * breakPower('supply'));
 const mana = Math.min(Math.floor(p.maxMp * pct / 100), p.maxMp - p.mp);
 breakAct('supply', step, `+${mana} маны`, done => {
 breakBolt('.bx-hero .bx-bar.mp', '#ffe066');
@@ -21125,14 +21346,15 @@ done();
 function breakBruiser() {
 const br = state.battle.breakthrough, h = br.help, def = BREAK_HELP.bruiser;
 const step = h.used.bruiser++;
-h.cd.bruiser = def.cooldown;
+h.cd.bruiser = breakCd('bruiser', def.cooldown);
+const hitPct = def.volleyMaxHpPercent * breakPower('bruiser');
 breakAct('bruiser', step, 'серия ударов по всем', done => {
 let left = def.volleys;
 const volley = () => {
 if (state.battle.breakthrough !== br) return;
 state.battle.monsters.filter(m => m.hp > 0).forEach(m => {
 breakSlash(m);
-if (state.battle.active) breakHit(m, m.maxHp * def.volleyMaxHpPercent / 100, ['physical', 'blunt']);
+if (state.battle.active) breakHit(m, m.maxHp * hitPct / 100, ['physical', 'blunt']);
 });
 if (--left > 0 && state.battle.active) setTimeout(volley, def.volleyMs);
 else setTimeout(done, def.volleyMs);
@@ -21143,7 +21365,8 @@ volley();
 function breakPair() {
 const br = state.battle.breakthrough, h = br.help, def = BREAK_HELP.pair;
 const step = h.used.pair++;
-h.cd.pair = def.cooldown + def.cooldownStep * h.used.pair;
+h.cd.pair = breakCd('pair', def.cooldown + def.cooldownStep * h.used.pair);
+const hitPct = def.allMaxHpPercent * breakPower('pair');
 breakAct('pair', step, 'молот по всем, все оглушены', done => {
 const stage = bxStage();
 const pos = bxCenter(document.getElementById('bx-enemy-row'));
@@ -21165,7 +21388,7 @@ breakShake();
 state.battle.monsters.filter(m => m.hp > 0).forEach(m => {
 addDebuff('monster', 'stun', m.index, { turnsLeft: 1 });
 spawnFloatDamage('fighter-monster', 0, 'block', { mon: m, text: 'ОГЛУШЁН' });
-if (state.battle.active) breakHit(m, m.maxHp * def.allMaxHpPercent / 100, ['physical', 'blunt']);
+if (state.battle.active) breakHit(m, m.maxHp * hitPct / 100, ['physical', 'blunt']);
 });
 setTimeout(() => { hammer.remove(); ring.remove(); done(); }, 520);
 }, 340);
@@ -21238,7 +21461,8 @@ const br = state.battle.breakthrough;
 br.paused = true;
 const lines = window.BREAK_LINES;
 const who = lines && lines.who && lines.who[role];
-const list = lines && lines.say && lines.say[role];
+const close = breakBond(role) >= BREAK_BOND.closeAt && lines && lines.sayClose && lines.sayClose[role];
+const list = close || (lines && lines.say && lines.say[role]);
 const say = sayOverride || (list && step >= 0 ? list[Math.min(step, list.length - 1)] : '');
 const people = who ? (Array.isArray(who) ? who : [who]) : [];
 const name = people.map(x => x.name).join(' и ');
@@ -21519,6 +21743,7 @@ bxAdd('bx-num ' + (cls || ''), c.x + (Math.random() * 48 - 24), c.y - 20, html, 
 const BX_FX_DIR = 'img/fx/';
 const BX_WEAPON_IMG = { swords: 'b_12', axes: 'c_47', maces: 'b_14', daggers: 'b_42', spears: 'c_15', bows: 'b_25', crossbows: 'b_27', staves: 'b_24' };
 const BX_UNARMED_IMG = 'c_34';
+const BX_DUAL_STEP = 300;
 const BX_MONSTER_IMG = { silkworm: 'c_11', ent: 'b_54', bandit: 'c_16', frog: 'b_16', wolf: 'b_11', goblin: 'c_12', kobold: 'b_28', arachnid: 'c_46', caveBat: 'b_42', golem: 'c_56' };
 const BX_MONSTER_IMG_PHYS = 'c_34', BX_MONSTER_IMG_MAGIC = 'b_32';
 const BX_EVENT_IMG = {
@@ -21807,6 +22032,7 @@ const html = bxMonsterStatusHtml(m);
 if (html !== c.statusHtml) { c.statusHtml = html; c.status.innerHTML = html; }
 c.card.classList.toggle('bx-frozen', html.indexOf('debuff-freeze') >= 0);
 });
+if (typeof alliesRender === 'function') alliesRender();
 }
 function bxPlayerActionLook(skill) {
 const p = state.player;
@@ -21844,6 +22070,12 @@ if (skill.isHeal) return { mode: 'heal' };
 if (isMage()) return { mode: 'proj', proj: 'arcane', burst: 'arcane', sparks: '#b8d4ff', ms: 320, img: BX_WEAPON_IMG.staves };
 if (ranged) return bxRangedLook(wcat);
 if (wcat === 'spears') return { mode: 'melee', img: BX_WEAPON_IMG.spears, dir: BX_FX_DIR_HEADING };
+const off = typeof getOffhandWeapon === 'function' ? getOffhandWeapon() : null;
+if (off) {
+const offCat = typeof getWeaponCategory === 'function' ? getWeaponCategory(off.name) : null;
+return { mode: 'melee', fx: 'slash', color: '#ffd27a', img: BX_WEAPON_IMG[wcat] || BX_UNARMED_IMG,
+img2: BX_WEAPON_IMG[offCat] || BX_WEAPON_IMG[wcat] || BX_UNARMED_IMG, imgEach: true, dual: true, step: BX_DUAL_STEP };
+}
 return { mode: 'melee', fx: 'slash', color: '#ffd27a', img: BX_WEAPON_IMG[wcat] || BX_UNARMED_IMG };
 }
 function bxRangedLook(cat) {
@@ -21876,7 +22108,7 @@ if (look.img) {
 if (isFirst || look.imgEach) {
 const fly = look.dir !== undefined ? bxFlightAngle(fromEl, cardEl) : null;
 if (fly !== null) bxFxImg(cardEl, look.img, { rot: Math.round(fly - look.dir + (isFirst ? 0 : 9)), k: look.k });
-else bxFxImg(cardEl, look.img, { flip: !!look.imgEach && !isFirst, k: look.k });
+else bxFxImg(cardEl, (!isFirst && look.img2) || look.img, { flip: !!look.imgEach && !isFirst, k: look.k });
 }
 if (look.sparks && isFirst) bxSparks(c.x, c.y, look.sparks, 12);
 return;
@@ -21912,7 +22144,7 @@ const step = isHero ? heroHit++ : monHit++;
 const firstOnThis = isHero ? step === 0 : !seenMon.has(ev.mon);
 if (!isHero) seenMon.add(ev.mon);
 const proj = ev.fx && ev.fx.startsWith('proj:') ? ev.fx.slice(5) : null;
-const t0 = delay + step * 140;
+const t0 = delay + step * ((look && look.step) || 140);
 if (proj) {
 setTimeout(() => {
 if (!bxOn()) return;
@@ -22005,6 +22237,9 @@ if (look.mode === 'melee') {
 if (look.fx === 'rage') bxRetrig(hero, 'bx-rage');
 bxRetrig(hero, 'bx-lunge');
 delay = 130;
+if (look.dual && ctx.events.filter(ev => ev.side === 'mon' && ev.mon === ctx.target).length > 1) {
+setTimeout(() => { if (bxOn() && bxHeroCard()) bxRetrig(bxHeroCard(), 'bx-lunge'); }, look.step);
+}
 } else if (look.mode === 'heal' || look.mode === 'aoe-cast') {
 bxRetrig(hero, 'bx-cast');
 delay = 150;
@@ -22025,7 +22260,7 @@ if (targetCard && look.imgEach) setTimeout(() => { if (bxOn()) bxProjectile(look
 }
 bxPlayEvents(ctx.events, delay, look, hero);
 const monEvents = ctx.events.filter(ev => ev.side === 'mon').length;
-const killDelay = look.aoe || monEvents > 1 ? delay + monEvents * 140 + 400 : delay + 160;
+const killDelay = look.aoe || monEvents > 1 ? delay + monEvents * (look.step || 140) + 400 : delay + 160;
 ctx.kills.forEach(k => bxPlayKill(k, killDelay));
 if (ctx.levelUp) setTimeout(bxPlayLevelUp, delay + 300);
 }
@@ -23136,7 +23371,7 @@ const dropMult = 1 + (titleMult - 1) + (p.dropBonusFromRefine || 0) / 100;
 const goldMult = m * (1 + (p.goldBonusFromRefine || 0) / 100);
 const xpBonus = (p.xpBonus || 0) + (p.xpBonusFromRefine || 0);
 const xpRaw = kills * inst.xpReward * XP_MONSTER_MULTIPLIER * m * (1 + xpBonus / 100);
-const isMine = MINE_MONSTERS.includes(template);
+const isMine = MINE_MONSTERS.includes(template) || (typeof OUTSKIRTS_MONSTERS !== 'undefined' && OUTSKIRTS_MONSTERS.includes(template));
 let gold = 0;
 const items = [];
 const cap = (p.stackCap !== undefined) ? p.stackCap : 3;
@@ -23372,12 +23607,14 @@ saveCurrentSlot();
 try { sessionStorage.removeItem(RESUME_SESSION_KEY); } catch (e) {}
 location.reload();
 }
-function expPickReason() {
+function expPickReason(loc) {
 const night = typeof worldTime === 'function' && worldTime(true).phase.id === 'night';
 const met = typeof bagMet === 'function' && bagMet();
-const list = EXPEDITION_EARLY_REASONS.filter(r => (!r.night || night) && (!r.bag || met));
+const list = EXPEDITION_EARLY_REASONS.filter(r => (!r.night || night) && (!r.bag || met) && (!r.loc || r.loc.includes(loc)));
 const r = list[Math.floor(Math.random() * list.length)];
-return r ? heroText(r.text) : '';
+if (!r) return '';
+const town = EXPEDITION_TOWN_CASES[homeTown()] || EXPEDITION_TOWN_CASES.town;
+return heroText(r.text.replace('%townTo%', town.to).replace('%townIn%', town.in));
 }
 function expPickBagLine(rep) {
 if (typeof bagMet !== 'function' || !bagMet()) return '';
@@ -23453,7 +23690,7 @@ if (typeof loreSyncBeasts === 'function') loreSyncBeasts(false);
 const rep = {
 loc: exp.loc, name: exp.name, hours: exp.hours, elapsed, full,
 kills, xp: loot.xp, gold: loot.gold, levels: p.level - levelBefore,
-reason: ranOut ? heroText(EXPEDITION_SUPPLY_OUT_REASON.replace('%name%', ranOut.name)) : (full ? '' : expPickReason()),
+reason: ranOut ? heroText(EXPEDITION_SUPPLY_OUT_REASON.replace('%name%', ranOut.name)) : (full ? '' : expPickReason(exp.loc)),
 supplies: supplyRep, burned,
 };
 rep.bagLine = expPickBagLine(rep);
@@ -23606,7 +23843,7 @@ showToast('🏦', left ? `На склад: ${moved}, не влезло: ${left}`
 if (pool.length) expShowReport(__expLastReport); else expCloseReport();
 }
 function expRenderMapButtons() {
-['field', 'mine'].forEach(loc => {
+['field', 'mine', 'outskirts'].forEach(loc => {
 const card = document.querySelector(`.map-card[data-loc="${loc}"]`);
 if (!card) return;
 let box = card.querySelector('.map-exp');
@@ -24194,8 +24431,8 @@ bagAtLevel: {
 19: 'Слышишь? Кто-то глотает. …Нет? Ну и не слушай. Это не тебя.',
 },
 bagIdle: {
-17: ['Хорошо тут стало. Тихо. *Пауза.* Сыто как-то.'],
-19: ['Ты чего мрачн{ый|ая}? Мне — прекрасно. Никогда так хорошо не было.', 'Слышишь? Кто-то глотает. …Нет? Ну и не слушай. Это не тебя.'],
+17: ['Тихо стало. Даже крысы ушли. *Пауза.* А мне почему-то сытно. Не люблю, когда не понимаю почему.'],
+19: ['Странно. Всем плохо, а мне… тепло. Я не хочу, чтобы мне было тепло, когда тебе плохо. Но тепло.', 'Слышишь? Кто-то глотает. Под землёй. *Пауза.* Не бойся. Если что — я тебя не отдам.'],
 },
 assembly: {
 bg: 'village.webp',

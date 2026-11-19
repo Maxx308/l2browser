@@ -347,7 +347,8 @@ function expRollHunt(template, variantId, kills, luck) {
   const goldMult = m * (1 + (p.goldBonusFromRefine || 0) / 100);
   const xpBonus = (p.xpBonus || 0) + (p.xpBonusFromRefine || 0);
   const xpRaw = kills * inst.xpReward * XP_MONSTER_MULTIPLIER * m * (1 + xpBonus / 100);
-  const isMine = MINE_MONSTERS.includes(template);
+  // Оболы круглые до десятков — в Копях и на Окраинах (как в обычном бою)
+  const isMine = MINE_MONSTERS.includes(template) || (typeof OUTSKIRTS_MONSTERS !== 'undefined' && OUTSKIRTS_MONSTERS.includes(template));
 
   let gold = 0;
   const items = [];
@@ -611,12 +612,15 @@ function expToCharacterSelect() {
 }
 
 // ---------- ВОЗВРАЩЕНИЕ ----------
-function expPickReason() {
+// loc — где охотился герой: у Окраин свои причины. Город — тот, куда он вернулся.
+function expPickReason(loc) {
   const night = typeof worldTime === 'function' && worldTime(true).phase.id === 'night';
   const met = typeof bagMet === 'function' && bagMet();
-  const list = EXPEDITION_EARLY_REASONS.filter(r => (!r.night || night) && (!r.bag || met));
+  const list = EXPEDITION_EARLY_REASONS.filter(r => (!r.night || night) && (!r.bag || met) && (!r.loc || r.loc.includes(loc)));
   const r = list[Math.floor(Math.random() * list.length)];
-  return r ? heroText(r.text) : '';
+  if (!r) return '';
+  const town = EXPEDITION_TOWN_CASES[homeTown()] || EXPEDITION_TOWN_CASES.town;
+  return heroText(r.text.replace('%townTo%', town.to).replace('%townIn%', town.in));
 }
 
 function expPickBagLine(rep) {
@@ -705,7 +709,7 @@ async function expResolve(early) {
     const rep = {
       loc: exp.loc, name: exp.name, hours: exp.hours, elapsed, full,
       kills, xp: loot.xp, gold: loot.gold, levels: p.level - levelBefore,
-      reason: ranOut ? heroText(EXPEDITION_SUPPLY_OUT_REASON.replace('%name%', ranOut.name)) : (full ? '' : expPickReason()),
+      reason: ranOut ? heroText(EXPEDITION_SUPPLY_OUT_REASON.replace('%name%', ranOut.name)) : (full ? '' : expPickReason(exp.loc)),
       supplies: supplyRep, burned,
     };
     rep.bagLine = expPickBagLine(rep);
@@ -876,7 +880,7 @@ function expTakeToStorage() {
 
 // ---------- КНОПКА НА КАРТОЧКЕ ЛОКАЦИИ ----------
 function expRenderMapButtons() {
-  ['field', 'mine'].forEach(loc => {
+  ['field', 'mine', 'outskirts'].forEach(loc => {   // Окраины Ильграда — карточка видна только при открытом городе
     const card = document.querySelector(`.map-card[data-loc="${loc}"]`);
     if (!card) return;
     let box = card.querySelector('.map-exp');

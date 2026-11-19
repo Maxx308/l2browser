@@ -96,6 +96,14 @@
   align-content: start;
 }
 
+/* страницы сумки под сеткой инвентаря */
+.storage-pages {
+  display: flex;
+  justify-content: center;
+  gap: calc(6 * var(--u));
+  margin-top: calc(10 * var(--u));
+}
+
 .storage-hint {
   font-size: var(--fs-tiny);
   color: var(--text-dim);

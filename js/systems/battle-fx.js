@@ -123,6 +123,7 @@ const BX_FX_DIR = 'img/fx/';
 // Обычный удар героя — по оружию в руках.
 const BX_WEAPON_IMG = { swords: 'b_12', axes: 'c_47', maces: 'b_14', daggers: 'b_42', spears: 'c_15', bows: 'b_25', crossbows: 'b_27', staves: 'b_24' };
 const BX_UNARMED_IMG = 'c_34';
+const BX_DUAL_STEP = 300;   // v0.38: парное — через сколько мс бьёт вторая рука (рывок героя длится 320 мс)
 // Удар монстра — по виду.
 const BX_MONSTER_IMG = { silkworm: 'c_11', ent: 'b_54', bandit: 'c_16', frog: 'b_16', wolf: 'b_11', goblin: 'c_12', kobold: 'b_28', arachnid: 'c_46', caveBat: 'b_42', golem: 'c_56' };
 const BX_MONSTER_IMG_PHYS = 'c_34', BX_MONSTER_IMG_MAGIC = 'b_32';
@@ -477,6 +478,7 @@ function bxSync() {
     if (html !== c.statusHtml) { c.statusHtml = html; c.status.innerHTML = html; }
     c.card.classList.toggle('bx-frozen', html.indexOf('debuff-freeze') >= 0);
   });
+  if (typeof alliesRender === 'function') alliesRender();   // v0.38: слуги героя под его карточкой
 }
 
 // --------------------------------------------------------
@@ -524,6 +526,13 @@ function bxPlayerActionLook(skill) {
   if (isMage()) return { mode: 'proj', proj: 'arcane', burst: 'arcane', sparks: '#b8d4ff', ms: 320, img: BX_WEAPON_IMG.staves };
   if (ranged) return bxRangedLook(wcat);
   if (wcat === 'spears') return { mode: 'melee', img: BX_WEAPON_IMG.spears, dir: BX_FX_DIR_HEADING };   // выпад — от героя к цели
+  // v0.38: парное — второй удар своей картинкой (вторым оружием, зеркально) и второй рывок героя
+  const off = typeof getOffhandWeapon === 'function' ? getOffhandWeapon() : null;
+  if (off) {
+    const offCat = typeof getWeaponCategory === 'function' ? getWeaponCategory(off.name) : null;
+    return { mode: 'melee', fx: 'slash', color: '#ffd27a', img: BX_WEAPON_IMG[wcat] || BX_UNARMED_IMG,
+             img2: BX_WEAPON_IMG[offCat] || BX_WEAPON_IMG[wcat] || BX_UNARMED_IMG, imgEach: true, dual: true, step: BX_DUAL_STEP };
+  }
   return { mode: 'melee', fx: 'slash', color: '#ffd27a', img: BX_WEAPON_IMG[wcat] || BX_UNARMED_IMG };
 }
 
@@ -567,7 +576,7 @@ function bxImpact(cardEl, look, isFirst, fromEl) {
       // v0.36.4: направленная картинка — по линии полёта; вторая стрела/выпад — чуть иным углом, без зеркала
       const fly = look.dir !== undefined ? bxFlightAngle(fromEl, cardEl) : null;
       if (fly !== null) bxFxImg(cardEl, look.img, { rot: Math.round(fly - look.dir + (isFirst ? 0 : 9)), k: look.k });
-      else bxFxImg(cardEl, look.img, { flip: !!look.imgEach && !isFirst, k: look.k });
+      else bxFxImg(cardEl, (!isFirst && look.img2) || look.img, { flip: !!look.imgEach && !isFirst, k: look.k });
     }
     if (look.sparks && isFirst) bxSparks(c.x, c.y, look.sparks, 12);
     return;
@@ -609,7 +618,7 @@ function bxPlayEvents(events, delay, look, attackerCard) {
     if (!isHero) seenMon.add(ev.mon);
     // v0.19: у события может быть свой эффект (массовые навыки) — снаряд летит к КАЖДОЙ цели.
     const proj = ev.fx && ev.fx.startsWith('proj:') ? ev.fx.slice(5) : null;
-    const t0 = delay + step * 140;
+    const t0 = delay + step * ((look && look.step) || 140);   // v0.38: парное — второй удар позже, под второй рывок
     if (proj) {
       setTimeout(() => {
         if (!bxOn()) return;
@@ -717,6 +726,10 @@ function bxPlayPlayerAction(ctx) {
     if (look.fx === 'rage') bxRetrig(hero, 'bx-rage');
     bxRetrig(hero, 'bx-lunge');
     delay = 130;
+    // v0.38: парное — второй рывок под удар второй рукой (только если вторая цифра есть)
+    if (look.dual && ctx.events.filter(ev => ev.side === 'mon' && ev.mon === ctx.target).length > 1) {
+      setTimeout(() => { if (bxOn() && bxHeroCard()) bxRetrig(bxHeroCard(), 'bx-lunge'); }, look.step);
+    }
   } else if (look.mode === 'heal' || look.mode === 'aoe-cast') {
     bxRetrig(hero, 'bx-cast');
     delay = 150;
@@ -740,7 +753,7 @@ function bxPlayPlayerAction(ctx) {
   bxPlayEvents(ctx.events, delay, look, hero);
   // Для массовых цифры идут по очереди — смерть показываем после последнего попадания.
   const monEvents = ctx.events.filter(ev => ev.side === 'mon').length;
-  const killDelay = look.aoe || monEvents > 1 ? delay + monEvents * 140 + 400 : delay + 160;
+  const killDelay = look.aoe || monEvents > 1 ? delay + monEvents * (look.step || 140) + 400 : delay + 160;
   ctx.kills.forEach(k => bxPlayKill(k, killDelay));
   if (ctx.levelUp) setTimeout(bxPlayLevelUp, delay + 300);
 }

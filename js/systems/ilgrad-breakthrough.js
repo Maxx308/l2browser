@@ -51,6 +51,49 @@ const BREAK_HELP = {
   pair:    { allMaxHpPercent: 10, cooldown: 30, cooldownStep: 5 },        // молот по всем, откат 30, 35, 40…
 };
 
+// Близость со спутниками (v0.37.2): чем больше герой говорил с жителем и выполнил ли его поручение,
+// тем сильнее помощь. Цифры BREAK_HELP — нижняя планка (близость 0), слабее не бывает.
+//   близость = разговоры × (1 − questShare) + поручение × questShare (нет поручения — только разговоры);
+//   разговоры = прочитанные темы / все темы до падения, talksFull и больше — засчитаны целиком.
+//   Пара (Гундар и Хильда) — среднее двоих.
+const BREAK_BOND = {
+  people: { supply: ['keeper'], healer: ['guildmage'], bruiser: ['mentor'], pair: ['smith', 'refiner'] },
+  quest: { smith: 'smithBeard', refiner: 'refinerGift', mentor: 'mentorStone', guildmage: 'lielShard' },
+  questShare: 0.4,
+  talksFull: 0.8,
+  power: 0.6,       // полная близость: сила помощи ×1,6
+  cooldown: 0.25,   // ...и откат на четверть короче
+  closeAt: 0.6,     // с этой близости спутник говорит теплее (say → sayClose)
+};
+
+// Близость с одним жителем, 0…1.
+function breakBondNpc(npcId) {
+  const chat = OWNER_CHATS[npcId];
+  const c = state.player.chronicle || {};
+  const lvl = state.player.level || 1;
+  const topics = chat ? chat.topics.filter(t => !t.afterFall && (!t.minLevel || t.minLevel <= lvl)) : [];
+  const read = topics.filter(t => c.talks && c.talks[npcId + '.' + t.id]).length;
+  const talks = topics.length ? Math.min(1, read / (topics.length * BREAK_BOND.talksFull)) : 0;
+  const quest = BREAK_BOND.quest[npcId];
+  if (!quest || !QUESTS[quest]) return talks;
+  return talks * (1 - BREAK_BOND.questShare) + (isQuestDone(quest) ? BREAK_BOND.questShare : 0);
+}
+
+function breakBondAll() {
+  const r = {};
+  Object.entries(BREAK_BOND.people).forEach(([role, list]) => {
+    r[role] = list.reduce((a, id) => a + breakBondNpc(id), 0) / list.length;
+  });
+  return r;
+}
+
+function breakBond(role) {
+  const br = state.battle.breakthrough;
+  return (br && br.help.bond && br.help.bond[role]) || 0;
+}
+function breakPower(role) { return 1 + BREAK_BOND.power * breakBond(role); }
+function breakCd(role, sec) { return sec * (1 - BREAK_BOND.cooldown * breakBond(role)); }
+
 function breakTemplate(id) { return OUTSKIRTS_MONSTERS.find(t => t.id === id); }
 
 function breakWaveQueue(wave) {
@@ -91,8 +134,16 @@ function breakthroughStart(opts) {
       cd: { supply: 0, healer: 0, bruiser: BREAK_HELP.bruiser.firstAt, pair: BREAK_HELP.pair.cooldown },
       used: (saved && saved.used) || { supply: 0, healer: 0, bruiser: 0, pair: 0 },
       fireUsed: !!(saved && saved.fireUsed), regen: null, lastAtb: 0,
+      bond: breakBondAll(),
     },
   };
+  const h = state.battle.breakthrough.help;
+  h.cd.bruiser = breakCd('bruiser', h.cd.bruiser);
+  h.cd.pair = breakCd('pair', h.cd.pair);
+  if (!real) {   // проба из чит-меню: показать близость цифрами
+    const pc = k => Math.round(h.bond[k] * 100) + '%';
+    logCombat(`Близость: Вирна ${pc('supply')}, Лиэль ${pc('healer')}, Урдах ${pc('bruiser')}, Гундар и Хильда ${pc('pair')}`, 'log-entry');
+  }
   if (saved) {
     if (saved.wave >= BREAK_WAVES.length) breakFinish(); else breakNextWave();
     return;
@@ -216,8 +267,8 @@ function breakHelpTick(dt) {
 function breakHeal() {
   const br = state.battle.breakthrough, h = br.help, p = state.player, def = BREAK_HELP.healer;
   const step = h.used.healer++;
-  h.cd.healer = def.cooldown;
-  const pct = def.percent[Math.min(step, def.percent.length - 1)];
+  h.cd.healer = breakCd('healer', def.cooldown);
+  const pct = Math.round(def.percent[Math.min(step, def.percent.length - 1)] * breakPower('healer'));
   const heal = Math.min(Math.floor(p.maxHp * pct / 100), p.maxHp - p.hp);
   breakAct('healer', step, `+${heal} HP, регенерация ${pct} HP на ${def.regenTurns} ходов`, done => {
     breakBolt('.bx-hero .bx-bar.hp', '#8dffa8');
@@ -232,8 +283,8 @@ function breakHeal() {
 function breakSupply() {
   const br = state.battle.breakthrough, h = br.help, p = state.player, def = BREAK_HELP.supply;
   const step = h.used.supply++;
-  h.cd.supply = def.cooldown;
-  const pct = def.percent[Math.min(step, def.percent.length - 1)];
+  h.cd.supply = breakCd('supply', def.cooldown);
+  const pct = Math.round(def.percent[Math.min(step, def.percent.length - 1)] * breakPower('supply'));
   const mana = Math.min(Math.floor(p.maxMp * pct / 100), p.maxMp - p.mp);
   breakAct('supply', step, `+${mana} маны`, done => {
     breakBolt('.bx-hero .bx-bar.mp', '#ffe066');
@@ -248,14 +299,15 @@ function breakSupply() {
 function breakBruiser() {
   const br = state.battle.breakthrough, h = br.help, def = BREAK_HELP.bruiser;
   const step = h.used.bruiser++;
-  h.cd.bruiser = def.cooldown;
+  h.cd.bruiser = breakCd('bruiser', def.cooldown);
+  const hitPct = def.volleyMaxHpPercent * breakPower('bruiser');
   breakAct('bruiser', step, 'серия ударов по всем', done => {
     let left = def.volleys;
     const volley = () => {
       if (state.battle.breakthrough !== br) return;
       state.battle.monsters.filter(m => m.hp > 0).forEach(m => {
         breakSlash(m);
-        if (state.battle.active) breakHit(m, m.maxHp * def.volleyMaxHpPercent / 100, ['physical', 'blunt']);
+        if (state.battle.active) breakHit(m, m.maxHp * hitPct / 100, ['physical', 'blunt']);
       });
       if (--left > 0 && state.battle.active) setTimeout(volley, def.volleyMs);
       else setTimeout(done, def.volleyMs);
@@ -268,7 +320,8 @@ function breakBruiser() {
 function breakPair() {
   const br = state.battle.breakthrough, h = br.help, def = BREAK_HELP.pair;
   const step = h.used.pair++;
-  h.cd.pair = def.cooldown + def.cooldownStep * h.used.pair;
+  h.cd.pair = breakCd('pair', def.cooldown + def.cooldownStep * h.used.pair);
+  const hitPct = def.allMaxHpPercent * breakPower('pair');
   breakAct('pair', step, 'молот по всем, все оглушены', done => {
     const stage = bxStage();
     const pos = bxCenter(document.getElementById('bx-enemy-row'));
@@ -290,7 +343,7 @@ function breakPair() {
       state.battle.monsters.filter(m => m.hp > 0).forEach(m => {
         addDebuff('monster', 'stun', m.index, { turnsLeft: 1 });
         spawnFloatDamage('fighter-monster', 0, 'block', { mon: m, text: 'ОГЛУШЁН' });
-        if (state.battle.active) breakHit(m, m.maxHp * def.allMaxHpPercent / 100, ['physical', 'blunt']);
+        if (state.battle.active) breakHit(m, m.maxHp * hitPct / 100, ['physical', 'blunt']);
       });
       setTimeout(() => { hammer.remove(); ring.remove(); done(); }, 520);
     }, 340);
@@ -371,7 +424,8 @@ function breakAct(role, step, note, run, sayOverride) {
   br.paused = true;
   const lines = window.BREAK_LINES;
   const who = lines && lines.who && lines.who[role];
-  const list = lines && lines.say && lines.say[role];
+  const close = breakBond(role) >= BREAK_BOND.closeAt && lines && lines.sayClose && lines.sayClose[role];
+  const list = close || (lines && lines.say && lines.say[role]);
   const say = sayOverride || (list && step >= 0 ? list[Math.min(step, list.length - 1)] : '');
   const people = who ? (Array.isArray(who) ? who : [who]) : [];
   const name = people.map(x => x.name).join(' и ');

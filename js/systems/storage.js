@@ -336,6 +336,8 @@ function updateStorageCounters() {
 }
 
 // --- Панель инвентаря (слева) ---
+let storageInvPage = 0;   // какая страница сумки открыта в окне склада
+
 function renderStorageInventoryPanel() {
   const grid = document.getElementById('storage-inv-grid');
   if (!grid) return;
@@ -343,20 +345,25 @@ function renderStorageInventoryPanel() {
 
   const inv = state.player.inventory;
 
-  // Показываем столько ячеек, сколько в инвентаре + пустые до заполнения сетки.
-  // Всего 60, но раз это окно — ограничим 30 (как склад), чтобы было симметрично.
-  // Но если у игрока >30 — всё равно покажем всё (со скроллом внутри).
-  // Упрощаем: показываем всегда 30 ячеек — первые 30 инвентаря.
-  // Если у тебя инвентарь 60 — увидишь только первые 30, но это ок.
-  // НЕТ — покажем весь инвентарь (60), у панели будет скролл.
-  const PAGE_SIZE = 30; // столько же, сколько ячеек в складе — для симметрии
-  const startIdx = 0;   // показываем с начала (пагинации тут нет)
+  // Сумка листается страницами по 30 ячеек, как в обычном инвентаре.
+  // Раньше тут были видны только первые 30 — вещи со 2-й и 3-й страницы на склад было не положить.
+  const PAGE_SIZE = INVENTORY_PAGE_SIZE;
+  const pages = invPages();
+  storageInvPage = Math.max(0, Math.min(storageInvPage, pages - 1));
+  const startIdx = storageInvPage * PAGE_SIZE;
+  const maxSlots = invMaxSlots();
 
   for (let i = 0; i < PAGE_SIZE; i++) {
-    const item = inv[startIdx + i];
+    const globalIdx = startIdx + i;
+    const item = inv[globalIdx];
     const slot = document.createElement('div');
 
-    if (item) {
+    if (!item && globalIdx >= maxSlots) {
+      // ячейка ещё не открыта (её откроет Заплечник)
+      slot.className = 'inv-slot locked';
+      slot.title = 'Заплечник ещё не дорос. Его поручения — +1 ячейка';
+      slot.innerHTML = '🔒';
+    } else if (item) {
       const isConsumable = item.type === 'consumable';
       const isFood = item.type === 'food';
       const rarityClass = (item.rarity && item.rarity !== 'white') ? ' rarity-' + item.rarity : '';
@@ -370,6 +377,27 @@ function renderStorageInventoryPanel() {
       slot.className = 'inv-slot empty';
     }
     grid.appendChild(slot);
+  }
+
+  renderStorageInvPages(grid, pages);
+}
+
+// Кнопки страниц сумки под сеткой (контейнер создаётся тут же, разметку не трогаем).
+function renderStorageInvPages(grid, pages) {
+  let cont = document.getElementById('storage-inv-pages');
+  if (!cont) {
+    cont = document.createElement('div');
+    cont.id = 'storage-inv-pages';
+    cont.className = 'storage-pages';
+    grid.after(cont);
+  }
+  cont.innerHTML = '';
+  for (let i = 0; i < pages; i++) {
+    const btn = document.createElement('button');
+    btn.className = 'inventory-page-btn' + (storageInvPage === i ? ' active' : '');
+    btn.textContent = (i + 1);
+    btn.onclick = () => { storageInvPage = i; renderStorageInventoryPanel(); };
+    cont.appendChild(btn);
   }
 }
 

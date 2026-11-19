@@ -356,7 +356,7 @@ function renderInventory() {
       slot.onclick = () => {
         if (slot._skipClick) { slot._skipClick = false; return; }   // это было перетаскивание
         if (item.type === 'food') useFood(item);
-        else if (isConsumable) logLoot(`${item.name} — расходник.`, 'log-info');
+        else if (isConsumable) useConsumableFromBag(item);
         else equipItem(item);
       };
 
@@ -676,6 +676,33 @@ function selectSlotItem(slotType, shopId) {
 
   const shopItem = SHOP_ITEMS.find(s => s.id === shopId);
   showToast('✅', `В слот: ${shopItem ? shopItem.name : shopId}`);
+}
+
+// v0.37.1: клик по зелью или микстуре в сумке ставит их в свой слот слева.
+// Раньше клик только писал «расходник» в журнал, а подпись сумки обещала «Клик — надеть» —
+// новичок не догадывался, что зелье ставится через пустой слот.
+function consumableSlotType(item) {
+  if (!item || !item.shopId || typeof SHOP_ITEMS === 'undefined') return null;
+  const shopItem = SHOP_ITEMS.find(s => s.id === item.shopId);
+  return shopItem && (shopItem.slotType === 'potion' || shopItem.slotType === 'mixture') ? shopItem.slotType : null;
+}
+
+function useConsumableFromBag(item) {
+  const slotType = consumableSlotType(item);
+  if (!slotType) { logLoot(`${item.name} — расходник.`, 'log-info'); return; }
+  const where = slotType === 'potion' ? 'зелья' : 'микстуры';
+  if (getCurrentSlotShopId(slotType) === item.shopId) {
+    showToast('✅', `${item.name} уже в слоте ${where}`);
+    return;
+  }
+  setSlotShopId(slotType, item.shopId);
+  closeSlotPicker();
+  renderEquipSlots();
+  saveCurrentSlot();
+  const how = slotType === 'potion'
+    ? `выпьется само, когда HP ниже ${state.player.potionThreshold || 40}%`
+    : 'сработает сама в начале боя';
+  showToast('✅', `В слот ${where}: ${item.name} — ${how}`);
 }
 
 function clearSlot(slotType) {

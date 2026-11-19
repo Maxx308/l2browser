@@ -299,6 +299,7 @@ function getRefineChance(level) {
   const steps = Math.floor((nextLevel - 1) / REFINE_CHANCE_STEP);
   let chance = REFINE_CHANCE_START - steps * REFINE_CHANCE_DROP;
   if (chance < REFINE_CHANCE_MIN) chance = REFINE_CHANCE_MIN;
+  if (typeof subclassRefineChanceBonus === 'function') chance = Math.min(100, chance + subclassRefineChanceBonus());   // v0.38: Твёрдая рука
   return chance;
 }
 
@@ -513,6 +514,49 @@ function getRefineBonusPool(item) {
   return base;
 }
 
+// ==== v0.38: ВЫЧЁРКИВАНИЕ БОНУСОВ ПОДГОНКИ ====
+// Игрок вычёркивает ненужные бонусы из пула (item.refineStrikes — список ключей).
+// Доплата берётся ТОЛЬКО при удачном случайном броске (не на вехе, не при неудаче):
+//   доплата = цена × ((всего ÷ осталось) × REFINE_STRIKE_MARKUP − 1)
+// То есть вычёркивание всегда на 50% дороже, чем крутить вслепую, — одинаково для бедных и богатых.
+// Открывается с вещей Т4 (уровень 20, Ильград).
+const REFINE_STRIKE_MIN_TIER = 4;
+const REFINE_STRIKE_MARKUP = 1.5;
+
+function canStrikeRefine(item) {
+  return !!item && getItemTier(item) >= REFINE_STRIKE_MIN_TIER;
+}
+
+// Вычеркнутые ключи, которые реально есть в пуле этой вещи (чужие ключи не считаются).
+function getRefineStrikes(item) {
+  if (!canStrikeRefine(item) || !Array.isArray(item.refineStrikes)) return [];
+  const keys = getRefineBonusPool(item).map(b => b.key);
+  return item.refineStrikes.filter(k => keys.includes(k));
+}
+
+// Пул для броска: без вычеркнутого. Хотя бы один бонус остаётся всегда.
+function getRefineRollPool(item) {
+  const pool = getRefineBonusPool(item);
+  const strikes = getRefineStrikes(item);
+  const left = pool.filter(b => !strikes.includes(b.key));
+  return left.length ? left : pool;
+}
+
+// Множитель цены при удаче: 1, если ничего не вычеркнуто.
+function getRefineStrikeMult(item) {
+  const total = getRefineBonusPool(item).length;
+  const left = getRefineRollPool(item).length;
+  if (left >= total) return 1;
+  return Math.round(total / left * REFINE_STRIKE_MARKUP * 100) / 100;
+}
+
+// Доплата за удачный бросок (0 — нет вычеркнутого). Кругло до 10 Оболов.
+function getRefineStrikeExtra(item) {
+  const m = getRefineStrikeMult(item);
+  if (m <= 1) return 0;
+  return Math.round(getRefinePrice(getItemTier(item)) * (m - 1) / 10) * 10;
+}
+
 // ========================================================
 //  РЕДКОСТЬ ПРЕДМЕТОВ
 // ========================================================
@@ -548,6 +592,9 @@ function getItemStat(item, stat) {
 // Без класса — все шесть статов поровну. item оставлен в подписи для совместимости вызовов.
 function getRarityStatProfile(item) {
   const cls = state.player && state.player.classId;
+  // v0.38: подкласс может задать свой профиль (Храмовник — все шесть статов поровну)
+  const sc = state.player && state.player.subclass && typeof SUBCLASSES !== 'undefined' ? SUBCLASSES[state.player.subclass] : null;
+  if (sc && sc.rarityProfile) return sc.rarityProfile;
   if (cls === 'mage') return 'magic';
   if (cls) return 'warrior';
   return 'neutral';

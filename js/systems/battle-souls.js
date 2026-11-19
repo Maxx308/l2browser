@@ -53,7 +53,8 @@ function renderSoulHuntBar() {
     const on = i <= cap;
     const stones = Object.values(SOUL_STONES_BY_VARIANT);
     const tip = `Душа ${t.gemGen} (${gemName})\n` +
-      `Шанс: ${String(t.chance).replace('.', ',')}% на каждого монстра — ${formatSoulFrequency(t.chance)}\n` +
+      `Шанс: до ${String(t.chance).replace('.', ',')}% на монстра — ${formatSoulFrequency(t.chance)}\n` +
+      `Столько у самой сильной твари локации, у слабых реже\n` +
       `Монстр: здоровье и мана ×${t.hpMult}, точность ×${String(t.accMult).replace('.', ',')}\n` +
       `Камней: ${stones.join(' / ')} (обычный / Древний / Кровавый)\n` +
       (i === 0 ? 'Зелёные души встречаются всегда' : (on ? 'Нажмите, чтобы искать только до предыдущего камня' : 'Нажмите, чтобы искать и такие души'));
@@ -79,14 +80,31 @@ function renderSoulHuntBar() {
 
 // ---------- БРОСОК ДУШИ ----------
 // Свой бросок у каждого монстра (и у подмоги): от частых к редким, только до выбранного камня.
-function rollMonsterSoul() {
+// 19.11.2026: шанс души зависит от силы твари. Раньше он был одинаковый у всех,
+// и ради камней выгоднее всего было бить самую слабую тварь локации.
+// Множитель = здоровье твари (с маной) / здоровье самой крепкой твари локации:
+// у самой сильной шанс полный (5% у зелёной — это потолок, выше не поднимаем),
+// у слабых меньше. Камней на единицу пробитого здоровья у всех тварей поровну.
+// Берётся шаблон твари: Древние и Кровавые и так дают 2 и 4 камня.
+function soulMonsterChanceMult(m) {
+  if (!m || typeof getMonstersByLocation !== 'function') return 1;
+  const list = getMonstersByLocation(state.player.currentLocation);
+  const tpl = list.find(t => t.id === m.id);
+  if (!tpl || !list.length) return 1;
+  const toughness = t => (t.hp || 0) + (t.mp || 0);
+  const max = Math.max(...list.map(toughness));
+  return max > 0 ? Math.min(1, toughness(tpl) / max) : 1;
+}
+
+function rollMonsterSoul(m) {
   if (!getSoulLocation()) return null;
   const cap = getSoulHuntCap();
+  const k = soulMonsterChanceMult(m);
   let r = Math.random() * 100;
   for (let i = 0; i <= cap; i++) {
     const t = SOUL_TYPES[SOUL_ORDER[i]];
-    if (r < t.chance) return t.id;
-    r -= t.chance;
+    if (r < t.chance * k) return t.id;
+    r -= t.chance * k;
   }
   return null;
 }
@@ -106,7 +124,7 @@ function applySoulToMonster(m, soulId) {
 // её выводит soulsFlushLog() после строки о начале боя / о подмоге.
 function soulsTryMonster(m) {
   if (!m || m.soul) return null;
-  const soulId = rollMonsterSoul();
+  const soulId = rollMonsterSoul(m);
   if (!soulId) return null;
   applySoulToMonster(m, soulId);
   const t = SOUL_TYPES[soulId];

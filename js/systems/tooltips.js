@@ -220,6 +220,14 @@ function showItemTooltip(e, item) {
     lines.push(`<div class="tt-line food-effect">${k.icon} Сытость: ${foodKindText(k)} · ${buffShopDur(getFoodDuration(item))}</div>`);
     lines.push(`<div class="tt-line type" style="color: #a0d080;">Клик чтобы съесть. Та же еда складывается (макс. 12 ч), другая заменяет.</div>`);
   }
+  // v0.37.1: зелье и микстура — клик ставит в слот (inventory.js → useConsumableFromBag)
+  const consSlot = (typeof consumableSlotType === 'function') ? consumableSlotType(item) : null;
+  if (consSlot) {
+    const inSlot = getCurrentSlotShopId(consSlot) === item.shopId;
+    lines.push(`<div class="tt-line type" style="color: #a0d080;">${inSlot
+      ? `Стоит в слоте ${consSlot === 'potion' ? 'зелья' : 'микстуры'}.`
+      : `Клик — поставить в слот ${consSlot === 'potion' ? 'зелья' : 'микстуры'}.`}</div>`);
+  }
   if (item.shopId === 'teleportScroll') {   // v0.26: остался только на складе
     lines.push(`<div class="tt-line type" style="color: #c0a0ff;">Больше не используется — теперь магические тропы. Заберите со склада: +${(item.qty || 1) * TELEPORT_SCROLL_REFUND} Оболов.</div>`);
   }
