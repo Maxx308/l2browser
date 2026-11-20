@@ -121,3 +121,5 @@
   .cheat-block { padding: calc(10 * var(--u)); }
   .cheat-rate-btn { font-size: calc(12.5 * var(--u)); padding: calc(8 * var(--u)) calc(6 * var(--u)); min-width: calc(55 * var(--u)); }
 }
+/* v0.38.2: подписи тиров в комплектах и оружии */
+.cheat-tier-label { margin: calc(8 * var(--u)) 0 calc(6 * var(--u)); }

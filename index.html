@@ -86,36 +86,37 @@ applyTextFont(getSavedTextFont());
 <!-- v0.36.2: библиотека облака (Supabase, 213 КБ) переехала вниз, к остальным скриптам:
      в шапке она задерживала показ страницы, пока не скачается целиком. -->
 
-<link rel="stylesheet" href="css/base.css?v=0.38.1">
-<link rel="stylesheet" href="css/effects.css?v=0.38.1">
-<link rel="stylesheet" href="css/monsters.css?v=0.38.1">
-<link rel="stylesheet" href="css/city-map.css?v=0.38.1">
-<link rel="stylesheet" href="css/battle.css?v=0.38.1">
-<link rel="stylesheet" href="css/debuffs.css?v=0.38.1">
-<link rel="stylesheet" href="css/battle-autostop.css?v=0.38.1">
-<link rel="stylesheet" href="css/battle-arena.css?v=0.38.1">
-<link rel="stylesheet" href="css/underwood-fall.css?v=0.38.1">
-<link rel="stylesheet" href="css/battle-session.css?v=0.38.1">
-<link rel="stylesheet" href="css/battle-rest.css?v=0.38.1">
-<link rel="stylesheet" href="css/inventory.css?v=0.38.1">
-<link rel="stylesheet" href="css/inventory-equip.css?v=0.38.1">
-<link rel="stylesheet" href="css/inventory-slots.css?v=0.38.1">
-<link rel="stylesheet" href="css/windows.css?v=0.38.1">
-<link rel="stylesheet" href="css/screens.css?v=0.38.1">
-<link rel="stylesheet" href="css/patches.css?v=0.38.1">
-<link rel="stylesheet" href="css/settings.css?v=0.38.1">
-<link rel="stylesheet" href="css/cheat.css?v=0.38.1">
-<link rel="stylesheet" href="css/overlays.css?v=0.38.1">
-<link rel="stylesheet" href="css/dialogue.css?v=0.38.1">
-<link rel="stylesheet" href="css/storage.css?v=0.38.1">
-<link rel="stylesheet" href="css/refine.css?v=0.38.1">
-<link rel="stylesheet" href="css/alchemist.css?v=0.38.1">
-<link rel="stylesheet" href="css/leaderboard.css?v=0.38.1">
-<link rel="stylesheet" href="css/hero-inspect.css?v=0.38.1">
-<link rel="stylesheet" href="css/chronicle.css?v=0.38.1">
-<link rel="stylesheet" href="css/daynight.css?v=0.38.1">
-<link rel="stylesheet" href="css/expeditions.css?v=0.38.1">
-<link rel="stylesheet" href="css/subclass.css?v=0.38.1">
+<link rel="stylesheet" href="css/base.css?v=0.38.2">
+<link rel="stylesheet" href="css/effects.css?v=0.38.2">
+<link rel="stylesheet" href="css/monsters.css?v=0.38.2">
+<link rel="stylesheet" href="css/city-map.css?v=0.38.2">
+<link rel="stylesheet" href="css/battle.css?v=0.38.2">
+<link rel="stylesheet" href="css/debuffs.css?v=0.38.2">
+<link rel="stylesheet" href="css/battle-autostop.css?v=0.38.2">
+<link rel="stylesheet" href="css/battle-arena.css?v=0.38.2">
+<link rel="stylesheet" href="css/underwood-fall.css?v=0.38.2">
+<link rel="stylesheet" href="css/battle-session.css?v=0.38.2">
+<link rel="stylesheet" href="css/battle-rest.css?v=0.38.2">
+<link rel="stylesheet" href="css/inventory.css?v=0.38.2">
+<link rel="stylesheet" href="css/inventory-equip.css?v=0.38.2">
+<link rel="stylesheet" href="css/inventory-slots.css?v=0.38.2">
+<link rel="stylesheet" href="css/windows.css?v=0.38.2">
+<link rel="stylesheet" href="css/screens.css?v=0.38.2">
+<link rel="stylesheet" href="css/patches.css?v=0.38.2">
+<link rel="stylesheet" href="css/settings.css?v=0.38.2">
+<link rel="stylesheet" href="css/cheat.css?v=0.38.2">
+<link rel="stylesheet" href="css/overlays.css?v=0.38.2">
+<link rel="stylesheet" href="css/dialogue.css?v=0.38.2">
+<link rel="stylesheet" href="css/storage.css?v=0.38.2">
+<link rel="stylesheet" href="css/refine.css?v=0.38.2">
+<link rel="stylesheet" href="css/alchemist.css?v=0.38.2">
+<link rel="stylesheet" href="css/leaderboard.css?v=0.38.2">
+<link rel="stylesheet" href="css/hero-inspect.css?v=0.38.2">
+<link rel="stylesheet" href="css/chronicle.css?v=0.38.2">
+<link rel="stylesheet" href="css/daynight.css?v=0.38.2">
+<link rel="stylesheet" href="css/expeditions.css?v=0.38.2">
+<link rel="stylesheet" href="css/subclass.css?v=0.38.2">
+<link rel="stylesheet" href="css/tutorial.css?v=0.38.2">
 </head>
 <body>
 
@@ -169,6 +170,14 @@ applyTextFont(getSavedTextFont());
       <div class="create-block-title">ИМЯ ПЕРСОНАЖА</div>
       <input type="text" id="char-name-input" class="char-name-input" maxlength="16" placeholder="Введите имя..." value="">
       <div class="char-name-hint">Обязательно. От 2 до 16 символов. Так тебя увидят в рейтинге.</div>
+      <!-- v0.39: обучение «Первый день» (js/systems/tutorial.js); галочка стоит сама, если есть герой выше 5 ур. -->
+      <label class="tut-skip" for="tut-skip-chk">
+        <input type="checkbox" id="tut-skip-chk">
+        <span>
+          <span class="tut-skip-t">Я уже играл — без обучения</span>
+          <span class="tut-skip-h">Заплечник не будет подсказывать, Старейшина встретит как обычно. Включить обратно — Настройки → Игра.</span>
+        </span>
+      </label>
     </div>
 
     <div class="create-actions">
@@ -1192,6 +1201,16 @@ applyTextFont(getSavedTextFont());
       <input type="range" id="resumeMpSliderSettings" class="auto-slider resume-mp" min="0" max="100" step="5" value="0" oninput="onResumeSliderChangeSettings('mp')">
       <span class="auto-slider-value" id="resumeMpValueSettings">выкл</span>
     </div>
+
+    <!-- v0.39: обучение «Первый день» (js/systems/tutorial.js) -->
+    <div class="settings-divider"></div>
+    <div class="settings-section-title">ОБУЧЕНИЕ</div>
+    <div class="settings-label">ПОДСКАЗКИ ЗАПЛЕЧНИКА ДЛЯ ЭТОГО ГЕРОЯ</div>
+    <div class="settings-buttons" id="tutorial-settings-buttons"></div>
+    <div class="settings-hint" id="tutorial-settings-hint"></div>
+    <div class="settings-label" style="margin-top: 12px;">ПОДСКАЗКИ У НОВЫХ ОКОН</div>
+    <div class="settings-buttons" id="tutorial-tips-buttons"></div>
+    <div class="settings-hint" id="tutorial-tips-hint"></div>
     </div>
 
     <div class="settings-pane" data-spane="chat">
@@ -1348,7 +1367,7 @@ applyTextFont(getSavedTextFont());
      v0.36.2: подключается здесь, а не в шапке (должна стоять раньше js/systems/cloud.js). -->
 <script src="js/vendor/supabase-2.118.0.js" defer></script>
 
-<script src="js/app.bundle.js?v=0.38.1" defer></script>
+<script src="js/app.bundle.js?v=0.38.2" defer></script>
 
 </body>
 </html>

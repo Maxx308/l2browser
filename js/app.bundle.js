@@ -1,4 +1,4 @@
-// L2 BROWSER — СБОРКА v0.38.1 (build.js; правки — в js/**, а не сюда). Файлов: 101
+// L2 BROWSER — СБОРКА v0.38.2 (build.js; правки — в js/**, а не сюда). Файлов: 103
 // ==== ФАЙЛ js/data/config.js ====
 const CHEAT_MULTIPLIER = 10;
 const MP_COST_PER_ATTACK = 5;
@@ -4732,6 +4732,18 @@ return Math.min(50, total);
 // ==== ФАЙЛ js/data/changelog.js ====
 const CHANGELOG = [
 {
+version: 'v0.38.2',
+date: '20.11.2026',
+title: '🎒 Первый день: обучение для новичков',
+changes: [
+{ icon: '🎒', text: 'Обучение «Первый день»: нового героя ведёт Заплечник. Знакомство, Старейшина, зелье и микстура у Торговца, оружие, зелье в слот, навык у Урдаха, дорога на Поляну и первый бой — нужная кнопка подсвечивается. Порядок любой: что уже сделано, засчитывается само. За весь путь — 50 Оболов, доверие сумки и запись в Летописи' },
+{ icon: '⏭', text: 'При создании героя есть галочка «Я уже играл — без обучения». Если у вас уже есть герой выше 5-го уровня, она ставится сама. Обучение можно отложить кнопкой «Потом» и вернуться к нему, а включить или выключить — в Настройках → Игра' },
+{ icon: '💡', text: 'Короткие подсказки при первом открытии окон: Кузница, Подгонка, Алхимия, Склад, Гильдия, Таверна, Храм подклассов и экспедиции. Один раз на героя, без затемнения. У новых героев включены, у прежних выключены — переключатель тоже в Настройках → Игра' },
+{ icon: '🏆', text: 'Рейтинг: у героя с подклассом в строке и в осмотре героя — портрет подкласса. У других игроков портрет появится, когда они зайдут в новую версию' },
+{ icon: '📱', text: 'Рейтинг на телефоне: длинное имя больше не раздувает строку — имя видно целиком, рядом число выбранной вкладки' },
+],
+},
+{
 version: 'v0.38.1',
 date: '20.11.2026',
 title: '🎨 Портреты и иконки подклассов',
@@ -7381,6 +7393,126 @@ bag: true,
 
 ;
 
+// ==== ФАЙЛ js/data/tutorial.js ====
+const TUTORIAL_TEXT = {
+meetRetry: { text: 'Эй. Мы не договорили. Поговоришь со мной?' },
+toCityTab: { text: 'Город — здесь, внизу.', act: 'Открой вкладку «Город»' },
+toTownMap: { text: 'Сначала вернёмся в Андервуд. Дорога — через карту.', act: 'Открой «Карту»' },
+toTownCard:{ text: 'Андервуд. Пешком недалеко.', act: 'Выбери «Город Андервуд»' },
+elder: {
+text: 'Видишь кресло с деревом? Там сидит местный старейшина. Строгий, но новичков не бросает. Загляни к нему.',
+act: 'Нажми на «Старейшину»',
+},
+potionCity: {
+text: 'Старик просил зелье лечения. Торговец — вон, под навесом. Имени не скажет, не трать время.',
+act: 'Нажми на «Торговца»',
+},
+potionBuy: {
+text: 'Красное — лечит. Пьют его, а не нюхают. …Откуда я это знаю? Неважно. Бери.',
+act: 'Купи Зелье малого лечения',
+},
+mixtureCity: {
+text: 'Нам ещё микстура нужна. Обратно к Торговцу.',
+act: 'Нажми на «Торговца»',
+},
+mixtureBuy: {
+text: 'Теперь микстура атаки. Выпьешь — бьёшь сильнее, пока не выдохнется.',
+act: 'Купи Микстуру атаки',
+},
+weapon: {
+text: 'Всё купили. Возвращайся к старику — он обещал оружие. Выбирай, что по руке.',
+act: 'Нажми на «Старейшину»',
+},
+slotTab: {
+text: 'Зелье лежит у меня, а толку? В бою до него не дотянешься. Открой инвентарь.',
+act: 'Открой «Инвентарь»',
+},
+slotEl: {
+text: 'Вот кармашек для зелья. Положишь сюда — выпьешь само, когда здоровье просядет. Удобно. Я бы и сам так делал, будь у меня здоровье.',
+act: 'Нажми на слот зелья',
+},
+slotPick: {
+text: 'Красное. Выбирай его.',
+act: 'Выбери Зелье малого лечения',
+},
+mentorCity: {
+text: 'Здоровый, со шрамами — Урдах, наставник. Учит навыкам. А у тебя как раз есть свободное очко.',
+act: 'Нажми на «Наставника»',
+},
+mentorLearn: {
+text: 'Для начала бери этот. Активные навыки в бою срабатывают сами, когда хватает маны. Пассивные работают всегда. Остальные выучишь с новыми уровнями.',
+act: 'Изучи навык',
+},
+fieldTab: {
+text: 'Пора за ворота. Открой карту.',
+act: 'Открой «Карту»',
+},
+fieldCard: {
+text: 'Зелёная поляна. Жабы, шелкопряды, волки подальше. Для начала в самый раз. Пешком — даром, тропами — быстрее, но за Оболы.',
+act: 'Нажми «Пешком» у «Зелёной поляны»',
+},
+huntTab: {
+text: 'Мы на месте. Твари — на вкладке «Охота».',
+act: 'Открой «Охоту»',
+},
+huntCard: {
+text: 'Выбирай, на кого охотимся. Тут ходят стаями, но на Поляне все мелкие.',
+act: 'Нажми на тварь',
+},
+huntRowGo: {
+text: 'Карточки листаются вбок. Выбери тварь — и вперёд. Тут ходят стаями, но на Поляне все мелкие.',
+act: 'Нажми «В бой»',
+},
+huntGo: {
+text: 'Посмотрел{|а}? Тогда вперёд.',
+act: 'Нажми «В бой»',
+},
+battle: {
+text: 'Красная полоска — это ты. Синяя — силы на навыки. Бьёшь сам, команды не нужны. Зелье и навык сработают тоже сами. Просто смотри.',
+},
+loot: {
+text: 'Добыча! Всё, что падает, я прячу у себя — тут видно, что набралось. И ещё: если упадёшь — не бойся. Вернёшься в Андервуд целым. Появленцы всегда возвращаются. Не спрашивай как.',
+},
+final: {
+text: 'Ну вот. Старейшина, Торговец, Урдах, первая добыча. Дальше сам. Я рядом, за плечом, если что. …И спасибо, что слушал{|а}. Не все слушают.',
+btn: 'Пока, Заплечник',
+},
+skipHello: 'Опытн{ый|ая}, значит. Ну-ну. Посмотрим. Если что — я тут, за плечом.',
+};
+const TUTORIAL_TIPS = {
+'forge-overlay':
+'Кузница. Гундар ворчит, но руки золотые. Из добычи с тварей тут куют доспехи, оружие, щиты и украшения. ' +
+'Редкость каждой вещи — как повезёт, а Оболы он берёт при любом исходе. Начни с «Ресурсов»: слитки, ткань и клей идут почти во всё остальное.',
+'refine-overlay':
+'Мастерская Хильды. Подгонка надетых вещей: за Оболы вещь становится на +1 сильнее и получает бонус. ' +
+'Чем выше подгонка, тем меньше шанс. Неудача уровень не отнимает — только Оболы. И руками ничего не трогай. Это она так говорит, не я.',
+'alchemist-overlay':
+'Алхимик. Ненужные вещи Ефим распыляет в пыль — не выбрасывай их. За пыль можно перебросить бонусы вещи или поднять её редкость, ' +
+'а четыре горстки пыли сплавляются в одну следующего цвета. Интересно, куда он девает остатки…',
+'storage-overlay':
+'Склад Вирны. Он общий для всех твоих героев: положил одним — забрал другим. Нажми на вещь — и она переложится. ' +
+'Оболы сюда не кладут. Вирна не спрашивает, что кладёшь. Мне это нравится.',
+'guild-overlay':
+'Гильдия магов. Тут продают чары на время: меткость, щит, силу в бою. «Тихий шаг» — стаи меньше, «Провокатор» — больше. ' +
+'Отметь нужные галочкой — и покупай набором одной кнопкой.',
+'tavern-overlay':
+'«Козье вымя». Отдохнёшь — опыт капает быстрее. Посидишь с народом — быстрее растёт владение оружием. ' +
+'Время копится, до 12 часов. Марфа, кстати, знает всех. Спроси её как-нибудь.',
+'sc-overlay':
+'Храм. Здесь выбирают путь — подкласс. Он даёт свои навыки, а с 26 уровня — по три очка навыков за уровень. ' +
+'Сменить путь потом можно, но дорого. Не торопись.',
+'exp-overlay':
+'Экспедиция. Герой уходит на 2, 4 или 8 часов и возвращается с добычей, даже если игра закрыта. ' +
+'Пока он в пути, играть им нельзя. Я подожду. Я умею ждать.',
+};
+const TUTORIAL_REWARD = {
+gold: 50,
+trust: 1,
+annals: 'Сумка говорит со мной. И, похоже, знает этот мир лучше меня. Старейшина ворчал, но оружие дал. Поляна позади — страшно не было. Почти.',
+};
+
+;
+
 // ==== ФАЙЛ js/state.js ====
 const state = {
 player: {
@@ -8469,6 +8601,7 @@ hideProfile: false,
 repeatPref: true,
 subclass: null,
 skillPts26: 0,
+tutorial: null,
 };
 function saveClone(x) {
 if (x === null || typeof x !== 'object') return x;
@@ -9906,11 +10039,17 @@ const orderCol = (sortBy === 'gold') ? 'gold'
 : (sortBy === 'kills') ? 'kills'
 : 'level';
 try {
-const { data, error } = await supabaseClient
+const LB_COLS = 'user_id, slot, character_name, race_id, class_id, level, gold, kills, updated_at';
+const query = (cols) => supabaseClient
 .from('leaderboard')
-.select('user_id, slot, character_name, race_id, class_id, level, gold, kills, updated_at')
+.select(cols)
 .order(orderCol, { ascending: false })
 .limit(LB_TOP_N);
+let { data, error } = await query(LB_COLS + ', sc:profile->>sc');
+if (error) {
+console.warn('[leaderboard] без подклассов:', error.message);
+({ data, error } = await query(LB_COLS));
+}
 if (error) {
 console.warn('[leaderboard] fetch error:', error.message);
 return { ok: false, error: error.message, rows: [] };
@@ -9985,6 +10124,7 @@ if (!list) return;
 document.querySelectorAll('.leaderboard-sort-btn').forEach(btn => {
 btn.classList.toggle('active', btn.dataset.sort === __lbSortBy);
 });
+list.dataset.sort = __lbSortBy;
 list.innerHTML = `<div class="leaderboard-empty">Загружаем...</div>`;
 const res = await cloudFetchLeaderboard(__lbSortBy);
 const realRows = res.ok ? res.rows : [];
@@ -10034,9 +10174,7 @@ if (rank === 3) cls.push('rank-3');
 if (row.isMe) cls.push('me');
 const raceId = hasOwnKey(RACES, row.race_id) ? row.race_id : 'human';
 const classId = hasOwnKey(CLASSES, row.class_id) ? row.class_id : 'warrior';
-const icon = (typeof getRaceIcon === 'function')
-? getRaceIcon(raceId, classId)
-: `img/races/${raceId}.webp`;
+const icon = lbRowPortrait(row, raceId, classId);
 const raceName = RACES[raceId].name;
 const className = CLASSES[classId].name;
 const level = Math.max(1, Math.floor(Number(row.level)) || 1);
@@ -10045,15 +10183,22 @@ return `
     <div class="${cls.join(' ')} lb-clickable" onclick="openLeaderboardInspect(${idx})" title="Осмотреть героя">
       <div class="lb-rank">#${rank}</div>
       <div class="lb-race-icon" style="background-image:url('${icon}')"></div>
-      <div>
+      <div class="lb-who">
         <div class="lb-name">${name}</div>
         <div class="lb-class">${raceName} · ${className}</div>
       </div>
-      <div class="lb-col"><span class="lb-icon">⭐</span>${level}</div>
-      <div class="lb-col"><span class="lb-icon">🪙</span>${formatNumber(row.gold || 0)}</div>
-      <div class="lb-col"><span class="lb-icon">💀</span>${formatNumber(row.kills || 0)}</div>
+      <div class="lb-col lb-col-level"><span class="lb-icon">⭐</span>${level}</div>
+      <div class="lb-col lb-col-gold"><span class="lb-icon">🪙</span>${formatNumber(row.gold || 0)}</div>
+      <div class="lb-col lb-col-kills"><span class="lb-icon">💀</span>${formatNumber(row.kills || 0)}</div>
     </div>
   `;
+}
+function lbRowPortrait(row, raceId, classId) {
+let sc = row && row.isMe ? state.player.subclass : row && row.sc;
+if (typeof SUBCLASSES === 'undefined' || !hasOwnKey(SUBCLASSES, sc)) sc = null;
+if (typeof getHeroPortrait === 'function') return getHeroPortrait(raceId, classId, sc);
+if (typeof getRaceIcon === 'function') return getRaceIcon(raceId, classId);
+return `img/races/${raceId}.webp`;
 }
 function formatNumber(n) {
 const num = Number(n) || 0;
@@ -10128,7 +10273,7 @@ return out;
 }
 function buildHeroProfile(forceShow) {
 const p = state.player;
-if (p.hideProfile && !forceShow) return { v: HERO_PROFILE_VERSION, hidden: true };
+if (p.hideProfile && !forceShow) return { v: HERO_PROFILE_VERSION, hidden: true, sc: p.subclass || null };
 const eq = {};
 INSPECT_SLOTS.forEach(({ key }) => {
 const it = p.equipment[key];
@@ -10162,6 +10307,7 @@ ev: typeof getPlayerEvasion === 'function' ? getPlayerEvasion() : 0,
 dr: p.flatDamageReduce || 0, bl: p.blockChance || 0,
 },
 sk, ws, el,
+sc: p.subclass || null,
 };
 }
 let __inspectCatalog = null;
@@ -10290,7 +10436,7 @@ if (!head) return;
 const raceId = hasOwnKey(RACES, row.race_id) ? row.race_id : 'human';
 const classId = hasOwnKey(CLASSES, row.class_id) ? row.class_id : 'warrior';
 head.innerHTML = `
-    <div class="inspect-portrait" style="background-image:url('${getRaceIcon(raceId, classId)}')"></div>
+    <div class="inspect-portrait" style="background-image:url('${lbRowPortrait(row, raceId, classId)}')"></div>
     <div class="inspect-title">
       <div class="inspect-name">${escapeHtml(row.character_name || 'Безымянный')}</div>
       <div class="inspect-sub">${RACES[raceId].name} · ${CLASSES[classId].name} · ур. ${inspectInt(row.level, 1, 999)}</div>
@@ -10937,6 +11083,10 @@ recalcStats();
 state.player.hp = state.player.maxHp;
 state.player.mp = state.player.maxMp;
 if (typeof startChronicleForNewHero === 'function') startChronicleForNewHero();
+if (typeof tutorialNewHero === 'function') {
+const skipChk = document.getElementById('tut-skip-chk');
+state.player.tutorial = tutorialNewHero(!!(skipChk && skipChk.checked));
+}
 state.activeSlotIndex = pendingSlotIndex;
 saveCurrentSlot();
 document.getElementById('create-screen').classList.remove('active');
@@ -11528,17 +11678,24 @@ goldHtml += `<button class="cheat-rate-btn" onclick="cheatGrantGold(100000)">+10
 goldHtml += `<button class="cheat-rate-btn" onclick="cheatGrantGold(1000000)">+1М</button>`;
 goldHtml += '</div></div>';
 let levelHtml = '<div class="cheat-block"><div class="cheat-block-title">УРОВЕНЬ</div>';
-levelHtml += `<div class="cheat-block-desc">Сейчас ${p.level} из ${getMaxPlayerLevel()}. Очки навыков начисляются как при обычной прокачке.</div>`;
+levelHtml += `<div class="cheat-block-desc">Сейчас ${p.level} из ${MAX_PLAYER_LEVEL}. Очки навыков начисляются как при обычной прокачке.${p.ilgradOpen ? '' : ` Выше ${LEVEL_CAP_BEFORE_ILGRAD} — Ильград откроется сам.`}</div>`;
 levelHtml += '<div class="cheat-btn-row">';
 levelHtml += `<button class="cheat-rate-btn" onclick="cheatAddLevels(1)">+1</button>`;
 levelHtml += `<button class="cheat-rate-btn" onclick="cheatAddLevels(5)">+5</button>`;
-levelHtml += `<button class="cheat-rate-btn" onclick="cheatAddLevels(${getMaxPlayerLevel()})">До ${getMaxPlayerLevel()}</button>`;
+[LEVEL_CAP_BEFORE_ILGRAD, SUBCLASS_MIN_LEVEL, MAX_PLAYER_LEVEL].forEach(lv => {
+levelHtml += `<button class="cheat-rate-btn" onclick="cheatSetLevel(${lv})">До ${lv}</button>`;
+});
 levelHtml += '</div></div>';
 let setsHtml = '<div class="cheat-block"><div class="cheat-block-title">КОМПЛЕКТЫ</div>';
-setsHtml += '<div class="cheat-block-desc">Эпическое качество, кладётся в сумку. Статы редкости — случайные, под класс героя.</div>';
-setsHtml += `<div class="cheat-block-desc">Одежда:</div><div class="cheat-btn-row">${cheatSetButtons(false)}</div>`;
-setsHtml += `<div class="cheat-block-desc" style="margin-top:8px">Бижутерия:</div><div class="cheat-btn-row">${cheatSetButtons(true)}</div>`;
+setsHtml += '<div class="cheat-block-desc">Эпическое (фиолетовое) качество, кладётся в сумку. Статы редкости — случайные, под класс героя.</div>';
+setsHtml += cheatTierRows('Одежда', cheatSetGroups(false));
+setsHtml += cheatTierRows('Бижутерия', cheatSetGroups(true));
 setsHtml += '</div>';
+let weaponHtml = '<div class="cheat-block"><div class="cheat-block-title">ОРУЖИЕ</div>';
+weaponHtml += '<div class="cheat-block-desc">Одна вещь эпического качества в сумку. ✋✋ — двуручное.</div>';
+weaponHtml += cheatTierRows('Оружие', cheatGearGroups('weapons'));
+weaponHtml += cheatTierRows('Щиты', cheatGearGroups('shields'));
+weaponHtml += '</div>';
 let titleHtml = '<div class="cheat-block"><div class="cheat-block-title">ТИТУЛЫ</div>';
 titleHtml += '<div class="cheat-block-desc">Открыть все титулы всем монстрам (1000 убийств каждому).</div>';
 titleHtml += '<div class="cheat-btn-row">';
@@ -11553,7 +11710,7 @@ ilgradHtml += `<button class="cheat-rate-btn" onclick="cheatStartBreakthrough()"
 ilgradHtml += `<button class="cheat-rate-btn" onclick="cheatFallStart()">🕯 Падение Андервуда</button>`;
 ilgradHtml += `<button class="cheat-rate-btn" onclick="cheatFallReset()">↩ Вернуть Андервуд</button>`;
 ilgradHtml += '</div></div>';
-cont.innerHTML = rateHtml + levelHtml + setsHtml + resHtml + goldHtml + titleHtml + ilgradHtml;
+cont.innerHTML = rateHtml + levelHtml + setsHtml + weaponHtml + resHtml + goldHtml + titleHtml + ilgradHtml;
 }
 function setCheatRate(rate) {
 if (!CHEAT_RATE_VALUES.includes(rate)) return;
@@ -11655,11 +11812,19 @@ if (typeof updateTavernGold === 'function') updateTavernGold();
 saveCurrentSlot();
 }
 function cheatAddLevels(n) {
+cheatSetLevel(state.player.level + n);
+}
+function cheatSetLevel(targetLevel) {
 const p = state.player;
 if (!p.classId) { showToast('⚠', 'Сначала выберите героя'); return; }
-if (p.level >= getMaxPlayerLevel()) { showToast('🏆', `Уже максимальный уровень: ${getMaxPlayerLevel()}`); return; }
+const target = Math.min(MAX_PLAYER_LEVEL, targetLevel);
+if (p.level >= target) { showToast('🏆', `Уровень уже ${p.level}`); return; }
+if (target > LEVEL_CAP_BEFORE_ILGRAD && !p.ilgradOpen) {
+p.ilgradOpen = true;
+logLoot(`🏰 ЧИТ: Ильград открыт — потолок уровня ${MAX_PLAYER_LEVEL}`, 'log-craft');
+}
+if (!isFinite(p.xpNext)) p.xpNext = getXpForLevel(p.level + 1);
 const from = p.level;
-const target = Math.min(getMaxPlayerLevel(), p.level + n);
 while (p.level < target) {
 p.xp = p.xpNext;
 checkLevelUp();
@@ -11683,11 +11848,54 @@ function cheatSetIsJewelry(setId) {
 const list = cheatSetRecipes(setId);
 return list.length > 0 && CHEAT_JEWELRY_TYPES.includes(list[0].result.type);
 }
-function cheatSetButtons(jewelry) {
-return Object.keys(SETS)
+function cheatTierRows(label, groups) {
+return Object.keys(groups).sort().map(t =>
+`<div class="cheat-block-desc cheat-tier-label">${label} · тир ${t}:</div><div class="cheat-btn-row">${groups[t].join('')}</div>`
+).join('');
+}
+function cheatSetGroups(jewelry) {
+const groups = {};
+Object.keys(SETS)
 .filter(id => cheatSetRecipes(id).length && cheatSetIsJewelry(id) === jewelry)
-.map(id => `<button class="cheat-rate-btn" onclick="cheatGrantSet('${id}')">${SETS[id].name}</button>`)
-.join('');
+.forEach(id => {
+const t = cheatSetRecipes(id)[0].tier || '?';
+(groups[t] = groups[t] || []).push(`<button class="cheat-rate-btn" onclick="cheatGrantSet('${id}')">${SETS[id].name}</button>`);
+});
+return groups;
+}
+function cheatGearGroups(listKey) {
+const groups = {};
+(RECIPES[listKey] || []).forEach(r => {
+const t = r.tier || '?';
+const hand = r.result.twoHanded ? ' ✋✋' : '';
+(groups[t] = groups[t] || []).push(`<button class="cheat-rate-btn" onclick="cheatGrantGear('${listKey}','${r.id}')">${r.result.name}${hand}</button>`);
+});
+return groups;
+}
+function cheatMakeEpicItem(r) {
+const res = r.result;
+return {
+name: res.name, type: res.type, qty: 1,
+stats: res.stats, sellPrice: res.sellPrice,
+setId: res.setId, twoHanded: res.twoHanded, tier: r.tier || null,
+rarity: CHEAT_SET_RARITY,
+bonusStats: rollRarityStats(RARITIES[CHEAT_SET_RARITY].statPoints, getRarityStatProfile(res)),
+icon: `<img src="${res.icon}" alt="" style="width:100%;height:100%;object-fit:contain;">`,
+};
+}
+function cheatGrantGear(listKey, recipeId) {
+const p = state.player;
+if (!p.classId) { showToast('⚠', 'Сначала выберите героя'); return; }
+const r = (RECIPES[listKey] || []).find(x => x.id === recipeId);
+if (!r) return;
+if (p.inventory.length >= invMaxSlots()) { showToast('📦', 'Сумка полна'); return; }
+addToInventory(cheatMakeEpicItem(r));
+markCheatUsed();
+logLoot(`✨ ЧИТ: ${r.result.name} (${RARITIES[CHEAT_SET_RARITY].name})`, 'log-craft rarity-' + CHEAT_SET_RARITY);
+showToast('✨', `${r.result.name} — в сумке`);
+renderInventory();
+updateInventoryFooter();
+saveCurrentSlot();
 }
 function cheatGrantSet(setId) {
 const p = state.player;
@@ -11704,17 +11912,7 @@ showToast('📦', `Нужно свободных ячеек: ${items.length}`);
 return;
 }
 const rarity = RARITIES[CHEAT_SET_RARITY];
-items.forEach(r => {
-const res = r.result;
-addToInventory({
-name: res.name, type: res.type, qty: 1,
-stats: res.stats, sellPrice: res.sellPrice,
-setId: res.setId, tier: r.tier || null,
-rarity: CHEAT_SET_RARITY,
-bonusStats: rollRarityStats(rarity.statPoints, getRarityStatProfile(res)),
-icon: `<img src="${res.icon}" alt="" style="width:100%;height:100%;object-fit:contain;">`,
-});
-});
+items.forEach(r => addToInventory(cheatMakeEpicItem(r)));
 markCheatUsed();
 logLoot(`✨ ЧИТ: комплект «${SETS[setId].name}» (${rarity.name}) — ${items.length} шт.`, 'log-craft rarity-' + CHEAT_SET_RARITY);
 showToast('✨', `${SETS[setId].name}: ${items.length} шт. в сумке`);
@@ -18356,6 +18554,525 @@ if (typeof __activeDialogue !== 'undefined' && __activeDialogue) return;
 if (typeof hideTooltip === 'function') hideTooltip();
 openDialogue('bagtalk', 'hello');
 }
+
+;
+
+// ==== ФАЙЛ js/systems/tutorial.js ====
+const TUT_TICK_MS = 300;
+const TUT_TOTAL = 8;
+const TUT_SKIP_LEVEL = 5;
+let __tutKey = null;
+let __tutScrolledKey = null;
+let __tutMeetTried = false;
+let __tutHelloTimer = null;
+let __tutSettingsOpen = false;
+let __tutCreateOpen = false;
+function tutorialNewHero(skip) {
+return { on: !skip, done: false, ack: {}, later: false, rewarded: false, hello: !!skip, tips: !skip, seen: {} };
+}
+function tutState() {
+const p = state.player;
+return p && p.classId && p.tutorial && typeof p.tutorial === 'object' ? p.tutorial : null;
+}
+function tutorialActive() {
+const t = tutState();
+return !!(t && t.on && !t.done);
+}
+function tutSave() {
+if (typeof saveCurrentSlotSoon === 'function') saveCurrentSlotSoon();
+}
+function tutKills() {
+const k = state.player.monsterKills || {};
+let n = 0;
+for (const key in k) n += k[key] || 0;
+return n;
+}
+function tutFirstStepsPast(stage) {
+const pr = getQuestProgress('firstSteps');
+if (!pr) return !isQuestAvailable('firstSteps');
+const st = QUESTS.firstSteps.stages;
+return st.indexOf(pr.stage) > st.indexOf(stage);
+}
+function tutFlags() {
+const p = state.player;
+const started = isQuestStarted('firstSteps');
+const fsDone = tutFirstStepsPast('need_weapon');
+const learned = Object.values(p.learnedSkills || {}).some(v => v > 0) || (p.skillPoints || 0) < 1;
+const kills = tutKills();
+return {
+elder:   started || fsDone,
+potion:  fsDone || tutFirstStepsPast('need_potion') || (started && hasQuestItem('healPotion')),
+mixture: fsDone || tutFirstStepsPast('need_mixture') || (started && hasQuestItem('atkMixture')),
+weapon:  fsDone,
+slot:    !!p.potionSlot || (fsDone && !hasQuestItem('healPotion')),
+mentor:  learned,
+field:   kills > 0 || p.currentLocation === 'field',
+kill:    kills > 0,
+};
+}
+function tutDoneCount(f) {
+return ['elder', 'potion', 'mixture', 'weapon', 'slot', 'mentor', 'field', 'kill'].filter(k => f[k]).length;
+}
+function tutVisible(el) {
+if (!el) return false;
+const r = el.getBoundingClientRect();
+return r.width > 0 && r.height > 0;
+}
+function tutQ(sel) {
+const el = document.querySelector(sel);
+return tutVisible(el) ? el : null;
+}
+function tutIsOpen(sel) {
+const el = document.querySelector(sel);
+return !!(el && el.classList.contains('active'));
+}
+function tutDialogueOpen() {
+return (typeof __activeDialogue !== 'undefined' && !!__activeDialogue) || tutIsOpen('#dialogue-overlay');
+}
+function tutOtherOverlay(exceptId) {
+const list = document.querySelectorAll('[id$="-overlay"].active, .slot-picker.active, .soon-overlay.active, .cheat-overlay.active');
+for (const el of list) {
+if (el.id === exceptId || el.id === 'dialogue-overlay') continue;
+return true;
+}
+return !!document.getElementById('exp-overlay');
+}
+function tutTabActive(tab) {
+const el = document.getElementById('panel-' + tab);
+return !!(el && el.classList.contains('active'));
+}
+const TT = () => TUTORIAL_TEXT;
+function tutCity(key, onclick, txt) {
+const p = state.player;
+if (tutOtherOverlay()) return null;
+if (p.currentLocation !== 'town') {
+if (tutTabActive('map')) return { key: 'toTownCard', el: tutQ('.map-card[data-loc="town"]'), ...TT().toTownCard };
+return { key: 'toTownMap', el: tutQ('.tab[data-tab="map"]'), ...TT().toTownMap };
+}
+if (!tutTabActive('hunt')) return { key: 'toCityTab', el: tutQ('#tab-hunt'), ...TT().toCityTab };
+return { key, el: tutQ(`#city-grid-town .city-card[onclick="${onclick}"]`), ...txt };
+}
+function tutShop(shopId, cityTxt, buyTxt) {
+if (tutIsOpen('#trader-overlay')) {
+const b = document.querySelector(`#trader-overlay button[onclick="buyItem('${shopId}', 1)"]`);
+if (!tutVisible(b)) return null;
+return { key: 'buy-' + shopId, el: b.closest('.trade-item') || b, ...buyTxt };
+}
+return tutCity('shop-' + shopId, 'openTrader()', cityTxt);
+}
+function tutToField() {
+if (tutOtherOverlay()) return null;
+if (tutTabActive('map')) return { key: 'fieldCard', el: tutQ('#map-card-field'), ...TT().fieldCard };
+return { key: 'fieldTab', el: tutQ('.tab[data-tab="map"]'), ...TT().fieldTab };
+}
+function tutRoute() {
+const p = state.player, t = p.tutorial;
+const battle = tutIsOpen('#battle-window');
+if (tutDialogueOpen() || tutIsOpen('#travel-overlay') || document.querySelector('.travel-overlay.active')) return null;
+if (typeof bagMet === 'function' && !bagMet()) {
+if (battle || tutOtherOverlay()) return null;
+if (!__tutMeetTried) {
+__tutMeetTried = true;
+setTimeout(() => { if (tutorialActive() && !t.later && typeof startBagMeeting === 'function') startBagMeeting(); }, 900);
+return null;
+}
+return { key: 'meetRetry', el: null, ...TT().meetRetry, btn: 'Поговорить',
+onBtn: () => { tutHide(); if (typeof startBagMeeting === 'function') startBagMeeting(); } };
+}
+const f = tutFlags();
+if (!f.elder)   return battle ? null : tutCity('elder', 'openElder()', TT().elder);
+if (!f.potion)  return battle ? null : tutShop('healPotion', TT().potionCity, TT().potionBuy);
+if (!f.mixture) return battle ? null : tutShop('atkMixture', TT().mixtureCity, TT().mixtureBuy);
+if (!f.weapon)  return battle ? null : tutCity('weapon', 'openElder()', TT().weapon);
+if (!f.slot) {
+if (battle) return null;
+if (tutIsOpen('#slot-picker')) {
+const el = tutQ(`#slot-picker .slot-picker-item[onclick*="'healPotion'"]`);
+return el ? { key: 'slotPick', el, ...TT().slotPick } : null;
+}
+if (tutOtherOverlay()) return null;
+if (tutTabActive('inventory')) {
+const el = tutQ('.equip-slot[data-slot="potionSlot"]');
+if (el) return { key: 'slotEl', el, ...TT().slotEl };
+}
+return { key: 'slotTab', el: tutQ('.tab[data-tab="inventory"]'), ...TT().slotTab };
+}
+if (!f.mentor) {
+if (battle) return null;
+if (tutIsOpen('#mentor-overlay')) {
+const btns = Array.from(document.querySelectorAll('#mentor-pane-skills .skill-card-action .btn.success'));
+const el = btns.find(b => { const c = b.closest('.skill-card'); return c && c.querySelector('.active-skill'); }) || btns.find(tutVisible);
+return el ? { key: 'mentorLearn', el: el.closest('.skill-card') || el, ...TT().mentorLearn } : null;
+}
+return tutCity('mentor', 'openMentor()', TT().mentorCity);
+}
+if (!f.field && !battle) return tutToField();
+if (!f.kill) {
+if (battle) {
+if (t.ack && t.ack.battle) return null;
+return { key: 'battle', el: tutQ('#fighter-player .bx-bars'), ...TT().battle, btn: 'Дальше',
+onBtn: () => { t.ack = t.ack || {}; t.ack.battle = 1; tutSave(); } };
+}
+if (p.currentLocation !== 'field') return tutToField();
+if (tutOtherOverlay()) return null;
+if (!tutTabActive('hunt')) return { key: 'huntTab', el: tutQ('#tab-hunt'), ...TT().huntTab };
+if (document.querySelector('#monsters-grid.sheet-open')) {
+const go = tutQ('#monsters-grid .hunt-stage-go');
+return go ? { key: 'huntGo', el: go, ...TT().huntGo } : null;
+}
+const rowGo = tutQ('#hunt-go');
+if (rowGo) return { key: 'huntRowGo', el: rowGo, ...TT().huntRowGo };
+if (typeof isHuntSheetMode === 'function' && isHuntSheetMode()) {
+const picks = document.querySelectorAll('#monsters-grid .hunt-prow:not(.pick-stub), #monsters-grid .hunt-tile:not(.pick-stub)');
+const pick = Array.from(picks).find(tutVisible);
+return pick ? { key: 'huntPick', el: pick, ...TT().huntCard, act: 'Выбери тварь' } : null;
+}
+const stageGo = tutQ('#monsters-grid .hunt-stage-go');
+if (stageGo) return { key: 'huntStageGo', el: stageGo, ...TT().huntCard, act: 'Выбери тварь и нажми «В бой»' };
+const cards = document.querySelectorAll('#monsters-grid .monster-card:not(.monster-stub)');
+const el = Array.from(cards).find(tutVisible);
+return el ? { key: 'huntCard', el, ...TT().huntCard } : null;
+}
+if (!(t.ack && t.ack.loot)) {
+const ack = () => { t.ack = t.ack || {}; t.ack.loot = 1; tutSave(); };
+if (battle) return { key: 'loot', el: tutQ('#bx-loot-column'), ...TT().loot, btn: 'Дальше', onBtn: ack };
+if (tutOtherOverlay()) return null;
+return { key: 'loot', el: null, ...TT().loot, btn: 'Дальше', onBtn: ack };
+}
+if (tutOtherOverlay()) return null;
+return { key: 'final', el: null, text: TT().final.text, btn: TT().final.btn, final: true, onBtn: tutorialFinish };
+}
+function tutorialFinish() {
+const t = tutState();
+if (!t) return;
+t.done = true;
+t.later = false;
+if (!t.rewarded) {
+t.rewarded = true;
+const R = TUTORIAL_REWARD;
+state.player.gold += R.gold;
+if (typeof updateTopStatus === 'function') updateTopStatus();
+if (typeof showToast === 'function') showToast('🪙', `+${R.gold} Оболов — «Первый день» пройден`);
+if (typeof logCombat === 'function') logCombat(`🎒 Первый день в Андервуде пройден. +${R.gold} Оболов.`, 'log-entry levelup');
+if (typeof bumpChronicleCounter === 'function') bumpChronicleCounter('trust', R.trust);
+if (typeof addChronicleEntry === 'function') addChronicleEntry(R.annals);
+if (typeof updateChronicleDot === 'function') updateChronicleDot();
+}
+tutHide();
+if (typeof saveCurrentSlot === 'function') saveCurrentSlot();
+}
+function tutEls() {
+let spot = document.getElementById('tut-spot');
+if (!spot) {
+spot = document.createElement('div');
+spot.id = 'tut-spot';
+spot.className = 'tut-spot';
+document.body.appendChild(spot);
+const bub = document.createElement('div');
+bub.id = 'tut-bubble';
+bub.className = 'tut-bubble';
+document.body.appendChild(bub);
+const chip = document.createElement('button');
+chip.id = 'tut-chip';
+chip.type = 'button';
+chip.className = 'tut-chip';
+document.body.appendChild(chip);
+const probe = document.createElement('div');
+probe.id = 'tut-probe';
+probe.className = 'tut-probe';
+document.body.appendChild(probe);
+}
+return { spot, bub: document.getElementById('tut-bubble'), chip: document.getElementById('tut-chip') };
+}
+function tutFixedShift() {
+const probe = document.getElementById('tut-probe');
+if (!probe) return { x: 0, y: 0 };
+const r = probe.getBoundingClientRect();
+return { x: r.left, y: r.top };
+}
+function tutHide() {
+const { spot, bub } = tutEls();
+spot.classList.remove('on');
+bub.classList.remove('on', 'quiet');
+if (__tutKey === 'hello') clearTimeout(__tutHelloTimer);
+__tutKey = null;
+}
+function tutFaceStyle() {
+const img = typeof bagLookImg === 'function' ? bagLookImg() : (typeof BAG_SLOT_IMG !== 'undefined' ? BAG_SLOT_IMG : '');
+return img ? ` style="background-image:url('${img}')"` : '';
+}
+function tutBubbleHtml(r) {
+const who = typeof bagSpeakerName === 'function' ? bagSpeakerName() : 'Заплечник';
+let row = '';
+if (r.btn) row += `<button type="button" class="tut-btn main" data-tut="go">${r.btn}</button>`;
+if (!r.final) row += `<button type="button" class="tut-btn later" data-tut="later">Потом</button>`;
+return `<div class="tut-face"${tutFaceStyle()}></div>
+    <div class="tut-body">
+      <div class="tut-who">${who}</div>
+      <div class="tut-text">${heroText(r.text)}</div>
+      ${r.act ? `<div class="tut-act">${heroText(r.act)}</div>` : ''}
+      <div class="tut-row">${row}</div>
+    </div>`;
+}
+function tutShow(r) {
+const { spot, bub } = tutEls();
+if (r.key !== __tutKey) {
+__tutKey = r.key;
+bub.innerHTML = tutBubbleHtml(r);
+bub.classList.remove('quiet');
+const go = bub.querySelector('[data-tut="go"]');
+if (go) go.onclick = (e) => { e.stopPropagation(); __tutKey = null; if (r.onBtn) r.onBtn(); tutTick(); };
+const later = bub.querySelector('[data-tut="later"]');
+if (later) later.onclick = (e) => { e.stopPropagation(); const t = tutState(); if (t) { t.later = true; tutSave(); } tutHide(); tutTick(); };
+}
+bub.classList.add('on');
+const vw = window.innerWidth, vh = window.innerHeight;
+const bw = bub.offsetWidth, bh = bub.offsetHeight;
+const tabsEl = document.querySelector('.tabs');
+const tabsTop = tabsEl && tutVisible(tabsEl) ? tabsEl.getBoundingClientRect().top : vh;
+const place = (el, x, y) => { const sh = tutFixedShift(); el.style.left = Math.round(x - sh.x) + 'px'; el.style.top = Math.round(y - sh.y) + 'px'; };
+if (!r.el) {
+spot.classList.remove('on');
+place(bub, (vw - bw) / 2, Math.max(10, (tabsTop - bh) / 2));
+return;
+}
+let rc = r.el.getBoundingClientRect();
+if (rc.top < 0 || rc.bottom > tabsTop) {
+const now = Date.now();
+const s = __tutScrolledKey && __tutScrolledKey.key === r.key ? __tutScrolledKey : { key: r.key, n: 0, at: 0 };
+if (s.n < 3 && now - s.at > 900) {
+s.n++; s.at = now; __tutScrolledKey = s;
+const block = rc.height > tabsTop * 0.6 ? 'start' : 'center';
+try { r.el.scrollIntoView({ block }); } catch (e) { r.el.scrollIntoView(); }
+}
+}
+rc = r.el.getBoundingClientRect();
+const pad = 6, edge = 5;
+const sl = Math.max(edge, rc.left - pad), sr = Math.min(vw - edge, rc.right + pad);
+const st = Math.max(edge, rc.top - pad), sb = Math.min(vh - edge, rc.bottom + pad);
+place(spot, sl, st);
+spot.style.width = Math.max(0, sr - sl) + 'px';
+spot.style.height = Math.max(0, sb - st) + 'px';
+spot.classList.add('on');
+const gap = 14;
+let x = rc.left + rc.width / 2 - bw / 2;
+let y;
+if (rc.bottom + gap + bh <= tabsTop - 6) y = rc.bottom + gap;
+else if (rc.top - gap - bh >= 6) y = rc.top - gap - bh;
+else {
+y = Math.min(Math.max(6, rc.top + rc.height / 2 - bh / 2), vh - bh - 6);
+x = rc.right + gap + bw <= vw - 6 ? rc.right + gap : rc.left - gap - bw;
+}
+x = Math.max(8, Math.min(x, vw - bw - 8));
+y = Math.max(6, Math.min(y, vh - bh - 6));
+place(bub, x, y);
+}
+function tutChip(show, later, n) {
+const { chip } = tutEls();
+if (!show) { chip.classList.remove('on'); return; }
+chip.classList.add('on');
+chip.classList.toggle('later', !!later);
+const html = later
+? `<i${tutFaceStyle()}></i><span>Продолжить обучение</span>`
+: `<i${tutFaceStyle()}></i><span>Первый день · <b>${n} из ${TUT_TOTAL}</b></span>`;
+if (chip.__html !== html) { chip.innerHTML = html; chip.__html = html; }
+const tabsEl = document.querySelector('.tabs');
+const tabsTop = tabsEl && tutVisible(tabsEl) ? tabsEl.getBoundingClientRect().top : window.innerHeight;
+const sh = tutFixedShift();
+chip.style.bottom = 'auto';
+chip.style.left = (10 - sh.x) + 'px';
+chip.style.top = (tabsTop - chip.offsetHeight - 16 - sh.y) + 'px';
+chip.onclick = () => {
+const t = tutState();
+if (!t) return;
+if (t.later) { t.later = false; tutSave(); }
+__tutKey = null; __tutScrolledKey = null;
+tutTick();
+};
+}
+function tutChipDodge() {
+const { chip, bub, spot } = tutEls();
+if (!chip.classList.contains('on')) return;
+const a = chip.getBoundingClientRect();
+const hits = (el) => {
+if (!el.classList.contains('on')) return false;
+const b = el.getBoundingClientRect();
+return a.left < b.right + 6 && b.left - 6 < a.right && a.top < b.bottom + 6 && b.top - 6 < a.bottom;
+};
+chip.style.visibility = hits(bub) || hits(spot) ? 'hidden' : '';
+}
+function tutHello() {
+const t = tutState();
+const { bub } = tutEls();
+if (__tutKey !== 'hello') {
+__tutKey = 'hello';
+const who = typeof bagSpeakerName === 'function' ? bagSpeakerName() : 'Заплечник';
+bub.innerHTML = `<div class="tut-face"${tutFaceStyle()}></div><div class="tut-body"><div class="tut-who">${who}</div>
+      <div class="tut-text">${heroText(TUTORIAL_TEXT.skipHello)}</div>
+      <div class="tut-row"><button type="button" class="tut-btn" data-tut="ok">Понятно</button></div></div>`;
+const done = () => { clearTimeout(__tutHelloTimer); t.hello = false; tutSave(); tutHide(); };
+bub.querySelector('[data-tut="ok"]').onclick = (e) => { e.stopPropagation(); done(); };
+clearTimeout(__tutHelloTimer);
+__tutHelloTimer = setTimeout(done, 9000);
+}
+bub.classList.add('on', 'quiet');
+const vw = window.innerWidth;
+const tabsEl = document.querySelector('.tabs');
+const tabsTop = tabsEl && tutVisible(tabsEl) ? tabsEl.getBoundingClientRect().top : window.innerHeight;
+const sh = tutFixedShift();
+bub.style.left = (Math.max(8, vw - bub.offsetWidth - 12) - sh.x) + 'px';
+bub.style.top = (Math.max(8, tabsTop - bub.offsetHeight - 12) - sh.y) + 'px';
+}
+function tutTipOpenId() {
+if (typeof TUTORIAL_TIPS === 'undefined') return null;
+for (const id in TUTORIAL_TIPS) {
+const el = document.getElementById(id);
+if (!el) continue;
+if (id === 'exp-overlay' || el.classList.contains('active')) return id;
+}
+return null;
+}
+function tutTip(t) {
+if (!t || !t.tips || tutDialogueOpen()) return null;
+const id = tutTipOpenId();
+if (!id) return null;
+if (!t.seen) t.seen = {};
+if (t.seen[id] && __tutKey !== 'tip-' + id) return null;
+return id;
+}
+function tutShowTip(t, id) {
+const { spot, bub } = tutEls();
+spot.classList.remove('on');
+if (__tutKey !== 'tip-' + id) {
+__tutKey = 'tip-' + id;
+if (!t.seen[id]) { t.seen[id] = 1; tutSave(); }
+const who = typeof bagSpeakerName === 'function' ? bagSpeakerName() : 'Заплечник';
+bub.innerHTML = `<div class="tut-face"${tutFaceStyle()}></div><div class="tut-body">
+      <div class="tut-who">${who}<span class="tut-once">подсказка, один раз</span></div>
+      <div class="tut-text">${heroText(TUTORIAL_TIPS[id])}</div>
+      <div class="tut-row"><button type="button" class="tut-btn main" data-tut="ok">Понятно</button></div></div>`;
+bub.querySelector('[data-tut="ok"]').onclick = (e) => { e.stopPropagation(); tutHide(); };
+}
+bub.classList.add('on', 'quiet');
+const vw = window.innerWidth, vh = window.innerHeight, sh = tutFixedShift();
+bub.style.left = (Math.round((vw - bub.offsetWidth) / 2) - sh.x) + 'px';
+bub.style.top = (Math.max(8, vh - bub.offsetHeight - 18) - sh.y) + 'px';
+}
+function renderTutorialSettings() {
+const cont = document.getElementById('tutorial-settings-buttons');
+const hint = document.getElementById('tutorial-settings-hint');
+if (!cont) return;
+const p = state.player;
+cont.innerHTML = '';
+if (!p || !p.classId) { if (hint) hint.textContent = ''; return; }
+const t = p.tutorial;
+const on = !!(t && t.on && !t.done);
+[[true, 'Вкл'], [false, 'Выкл']].forEach(([value, label]) => {
+const btn = document.createElement('button');
+btn.className = 'settings-btn' + (value === on ? ' active' : '');
+btn.textContent = label;
+btn.onclick = () => setTutorialEnabled(value);
+cont.appendChild(btn);
+});
+if (hint) {
+if (t && t.done && !on) hint.textContent = 'Первый день пройден. «Вкл» — Заплечник проведёт ещё раз.';
+else if (on) hint.textContent = `Идёт: ${tutDoneCount(tutFlags())} из ${TUT_TOTAL}. Заплечник подсказывает, куда нажать.`;
+else hint.textContent = 'Выключено. «Вкл» — Заплечник подскажет, что делать новичку: Старейшина, Торговец, Наставник, первая охота.';
+}
+const tc = document.getElementById('tutorial-tips-buttons');
+const th = document.getElementById('tutorial-tips-hint');
+if (!tc) return;
+tc.innerHTML = '';
+const tipsOn = !!(t && t.tips);
+[[true, 'Вкл'], [false, 'Выкл']].forEach(([value, label]) => {
+const btn = document.createElement('button');
+btn.className = 'settings-btn' + (value === tipsOn ? ' active' : '');
+btn.textContent = label;
+btn.onclick = () => setTutorialTips(value);
+tc.appendChild(btn);
+});
+if (th) {
+const total = typeof TUTORIAL_TIPS !== 'undefined' ? Object.keys(TUTORIAL_TIPS).length : 0;
+const seen = t && t.seen ? Object.keys(t.seen).filter(k => typeof TUTORIAL_TIPS !== 'undefined' && TUTORIAL_TIPS[k]).length : 0;
+th.textContent = tipsOn
+? `Когда впервые открываешь Кузницу, Мастерскую, Склад и другие окна, сумка коротко объясняет, что там. Показано: ${seen} из ${total}.`
+: 'Выключено. «Вкл» — сумка коротко объяснит каждое окно, которое ты ещё не открывал{|а}.';
+th.textContent = heroText(th.textContent);
+}
+}
+function setTutorialTips(on) {
+const p = state.player;
+if (!p || !p.classId) return;
+if (!p.tutorial || typeof p.tutorial !== 'object') { p.tutorial = tutorialNewHero(true); p.tutorial.hello = false; }
+p.tutorial.tips = !!on;
+if (!p.tutorial.seen) p.tutorial.seen = {};
+tutSave();
+renderTutorialSettings();
+}
+function setTutorialEnabled(on) {
+const p = state.player;
+if (!p || !p.classId) return;
+if (!p.tutorial || typeof p.tutorial !== 'object') p.tutorial = tutorialNewHero(!on);
+const t = p.tutorial;
+t.on = !!on;
+t.hello = false;
+if (on) {
+t.later = false;
+if (t.done) { t.done = false; t.ack = {}; }
+}
+__tutKey = null; __tutScrolledKey = null;
+tutSave();
+renderTutorialSettings();
+}
+function tutPresetSkipBox() {
+const chk = document.getElementById('tut-skip-chk');
+if (!chk || typeof readSlotMeta !== 'function') return;
+let veteran = false;
+const n = typeof SLOT_COUNT === 'number' ? SLOT_COUNT : 5;
+for (let i = 0; i < n; i++) {
+try { const m = readSlotMeta(i); if (m && m.used && (m.level || 0) > TUT_SKIP_LEVEL) veteran = true; } catch (e) {}
+}
+chk.checked = veteran;
+}
+function tutTick() {
+try {
+const createOpen = tutIsOpen('#create-screen');
+if (createOpen && !__tutCreateOpen) tutPresetSkipBox();
+__tutCreateOpen = createOpen;
+const settingsOpen = tutIsOpen('#settings-overlay');
+if (settingsOpen && !__tutSettingsOpen) renderTutorialSettings();
+__tutSettingsOpen = settingsOpen;
+const t = tutState();
+const onScreen = !!document.querySelector('.screen-overlay.active');
+if (!t || onScreen) { tutHide(); tutChip(false); if (!t) __tutMeetTried = false; return; }
+if (t.hello && !t.on) {
+tutChip(false);
+if (tutDialogueOpen() || tutOtherOverlay() || tutIsOpen('#battle-window')) { tutHide(); return; }
+tutHello();
+return;
+}
+if (__tutKey === 'hello') tutHide();
+const firstDay = !!(t.on && !t.done);
+if (firstDay) {
+const busy = tutDialogueOpen() || tutIsOpen('#battle-window') || tutOtherOverlay();
+tutChip(!busy || t.later, t.later, tutDoneCount(tutFlags()));
+} else tutChip(false);
+const r = firstDay && !t.later ? tutRoute() : null;
+if (!r) {
+const tipId = tutTip(t);
+if (tipId) { tutShowTip(t, tipId); tutChipDodge(); return; }
+if (__tutKey && __tutKey.indexOf('tip-') === 0) tutHide();
+}
+if (!firstDay || t.later) { if (!(__tutKey && __tutKey.indexOf('tip-') === 0)) tutHide(); return; }
+if (!r) { tutHide(); tutChipDodge(); return; }
+tutShow(r);
+tutChipDodge();
+} catch (e) {
+console.warn('[tutorial]', e);
+}
+}
+setInterval(tutTick, TUT_TICK_MS);
+window.addEventListener('resize', () => { __tutScrolledKey = null; tutTick(); });
 
 ;
 

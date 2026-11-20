@@ -272,11 +272,19 @@ async function cloudFetchLeaderboard(sortBy) {
                  : 'level';
 
   try {
-    const { data, error } = await supabaseClient
+    // 20.11.2026: sc — подкласс из профиля (для портрета). Целый профиль не тянем — он большой.
+    const LB_COLS = 'user_id, slot, character_name, race_id, class_id, level, gold, kills, updated_at';
+    const query = (cols) => supabaseClient
       .from('leaderboard')
-      .select('user_id, slot, character_name, race_id, class_id, level, gold, kills, updated_at')
+      .select(cols)
       .order(orderCol, { ascending: false })
       .limit(LB_TOP_N);
+    let { data, error } = await query(LB_COLS + ', sc:profile->>sc');
+    if (error) {
+      // база не поняла выборку из профиля — рейтинг важнее портретов
+      console.warn('[leaderboard] без подклассов:', error.message);
+      ({ data, error } = await query(LB_COLS));
+    }
 
     if (error) {
       console.warn('[leaderboard] fetch error:', error.message);
@@ -394,6 +402,9 @@ async function renderLeaderboard() {
     btn.classList.toggle('active', btn.dataset.sort === __lbSortBy);
   });
 
+  // 20.11.2026: на телефоне в строке видно только число выбранной вкладки (css/leaderboard.css)
+  list.dataset.sort = __lbSortBy;
+
   // Показать «загрузка…» пока тянем.
   list.innerHTML = `<div class="leaderboard-empty">Загружаем...</div>`;
 
@@ -468,9 +479,7 @@ function buildLeaderboardRowHtml(row, rank, idx) {
   // Строку пишет чужой браузер: раса и класс — только из справочника игры, уровень — число.
   const raceId = hasOwnKey(RACES, row.race_id) ? row.race_id : 'human';
   const classId = hasOwnKey(CLASSES, row.class_id) ? row.class_id : 'warrior';
-  const icon = (typeof getRaceIcon === 'function')
-    ? getRaceIcon(raceId, classId)
-    : `img/races/${raceId}.webp`;
+  const icon = lbRowPortrait(row, raceId, classId);
 
   // Названия расы и класса.
   const raceName = RACES[raceId].name;
@@ -483,13 +492,13 @@ function buildLeaderboardRowHtml(row, rank, idx) {
     <div class="${cls.join(' ')} lb-clickable" onclick="openLeaderboardInspect(${idx})" title="Осмотреть героя">
       <div class="lb-rank">#${rank}</div>
       <div class="lb-race-icon" style="background-image:url('${icon}')"></div>
-      <div>
+      <div class="lb-who">
         <div class="lb-name">${name}</div>
         <div class="lb-class">${raceName} · ${className}</div>
       </div>
-      <div class="lb-col"><span class="lb-icon">⭐</span>${level}</div>
-      <div class="lb-col"><span class="lb-icon">🪙</span>${formatNumber(row.gold || 0)}</div>
-      <div class="lb-col"><span class="lb-icon">💀</span>${formatNumber(row.kills || 0)}</div>
+      <div class="lb-col lb-col-level"><span class="lb-icon">⭐</span>${level}</div>
+      <div class="lb-col lb-col-gold"><span class="lb-icon">🪙</span>${formatNumber(row.gold || 0)}</div>
+      <div class="lb-col lb-col-kills"><span class="lb-icon">💀</span>${formatNumber(row.kills || 0)}</div>
     </div>
   `;
 }
@@ -497,6 +506,17 @@ function buildLeaderboardRowHtml(row, rank, idx) {
 // ========================================================
 //  ХЕЛПЕРЫ
 // ========================================================
+
+// 20.11.2026: портрет строки рейтинга — с подклассом. Свой герой — по живым данным
+// (подкласс только что сменили, а строка в облаке обновится позже).
+// sc пишет чужой браузер: годится только ключ из справочника SUBCLASSES подходящей расы и класса.
+function lbRowPortrait(row, raceId, classId) {
+  let sc = row && row.isMe ? state.player.subclass : row && row.sc;
+  if (typeof SUBCLASSES === 'undefined' || !hasOwnKey(SUBCLASSES, sc)) sc = null;
+  if (typeof getHeroPortrait === 'function') return getHeroPortrait(raceId, classId, sc);
+  if (typeof getRaceIcon === 'function') return getRaceIcon(raceId, classId);
+  return `img/races/${raceId}.webp`;
+}
 
 // Формат чисел: 12450 → «12 450».
 function formatNumber(n) {

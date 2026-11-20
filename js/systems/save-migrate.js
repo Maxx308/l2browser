@@ -83,6 +83,7 @@ const SAVE_PLAYER_DEFAULTS = {
   repeatPref: true,   // v0.36.4: «Повторять бой» в начале боя
   subclass: null,     // v0.38: подкласс (id из SUBCLASSES)
   skillPts26: 0,      // v0.38: за сколько уровней выше 25 уже выдано третье очко
+  tutorial: null,     // v0.39: обучение «Первый день» (js/systems/tutorial.js); у старых героев — нет
 };
 
 // Новые герои получают то же самое, что и старые сейвы без этих полей.

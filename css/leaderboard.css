@@ -200,6 +200,9 @@
   border: 1px solid var(--border);
 }
 
+/* без min-width:0 колонка с именем растягивается под длинное имя и строка вылезает за экран */
+.lb-who { min-width: 0; }
+
 .lb-name {
   font-family: 'Cinzel', serif;
   font-size: var(--fs-base);
@@ -289,4 +292,15 @@
   .lb-rank { font-size: calc(12 * var(--u)); }
   .lb-col { font-size: calc(10.5 * var(--u)); }
   .lb-col .lb-icon { font-size: calc(11 * var(--u)); }
+
+  /* 20.11.2026: на телефоне в строке одно число — то, по которому отсортировано.
+     Иначе три числа съедают ширину и длинное имя обрезается до десятка букв.
+     Остальное видно в «Осмотре героя» по нажатию на строку. */
+  .leaderboard-row {
+    grid-template-columns: calc(32 * var(--u)) calc(26 * var(--u)) 1fr auto;
+  }
+  .lb-col { font-size: calc(11.5 * var(--u)); }
+  #leaderboard-list[data-sort="level"] .lb-col:not(.lb-col-level),
+  #leaderboard-list[data-sort="gold"]  .lb-col:not(.lb-col-gold),
+  #leaderboard-list[data-sort="kills"] .lb-col:not(.lb-col-kills) { display: none; }
 }

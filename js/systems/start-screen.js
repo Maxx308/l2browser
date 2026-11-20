@@ -715,6 +715,12 @@ function confirmCreateCharacter() {
   // v0.30: первые записи летописи — герой появляется в мире, сумка просыпается
   if (typeof startChronicleForNewHero === 'function') startChronicleForNewHero();
 
+  // v0.39: обучение «Первый день» — галочка «без обучения» в окне создания (js/systems/tutorial.js)
+  if (typeof tutorialNewHero === 'function') {
+    const skipChk = document.getElementById('tut-skip-chk');
+    state.player.tutorial = tutorialNewHero(!!(skipChk && skipChk.checked));
+  }
+
   state.activeSlotIndex = pendingSlotIndex;
   saveCurrentSlot();
 

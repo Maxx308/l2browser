@@ -96,20 +96,30 @@ function renderCheatMenu() {
   goldHtml += '</div></div>';
 
   // ---- v0.36: Блок УРОВЕНЬ ----
+  // v0.38.2: можно и выше 20 — Ильград при этом откроется сам (потолок 30 привязан к нему).
   let levelHtml = '<div class="cheat-block"><div class="cheat-block-title">УРОВЕНЬ</div>';
-  levelHtml += `<div class="cheat-block-desc">Сейчас ${p.level} из ${getMaxPlayerLevel()}. Очки навыков начисляются как при обычной прокачке.</div>`;
+  levelHtml += `<div class="cheat-block-desc">Сейчас ${p.level} из ${MAX_PLAYER_LEVEL}. Очки навыков начисляются как при обычной прокачке.${p.ilgradOpen ? '' : ` Выше ${LEVEL_CAP_BEFORE_ILGRAD} — Ильград откроется сам.`}</div>`;
   levelHtml += '<div class="cheat-btn-row">';
   levelHtml += `<button class="cheat-rate-btn" onclick="cheatAddLevels(1)">+1</button>`;
   levelHtml += `<button class="cheat-rate-btn" onclick="cheatAddLevels(5)">+5</button>`;
-  levelHtml += `<button class="cheat-rate-btn" onclick="cheatAddLevels(${getMaxPlayerLevel()})">До ${getMaxPlayerLevel()}</button>`;
+  [LEVEL_CAP_BEFORE_ILGRAD, SUBCLASS_MIN_LEVEL, MAX_PLAYER_LEVEL].forEach(lv => {
+    levelHtml += `<button class="cheat-rate-btn" onclick="cheatSetLevel(${lv})">До ${lv}</button>`;
+  });
   levelHtml += '</div></div>';
 
   // ---- v0.36: Блок КОМПЛЕКТЫ ----
   let setsHtml = '<div class="cheat-block"><div class="cheat-block-title">КОМПЛЕКТЫ</div>';
-  setsHtml += '<div class="cheat-block-desc">Эпическое качество, кладётся в сумку. Статы редкости — случайные, под класс героя.</div>';
-  setsHtml += `<div class="cheat-block-desc">Одежда:</div><div class="cheat-btn-row">${cheatSetButtons(false)}</div>`;
-  setsHtml += `<div class="cheat-block-desc" style="margin-top:8px">Бижутерия:</div><div class="cheat-btn-row">${cheatSetButtons(true)}</div>`;
+  setsHtml += '<div class="cheat-block-desc">Эпическое (фиолетовое) качество, кладётся в сумку. Статы редкости — случайные, под класс героя.</div>';
+  setsHtml += cheatTierRows('Одежда', cheatSetGroups(false));
+  setsHtml += cheatTierRows('Бижутерия', cheatSetGroups(true));
   setsHtml += '</div>';
+
+  // ---- v0.38.2: Блок ОРУЖИЕ ----
+  let weaponHtml = '<div class="cheat-block"><div class="cheat-block-title">ОРУЖИЕ</div>';
+  weaponHtml += '<div class="cheat-block-desc">Одна вещь эпического качества в сумку. ✋✋ — двуручное.</div>';
+  weaponHtml += cheatTierRows('Оружие', cheatGearGroups('weapons'));
+  weaponHtml += cheatTierRows('Щиты', cheatGearGroups('shields'));
+  weaponHtml += '</div>';
 
   // ---- Блок ТИТУЛЫ ----
   let titleHtml = '<div class="cheat-block"><div class="cheat-block-title">ТИТУЛЫ</div>';
@@ -129,7 +139,7 @@ function renderCheatMenu() {
   ilgradHtml += `<button class="cheat-rate-btn" onclick="cheatFallReset()">↩ Вернуть Андервуд</button>`;
   ilgradHtml += '</div></div>';
 
-  cont.innerHTML = rateHtml + levelHtml + setsHtml + resHtml + goldHtml + titleHtml + ilgradHtml;
+  cont.innerHTML = rateHtml + levelHtml + setsHtml + weaponHtml + resHtml + goldHtml + titleHtml + ilgradHtml;
 }
 
 // ---------- УСТАНОВКА РЕЙТА ----------
@@ -275,12 +285,22 @@ function cheatGrantGold(amount) {
 
 // ---------- УРОВЕНЬ (v0.36) ----------
 // Через обычное повышение (checkLevelUp): очки навыков, полное HP/MP, поручения — как при прокачке.
+// v0.38.2: выше 20 — сначала открываем Ильград (без него потолок 20).
 function cheatAddLevels(n) {
+  cheatSetLevel(state.player.level + n);
+}
+
+function cheatSetLevel(targetLevel) {
   const p = state.player;
   if (!p.classId) { showToast('⚠', 'Сначала выберите героя'); return; }
-  if (p.level >= getMaxPlayerLevel()) { showToast('🏆', `Уже максимальный уровень: ${getMaxPlayerLevel()}`); return; }
+  const target = Math.min(MAX_PLAYER_LEVEL, targetLevel);
+  if (p.level >= target) { showToast('🏆', `Уровень уже ${p.level}`); return; }
+  if (target > LEVEL_CAP_BEFORE_ILGRAD && !p.ilgradOpen) {
+    p.ilgradOpen = true;
+    logLoot(`🏰 ЧИТ: Ильград открыт — потолок уровня ${MAX_PLAYER_LEVEL}`, 'log-craft');
+  }
+  if (!isFinite(p.xpNext)) p.xpNext = getXpForLevel(p.level + 1);   // на старом потолке было Infinity
   const from = p.level;
-  const target = Math.min(getMaxPlayerLevel(), p.level + n);
   while (p.level < target) {
     p.xp = p.xpNext;
     checkLevelUp();
@@ -311,12 +331,62 @@ function cheatSetIsJewelry(setId) {
   return list.length > 0 && CHEAT_JEWELRY_TYPES.includes(list[0].result.type);
 }
 
-// Кнопки: только комплекты, у которых есть рецепты (Потрёпанный — добыча, не куётся).
-function cheatSetButtons(jewelry) {
-  return Object.keys(SETS)
+// v0.38.2: кнопки разложены по тирам. groups = { тир: [кнопки] } → строки «Одежда · тир 2: …».
+function cheatTierRows(label, groups) {
+  return Object.keys(groups).sort().map(t =>
+    `<div class="cheat-block-desc cheat-tier-label">${label} · тир ${t}:</div><div class="cheat-btn-row">${groups[t].join('')}</div>`
+  ).join('');
+}
+
+// Только комплекты, у которых есть рецепты (Потрёпанный — добыча, не куётся).
+function cheatSetGroups(jewelry) {
+  const groups = {};
+  Object.keys(SETS)
     .filter(id => cheatSetRecipes(id).length && cheatSetIsJewelry(id) === jewelry)
-    .map(id => `<button class="cheat-rate-btn" onclick="cheatGrantSet('${id}')">${SETS[id].name}</button>`)
-    .join('');
+    .forEach(id => {
+      const t = cheatSetRecipes(id)[0].tier || '?';
+      (groups[t] = groups[t] || []).push(`<button class="cheat-rate-btn" onclick="cheatGrantSet('${id}')">${SETS[id].name}</button>`);
+    });
+  return groups;
+}
+
+// v0.38.2: оружие и щиты из кузницы, по тирам.
+function cheatGearGroups(listKey) {
+  const groups = {};
+  (RECIPES[listKey] || []).forEach(r => {
+    const t = r.tier || '?';
+    const hand = r.result.twoHanded ? ' ✋✋' : '';
+    (groups[t] = groups[t] || []).push(`<button class="cheat-rate-btn" onclick="cheatGrantGear('${listKey}','${r.id}')">${r.result.name}${hand}</button>`);
+  });
+  return groups;
+}
+
+// Эпическая вещь из рецепта — как в кузнице, но без материалов и броска редкости.
+function cheatMakeEpicItem(r) {
+  const res = r.result;
+  return {
+    name: res.name, type: res.type, qty: 1,
+    stats: res.stats, sellPrice: res.sellPrice,
+    setId: res.setId, twoHanded: res.twoHanded, tier: r.tier || null,
+    rarity: CHEAT_SET_RARITY,
+    bonusStats: rollRarityStats(RARITIES[CHEAT_SET_RARITY].statPoints, getRarityStatProfile(res)),
+    icon: `<img src="${res.icon}" alt="" style="width:100%;height:100%;object-fit:contain;">`,
+  };
+}
+
+function cheatGrantGear(listKey, recipeId) {
+  const p = state.player;
+  if (!p.classId) { showToast('⚠', 'Сначала выберите героя'); return; }
+  const r = (RECIPES[listKey] || []).find(x => x.id === recipeId);
+  if (!r) return;
+  if (p.inventory.length >= invMaxSlots()) { showToast('📦', 'Сумка полна'); return; }
+  addToInventory(cheatMakeEpicItem(r));
+  markCheatUsed();
+  logLoot(`✨ ЧИТ: ${r.result.name} (${RARITIES[CHEAT_SET_RARITY].name})`, 'log-craft rarity-' + CHEAT_SET_RARITY);
+  showToast('✨', `${r.result.name} — в сумке`);
+  renderInventory();
+  updateInventoryFooter();
+  saveCurrentSlot();
 }
 
 // Кладём в сумку весь комплект эпического качества. Украшения — по слотам: 2 кольца, 2 серьги, ожерелье.
@@ -335,17 +405,7 @@ function cheatGrantSet(setId) {
     return;
   }
   const rarity = RARITIES[CHEAT_SET_RARITY];
-  items.forEach(r => {
-    const res = r.result;
-    addToInventory({
-      name: res.name, type: res.type, qty: 1,
-      stats: res.stats, sellPrice: res.sellPrice,
-      setId: res.setId, tier: r.tier || null,
-      rarity: CHEAT_SET_RARITY,
-      bonusStats: rollRarityStats(rarity.statPoints, getRarityStatProfile(res)),
-      icon: `<img src="${res.icon}" alt="" style="width:100%;height:100%;object-fit:contain;">`,
-    });
-  });
+  items.forEach(r => addToInventory(cheatMakeEpicItem(r)));
   markCheatUsed();
   logLoot(`✨ ЧИТ: комплект «${SETS[setId].name}» (${rarity.name}) — ${items.length} шт.`, 'log-craft rarity-' + CHEAT_SET_RARITY);
   showToast('✨', `${SETS[setId].name}: ${items.length} шт. в сумке`);

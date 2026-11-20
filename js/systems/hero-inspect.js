@@ -47,7 +47,8 @@ function inspectCleanNums(obj) {
 // forceShow — свой герой в своём окне виден всегда, даже если скрыт от других.
 function buildHeroProfile(forceShow) {
   const p = state.player;
-  if (p.hideProfile && !forceShow) return { v: HERO_PROFILE_VERSION, hidden: true };
+  // 20.11.2026: sc — подкласс, для портрета в рейтинге и в «Осмотре» (виден и при скрытом профиле: это только облик)
+  if (p.hideProfile && !forceShow) return { v: HERO_PROFILE_VERSION, hidden: true, sc: p.subclass || null };
 
   const eq = {};
   INSPECT_SLOTS.forEach(({ key }) => {
@@ -84,6 +85,7 @@ function buildHeroProfile(forceShow) {
       dr: p.flatDamageReduce || 0, bl: p.blockChance || 0,
     },
     sk, ws, el,
+    sc: p.subclass || null,
   };
 }
 
@@ -238,7 +240,7 @@ function renderInspectHeader(row) {
   const raceId = hasOwnKey(RACES, row.race_id) ? row.race_id : 'human';
   const classId = hasOwnKey(CLASSES, row.class_id) ? row.class_id : 'warrior';
   head.innerHTML = `
-    <div class="inspect-portrait" style="background-image:url('${getRaceIcon(raceId, classId)}')"></div>
+    <div class="inspect-portrait" style="background-image:url('${lbRowPortrait(row, raceId, classId)}')"></div>
     <div class="inspect-title">
       <div class="inspect-name">${escapeHtml(row.character_name || 'Безымянный')}</div>
       <div class="inspect-sub">${RACES[raceId].name} · ${CLASSES[classId].name} · ур. ${inspectInt(row.level, 1, 999)}</div>
