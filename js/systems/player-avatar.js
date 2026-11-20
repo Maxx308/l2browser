@@ -20,8 +20,8 @@ function updatePlayerAvatar() {
   }
 
   const raceId = p.raceId || 'human';
-  const imgSrc = (typeof getRaceIcon === 'function')
-    ? getRaceIcon(raceId, p.classId)
+  const imgSrc = (typeof getHeroPortrait === 'function')
+    ? getHeroPortrait(raceId, p.classId, p.subclass)   // v0.38: с подклассом — его портрет
     : `img/races/${raceId}.webp`;
 
   if (p.classId === 'warrior') slot.classList.add('class-warrior');

@@ -257,6 +257,7 @@ function scAccept() {
   applySubclassSkills();
   recalcStats();
   updateCharacterPanel();
+  if (typeof updatePlayerAvatar === 'function') updatePlayerAvatar();   // портрет в бою — подкласса
   updateTopStatus();
   updateSkillPointsBadge();
   if (typeof renderSkillSlots === 'function') renderSkillSlots();

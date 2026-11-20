@@ -395,7 +395,7 @@ function updateCharacterPanel() {
 
   const portrait = document.getElementById('cs-portrait');
   if (portrait) {
-    const src = has && typeof getRaceIcon === 'function' ? getRaceIcon(p.raceId || 'human', p.classId) : '';
+    const src = has && typeof getHeroPortrait === 'function' ? getHeroPortrait(p.raceId || 'human', p.classId, p.subclass) : '';   // v0.38: портрет подкласса
     if (portrait.dataset.src !== src) {
       portrait.dataset.src = src;
       const fallback = p.classId === 'mage' ? '🧙' : (p.classId === 'warrior' ? '⚔' : '');

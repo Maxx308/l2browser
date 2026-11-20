@@ -77,6 +77,13 @@ function getRaceIcon(raceId, classId) {
   return race.icon;
 }
 
+// v0.38: портрет героя — подкласса, если он выбран (и подходит к расе и классу), иначе расы под класс.
+function getHeroPortrait(raceId, classId, subclassId) {
+  const sc = (subclassId && typeof SUBCLASSES !== 'undefined') ? SUBCLASSES[subclassId] : null;
+  if (sc && sc.portrait && sc.race === raceId && sc.cls === classId) return sc.portrait;
+  return getRaceIcon(raceId, classId);
+}
+
 // Помощник: возвращает статы для пары «раса + класс».
 function getRaceClassStats(raceId, classId) {
   const race = RACES[raceId];

@@ -167,7 +167,7 @@ const SUBCLASS_SKILLS = {
   // Глухая оборона: тратит ход, 5 ходов меньше урона; автобой — только против стаи или сильной твари.
   wgHoldLine: {
     id: 'wgHoldLine', subclassId: 'human_wallguard', name: 'Глухая оборона', type: 'active',
-    iconPng: 'img/skills/warrior/resilience.webp',
+    iconPng: 'img/skills/subclass/wgHoldLine.webp',
     maxLevel: 5, cooldown: 8, turns: 5, shieldBlock: 5,
     levels: [
       { mpCost: 0, cut: 15 }, { mpCost: 0, cut: 17 }, { mpCost: 0, cut: 20 },
@@ -179,7 +179,7 @@ const SUBCLASS_SKILLS = {
   // Ответ щита — полупассивка: стоит в слоте, срабатывает сама.
   wgShieldRetort: {
     id: 'wgShieldRetort', subclassId: 'human_wallguard', name: 'Ответ щита', type: 'active', semiPassive: true,
-    iconPng: 'img/skills/human/doubleStrike.webp',
+    iconPng: 'img/skills/subclass/wgShieldRetort.webp',
     maxLevel: 5, retortEvery: 3, needsShield: true,
     levels: [
       { mpCost: 0, power: 0.9, blockChance: 20 }, { mpCost: 0, power: 1.0, blockChance: 25 },
@@ -192,7 +192,7 @@ const SUBCLASS_SKILLS = {
   // Мастер щита — только со щитом.
   wgShieldMastery: {
     id: 'wgShieldMastery', subclassId: 'human_wallguard', name: 'Мастер щита', type: 'passive',
-    iconPng: 'img/skills/warrior/resilience.webp',
+    iconPng: 'img/skills/subclass/wgShieldMastery.webp',
     maxLevel: 5,
     levels: [
       { block: 3, shieldPct: 20 }, { block: 4, shieldPct: 25 }, { block: 5, shieldPct: 30 },
@@ -204,7 +204,7 @@ const SUBCLASS_SKILLS = {
   // Последний рубеж — раз за бой.
   wgLastStand: {
     id: 'wgLastStand', subclassId: 'human_wallguard', name: 'Последний рубеж', type: 'passive',
-    iconPng: 'img/skills/warrior/resilience.webp',
+    iconPng: 'img/skills/subclass/wgLastStand.webp',
     maxLevel: 5, turns: 2,
     levels: [ { cut: 30 }, { cut: 35 }, { cut: 40 }, { cut: 45 }, { cut: 50 } ],
     getDesc: (lvl) => { const s = SKILLS.wgLastStand; const d = s.levels[lvl-1]; return `Пассивно, раз за бой: смертельный удар оставляет ${scV('1 HP')}, и ${s.turns} хода входящий урон ${scV('−' + d.cut + '%')}.`; },
@@ -308,7 +308,7 @@ Object.assign(SUBCLASS_SKILLS, {
   // ---- Егерь ----
   jgEvade: {
     id: 'jgEvade', subclassId: 'human_huntsman', name: 'Ускользнуть', type: 'active',
-    iconPng: 'img/skills/elf/grace.webp',
+    iconPng: 'img/skills/subclass/jgEvade.webp',
     maxLevel: 5, cooldown: 6, zealCost: 2, misses: 2,
     levels: [ { mpCost: 0, atb: 10 }, { mpCost: 0, atb: 15 }, { mpCost: 0, atb: 20 }, { mpCost: 0, atb: 25 }, { mpCost: 0, atb: 30 } ],
     getDesc: (lvl) => { const s = SKILLS.jgEvade, d = s.levels[lvl-1]; return `Тратит ${s.zealCost} заряда Азарта: две следующие атаки твари проходят мимо, каждая — ${scV('+' + d.atb + '%')} к шкале ATB. Без маны. Автобой уходит при HP ниже 50%. КД: ${s.cooldown}.`; },
@@ -317,7 +317,7 @@ Object.assign(SUBCLASS_SKILLS, {
   },
   jgMark: {
     id: 'jgMark', subclassId: 'human_huntsman', name: 'Метка егеря', type: 'active', semiPassive: true,
-    iconPng: 'img/skills/dwarf/dwarfGreed.webp',
+    iconPng: 'img/skills/subclass/jgMark.webp',
     maxLevel: 5,
     levels: [ { mpCost: 0, bonus: 10 }, { mpCost: 0, bonus: 12 }, { mpCost: 0, bonus: 15 }, { mpCost: 0, bonus: 17 }, { mpCost: 0, bonus: 20 } ],
     getDesc: (lvl) => { const d = SKILLS.jgMark.levels[lvl-1]; return `<b>Срабатывает сама</b>, пока стоит в слоте. Крит по цели без метки ставит на неё Метку (метка одна). По меченой — ${scV('+' + d.bonus + '%')} вашего урона, а крит по ней даёт ${scV('2')} заряда Азарта. Ничего не стоит — цена в занятом слоте.`; },
@@ -325,7 +325,7 @@ Object.assign(SUBCLASS_SKILLS, {
   },
   jgEye: {
     id: 'jgEye', subclassId: 'human_huntsman', name: 'Глаз егеря', type: 'passive',
-    iconPng: 'img/skills/warrior/weaponMasterW.webp',
+    iconPng: 'img/skills/subclass/jgEye.webp',
     maxLevel: 5,
     levels: [ { crit: 3, critDmg: 10 }, { crit: 4, critDmg: 15 }, { crit: 5, critDmg: 20 }, { crit: 6, critDmg: 25 }, { crit: 8, critDmg: 30 } ],
     getDesc: (lvl) => { const d = SKILLS.jgEye.levels[lvl-1]; return `Пассивно, с луком, арбалетом или кинжалом: ${scV('+' + d.crit + '%')} шанса крита и ${scV('+' + d.critDmg + '%')} к урону крита.`; },
@@ -333,7 +333,7 @@ Object.assign(SUBCLASS_SKILLS, {
   },
   jgSilver: {
     id: 'jgSilver', subclassId: 'human_huntsman', name: 'Серебряный наконечник', type: 'passive',
-    iconPng: 'img/skills/warrior/weaponMasterW.webp',
+    iconPng: 'img/skills/subclass/jgSilver.webp',
     maxLevel: 5,
     levels: [ { undead: 10 }, { undead: 12 }, { undead: 15 }, { undead: 17 }, { undead: 20 } ],
     getDesc: (lvl) => { const d = SKILLS.jgSilver.levels[lvl-1]; return `Пассивно: ${scV('+' + d.undead + '%')} урона по нежити (твари с тегом «Мёртвый»), крит по нежити — ещё заряд Азарта.`; },
@@ -343,7 +343,7 @@ Object.assign(SUBCLASS_SKILLS, {
   // ---- Храмовник ----
   tpSeal: {
     id: 'tpSeal', subclassId: 'human_templar', name: 'Печать света', type: 'active', freeTurn: true,
-    iconPng: 'img/skills/elf/heal.webp',
+    iconPng: 'img/skills/subclass/tpSeal.webp',
     maxLevel: 5, cooldown: 8, turns: 5,
     levels: [ { mpCost: 10, pct: 20 }, { mpCost: 11, pct: 25 }, { mpCost: 12, pct: 30 }, { mpCost: 13, pct: 35 }, { mpCost: 14, pct: 40 } ],
     getDesc: (lvl) => { const s = SKILLS.tpSeal, d = s.levels[lvl-1]; return `Не тратит ход: ${s.turns} ходов каждый ваш удар оружием добавляет свет — ${scV(d.pct + '%')} силы света (маг. атака + половина физ.) сверху. MP: ${scV(d.mpCost)}. КД: ${s.cooldown}.`; },
@@ -351,7 +351,7 @@ Object.assign(SUBCLASS_SKILLS, {
   },
   tpRadiance: {
     id: 'tpRadiance', subclassId: 'human_templar', name: 'Сияние', type: 'active', semiPassive: true,
-    iconPng: 'img/skills/elf/forest_blessing.webp',
+    iconPng: 'img/skills/subclass/tpRadiance.webp',
     maxLevel: 5, ramp: 5, maxTurns: 10, undeadMult: 2,
     levels: [ { mpCost: 0, base: 8, mp: 4 }, { mpCost: 0, base: 9, mp: 4 }, { mpCost: 0, base: 10, mp: 3 }, { mpCost: 0, base: 11, mp: 3 }, { mpCost: 0, base: 12, mp: 2 } ],
     getDesc: (lvl) => { const s = SKILLS.tpRadiance, d = s.levels[lvl-1]; return `<b>Горит само</b>, пока стоит в слоте и есть мана: каждый ваш ход бьёт всех врагов светом на ${scV(d.base + '%')} силы света (маг. атака + половина физ.), +${s.ramp}% за каждый ход подряд (до ${s.maxTurns} ходов). Нежить — ×${s.undeadMult}. Стоит ${scV(d.mp)} MP за ход; мана кончилась — гаснет, и разгон с нуля.`; },
@@ -359,7 +359,7 @@ Object.assign(SUBCLASS_SKILLS, {
   },
   tpVow: {
     id: 'tpVow', subclassId: 'human_templar', name: 'Обет против тьмы', type: 'passive',
-    iconPng: 'img/skills/warrior/resilience.webp',
+    iconPng: 'img/skills/subclass/tpVow.webp',
     maxLevel: 5,
     levels: [ { pct: 10 }, { pct: 12 }, { pct: 15 }, { pct: 17 }, { pct: 20 } ],
     getDesc: (lvl) => { const d = SKILLS.tpVow.levels[lvl-1]; return `Пассивно: нежить бьёт вас на ${scV(d.pct + '%')} слабее, а вы её — на ${scV(d.pct + '%')} сильнее.`; },
@@ -367,7 +367,7 @@ Object.assign(SUBCLASS_SKILLS, {
   },
   tpBalance: {
     id: 'tpBalance', subclassId: 'human_templar', name: 'Равновесие', type: 'passive',
-    iconPng: 'img/skills/mage/manaRegen.webp',
+    iconPng: 'img/skills/subclass/tpBalance.webp',
     maxLevel: 5,
     levels: [ { mp: 1 }, { mp: 1.5 }, { mp: 2 }, { mp: 2.5 }, { mp: 3 } ],
     getDesc: (lvl) => { const d = SKILLS.tpBalance.levels[lvl-1]; return `Пассивно: каждый удар оружием возвращает ${scV(d.mp)} MP (дробная часть — шансом). Кормит Сияние.`; },
@@ -481,7 +481,7 @@ Object.assign(SUBCLASS_SKILLS, {
   // ---- Элементалист ----
   elLightning: {
     id: 'elLightning', subclassId: 'human_elementalist', name: 'Удар молнии', type: 'active',
-    iconPng: 'img/skills/drow/discharge.webp',
+    iconPng: 'img/skills/subclass/elLightning.webp',
     maxLevel: 5, cooldown: 4, shockTurns: 2, burstPct: 50,
     levels: [
       { mpCost: 14, multiplier: 1.8, atbCut: 20, manaBurn: 20 }, { mpCost: 15, multiplier: 2.0, atbCut: 25, manaBurn: 25 },
@@ -493,7 +493,7 @@ Object.assign(SUBCLASS_SKILLS, {
   },
   elEcho: {
     id: 'elEcho', subclassId: 'human_elementalist', name: 'Отголосок', type: 'active', semiPassive: true,
-    iconPng: 'img/skills/mage/fireball.webp',
+    iconPng: 'img/skills/subclass/elEcho.webp',
     maxLevel: 5,
     levels: [ { mpCost: 0, chance: 60 }, { mpCost: 0, chance: 70 }, { mpCost: 0, chance: 80 }, { mpCost: 0, chance: 90 }, { mpCost: 0, chance: 100 } ],
     getDesc: (lvl) => { const d = SKILLS.elEcho.levels[lvl-1]; return `<b>Срабатывает сам</b>, пока стоит в слоте. Тварь умерла горящей, замороженной или под током — с шансом ${scV(d.chance + '%')} эффект перескакивает на соседа. Ничего не стоит — цена в занятом слоте.`; },
@@ -501,7 +501,7 @@ Object.assign(SUBCLASS_SKILLS, {
   },
   elFusion: {
     id: 'elFusion', subclassId: 'human_elementalist', name: 'Сплав стихий', type: 'passive',
-    iconPng: 'img/skills/mage/weaponMasterM.webp',
+    iconPng: 'img/skills/subclass/elFusion.webp',
     maxLevel: 5,
     levels: [ { pct: 10 }, { pct: 12 }, { pct: 15 }, { pct: 17 }, { pct: 20 } ],
     getDesc: (lvl) => { const d = SKILLS.elFusion.levels[lvl-1]; return `Пассивно: если на цели эффекты двух стихий (горение, заморозка, ток) — ${scV('+' + d.pct + '%')} вашего урона по ней.`; },
@@ -509,7 +509,7 @@ Object.assign(SUBCLASS_SKILLS, {
   },
   elShift: {
     id: 'elShift', subclassId: 'human_elementalist', name: 'Смена стихий', type: 'passive',
-    iconPng: 'img/skills/mage/manaRegen.webp',
+    iconPng: 'img/skills/subclass/elShift.webp',
     maxLevel: 5,
     levels: [ { pct: 10 }, { pct: 12 }, { pct: 15 }, { pct: 17 }, { pct: 20 } ],
     getDesc: (lvl) => { const d = SKILLS.elShift.levels[lvl-1]; return `Пассивно: заклинание другой стихии, чем прошлое, стоит на ${scV(d.pct + '%')} меньше маны.`; },
@@ -519,7 +519,7 @@ Object.assign(SUBCLASS_SKILLS, {
   // ---- Жрец ----
   prBlessing: {
     id: 'prBlessing', subclassId: 'human_priest', name: 'Благословение', type: 'active', freeTurn: true,
-    iconPng: 'img/skills/elf/heal.webp',
+    iconPng: 'img/skills/subclass/prBlessing.webp',
     maxLevel: 5, cooldown: 3,
     levels: [
       { mpCost: 15, cut: 8, regen: 1 }, { mpCost: 16, cut: 10, regen: 1.2 }, { mpCost: 17, cut: 11, regen: 1.5 },
@@ -530,7 +530,7 @@ Object.assign(SUBCLASS_SKILLS, {
   },
   prIntercede: {
     id: 'prIntercede', subclassId: 'human_priest', name: 'Заступничество', type: 'active', semiPassive: true,
-    iconPng: 'img/skills/elf/nature_heal.webp',
+    iconPng: 'img/skills/subclass/prIntercede.webp',
     maxLevel: 5, threshold: 35, every: 4,
     levels: [ { mpCost: 0, heal: 15 }, { mpCost: 0, heal: 17 }, { mpCost: 0, heal: 20 }, { mpCost: 0, heal: 22 }, { mpCost: 0, heal: 25 } ],
     getDesc: (lvl) => { const s = SKILLS.prIntercede, d = s.levels[lvl-1]; return `<b>Срабатывает само</b>, пока стоит в слоте: HP упало ниже ${s.threshold}% — лечение на ${scV(d.heal + '%')} макс. HP. Не чаще раза в ${s.every} хода. Ничего не стоит — цена в занятом слоте.`; },
@@ -538,7 +538,7 @@ Object.assign(SUBCLASS_SKILLS, {
   },
   prGrace: {
     id: 'prGrace', subclassId: 'human_priest', name: 'Благодать', type: 'passive',
-    iconPng: 'img/skills/elf/forest_blessing.webp',
+    iconPng: 'img/skills/subclass/prGrace.webp',
     maxLevel: 5,
     levels: [ { cap: 20 }, { cap: 25 }, { cap: 30 }, { cap: 35 }, { cap: 40 } ],
     getDesc: (lvl) => { const d = SKILLS.prGrace.levels[lvl-1]; return `Пассивно, только в бою: лечение сверх полного HP (любое — навыки, зелья, реген) копится барьером до ${scV(d.cap + '%')} макс. HP. Барьер принимает удары первым; после боя пропадает.`; },
@@ -546,7 +546,7 @@ Object.assign(SUBCLASS_SKILLS, {
   },
   prCleanse: {
     id: 'prCleanse', subclassId: 'human_priest', name: 'Очищение', type: 'passive',
-    iconPng: 'img/skills/elf/fast_prayer.webp',
+    iconPng: 'img/skills/subclass/prCleanse.webp',
     maxLevel: 5,
     levels: [ { step: 14 }, { step: 13 }, { step: 12 }, { step: 11 }, { step: 10 } ],
     getDesc: (lvl) => { const d = SKILLS.prCleanse.levels[lvl-1]; return `Пассивно: каждые ${scV(d.step + '%')} макс. HP, восстановленные любым лечением, снимают с вас один вредный эффект (яд, кровотечение, паутина).`; },
@@ -556,7 +556,7 @@ Object.assign(SUBCLASS_SKILLS, {
   // ---- Некромант ----
   nmRaise: {
     id: 'nmRaise', subclassId: 'human_necromancer', name: 'Поднять павшего', type: 'active', freeTurn: true,
-    iconPng: 'img/skills/orc/spiritWrath.webp',
+    iconPng: 'img/skills/subclass/nmRaise.webp',
     maxLevel: 5, cooldown: 3,
     levels: [ { mpCost: 14, power: 40 }, { mpCost: 15, power: 45 }, { mpCost: 16, power: 50 }, { mpCost: 17, power: 55 }, { mpCost: 18, power: 60 } ],
     getDesc: (lvl) => { const d = SKILLS.nmRaise.levels[lvl-1]; return `Не тратит ход: поднимает последнюю убитую тварь нежитью на ${scV(d.power + '%')} её силы: Плоть — зомби (крепкий, медленный), Конструкт / Камень / Древо — дух (хрупкий, увёртливый), остальные — скелет. Трупа нет — встаёт скелет-страж от вашей маг. атаки. До ${NECRO_ALLY_MAX} слуг, после боя рассыпаются. Ваши бесплатные подъёмы (Копьё, Зов могил) — той же силы. MP: ${scV(d.mpCost)}. КД: ${SKILLS.nmRaise.cooldown}.`; },
@@ -565,7 +565,7 @@ Object.assign(SUBCLASS_SKILLS, {
   },
   nmBonePlate: {
     id: 'nmBonePlate', subclassId: 'human_necromancer', name: 'Костяная плата', type: 'active', semiPassive: true,
-    iconPng: 'img/skills/orc/pestilence.webp',
+    iconPng: 'img/skills/subclass/nmBonePlate.webp',
     maxLevel: 5,
     levels: [ { mpCost: 0, over: 20 }, { mpCost: 0, over: 18 }, { mpCost: 0, over: 16 }, { mpCost: 0, over: 14 }, { mpCost: 0, over: 12 } ],
     getDesc: (lvl) => { const d = SKILLS.nmBonePlate.levels[lvl-1]; return `<b>Срабатывает сама</b>, пока стоит в слоте: удар по вам больше ${scV(d.over + '%')} макс. HP целиком принимает слуга. Ничего не стоит — цена в занятом слоте.`; },
@@ -573,7 +573,7 @@ Object.assign(SUBCLASS_SKILLS, {
   },
   nmBonds: {
     id: 'nmBonds', subclassId: 'human_necromancer', name: 'Узы смерти', type: 'passive',
-    iconPng: 'img/skills/orc/orcBlood.webp',
+    iconPng: 'img/skills/subclass/nmBonds.webp',
     maxLevel: 5,
     levels: [ { atk: 6, hp: 5 }, { atk: 8, hp: 7 }, { atk: 10, hp: 10 }, { atk: 12, hp: 12 }, { atk: 15, hp: 15 } ],
     getDesc: (lvl) => { const d = SKILLS.nmBonds.levels[lvl-1]; return `Пассивно: каждый слуга получает ${scV(d.atk + '%')} вашей маг. атаки к удару и ${scV(d.hp + '%')} вашего макс. HP.`; },
@@ -581,7 +581,7 @@ Object.assign(SUBCLASS_SKILLS, {
   },
   nmFeast: {
     id: 'nmFeast', subclassId: 'human_necromancer', name: 'Пир смерти', type: 'passive',
-    iconPng: 'img/skills/orc/shamanWisdom.webp',
+    iconPng: 'img/skills/subclass/nmFeast.webp',
     maxLevel: 5,
     levels: [ { mp: 8 }, { mp: 10 }, { mp: 12 }, { mp: 14 }, { mp: 16 } ],
     getDesc: (lvl) => { const d = SKILLS.nmFeast.levels[lvl-1]; return `Пассивно: слуга пал — вы получаете ${scV(d.mp + '%')} макс. MP.`; },
@@ -781,7 +781,7 @@ Object.assign(SUBCLASS_SKILLS, {
   // ---- Скала ----
   rkTrance: {
     id: 'rkTrance', subclassId: 'orc_rock', name: 'Боевой транс', type: 'active', freeTurn: true,
-    iconPng: 'img/skills/orc/orcBlood.webp',
+    iconPng: 'img/skills/subclass/rkTrance.webp',
     maxLevel: 5, cooldown: 8, turns: 5,
     levels: [ { mpCost: 0, mult: 3, heal: 2 }, { mpCost: 0, mult: 3, heal: 2.5 }, { mpCost: 0, mult: 3, heal: 3 }, { mpCost: 0, mult: 3, heal: 3.5 }, { mpCost: 0, mult: 3, heal: 4 } ],
     getDesc: (lvl) => { const s = SKILLS.rkTrance, d = s.levels[lvl-1]; return `Не тратит ход: ${s.turns} ходов реген в бою ×${d.mult} и ${scV(d.heal + '%')} макс. HP в начале каждого вашего хода. Без затрат. Автобой входит в транс при HP ниже 60%. КД: ${s.cooldown}.`; },
@@ -789,7 +789,7 @@ Object.assign(SUBCLASS_SKILLS, {
   },
   rkGuardian: {
     id: 'rkGuardian', subclassId: 'orc_rock', name: 'Дух-хранитель', type: 'active', semiPassive: true,
-    iconPng: 'img/skills/orc/shamanWisdom.webp',
+    iconPng: 'img/skills/subclass/rkGuardian.webp',
     maxLevel: 5, every: 4, over: 15,
     levels: [ { mpCost: 0, take: 50 }, { mpCost: 0, take: 55 }, { mpCost: 0, take: 60 }, { mpCost: 0, take: 65 }, { mpCost: 0, take: 70 } ],
     getDesc: (lvl) => { const s = SKILLS.rkGuardian, d = s.levels[lvl-1]; return `<b>Срабатывает сам</b>, пока стоит в слоте: удар больше ${s.over}% макс. HP — дух предка забирает ${scV(d.take + '%')} урона. Не чаще раза в ${s.every} хода. Ничего не стоит — цена в занятом слоте.`; },
@@ -797,7 +797,7 @@ Object.assign(SUBCLASS_SKILLS, {
   },
   rkHide: {
     id: 'rkHide', subclassId: 'orc_rock', name: 'Шкура вместо щита', type: 'passive',
-    iconPng: 'img/skills/orc/ironSkin.webp',
+    iconPng: 'img/skills/subclass/rkHide.webp',
     maxLevel: 5,
     levels: [ { chance: 15 }, { chance: 17 }, { chance: 20 }, { chance: 22 }, { chance: 25 } ],
     getDesc: (lvl) => { const d = SKILLS.rkHide.levels[lvl-1]; return `Пассивно, только без щита: ${scV(d.chance + '%')} шанс принять удар на шкуру — урон вдвое меньше.`; },
@@ -805,7 +805,7 @@ Object.assign(SUBCLASS_SKILLS, {
   },
   rkBoil: {
     id: 'rkBoil', subclassId: 'orc_rock', name: 'Кровь кипит', type: 'passive',
-    iconPng: 'img/skills/orc/orcBlood.webp',
+    iconPng: 'img/skills/subclass/rkBoil.webp',
     maxLevel: 5,
     levels: [ { regen: 0.2 }, { regen: 0.25 }, { regen: 0.3 }, { regen: 0.35 }, { regen: 0.4 } ],
     getDesc: (lvl) => { const d = SKILLS.rkBoil.levels[lvl-1]; return `Пассивно: за каждые 10% потерянного HP — ${scV('+' + d.regen)} HP/сек регена в бою (до +${(d.regen * 9).toFixed(1)} на краю).`; },
@@ -815,7 +815,7 @@ Object.assign(SUBCLASS_SKILLS, {
   // ---- Берсерк ----
   bkFrenzy: {
     id: 'bkFrenzy', subclassId: 'orc_berserker', name: 'Неистовство', type: 'active',
-    iconPng: 'img/skills/orc/orcRage.webp',
+    iconPng: 'img/skills/subclass/bkFrenzy.webp',
     maxLevel: 5, cooldown: 8, turns: 4, hpCost: 10, defCut: 15,
     levels: [ { mpCost: 0, atb: 25, dmg: 20 }, { mpCost: 0, atb: 27, dmg: 22 }, { mpCost: 0, atb: 30, dmg: 25 }, { mpCost: 0, atb: 32, dmg: 27 }, { mpCost: 0, atb: 35, dmg: 30 } ],
     getDesc: (lvl) => { const s = SKILLS.bkFrenzy, d = s.levels[lvl-1]; return `Тратит ${s.hpCost}% HP: ${s.turns} хода шкала ATB быстрее на ${scV(d.atb + '%')}, урон ${scV('+' + d.dmg + '%')}, но входящий урон +${s.defCut}%. Автобой — при HP выше 50% против стаи или сильной твари. КД: ${s.cooldown}.`; },
@@ -823,7 +823,7 @@ Object.assign(SUBCLASS_SKILLS, {
   },
   bkThirst: {
     id: 'bkThirst', subclassId: 'orc_berserker', name: 'Жажда крови', type: 'active', semiPassive: true,
-    iconPng: 'img/skills/orc/bloodHarvest.webp',
+    iconPng: 'img/skills/subclass/bkThirst.webp',
     maxLevel: 5, every: 2,
     levels: [ { mpCost: 0, mult: 0.8 }, { mpCost: 0, mult: 0.9 }, { mpCost: 0, mult: 1.0 }, { mpCost: 0, mult: 1.1 }, { mpCost: 0, mult: 1.2 } ],
     getDesc: (lvl) => { const s = SKILLS.bkThirst, d = s.levels[lvl-1]; return `<b>Срабатывает сама</b>, пока стоит в слоте: убийство — в начале следующего хода бесплатный удар на ${scX(d.mult)} по новой цели (с двуручным — по двум). Не чаще раза в ${s.every} хода. Ничего не стоит — цена в занятом слоте.`; },
@@ -831,7 +831,7 @@ Object.assign(SUBCLASS_SKILLS, {
   },
   bkTwoHand: {
     id: 'bkTwoHand', subclassId: 'orc_berserker', name: 'Двуручник', type: 'passive',
-    iconPng: 'img/skills/warrior/weaponMasterW.webp',
+    iconPng: 'img/skills/subclass/bkTwoHand.webp',
     maxLevel: 5,
     levels: [ { dmg: 5, crit: 5 }, { dmg: 6, crit: 6 }, { dmg: 7, crit: 7 }, { dmg: 8, crit: 8 }, { dmg: 10, crit: 10 } ],
     getDesc: (lvl) => { const d = SKILLS.bkTwoHand.levels[lvl-1]; return `Пассивно, только с двуручным: урон ${scV('+' + d.dmg + '%')}, урон крита ${scV('+' + d.crit + '%')}, штраф уворота двуручного вдвое меньше.`; },
@@ -839,7 +839,7 @@ Object.assign(SUBCLASS_SKILLS, {
   },
   bkEdge: {
     id: 'bkEdge', subclassId: 'orc_berserker', name: 'На краю', type: 'passive',
-    iconPng: 'img/skills/orc/orcBlood.webp',
+    iconPng: 'img/skills/subclass/bkEdge.webp',
     maxLevel: 5,
     levels: [ { steal: 5 }, { steal: 6 }, { steal: 7 }, { steal: 8 }, { steal: 10 } ],
     getDesc: (lvl) => { const d = SKILLS.bkEdge.levels[lvl-1]; return `Пассивно: при HP ниже 50% ${scV(d.steal + '%')} вашего урона возвращается здоровьем, ниже 25% — вдвое больше.`; },
@@ -849,7 +849,7 @@ Object.assign(SUBCLASS_SKILLS, {
   // ---- Вождь ----
   chAncestor: {
     id: 'chAncestor', subclassId: 'orc_chieftain', name: 'Зов предка', type: 'active',
-    iconPng: 'img/skills/orc/spiritWrath.webp',
+    iconPng: 'img/skills/subclass/chAncestor.webp',
     maxLevel: 5, cooldown: 8, turns: 6,
     levels: [
       { mpCost: 10, wolf: 15, bear: 10 }, { mpCost: 11, wolf: 17, bear: 12 }, { mpCost: 12, wolf: 20, bear: 14 },
@@ -860,7 +860,7 @@ Object.assign(SUBCLASS_SKILLS, {
   },
   chBloodCurse: {
     id: 'chBloodCurse', subclassId: 'orc_chieftain', name: 'Проклятие крови', type: 'active', semiPassive: true,
-    iconPng: 'img/skills/orc/pestilence.webp',
+    iconPng: 'img/skills/subclass/chBloodCurse.webp',
     maxLevel: 5, turns: 3,
     levels: [ { mpCost: 0, pct: 20 }, { mpCost: 0, pct: 25 }, { mpCost: 0, pct: 30 }, { mpCost: 0, pct: 35 }, { mpCost: 0, pct: 40 } ],
     getDesc: (lvl) => { const d = SKILLS.chBloodCurse.levels[lvl-1]; return `<b>Срабатывает само</b>, пока стоит в слоте: тварь, ударившая вас критом, гниёт 3 хода — ${scV(d.pct + '%')} маг. атаки за ход. Ничего не стоит — цена в занятом слоте.`; },
@@ -868,7 +868,7 @@ Object.assign(SUBCLASS_SKILLS, {
   },
   chAncestralBlood: {
     id: 'chAncestralBlood', subclassId: 'orc_chieftain', name: 'Кровь предков', type: 'passive',
-    iconPng: 'img/skills/orc/orcBlood.webp',
+    iconPng: 'img/skills/subclass/chAncestralBlood.webp',
     maxLevel: 5,
     levels: [ { pct: 2 }, { pct: 2.5 }, { pct: 3 }, { pct: 3.5 }, { pct: 4 } ],
     getDesc: (lvl) => { const d = SKILLS.chAncestralBlood.levels[lvl-1]; return `Пассивно: ${scV(d.pct + '%')} вашего макс. HP прибавляется к маг. атаке.`; },
@@ -876,7 +876,7 @@ Object.assign(SUBCLASS_SKILLS, {
   },
   chTribute: {
     id: 'chTribute', subclassId: 'orc_chieftain', name: 'Дань павших', type: 'passive',
-    iconPng: 'img/skills/orc/shamanWisdom.webp',
+    iconPng: 'img/skills/subclass/chTribute.webp',
     maxLevel: 5,
     levels: [ { mp: 1.5, hp: 0.5 }, { mp: 1.7, hp: 0.6 }, { mp: 2, hp: 0.7 }, { mp: 2.2, hp: 0.8 }, { mp: 2.5, hp: 1 } ],
     getDesc: (lvl) => { const d = SKILLS.chTribute.levels[lvl-1]; return `Пассивно: каждое убийство — ${scV(d.mp + '%')} макс. MP и ${scV(d.hp + '%')} макс. HP.`; },
@@ -886,7 +886,7 @@ Object.assign(SUBCLASS_SKILLS, {
   // ---- Проклинатель ----
   hxCurse: {
     id: 'hxCurse', subclassId: 'orc_hexer', name: 'Наслать проклятие', type: 'active',
-    iconPng: 'img/skills/orc/pestilence.webp',
+    iconPng: 'img/skills/subclass/hxCurse.webp',
     maxLevel: 5, cooldown: 2,
     levels: [ { mpCost: 12, base: 20 }, { mpCost: 13, base: 24 }, { mpCost: 14, base: 28 }, { mpCost: 15, base: 32 }, { mpCost: 16, base: 36 } ],
     getDesc: (lvl) => { const d = SKILLS.hxCurse.levels[lvl-1]; return `Вешает на цель следующее проклятие, которого на ней ещё нет (сила — ${scV(d.base + '%')} маг. атаки):<br>• <b>Сухотка</b> — 6 ходов, урон растёт ×1.5 каждый ход;<br>• <b>Ломота</b> — 5 ходов бьёт тварь каждый раз, когда она сама действует;<br>• <b>Приговор</b> — 3 хода копит 30% всего вашего урона по цели и выдаёт разом. MP: ${scV(d.mpCost)}. КД: ${SKILLS.hxCurse.cooldown}.`; },
@@ -895,7 +895,7 @@ Object.assign(SUBCLASS_SKILLS, {
   },
   hxBurst: {
     id: 'hxBurst', subclassId: 'orc_hexer', name: 'Взрыв проклятий', type: 'active', semiPassive: true,
-    iconPng: 'img/skills/orc/spiritWrath.webp',
+    iconPng: 'img/skills/subclass/hxBurst.webp',
     maxLevel: 5,
     levels: [ { mpCost: 0, pct: 40 }, { mpCost: 0, pct: 50 }, { mpCost: 0, pct: 60 }, { mpCost: 0, pct: 70 }, { mpCost: 0, pct: 80 } ],
     getDesc: (lvl) => { const d = SKILLS.hxBurst.levels[lvl-1]; return `<b>Срабатывает сам</b>, пока стоит в слоте: проклятая тварь умерла — её проклятия перескакивают на соседа, а все рядом получают ${scV(d.pct + '%')} маг. атаки за каждое проклятие. Ничего не стоит — цена в занятом слоте.`; },
@@ -903,7 +903,7 @@ Object.assign(SUBCLASS_SKILLS, {
   },
   hxBlackBook: {
     id: 'hxBlackBook', subclassId: 'orc_hexer', name: 'Чёрная книга', type: 'passive',
-    iconPng: 'img/skills/orc/shamanWisdom.webp',
+    iconPng: 'img/skills/subclass/hxBlackBook.webp',
     maxLevel: 5,
     levels: [ { pct: 6 }, { pct: 7 }, { pct: 8 }, { pct: 9 }, { pct: 10 } ],
     getDesc: (lvl) => { const d = SKILLS.hxBlackBook.levels[lvl-1]; return `Пассивно: каждое разное проклятие на цели (Гниение, Сухотка, Ломота, Приговор) — ${scV('+' + d.pct + '%')} к урону всех ваших проклятий по ней.`; },
@@ -911,7 +911,7 @@ Object.assign(SUBCLASS_SKILLS, {
   },
   hxCarrion: {
     id: 'hxCarrion', subclassId: 'orc_hexer', name: 'Падаль кормит', type: 'passive',
-    iconPng: 'img/skills/mage/manaRegen.webp',
+    iconPng: 'img/skills/subclass/hxCarrion.webp',
     maxLevel: 5,
     levels: [ { mp: 3 }, { mp: 3.5 }, { mp: 4 }, { mp: 4.5 }, { mp: 5 } ],
     getDesc: (lvl) => { const d = SKILLS.hxCarrion.levels[lvl-1]; return `Пассивно: проклятая тварь умерла — вы получаете ${scV(d.mp + '%')} макс. MP.`; },
@@ -921,7 +921,7 @@ Object.assign(SUBCLASS_SKILLS, {
   // ---- Костоправ ----
   hlWarpaint: {
     id: 'hlWarpaint', subclassId: 'orc_healer', name: 'Боевая раскраска', type: 'active', freeTurn: true,
-    iconPng: 'img/skills/orc/orcBlood.webp',
+    iconPng: 'img/skills/subclass/hlWarpaint.webp',
     maxLevel: 5, cooldown: 3,
     levels: [ { mpCost: 12, dmg: 10, cut: 5 }, { mpCost: 13, dmg: 12, cut: 6 }, { mpCost: 14, dmg: 15, cut: 7 }, { mpCost: 15, dmg: 17, cut: 8 }, { mpCost: 16, dmg: 20, cut: 10 } ],
     getDesc: (lvl) => { const d = SKILLS.hlWarpaint.levels[lvl-1]; return `Не тратит ход: до конца боя ваш урон ${scV('+' + d.dmg + '%')}, входящий ${scV('−' + d.cut + '%')}. Автобой раскрашивается в начале боя. MP: ${scV(d.mpCost)}.`; },
@@ -929,7 +929,7 @@ Object.assign(SUBCLASS_SKILLS, {
   },
   hlBloodBond: {
     id: 'hlBloodBond', subclassId: 'orc_healer', name: 'Кровная связь', type: 'active', semiPassive: true,
-    iconPng: 'img/skills/orc/bloodHarvest.webp',
+    iconPng: 'img/skills/subclass/hlBloodBond.webp',
     maxLevel: 5, threshold: 35, every: 4,
     levels: [ { mpCost: 0, pct: 50 }, { mpCost: 0, pct: 60 }, { mpCost: 0, pct: 70 }, { mpCost: 0, pct: 80 }, { mpCost: 0, pct: 90 } ],
     getDesc: (lvl) => { const s = SKILLS.hlBloodBond, d = s.levels[lvl-1]; return `<b>Срабатывает сама</b>, пока стоит в слоте: HP упало ниже ${s.threshold}% — тянет кровь со всех врагов (${scV(d.pct + '%')} маг. атаки с каждого) и лечит вас на всю сумму. Не чаще раза в ${s.every} хода.`; },
@@ -937,7 +937,7 @@ Object.assign(SUBCLASS_SKILLS, {
   },
   hlVitality: {
     id: 'hlVitality', subclassId: 'orc_healer', name: 'Живучесть', type: 'passive',
-    iconPng: 'img/skills/orc/orcBlood.webp',
+    iconPng: 'img/skills/subclass/hlVitality.webp',
     maxLevel: 5,
     levels: [ { pct: 10 }, { pct: 12 }, { pct: 15 }, { pct: 17 }, { pct: 20 } ],
     getDesc: (lvl) => { const d = SKILLS.hlVitality.levels[lvl-1]; return `Пассивно, в бою: любое лечение (навыки, зелья, реген, еда) лечит ещё на ${scV(d.pct + '%')} сверху.`; },
@@ -945,7 +945,7 @@ Object.assign(SUBCLASS_SKILLS, {
   },
   hlBrews: {
     id: 'hlBrews', subclassId: 'orc_healer', name: 'Отвары', type: 'passive',
-    iconPng: 'img/skills/mage/manaRegen.webp',
+    iconPng: 'img/skills/subclass/hlBrews.webp',
     maxLevel: 5,
     levels: [ { pct: 10 }, { pct: 12 }, { pct: 15 }, { pct: 17 }, { pct: 20 } ],
     getDesc: (lvl) => { const d = SKILLS.hlBrews.levels[lvl-1]; return `Пассивно, в бою: любое лечение возвращает ещё и ману — ${scV(d.pct + '%')} от вылеченного.`; },
@@ -979,7 +979,7 @@ Object.assign(SUBCLASS_SKILLS, {
   },
   smVoice: {
     id: 'smVoice', subclassId: 'orc_shaman', name: 'Голос предков', type: 'passive',
-    iconPng: 'img/skills/orc/shamanWisdom.webp',
+    iconPng: 'img/skills/subclass/smVoice.webp',
     maxLevel: 5,
     levels: [ { pct: 10 }, { pct: 14 }, { pct: 18 }, { pct: 21 }, { pct: 25 } ],
     getDesc: (lvl) => { const d = SKILLS.smVoice.levels[lvl-1]; return `Пассивно: выстрелы тотема Ярости и лечение тотема Духов ${scV('+' + d.pct + '%')}.`; },
@@ -1167,7 +1167,7 @@ Object.assign(SUBCLASS_SKILLS, {
   // ---- Терновый страж ----
   tgRoot: {
     id: 'tgRoot', subclassId: 'elf_thornguard', name: 'Укоренение', type: 'active', freeTurn: true,
-    iconPng: 'img/skills/elf/thorn_whirl.webp',
+    iconPng: 'img/skills/subclass/tgRoot.webp',
     maxLevel: 5, cooldown: 8, turns: 5,
     levels: [ { mpCost: 0, share: 40 }, { mpCost: 0, share: 45 }, { mpCost: 0, share: 50 }, { mpCost: 0, share: 55 }, { mpCost: 0, share: 60 } ],
     getDesc: (lvl) => { const s = SKILLS.tgRoot, d = s.levels[lvl-1]; return `Не тратит ход: ${s.turns} ходов ${scV(d.share + '%')} каждого удара уходит в корни (приходит за 3 хода), и половина ушедшего рассасывается. Без затрат. Автобой — против стаи или сильной твари. КД: ${s.cooldown}.`; },
@@ -1175,7 +1175,7 @@ Object.assign(SUBCLASS_SKILLS, {
   },
   tgBarbs: {
     id: 'tgBarbs', subclassId: 'elf_thornguard', name: 'Шипастая кора', type: 'active', semiPassive: true,
-    iconPng: 'img/skills/elf/grace.webp',
+    iconPng: 'img/skills/subclass/tgBarbs.webp',
     maxLevel: 5,
     levels: [ { mpCost: 0, pct: 20, cut: 8 }, { mpCost: 0, pct: 24, cut: 10 }, { mpCost: 0, pct: 27, cut: 12 }, { mpCost: 0, pct: 31, cut: 13 }, { mpCost: 0, pct: 35, cut: 15 } ],
     getDesc: (lvl) => { const d = SKILLS.tgBarbs.levels[lvl-1]; return `<b>Работает сама</b>, пока стоит в слоте: входящий урон ${scV('−' + d.cut + '%')}, а тварь, попавшая по вам — ${scV(d.pct + '%')} урона возвращается ей шипами, за крит — вдвое. Ничего не стоит — цена в занятом слоте.`; },
@@ -1183,7 +1183,7 @@ Object.assign(SUBCLASS_SKILLS, {
   },
   tgRoots: {
     id: 'tgRoots', subclassId: 'elf_thornguard', name: 'Корни принимают удар', type: 'passive',
-    iconPng: 'img/skills/warrior/resilience.webp',
+    iconPng: 'img/skills/subclass/tgRoots.webp',
     maxLevel: 5,
     levels: [ { share: 20 }, { share: 24 }, { share: 27 }, { share: 31 }, { share: 35 } ],
     getDesc: (lvl) => { const d = SKILLS.tgRoots.levels[lvl-1]; return `Пассивно, в бою: ${scV(d.share + '%')} каждого удара приходит не сразу, а за 3 хода, и половина отложенного рассасывается. Любое лечение сначала гасит отложенный урон.`; },
@@ -1191,7 +1191,7 @@ Object.assign(SUBCLASS_SKILLS, {
   },
   tgSap: {
     id: 'tgSap', subclassId: 'elf_thornguard', name: 'Сок древа', type: 'passive',
-    iconPng: 'img/skills/elf/forest_blessing.webp',
+    iconPng: 'img/skills/subclass/tgSap.webp',
     maxLevel: 5,
     levels: [ { pct: 10 }, { pct: 12 }, { pct: 15 }, { pct: 17 }, { pct: 20 } ],
     getDesc: (lvl) => { const d = SKILLS.tgSap.levels[lvl-1]; return `Пассивно, в бою: любое лечение, включая реген, сильнее на ${scV(d.pct + '%')}.`; },
@@ -1201,7 +1201,7 @@ Object.assign(SUBCLASS_SKILLS, {
   // ---- Следопыт ----
   pfSeed: {
     id: 'pfSeed', subclassId: 'elf_pathfinder', name: 'Семя терна', type: 'active', semiPassive: true,
-    iconPng: 'img/skills/elf/thorn_whirl.webp',
+    iconPng: 'img/skills/subclass/pfSeed.webp',
     maxLevel: 5, chance: 30, turns: 3,
     levels: [ { mpCost: 0, power: 30 }, { mpCost: 0, power: 35 }, { mpCost: 0, power: 40 }, { mpCost: 0, power: 45 }, { mpCost: 0, power: 50 } ],
     getDesc: (lvl) => { const s = SKILLS.pfSeed, d = s.levels[lvl-1]; return `<b>Срабатывает само</b>, пока стоит в слоте: любой ваш удар с шансом ${s.chance}% сажает в цель семя терна (до ${SEED_MAX}). Через ${s.turns} хода семя распускается — ${scV(d.power + '%')} атаки, защита не режет. Ничего не стоит — цена в занятом слоте.`; },
@@ -1209,7 +1209,7 @@ Object.assign(SUBCLASS_SKILLS, {
   },
   pfLeaves: {
     id: 'pfLeaves', subclassId: 'elf_pathfinder', name: 'Шквал листьев', type: 'active',
-    iconPng: 'img/skills/elf/grace.webp',
+    iconPng: 'img/skills/subclass/pfLeaves.webp',
     maxLevel: 5, cooldown: 4,
     levels: [ { mpCost: 8, multiplier: 0.60 }, { mpCost: 8, multiplier: 0.65 }, { mpCost: 9, multiplier: 0.70 }, { mpCost: 9, multiplier: 0.75 }, { mpCost: 10, multiplier: 0.80 } ],
     getDesc: (lvl) => { const d = SKILLS.pfLeaves.levels[lvl-1]; return `Листья режут всех врагов на ${scX(d.multiplier)}, каждому — семя терна. MP: ${scV(d.mpCost)}. КД: ${SKILLS.pfLeaves.cooldown}.`; },
@@ -1217,7 +1217,7 @@ Object.assign(SUBCLASS_SKILLS, {
   },
   pfHawk: {
     id: 'pfHawk', subclassId: 'elf_pathfinder', name: 'Глаз ястреба', type: 'passive',
-    iconPng: 'img/skills/warrior/weaponMasterW.webp',
+    iconPng: 'img/skills/subclass/pfHawk.webp',
     maxLevel: 5,
     levels: [ { acc: 5, ignore: 10 }, { acc: 6, ignore: 12 }, { acc: 7, ignore: 15 }, { acc: 8, ignore: 17 }, { acc: 10, ignore: 20 } ],
     getDesc: (lvl) => { const d = SKILLS.pfHawk.levels[lvl-1]; return `Пассивно: точность ${scV('+' + d.acc)}, удары навыков пробивают ${scV(d.ignore + '%')} защиты твари.`; },
@@ -1225,7 +1225,7 @@ Object.assign(SUBCLASS_SKILLS, {
   },
   pfGrowth: {
     id: 'pfGrowth', subclassId: 'elf_pathfinder', name: 'Буйный рост', type: 'passive',
-    iconPng: 'img/skills/elf/forest_blessing.webp',
+    iconPng: 'img/skills/subclass/pfGrowth.webp',
     maxLevel: 5,
     levels: [ { pct: 10 }, { pct: 12 }, { pct: 15 }, { pct: 17 }, { pct: 20 } ],
     getDesc: (lvl) => { const d = SKILLS.pfGrowth.levels[lvl-1]; return `Пассивно: семена бьют на ${scV(d.pct + '%')} сильнее и распускаются на ход раньше.`; },
@@ -1235,7 +1235,7 @@ Object.assign(SUBCLASS_SKILLS, {
   // ---- Певец клинка ----
   bsWind: {
     id: 'bsWind', subclassId: 'elf_bladesinger', name: 'Песнь ветра', type: 'active', freeTurn: true,
-    iconPng: 'img/skills/elf/fast_prayer.webp',
+    iconPng: 'img/skills/subclass/bsWind.webp',
     maxLevel: 5, cooldown: 8, turns: 5,
     levels: [ { mpCost: 6, atb: 20 }, { mpCost: 6, atb: 22 }, { mpCost: 7, atb: 25 }, { mpCost: 7, atb: 27 }, { mpCost: 8, atb: 30 } ],
     getDesc: (lvl) => { const s = SKILLS.bsWind, d = s.levels[lvl-1]; return `Не тратит ход: ${s.turns} ходов шкала хода ${scV('+' + d.atb + '%')}, и Песнь не падает (одинаковые действия подряд её не сбивают). Считается навыком для Песни. MP: ${scV(d.mpCost)}. КД: ${s.cooldown}.`; },
@@ -1243,7 +1243,7 @@ Object.assign(SUBCLASS_SKILLS, {
   },
   bsSprout: {
     id: 'bsSprout', subclassId: 'elf_bladesinger', name: 'Росток жизни', type: 'active', semiPassive: true,
-    iconPng: 'img/skills/elf/nature_heal.webp',
+    iconPng: 'img/skills/subclass/bsSprout.webp',
     maxLevel: 5,
     levels: [ { mpCost: 0, pct: 60 }, { mpCost: 0, pct: 70 }, { mpCost: 0, pct: 80 }, { mpCost: 0, pct: 90 }, { mpCost: 0, pct: 100 } ],
     getDesc: (lvl) => { const d = SKILLS.bsSprout.levels[lvl-1]; return `<b>Срабатывает сам</b>, пока стоит в слоте: лечение сверх полного HP бьёт цель Жизнью — ${scV(d.pct + '%')} излишка. Ничего не стоит — цена в занятом слоте.`; },
@@ -1251,7 +1251,7 @@ Object.assign(SUBCLASS_SKILLS, {
   },
   bsHarmony: {
     id: 'bsHarmony', subclassId: 'elf_bladesinger', name: 'Гармония', type: 'passive',
-    iconPng: 'img/skills/mage/weaponMasterM.webp',
+    iconPng: 'img/skills/subclass/bsHarmony.webp',
     maxLevel: 5,
     levels: [ { pct: 10 }, { pct: 12 }, { pct: 15 }, { pct: 17 }, { pct: 20 } ],
     getDesc: (lvl) => { const d = SKILLS.bsHarmony.levels[lvl-1]; return `Пассивно: ${scV(d.pct + '%')} физ. атаки прибавляется к маг. атаке и ${scV(d.pct + '%')} маг. атаки — к физической.`; },
@@ -1259,7 +1259,7 @@ Object.assign(SUBCLASS_SKILLS, {
   },
   bsLiving: {
     id: 'bsLiving', subclassId: 'elf_bladesinger', name: 'Живой клинок', type: 'passive',
-    iconPng: 'img/skills/elf/heal.webp',
+    iconPng: 'img/skills/subclass/bsLiving.webp',
     maxLevel: 5,
     levels: [ { pct: 6 }, { pct: 7 }, { pct: 8 }, { pct: 9 }, { pct: 10 } ],
     getDesc: (lvl) => { const d = SKILLS.bsLiving.levels[lvl-1]; return `Пассивно: ваш урон Жизнью лечит вас на ${scV(d.pct + '%')} от нанесённого.`; },
@@ -1269,7 +1269,7 @@ Object.assign(SUBCLASS_SKILLS, {
   // ---- Звездочёт ----
   sgReflect: {
     id: 'sgReflect', subclassId: 'elf_stargazer', name: 'Отражённый свет', type: 'active', semiPassive: true,
-    iconPng: 'img/skills/elf/fast_prayer.webp',
+    iconPng: 'img/skills/subclass/sgReflect.webp',
     maxLevel: 5,
     levels: [ { mpCost: 0, pct: 60 }, { mpCost: 0, pct: 70 }, { mpCost: 0, pct: 80 }, { mpCost: 0, pct: 90 }, { mpCost: 0, pct: 100 } ],
     getDesc: (lvl) => { const d = SKILLS.sgReflect.levels[lvl-1]; return `<b>Срабатывает сам</b>, пока стоит в слоте: урон сверх нужного для убийства уходит в следующую тварь — ${scV(d.pct + '%')} излишка, в начале вашего хода. Ничего не стоит — цена в занятом слоте.`; },
@@ -1277,7 +1277,7 @@ Object.assign(SUBCLASS_SKILLS, {
   },
   sgStarfall: {
     id: 'sgStarfall', subclassId: 'elf_stargazer', name: 'Звёздный луч', type: 'active',
-    iconPng: 'img/skills/elf/life_drain.webp',
+    iconPng: 'img/skills/subclass/sgStarfall.webp',
     maxLevel: 5, cooldown: 4,
     levels: [ { mpCost: 14, multiplier: 2.2 }, { mpCost: 15, multiplier: 2.4 }, { mpCost: 16, multiplier: 2.6 }, { mpCost: 17, multiplier: 2.8 }, { mpCost: 18, multiplier: 3.0 } ],
     getDesc: (lvl) => { const d = SKILLS.sgStarfall.levels[lvl-1]; return `Луч в одну цель на ${scX(d.multiplier)}; если на цель уже летит звезда — она падает прямо сейчас. MP: ${scV(d.mpCost)}. КД: ${SKILLS.sgStarfall.cooldown}.`; },
@@ -1285,7 +1285,7 @@ Object.assign(SUBCLASS_SKILLS, {
   },
   sgFocus: {
     id: 'sgFocus', subclassId: 'elf_stargazer', name: 'Сосредоточение', type: 'passive',
-    iconPng: 'img/skills/mage/weaponMasterM.webp',
+    iconPng: 'img/skills/subclass/sgFocus.webp',
     maxLevel: 5,
     levels: [ { pct: 6 }, { pct: 7 }, { pct: 8 }, { pct: 9 }, { pct: 10 } ],
     getDesc: (lvl) => { const d = SKILLS.sgFocus.levels[lvl-1]; return `Пассивно: каждое заклинание подряд в ту же цель — ${scV('+' + d.pct + '%')} урона по ней (до 5 раз). Сменили цель — счёт заново.`; },
@@ -1293,7 +1293,7 @@ Object.assign(SUBCLASS_SKILLS, {
   },
   sgClear: {
     id: 'sgClear', subclassId: 'elf_stargazer', name: 'Ясный взор', type: 'passive',
-    iconPng: 'img/skills/mage/manaRegen.webp',
+    iconPng: 'img/skills/subclass/sgClear.webp',
     maxLevel: 5,
     levels: [ { pct: 10 }, { pct: 14 }, { pct: 18 }, { pct: 21 }, { pct: 25 } ],
     getDesc: (lvl) => { const d = SKILLS.sgClear.levels[lvl-1]; return `Пассивно: ваши заклинания на ${scV(d.pct + '%')} сильнее против маг. защиты (урон по твари с маг. защитой), щит маны тварей берёт на ${scV(d.pct + '%')} меньше.`; },
@@ -1303,7 +1303,7 @@ Object.assign(SUBCLASS_SKILLS, {
   // ---- Хранитель Рощи ----
   gkGift: {
     id: 'gkGift', subclassId: 'elf_grovekeeper', name: 'Дар рощи', type: 'active', freeTurn: true,
-    iconPng: 'img/skills/elf/forest_blessing.webp',
+    iconPng: 'img/skills/subclass/gkGift.webp',
     maxLevel: 5, cooldown: 3,
     levels: [ { mpCost: 14, regen: 1.5, heal: 10, dmg: 6 }, { mpCost: 15, regen: 1.8, heal: 12, dmg: 7 }, { mpCost: 16, regen: 2.2, heal: 15, dmg: 9 }, { mpCost: 17, regen: 2.6, heal: 17, dmg: 10 }, { mpCost: 18, regen: 3, heal: 20, dmg: 12 } ],
     getDesc: (lvl) => { const d = SKILLS.gkGift.levels[lvl-1]; return `Не тратит ход: до конца боя ${scV(d.regen + '%')} макс. HP лечения в начале каждого хода, всё ваше лечение ${scV('+' + d.heal + '%')} и урон ${scV('+' + d.dmg + '%')}. Автобой — в начале боя. MP: ${scV(d.mpCost)}.`; },
@@ -1311,7 +1311,7 @@ Object.assign(SUBCLASS_SKILLS, {
   },
   gkBud: {
     id: 'gkBud', subclassId: 'elf_grovekeeper', name: 'Бутон', type: 'active', semiPassive: true,
-    iconPng: 'img/skills/elf/nature_heal.webp',
+    iconPng: 'img/skills/subclass/gkBud.webp',
     maxLevel: 5, threshold: 40, every: 5, turns: 3,
     levels: [ { mpCost: 0, total: 30 }, { mpCost: 0, total: 35 }, { mpCost: 0, total: 40 }, { mpCost: 0, total: 45 }, { mpCost: 0, total: 50 } ],
     getDesc: (lvl) => { const s = SKILLS.gkBud, d = s.levels[lvl-1]; return `<b>Распускается сам</b>, пока стоит в слоте: HP упало ниже ${s.threshold}% — лечит ${scV(d.total + '%')} макс. HP за 3 хода. Не чаще раза в ${s.every} ходов.`; },
@@ -1319,7 +1319,7 @@ Object.assign(SUBCLASS_SKILLS, {
   },
   gkDew: {
     id: 'gkDew', subclassId: 'elf_grovekeeper', name: 'Живительная роса', type: 'passive',
-    iconPng: 'img/skills/elf/fast_prayer.webp',
+    iconPng: 'img/skills/subclass/gkDew.webp',
     maxLevel: 5,
     levels: [ { chance: 20 }, { chance: 25 }, { chance: 30 }, { chance: 35 }, { chance: 40 } ],
     getDesc: (lvl) => { const d = SKILLS.gkDew.levels[lvl-1]; return `Пассивно: каждый тик лечения во времени с шансом ${scV(d.chance + '%')} продлевает его на ход.`; },
@@ -1327,7 +1327,7 @@ Object.assign(SUBCLASS_SKILLS, {
   },
   gkCycle: {
     id: 'gkCycle', subclassId: 'elf_grovekeeper', name: 'Круговорот жизни', type: 'passive',
-    iconPng: 'img/skills/mage/manaRegen.webp',
+    iconPng: 'img/skills/subclass/gkCycle.webp',
     maxLevel: 5,
     levels: [ { pct: 10 }, { pct: 12 }, { pct: 15 }, { pct: 17 }, { pct: 20 } ],
     getDesc: (lvl) => { const d = SKILLS.gkCycle.levels[lvl-1]; return `Пассивно, в бою: любое лечение возвращает ману — ${scV(d.pct + '%')} от вылеченного.`; },
@@ -1345,7 +1345,7 @@ Object.assign(SUBCLASS_SKILLS, {
   },
   drHunt: {
     id: 'drHunt', subclassId: 'elf_druid', name: 'Общая охота', type: 'active', semiPassive: true,
-    iconPng: 'img/allies/druid_owl.webp',
+    iconPng: 'img/skills/subclass/drHunt.webp',
     maxLevel: 5,
     levels: [ { mpCost: 0, mult: 0.8 }, { mpCost: 0, mult: 0.9 }, { mpCost: 0, mult: 1.0 }, { mpCost: 0, mult: 1.1 }, { mpCost: 0, mult: 1.2 } ],
     getDesc: (lvl) => { const d = SKILLS.drHunt.levels[lvl-1]; return `<b>Срабатывает сама</b>, пока стоит в слоте: заклинание с шансом крита героя — дух бьёт ту же цель бесплатно на ${scX(d.mult)} своей силы. Ничего не стоит — цена в занятом слоте.`; },
@@ -1353,7 +1353,7 @@ Object.assign(SUBCLASS_SKILLS, {
   },
   drBonds: {
     id: 'drBonds', subclassId: 'elf_druid', name: 'Узы рощи', type: 'passive',
-    iconPng: 'img/skills/elf/forest_blessing.webp',
+    iconPng: 'img/skills/subclass/drBonds.webp',
     maxLevel: 5,
     levels: [ { atk: 6, hp: 5 }, { atk: 8, hp: 7 }, { atk: 10, hp: 10 }, { atk: 12, hp: 12 }, { atk: 15, hp: 15 } ],
     getDesc: (lvl) => { const d = SKILLS.drBonds.levels[lvl-1]; return `Пассивно: дух получает ${scV(d.atk + '%')} вашей маг. атаки к удару и ${scV(d.hp + '%')} вашего макс. HP.`; },
@@ -1361,7 +1361,7 @@ Object.assign(SUBCLASS_SKILLS, {
   },
   drGrowing: {
     id: 'drGrowing', subclassId: 'elf_druid', name: 'Растущая связь', type: 'passive',
-    iconPng: 'img/skills/elf/fast_prayer.webp',
+    iconPng: 'img/skills/subclass/drGrowing.webp',
     maxLevel: 5,
     levels: [ { per: 1, cap: 20 }, { per: 1.2, cap: 22 }, { per: 1.5, cap: 25 }, { per: 1.7, cap: 27 }, { per: 2, cap: 30 } ],
     getDesc: (lvl) => { const d = SKILLS.drGrowing.levels[lvl-1]; return `Пассивно: каждое убийство на охоте делает духа сильнее на ${scV(d.per + '%')} (до ${scV('+' + d.cap + '%')}). Дух пал — рост с нуля.`; },
@@ -1546,7 +1546,7 @@ Object.assign(SUBCLASS_SKILLS, {
   // ---- Грозовой страж ----
   sgArmor: {
     id: 'sgArmor', subclassId: 'drow_stormguard', name: 'Грозовой доспех', type: 'active', freeTurn: true,
-    iconPng: 'img/skills/drow/storm_legacy.webp',
+    iconPng: 'img/skills/subclass/sgArmor.webp',
     maxLevel: 5, cooldown: 8, turns: 5,
     levels: [ { mpCost: 0, pct: 5, cut: 15 }, { mpCost: 0, pct: 6, cut: 18 }, { mpCost: 0, pct: 7, cut: 22 }, { mpCost: 0, pct: 8, cut: 26 }, { mpCost: 0, pct: 10, cut: 30 } ],
     getDesc: (lvl) => { const s = SKILLS.sgArmor, d = s.levels[lvl-1]; return `Не тратит ход: ${s.turns} ходов входящий урон ${scV('−' + d.cut + '%')}, каждый удар по вам даёт твари 2 заряда Статики и бьёт её молнией на ${scV(d.pct + '%')} атаки. Без затрат. Автобой — против стаи или сильной твари. КД: ${s.cooldown}.`; },
@@ -1554,7 +1554,7 @@ Object.assign(SUBCLASS_SKILLS, {
   },
   sgStatic: {
     id: 'sgStatic', subclassId: 'drow_stormguard', name: 'Статика', type: 'active', semiPassive: true,
-    iconPng: 'img/skills/drow/discharge.webp',
+    iconPng: 'img/skills/subclass/sgStatic.webp',
     maxLevel: 5,
     levels: [ { mpCost: 0, pct: 25 }, { mpCost: 0, pct: 28 }, { mpCost: 0, pct: 32 }, { mpCost: 0, pct: 36 }, { mpCost: 0, pct: 40 } ],
     getDesc: (lvl) => { const d = SKILLS.sgStatic.levels[lvl-1]; return `<b>Работает сама</b>, пока стоит в слоте: каждый удар по вам — заряд Статики на ударившую тварь. На ${STATIC_MAX} — разряд: ${scV(d.pct + '%')} атаки молнией и шкала хода ${scV('−50%')}, заряды сгорают.`; },
@@ -1562,7 +1562,7 @@ Object.assign(SUBCLASS_SKILLS, {
   },
   sgGround: {
     id: 'sgGround', subclassId: 'drow_stormguard', name: 'Заземление', type: 'passive',
-    iconPng: 'img/skills/warrior/resilience.webp',
+    iconPng: 'img/skills/subclass/sgGround.webp',
     maxLevel: 5,
     levels: [ { magic: 10 }, { magic: 12 }, { magic: 15 }, { magic: 17 }, { magic: 20 } ],
     getDesc: (lvl) => { const d = SKILLS.sgGround.levels[lvl-1]; return `Пассивно: магический урон по вам ${scV('−' + d.magic + '%')}, и каждый заряд Статики на твари — её удары ${scV('−5%')}.`; },
@@ -1570,7 +1570,7 @@ Object.assign(SUBCLASS_SKILLS, {
   },
   sgConductor: {
     id: 'sgConductor', subclassId: 'drow_stormguard', name: 'Проводник', type: 'passive',
-    iconPng: 'img/skills/drow/storm_legacy.webp',
+    iconPng: 'img/skills/subclass/sgConductor.webp',
     maxLevel: 5,
     levels: [ { def: 30 }, { def: 40 }, { def: 50 }, { def: 60 }, { def: 70 } ],
     getDesc: (lvl) => { const d = SKILLS.sgConductor.levels[lvl-1]; return `Пассивно: Наследие Грозы бьёт на один удар чаще, и к ответной молнии прибавляется ${scV(d.def + '%')} вашей физ. защиты.`; },
@@ -1580,7 +1580,7 @@ Object.assign(SUBCLASS_SKILLS, {
   // ---- Ассасин ----
   asStep: {
     id: 'asStep', subclassId: 'drow_assassin', name: 'Шаг тени', type: 'active',
-    iconPng: 'img/skills/drow/lightning_speed.webp',
+    iconPng: 'img/skills/subclass/asStep.webp',
     maxLevel: 5, cooldown: 6,
     levels: [ { mpCost: 10, dmg: 10 }, { mpCost: 10, dmg: 15 }, { mpCost: 11, dmg: 20 }, { mpCost: 11, dmg: 25 }, { mpCost: 12, dmg: 30 } ],
     getDesc: (lvl) => { const d = SKILLS.asStep.levels[lvl-1]; return `Шаг в тень: шкала хода сразу полная — следующий ход прямо сейчас, и он ${scV('+' + d.dmg + '%')} к урону. MP: ${scV(d.mpCost)}. КД: ${SKILLS.asStep.cooldown}.`; },
@@ -1588,7 +1588,7 @@ Object.assign(SUBCLASS_SKILLS, {
   },
   asSting: {
     id: 'asSting', subclassId: 'drow_assassin', name: 'Ядовитое жало', type: 'active', semiPassive: true,
-    iconPng: 'img/skills/drow/chain_mind.webp',
+    iconPng: 'img/skills/subclass/asSting.webp',
     maxLevel: 5,
     levels: [ { mpCost: 0, tick: 4 }, { mpCost: 0, tick: 5 }, { mpCost: 0, tick: 6 }, { mpCost: 0, tick: 7 }, { mpCost: 0, tick: 8 } ],
     getDesc: (lvl) => { const d = SKILLS.asSting.levels[lvl-1]; return `<b>Работает само</b>, пока стоит в слоте: каждый удар — слой яда (до 5). Каждый ход слой бьёт на ${scV(d.tick + '%')} атаки, и каждый слой — ${scV('+3%')} к вашему урону по цели.`; },
@@ -1596,7 +1596,7 @@ Object.assign(SUBCLASS_SKILLS, {
   },
   asDual: {
     id: 'asDual', subclassId: 'drow_assassin', name: 'Парные клинки', type: 'passive',
-    iconPng: 'img/skills/warrior/weaponMasterW.webp',
+    iconPng: 'img/skills/subclass/asDual.webp',
     maxLevel: 5,
     levels: [ { off: 47 }, { off: 49 }, { off: 51 }, { off: 53 }, { off: 55 } ],
     getDesc: (lvl) => { const d = SKILLS.asDual.levels[lvl-1]; return `Пассивно, с парным оружием: вторая рука даёт ${scV(d.off + '%')} своей атаки вместо 40%, штрафа точности нет.`; },
@@ -1604,7 +1604,7 @@ Object.assign(SUBCLASS_SKILLS, {
   },
   asLight: {
     id: 'asLight', subclassId: 'drow_assassin', name: 'Лёгкая рука', type: 'passive',
-    iconPng: 'img/skills/drow/lightning_speed.webp',
+    iconPng: 'img/skills/subclass/asLight.webp',
     maxLevel: 5,
     levels: [ { atb: 15 }, { atb: 19 }, { atb: 22 }, { atb: 26 }, { atb: 30 } ],
     getDesc: (lvl) => { const d = SKILLS.asLight.levels[lvl-1]; return `Пассивно: убийство — ваша шкала хода ${scV('+' + d.atb + '%')}.`; },
@@ -1614,7 +1614,7 @@ Object.assign(SUBCLASS_SKILLS, {
   // ---- Теневой ткач ----
   swDouble: {
     id: 'swDouble', subclassId: 'drow_shadowweaver', name: 'Теневой двойник', type: 'active', freeTurn: true,
-    iconPng: 'img/skills/drow/discharge.webp',
+    iconPng: 'img/skills/subclass/swDouble.webp',
     maxLevel: 5, cooldown: 9, turns: 5,
     levels: [ { mpCost: 16, pct: 40 }, { mpCost: 17, pct: 45 }, { mpCost: 18, pct: 50 }, { mpCost: 19, pct: 55 }, { mpCost: 20, pct: 60 } ],
     getDesc: (lvl) => { const s = SKILLS.swDouble, d = s.levels[lvl-1]; return `Не тратит ход: ${s.turns} ходов рядом теневой двойник и повторяет каждый ваш удар на ${scV(d.pct + '%')}. Его не убить. MP: ${scV(d.mpCost)}. КД: ${s.cooldown}.`; },
@@ -1622,7 +1622,7 @@ Object.assign(SUBCLASS_SKILLS, {
   },
   swBlade: {
     id: 'swBlade', subclassId: 'drow_shadowweaver', name: 'Заряженный клинок', type: 'active', semiPassive: true,
-    iconPng: 'img/skills/drow/spark_slash.webp',
+    iconPng: 'img/skills/subclass/swBlade.webp',
     maxLevel: 5,
     levels: [ { mpCost: 0, pct: 20 }, { mpCost: 0, pct: 23 }, { mpCost: 0, pct: 26 }, { mpCost: 0, pct: 28 }, { mpCost: 0, pct: 30 } ],
     getDesc: (lvl) => { const d = SKILLS.swBlade.levels[lvl-1]; return `<b>Работает сам</b>, пока стоит в слоте: после Разряда следующий удар оружием добавляет ${scV(d.pct + '%')} силы молнии (маг. атака + половина физ.) и сбивает шкалу цели на ${scV('10%')}.`; },
@@ -1630,7 +1630,7 @@ Object.assign(SUBCLASS_SKILLS, {
   },
   swDeep: {
     id: 'swDeep', subclassId: 'drow_shadowweaver', name: 'Глубокая тень', type: 'passive',
-    iconPng: 'img/skills/drow/chain_mind.webp',
+    iconPng: 'img/skills/subclass/swDeep.webp',
     maxLevel: 5,
     levels: [ { pct: 10 }, { pct: 12 }, { pct: 15 }, { pct: 17 }, { pct: 20 } ],
     getDesc: (lvl) => { const d = SKILLS.swDeep.levels[lvl-1]; return `Пассивно: двойник повторяет на ${scV('+' + d.pct + '%')} сильнее и держится на ход дольше.`; },
@@ -1638,7 +1638,7 @@ Object.assign(SUBCLASS_SKILLS, {
   },
   swFlesh: {
     id: 'swFlesh', subclassId: 'drow_shadowweaver', name: 'Плоть грозы', type: 'passive',
-    iconPng: 'img/skills/mage/manaRegen.webp',
+    iconPng: 'img/skills/subclass/swFlesh.webp',
     maxLevel: 5,
     levels: [ { mp: 10 }, { mp: 12 }, { mp: 15 }, { mp: 17 }, { mp: 20 } ],
     getDesc: (lvl) => { const d = SKILLS.swFlesh.levels[lvl-1]; return `Пассивно: макс. MP ${scV('+' + d.mp + '%')}, и каждый паралич возвращает ${scV('5%')} макс. MP.`; },
@@ -1648,7 +1648,7 @@ Object.assign(SUBCLASS_SKILLS, {
   // ---- Буревестник ----
   scStormFront: {
     id: 'scStormFront', subclassId: 'drow_stormcaller', name: 'Грозовой фронт', type: 'active',
-    iconPng: 'img/skills/drow/chain_lightning.webp',
+    iconPng: 'img/skills/subclass/scStormFront.webp',
     maxLevel: 5, cooldown: 7, turns: 4,
     levels: [ { mpCost: 18, pct: 60 }, { mpCost: 19, pct: 70 }, { mpCost: 20, pct: 80 }, { mpCost: 21, pct: 90 }, { mpCost: 22, pct: 100 } ],
     getDesc: (lvl) => { const s = SKILLS.scStormFront, d = s.levels[lvl-1]; return `Тратит ход: ${s.turns} хода в начале каждого вашего хода молния бьёт случайную тварь на ${scV(d.pct + '%')} маг. атаки. Копит Напряжение. MP: ${scV(d.mpCost)}. КД: ${s.cooldown}.`; },
@@ -1656,7 +1656,7 @@ Object.assign(SUBCLASS_SKILLS, {
   },
   scSpark: {
     id: 'scSpark', subclassId: 'drow_stormcaller', name: 'Искрение', type: 'active', semiPassive: true,
-    iconPng: 'img/skills/drow/chain_mind.webp',
+    iconPng: 'img/skills/subclass/scSpark.webp',
     maxLevel: 5,
     levels: [ { mpCost: 0, pct: 50 }, { mpCost: 0, pct: 60 }, { mpCost: 0, pct: 70 }, { mpCost: 0, pct: 80 }, { mpCost: 0, pct: 90 } ],
     getDesc: (lvl) => { const d = SKILLS.scSpark.levels[lvl-1]; return `<b>Работает само</b>, пока стоит в слоте: сработал Цепной разум — бесплатная искра в случайную тварь на ${scV(d.pct + '%')} маг. атаки.`; },
@@ -1664,7 +1664,7 @@ Object.assign(SUBCLASS_SKILLS, {
   },
   scBlood: {
     id: 'scBlood', subclassId: 'drow_stormcaller', name: 'Буря в крови', type: 'passive',
-    iconPng: 'img/skills/drow/storm_legacy.webp',
+    iconPng: 'img/skills/subclass/scBlood.webp',
     maxLevel: 5,
     levels: [ { chance: 10 }, { chance: 14 }, { chance: 18 }, { chance: 21 }, { chance: 25 } ],
     getDesc: (lvl) => { const d = SKILLS.scBlood.levels[lvl-1]; return `Пассивно: Цепной разум срабатывает на ${scV('+' + d.chance + '%')} чаще.`; },
@@ -1672,7 +1672,7 @@ Object.assign(SUBCLASS_SKILLS, {
   },
   scTension: {
     id: 'scTension', subclassId: 'drow_stormcaller', name: 'Напряжение', type: 'passive',
-    iconPng: 'img/skills/drow/discharge.webp',
+    iconPng: 'img/skills/subclass/scTension.webp',
     maxLevel: 5,
     levels: [ { mult: 1.4 }, { mult: 1.5 }, { mult: 1.6 }, { mult: 1.7 }, { mult: 1.8 } ],
     getDesc: (lvl) => { const d = SKILLS.scTension.levels[lvl-1]; return `Пассивно: 5 молний подряд (Разряд, Шаровая, Цепная, Фронт) — следующая молния ${scX(d.mult)} и без маны. Другое действие сбрасывает счёт.`; },
@@ -1682,7 +1682,7 @@ Object.assign(SUBCLASS_SKILLS, {
   // ---- Ткач снов ----
   dwHaste: {
     id: 'dwHaste', subclassId: 'drow_dreamweaver', name: 'Ускорение', type: 'active', freeTurn: true,
-    iconPng: 'img/skills/drow/lightning_speed.webp',
+    iconPng: 'img/skills/subclass/dwHaste.webp',
     maxLevel: 5, cooldown: 8, turns: 5,
     levels: [ { mpCost: 12, atb: 25 }, { mpCost: 13, atb: 27 }, { mpCost: 14, atb: 30 }, { mpCost: 15, atb: 32 }, { mpCost: 16, atb: 35 } ],
     getDesc: (lvl) => { const s = SKILLS.dwHaste, d = s.levels[lvl-1]; return `Не тратит ход: ${s.turns} ходов шкала хода ${scV('+' + d.atb + '%')}. MP: ${scV(d.mpCost)}. КД: ${s.cooldown}.`; },
@@ -1690,7 +1690,7 @@ Object.assign(SUBCLASS_SKILLS, {
   },
   dwMist: {
     id: 'dwMist', subclassId: 'drow_dreamweaver', name: 'Сонная дымка', type: 'active', semiPassive: true,
-    iconPng: 'img/skills/elf/fast_prayer.webp',
+    iconPng: 'img/skills/subclass/dwMist.webp',
     maxLevel: 5, threshold: 40,
     levels: [ { mpCost: 0, every: 7 }, { mpCost: 0, every: 6 }, { mpCost: 0, every: 6 }, { mpCost: 0, every: 5 }, { mpCost: 0, every: 4 } ],
     getDesc: (lvl) => { const s = SKILLS.dwMist, d = s.levels[lvl-1]; return `<b>Работает сама</b>, пока стоит в слоте: HP упало ниже ${s.threshold}% — все враги засыпают на ход (до первого удара). Не чаще раза в ${scV(d.every)} ходов.`; },
@@ -1698,7 +1698,7 @@ Object.assign(SUBCLASS_SKILLS, {
   },
   dwLullaby: {
     id: 'dwLullaby', subclassId: 'drow_dreamweaver', name: 'Колыбельная', type: 'passive',
-    iconPng: 'img/skills/elf/heal.webp',
+    iconPng: 'img/skills/subclass/dwLullaby.webp',
     maxLevel: 5,
     levels: [ { heal: 15, regen: 2 }, { heal: 17, regen: 2 }, { heal: 20, regen: 2 }, { heal: 22, regen: 2.5 }, { heal: 25, regen: 3 } ],
     getDesc: (lvl) => { const d = SKILLS.dwLullaby.levels[lvl-1]; return `Пассивно: пока хоть одна тварь спит — реген в бою ×${d.regen}, а любое лечение ${scV('+' + d.heal + '%')}.`; },
@@ -1706,7 +1706,7 @@ Object.assign(SUBCLASS_SKILLS, {
   },
   dwNightmare: {
     id: 'dwNightmare', subclassId: 'drow_dreamweaver', name: 'Кошмар', type: 'passive',
-    iconPng: 'img/skills/drow/chain_mind.webp',
+    iconPng: 'img/skills/subclass/dwNightmare.webp',
     maxLevel: 5,
     levels: [ { pct: 20 }, { pct: 25 }, { pct: 30 }, { pct: 35 }, { pct: 40 } ],
     getDesc: (lvl) => { const d = SKILLS.dwNightmare.levels[lvl-1]; return `Пассивно: удар, который будит спящую тварь, — ${scV('+' + d.pct + '%')} урона.`; },
@@ -1724,7 +1724,7 @@ Object.assign(SUBCLASS_SKILLS, {
   },
   slVenom: {
     id: 'slVenom', subclassId: 'drow_spiderlord', name: 'Паучий яд', type: 'active', semiPassive: true,
-    iconPng: 'img/skills/drow/chain_mind.webp',
+    iconPng: 'img/skills/subclass/slVenom.webp',
     maxLevel: 5,
     levels: [ { mpCost: 0, tick: 4 }, { mpCost: 0, tick: 5 }, { mpCost: 0, tick: 6 }, { mpCost: 0, tick: 7 }, { mpCost: 0, tick: 8 } ],
     getDesc: (lvl) => { const d = SKILLS.slVenom.levels[lvl-1]; return `<b>Работает сам</b>, пока стоит в слоте: каждый укус паука — слой яда (до 5), слой бьёт на ${scV(d.tick + '%')} вашей маг. атаки каждый ход.`; },
@@ -1740,7 +1740,7 @@ Object.assign(SUBCLASS_SKILLS, {
   },
   slSilk: {
     id: 'slSilk', subclassId: 'drow_spiderlord', name: 'Шёлковые нити', type: 'passive',
-    iconPng: 'img/skills/elf/thorn_whirl.webp',
+    iconPng: 'img/skills/subclass/slSilk.webp',
     maxLevel: 5,
     levels: [ { slow: 20 }, { slow: 25 }, { slow: 30 }, { slow: 35 }, { slow: 40 } ],
     getDesc: (lvl) => { const d = SKILLS.slSilk.levels[lvl-1]; return `Пассивно: паутина пауков замедляет шкалу хода твари на ${scV(d.slow + '%')} (без нити — на 15%).`; },
@@ -1935,7 +1935,7 @@ Object.assign(SUBCLASS_SKILLS, {
   // ---- Стальная стена ----
   swlClose: {
     id: 'swlClose', subclassId: 'dwarf_steelwall', name: 'Сомкнуть броню', type: 'active',
-    iconPng: 'img/skills/dwarf/stoneSkin.webp',
+    iconPng: 'img/skills/subclass/swlClose.webp',
     maxLevel: 5, cooldown: 8, turns: 5,
     levels: [ { mpCost: 0, mult: 2.0 }, { mpCost: 0, mult: 2.2 }, { mpCost: 0, mult: 2.4 }, { mpCost: 0, mult: 2.7 }, { mpCost: 0, mult: 3.0 } ],
     getDesc: (lvl) => { const s = SKILLS.swlClose, d = s.levels[lvl-1]; return `Тратит ход: ${s.turns} ходов поглощение урона ${scX(d.mult)}. Без затрат. Автобой — против стаи или сильной твари. КД: ${s.cooldown}.`; },
@@ -1943,7 +1943,7 @@ Object.assign(SUBCLASS_SKILLS, {
   },
   swlTemper: {
     id: 'swlTemper', subclassId: 'dwarf_steelwall', name: 'Закалка', type: 'active', semiPassive: true,
-    iconPng: 'img/skills/dwarf/dwarfFortitude.webp',
+    iconPng: 'img/skills/subclass/swlTemper.webp',
     maxLevel: 5,
     levels: [ { mpCost: 0, max: 6 }, { mpCost: 0, max: 7 }, { mpCost: 0, max: 8 }, { mpCost: 0, max: 9 }, { mpCost: 0, max: 10 } ],
     getDesc: (lvl) => { const d = SKILLS.swlTemper.levels[lvl-1]; return `<b>Работает сама</b>, пока стоит в слоте: каждый удар по вам — ${scV('+1')} поглощения до конца боя (до ${scV('+' + d.max)}).`; },
@@ -1951,7 +1951,7 @@ Object.assign(SUBCLASS_SKILLS, {
   },
   swlSteel: {
     id: 'swlSteel', subclassId: 'dwarf_steelwall', name: 'Гномья сталь', type: 'passive',
-    iconPng: 'img/skills/warrior/resilience.webp',
+    iconPng: 'img/skills/subclass/swlSteel.webp',
     maxLevel: 5,
     levels: [ { pct: 10 }, { pct: 12 }, { pct: 15 }, { pct: 17 }, { pct: 20 } ],
     getDesc: (lvl) => { const d = SKILLS.swlSteel.levels[lvl-1]; return `Пассивно: защита от тяжёлой брони (сеты Оплот и Палач) ${scV('+' + d.pct + '%')}.`; },
@@ -1959,7 +1959,7 @@ Object.assign(SUBCLASS_SKILLS, {
   },
   swlUnmoved: {
     id: 'swlUnmoved', subclassId: 'dwarf_steelwall', name: 'Несдвигаемый', type: 'passive',
-    iconPng: 'img/skills/dwarf/dwarfFortitude.webp',
+    iconPng: 'img/skills/subclass/swlUnmoved.webp',
     maxLevel: 5,
     levels: [ { hp: 4 }, { hp: 5 }, { hp: 6 }, { hp: 8 }, { hp: 10 } ],
     getDesc: (lvl) => { const d = SKILLS.swlUnmoved.levels[lvl-1]; return `Пассивно: вас не оглушить и не сбить вашу шкалу хода; макс. HP ${scV('+' + d.hp + '%')}.`; },
@@ -1969,7 +1969,7 @@ Object.assign(SUBCLASS_SKILLS, {
   // ---- Молотобоец ----
   hmAnvil: {
     id: 'hmAnvil', subclassId: 'dwarf_hammerer', name: 'Удар по наковальне', type: 'active',
-    iconPng: 'img/skills/warrior/powerStrike.webp',
+    iconPng: 'img/skills/subclass/hmAnvil.webp',
     maxLevel: 5, cooldown: 5,
     levels: [ { mpCost: 12, mult: 1.8, full: 3.4 }, { mpCost: 13, mult: 1.9, full: 3.6 }, { mpCost: 14, mult: 2.0, full: 3.8 }, { mpCost: 15, mult: 2.1, full: 4.0 }, { mpCost: 16, mult: 2.2, full: 4.2 } ],
     getDesc: (lvl) => { const d = SKILLS.hmAnvil.levels[lvl-1]; return `Удар на ${scX(d.mult)}; по цели с ${BREACH_MAX} Проломами — ${scX(d.full)} и оглушение. MP: ${scV(d.mpCost)}. КД: ${SKILLS.hmAnvil.cooldown}.`; },
@@ -1977,7 +1977,7 @@ Object.assign(SUBCLASS_SKILLS, {
   },
   hmCrack: {
     id: 'hmCrack', subclassId: 'dwarf_hammerer', name: 'Трещина', type: 'active', semiPassive: true,
-    iconPng: 'img/skills/dwarf/frostQuake.webp',
+    iconPng: 'img/skills/subclass/hmCrack.webp',
     maxLevel: 5,
     levels: [ { mpCost: 0, every: 4 }, { mpCost: 0, every: 4 }, { mpCost: 0, every: 3 }, { mpCost: 0, every: 3 }, { mpCost: 0, every: 2 } ],
     getDesc: (lvl) => { const d = SKILLS.hmCrack.levels[lvl-1]; return `<b>Работает сама</b>, пока стоит в слоте: каждый ${scV(d.every + '-й')} удар оружием — бесплатный Пролом.`; },
@@ -1985,7 +1985,7 @@ Object.assign(SUBCLASS_SKILLS, {
   },
   hmHeavy: {
     id: 'hmHeavy', subclassId: 'dwarf_hammerer', name: 'Тяжёлая рука', type: 'passive',
-    iconPng: 'img/skills/warrior/weaponMasterW.webp',
+    iconPng: 'img/skills/subclass/hmHeavy.webp',
     maxLevel: 5,
     levels: [ { pct: 15 }, { pct: 18 }, { pct: 22 }, { pct: 26 }, { pct: 30 } ],
     getDesc: (lvl) => { const d = SKILLS.hmHeavy.levels[lvl-1]; return `Пассивно, с молотом (дубиной) или топором: урон ${scV('+' + d.pct + '%')}, поглощение тварей (Толстокожий и т. п.) не режет ваш урон.`; },
@@ -1993,7 +1993,7 @@ Object.assign(SUBCLASS_SKILLS, {
   },
   hmIce: {
     id: 'hmIce', subclassId: 'dwarf_hammerer', name: 'Лёд и сталь', type: 'passive',
-    iconPng: 'img/skills/dwarf/frostQuake.webp',
+    iconPng: 'img/skills/subclass/hmIce.webp',
     maxLevel: 5,
     levels: [ { freeze: 10, dmg: 20 }, { freeze: 10, dmg: 22 }, { freeze: 10, dmg: 25 }, { freeze: 12, dmg: 27 }, { freeze: 15, dmg: 30 } ],
     getDesc: (lvl) => { const d = SKILLS.hmIce.levels[lvl-1]; return `Пассивно: заморозка Раскола ${scV('+' + d.freeze + '%')}, урон по замороженным ${scV('+' + d.dmg + '%')}.`; },
@@ -2003,7 +2003,7 @@ Object.assign(SUBCLASS_SKILLS, {
   // ---- Старатель ----
   prVein: {
     id: 'prVein', subclassId: 'dwarf_prospector', name: 'Чутьё жилы', type: 'active',
-    iconPng: 'img/skills/dwarf/dwarfGreed.webp',
+    iconPng: 'img/skills/subclass/prVein.webp',
     maxLevel: 5, cooldown: 3,
     levels: [ { mpCost: 10, rare: 50 }, { mpCost: 11, rare: 62 }, { mpCost: 12, rare: 75 }, { mpCost: 13, rare: 87 }, { mpCost: 14, rare: 100 } ],
     getDesc: (lvl) => { const d = SKILLS.prVein.levels[lvl-1]; return `Тратит ход: до конца боя редкая добыча (шанс 2% и ниже) выпадает на ${scV('+' + d.rare + '%')} чаще. Автобой — в начале боя. MP: ${scV(d.mpCost)}.`; },
@@ -2011,7 +2011,7 @@ Object.assign(SUBCLASS_SKILLS, {
   },
   prEye: {
     id: 'prEye', subclassId: 'dwarf_prospector', name: 'Глаз старателя', type: 'active', semiPassive: true,
-    iconPng: 'img/skills/dwarf/dwarfGreed.webp',
+    iconPng: 'img/skills/subclass/prEye.webp',
     maxLevel: 5,
     levels: [ { mpCost: 0, need: 7 }, { mpCost: 0, need: 6 }, { mpCost: 0, need: 6 }, { mpCost: 0, need: 5 }, { mpCost: 0, need: 5 } ],
     getDesc: (lvl) => { const d = SKILLS.prEye.levels[lvl-1]; return `<b>Работает сам</b>, пока стоит в слоте: тварь убита с ${scV(d.need)}+ метками Жадности — лишний бросок добычи; тварь с душой — ещё щепоть зелёной пыли.`; },
@@ -2019,7 +2019,7 @@ Object.assign(SUBCLASS_SKILLS, {
   },
   prLode: {
     id: 'prLode', subclassId: 'dwarf_prospector', name: 'Жила', type: 'passive',
-    iconPng: 'img/skills/dwarf/stoneSkin.webp',
+    iconPng: 'img/skills/subclass/prLode.webp',
     maxLevel: 5,
     levels: [ { pct: 10 }, { pct: 12 }, { pct: 15 }, { pct: 17 }, { pct: 20 } ],
     getDesc: (lvl) => { const d = SKILLS.prLode.levels[lvl-1]; return `Пассивно: ресурсы (материалы) с тварей выпадают на ${scV('+' + d.pct + '%')} чаще.`; },
@@ -2027,7 +2027,7 @@ Object.assign(SUBCLASS_SKILLS, {
   },
   prThrift: {
     id: 'prThrift', subclassId: 'dwarf_prospector', name: 'Скупой расчёт', type: 'passive',
-    iconPng: 'img/skills/dwarf/dwarfGreed.webp',
+    iconPng: 'img/skills/subclass/prThrift.webp',
     maxLevel: 5,
     levels: [ { pct: 8 }, { pct: 10 }, { pct: 12 }, { pct: 14 }, { pct: 16 } ],
     getDesc: (lvl) => { const d = SKILLS.prThrift.levels[lvl-1]; return `Пассивно: Оболов с тварей ${scV('+' + d.pct + '%')}.`; },
@@ -2037,7 +2037,7 @@ Object.assign(SUBCLASS_SKILLS, {
   // ---- Мастер горна ----
   fmBellows: {
     id: 'fmBellows', subclassId: 'dwarf_forgemaster', name: 'Раздуть мехи', type: 'active', freeTurn: true,
-    iconPng: 'img/skills/mage/fireball.webp',
+    iconPng: 'img/skills/subclass/fmBellows.webp',
     maxLevel: 5, cooldown: 8, turns: 5,
     levels: [ { mpCost: 10, cut: 20, dmg: 8 }, { mpCost: 10, cut: 22, dmg: 10 }, { mpCost: 11, cut: 25, dmg: 11 }, { mpCost: 11, cut: 27, dmg: 13 }, { mpCost: 12, cut: 30, dmg: 15 } ],
     getDesc: (lvl) => { const s = SKILLS.fmBellows, d = s.levels[lvl-1]; return `Не тратит ход: ${s.turns} ходов ваш урон ${scV('+' + d.dmg + '%')}, огненные заклинания стоят на ${scV(d.cut + '%')} меньше маны, а Огненный шар даёт ${scV('+2 Жара')}. MP: ${scV(d.mpCost)}. КД: ${s.cooldown}.`; },
@@ -2045,7 +2045,7 @@ Object.assign(SUBCLASS_SKILLS, {
   },
   fmSparks: {
     id: 'fmSparks', subclassId: 'dwarf_forgemaster', name: 'Искры', type: 'active', semiPassive: true,
-    iconPng: 'img/skills/mage/fireball.webp',
+    iconPng: 'img/skills/subclass/fmSparks.webp',
     maxLevel: 5,
     levels: [ { mpCost: 0, pct: 60 }, { mpCost: 0, pct: 70 }, { mpCost: 0, pct: 80 }, { mpCost: 0, pct: 90 }, { mpCost: 0, pct: 100 } ],
     getDesc: (lvl) => { const d = SKILLS.fmSparks.levels[lvl-1]; return `<b>Работают сами</b>, пока стоят в слоте: на ${HEAT_MAX} Жара тварь вспыхивает — соседи получают ${scV(d.pct + '%')} маг. атаки огнём, а у неё Жар остывает до 2.`; },
@@ -2053,7 +2053,7 @@ Object.assign(SUBCLASS_SKILLS, {
   },
   fmSmith: {
     id: 'fmSmith', subclassId: 'dwarf_forgemaster', name: 'Рука мастера', type: 'passive',
-    iconPng: 'img/skills/dwarf/runeKnowledge.webp',
+    iconPng: 'img/skills/subclass/fmSmith.webp',
     maxLevel: 5,
     levels: [ { reroll: 20, save: 10 }, { reroll: 30, save: 12 }, { reroll: 40, save: 15 }, { reroll: 50, save: 17 }, { reroll: 60, save: 20 } ],
     getDesc: (lvl) => { const d = SKILLS.fmSmith.levels[lvl-1]; return `Пассивно, в кузнице: с шансом ${scV(d.reroll + '%')} редкость бросается дважды и берётся лучшая; ${scV(d.save + '%')} шанс не потратить материалы.`; },
@@ -2061,7 +2061,7 @@ Object.assign(SUBCLASS_SKILLS, {
   },
   fmSmelt: {
     id: 'fmSmelt', subclassId: 'dwarf_forgemaster', name: 'Переплавка', type: 'passive',
-    iconPng: 'img/skills/dwarf/stoneSkin.webp',
+    iconPng: 'img/skills/subclass/fmSmelt.webp',
     maxLevel: 5,
     levels: [ { pct: 30 }, { pct: 35 }, { pct: 40 }, { pct: 45 }, { pct: 50 } ],
     getDesc: (lvl) => { const d = SKILLS.fmSmelt.levels[lvl-1]; return `Пассивно: в кузнице появляется кнопка «Переплавка» — ненужное снаряжение (не надетое) превращается в ${scV(d.pct + '%')} материалов его рецепта.`; },
@@ -2071,7 +2071,7 @@ Object.assign(SUBCLASS_SKILLS, {
   // ---- Рунный мастер ----
   rmInscribe: {
     id: 'rmInscribe', subclassId: 'dwarf_runemaster', name: 'Начертать руны', type: 'active', freeTurn: true,
-    iconPng: 'img/skills/dwarf/runeKnowledge.webp',
+    iconPng: 'img/skills/subclass/rmInscribe.webp',
     maxLevel: 5, cooldown: 2,
     levels: [ { mpCost: 10, pct: 10, regen: 1.5 }, { mpCost: 11, pct: 12, regen: 1.8 }, { mpCost: 12, pct: 15, regen: 2.2 }, { mpCost: 13, pct: 17, regen: 2.6 }, { mpCost: 14, pct: 20, regen: 3 } ],
     getDesc: (lvl) => { const d = SKILLS.rmInscribe.levels[lvl-1]; return `Не тратит ход: чертит разом три руны до конца боя: <b>Камня</b> — урон по вам ${scV('−' + d.pct + '%')}; <b>Силы</b> — ваш урон ${scV('+' + d.pct + '%')}; <b>Жизни</b> — ${scV(d.regen + '%')} HP за ход. MP: ${scV(d.mpCost)}. КД: ${SKILLS.rmInscribe.cooldown}.`; },
@@ -2080,7 +2080,7 @@ Object.assign(SUBCLASS_SKILLS, {
   },
   rmWard: {
     id: 'rmWard', subclassId: 'dwarf_runemaster', name: 'Охранная руна', type: 'active', semiPassive: true,
-    iconPng: 'img/skills/dwarf/stoneSkin.webp',
+    iconPng: 'img/skills/subclass/rmWard.webp',
     maxLevel: 5, threshold: 35,
     levels: [ { mpCost: 0, shield: 14, every: 7 }, { mpCost: 0, shield: 16, every: 6 }, { mpCost: 0, shield: 18, every: 6 }, { mpCost: 0, shield: 19, every: 5 }, { mpCost: 0, shield: 20, every: 5 } ],
     getDesc: (lvl) => { const s = SKILLS.rmWard, d = s.levels[lvl-1]; return `<b>Вспыхивает сама</b>, пока стоит в слоте: HP упало ниже ${s.threshold}% — щит на ${scV(d.shield + '%')} макс. HP. Не чаще раза в ${scV(d.every)} ходов.`; },
@@ -2088,7 +2088,7 @@ Object.assign(SUBCLASS_SKILLS, {
   },
   rmSteady: {
     id: 'rmSteady', subclassId: 'dwarf_runemaster', name: 'Твёрдая рука', type: 'passive',
-    iconPng: 'img/skills/dwarf/runeKnowledge.webp',
+    iconPng: 'img/skills/subclass/rmSteady.webp',
     maxLevel: 5,
     levels: [ { chance: 5 }, { chance: 6 }, { chance: 7 }, { chance: 8 }, { chance: 10 } ],
     getDesc: (lvl) => { const d = SKILLS.rmSteady.levels[lvl-1]; return `Пассивно, у мастерицы подгонки: шанс подгонки ${scV('+' + d.chance + '%')}, а неудача стоит половину цены.`; },
@@ -2096,7 +2096,7 @@ Object.assign(SUBCLASS_SKILLS, {
   },
   rmWeave: {
     id: 'rmWeave', subclassId: 'dwarf_runemaster', name: 'Руническая вязь', type: 'passive',
-    iconPng: 'img/skills/dwarf/runeKnowledge.webp',
+    iconPng: 'img/skills/subclass/rmWeave.webp',
     maxLevel: 5,
     levels: [ { chance: 40 }, { chance: 55 }, { chance: 70 }, { chance: 85 }, { chance: 100 } ],
     getDesc: (lvl) => { const d = SKILLS.rmWeave.levels[lvl-1]; return `Пассивно: с шансом ${scV(d.chance + '%')} случайный бонус подгонки бросается дважды и берётся лучший (для мага ценнее мана, HP и крит, потом опыт и добыча).`; },
@@ -2122,7 +2122,7 @@ Object.assign(SUBCLASS_SKILLS, {
   },
   scStoneblood: {
     id: 'scStoneblood', subclassId: 'dwarf_stonecaller', name: 'Каменная кровь', type: 'passive',
-    iconPng: 'img/skills/dwarf/stoneSkin.webp',
+    iconPng: 'img/skills/subclass/scStoneblood.webp',
     maxLevel: 5,
     levels: [ { atk: 10 }, { atk: 14 }, { atk: 18 }, { atk: 21 }, { atk: 25 } ],
     getDesc: (lvl) => { const d = SKILLS.scStoneblood.levels[lvl-1]; return `Пассивно: элементали наследуют ваше поглощение урона и ${scV(d.atk + '%')} маг. атаки к удару.`; },

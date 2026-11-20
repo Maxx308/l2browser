@@ -245,6 +245,7 @@ function renderSlots() {
         classId: p.classId || null,
         raceId: p.raceId || 'human',
         level: p.level || 1,
+        subclass: p.subclass || null,   // v0.38
       };
       source = 'cloud';
     }
@@ -263,7 +264,7 @@ function renderSlots() {
       card.className = 'slot-card filled';
       const cls = CLASSES[displayMeta.classId];
       const race = RACES[displayMeta.raceId] || RACES.human;
-      const portrait = getRaceIcon(displayMeta.raceId, displayMeta.classId);
+      const portrait = getHeroPortrait(displayMeta.raceId, displayMeta.classId, displayMeta.subclass);   // v0.38: с подклассом — его портрет
 
       let sourceBadge = '';
       if (source === 'both') {

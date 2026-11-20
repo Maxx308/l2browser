@@ -73,6 +73,7 @@ function readSlotMeta(slotIndex) {
     classId: data.player && data.player.classId,
     raceId: data.player && data.player.raceId,
     level: data.player && data.player.level,
+    subclass: (data.player && data.player.subclass) || null,   // v0.38: портрет подкласса на карточке
     updatedAt: data.updatedAt || null,
   };
 }
