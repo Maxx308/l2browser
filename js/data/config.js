@@ -29,12 +29,18 @@ const FOOD_HEAL_PER_SEC = 1;
 // ==== ОБЩИЙ ПОТОЛОК ДЛИТЕЛЬНОСТИ БАФФОВ ====
 const MAX_BUFF_DURATION = 12 * 60 * 60;
 
-// ==== v0.20: ЗЕЛЬЯ ЛЕЧЕНИЯ ====
-// heal — сразу; hotPerTurn × hotTurns — на ходах героя (см. doPlayerTurn).
-const POTION_HEAL = {
+// ==== БОЕВЫЕ ЗЕЛЬЯ ====
+// heal и mpPercent действуют сразу, hotPerTurn × hotTurns — на следующих ходах героя.
+const POTION_EFFECTS = {
   healPotion:  { heal: 50 },
   healPotion2: { heal: 70, hotPerTurn: 10, hotTurns: 5 },
+  healPotionField: { heal: 120, hotPerTurn: 20, hotTurns: 3 },
+  clarityPotion: { mpPercent: 25 },
 };
+
+function getPotionThresholdResource(shopId) {
+  return POTION_EFFECTS[shopId]?.mpPercent ? 'MP' : 'HP';
+}
 
 // ==== v0.20: БЛЮДА ====
 // Блюдо даёт сытность (как любая еда) и бонус на DISH_DURATION.
@@ -100,7 +106,9 @@ const MAGIC_PATH_PRICE_PER_SECOND = 10;
 // Цена тропы from → to, или null, если пути нет.
 function getMagicPathPrice(from, to) {
   const t = travelTime(from, to);
-  return t === undefined ? null : t * MAGIC_PATH_PRICE_PER_SECOND;
+  if (t === undefined) return null;
+  if (typeof tutFreeFieldPath === 'function' && tutFreeFieldPath(from, to)) return 0;
+  return t * MAGIC_PATH_PRICE_PER_SECOND;
 }
 
 // v0.36: время пути from → to (сек) или undefined. В закрытый город пути нет
@@ -631,6 +639,15 @@ const MIXTURE_EFFECTS = {
     icon: 'potionAtk2',
     desc: '+50% урона на 100 атак.',
   },
+  atkMixture3: {
+    id: 'atkMixture3',
+    name: 'Микстура атаки III',
+    atkPercent: 65,
+    chargeType: 'playerAttacks',
+    charges: 100,
+    icon: 'potionAtk3',
+    desc: '+65% урона на 100 атак.',
+  },
   luckMixture: {
     id: 'luckMixture',
     name: 'Микстура Удачи',
@@ -648,6 +665,23 @@ const MIXTURE_EFFECTS = {
     charges: 50,
     icon: 'potionDef',
     desc: '−30% физического урона от монстров на 50 их ударов. Магия и яд не режутся.',
+  },
+  wardMixture: {
+    id: 'wardMixture',
+    name: 'Микстура оберега',
+    magicDefPercent: 30,
+    chargeType: 'enemyMagicAttacks',
+    charges: 50,
+    icon: 'potionWard',
+    desc: '−30% прямого магического урона от монстров на 50 попаданий.',
+  },
+  reposeMixture: {
+    id: 'reposeMixture',
+    name: 'Микстура упокоения',
+    chargeType: 'undying',
+    charges: 20,
+    icon: 'potionRepose',
+    desc: 'Отменяет срабатывание «Неупокоенного» после смертельного удара. 20 зарядов.',
   },
 };
 

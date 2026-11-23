@@ -256,7 +256,7 @@ function renderConsumableSlots() {
         potionEl.innerHTML = `
           ${SVG[shopItem.icon] || ''}
           <div class="consumable-qty">×${invItem.qty}</div>
-          <div class="consumable-threshold">${p.potionThreshold || 40}</div>
+          <div class="consumable-threshold" title="Порог ${getPotionThresholdResource(p.potionSlot)}">${p.potionThreshold || 40}</div>
         `;
       } else {
         potionEl.classList.remove('filled');

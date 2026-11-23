@@ -116,6 +116,11 @@ const SVG_CONSUMABLES = {
     potionAtk2:  img('atk2'),
     potionLuck:  img('luck'),
     potionDef:   img('def'),
+    potionHealField: img('field_heal'),
+    potionClarity: img('clarity'),
+    potionWard: img('ward'),
+    potionRepose: img('repose'),
+    potionAtk3: img('atk3'),
   });
   // пыль алхимии — img/dust/ (заполняет ячейку, как картинки материалов)
   const dust = (n) => `<img class="svg-icon dust-png" src="img/dust/${n}.webp" alt="" style="width:100%;height:100%;object-fit:contain;">`;

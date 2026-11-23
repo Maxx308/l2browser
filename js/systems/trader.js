@@ -57,6 +57,7 @@ function renderTraderBuy() {
   pane.innerHTML = '';
   const p = state.player;
   SHOP_ITEMS.forEach(item => {
+    if (!isShopItemSoldInTown(item, p.currentLocation)) return;
     const el = document.createElement('div');
     el.className = 'trade-item';
     const stock = p.inventory.filter(i => i.shopId === item.id).reduce((s, i) => s + i.qty, 0);
@@ -250,7 +251,7 @@ function sellItemByKey(groupKey, count) {
 function buyItem(shopId, count) {
   const p = state.player;
   const item = SHOP_ITEMS.find(i => i.id === shopId);
-  if (!item) return;
+  if (!item || !isShopItemSoldInTown(item, p.currentLocation)) return;
   const maxAffordable = Math.floor(p.gold / item.price);
   if (maxAffordable <= 0) { logLoot(`Недостаточно Оболов.`, 'log-info'); return; }
   const actualCount = Math.min(count, maxAffordable);

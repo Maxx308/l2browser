@@ -11,6 +11,7 @@
 let pendingSlotIndex = null;
 let pendingClassId = null;
 let pendingRaceId = 'human';
+let selectedStartSlot = null;
 
 // ========================================================
 //  ЭКРАН СТАРТА
@@ -20,7 +21,6 @@ function showStartScreen() {
   document.getElementById('start-screen').classList.add('active');
   if (typeof slotsClaimForAccount === 'function') slotsClaimForAccount();   // v0.36.4: чужих героев не показываем
   renderSlots();
-  if (typeof renderPatchTabs === 'function') renderPatchTabs();
   if (typeof renderCloudAuth === 'function') renderCloudAuth();
   updateCloudAccessGate();
 
@@ -59,263 +59,151 @@ function showStartScreen() {
 }
 
 function updateCloudAccessGate() {
-  const gate = document.getElementById('cloud-access-gate');
-  const slotsGrid = document.getElementById('slots-grid');
-  if (!gate || !slotsGrid) return;
-
-  const allowed = (typeof cloudIsAllowedToPlay === 'function')
-    ? cloudIsAllowedToPlay()
-    : true;
-  // v0.37: до входа экран — «лаунчер»: название, строки о игре и вход слева, скриншоты справа,
-  // версии строкой по низу (screens.css, patches.css). После входа — прежний вид со слотами.
-  if (typeof updateGuestChip === 'function') updateGuestChip();   // v0.37: кнопка «ГОСТЬ» в шапке
-  const startScreen = document.getElementById('start-screen');
-  if (startScreen && startScreen.classList.contains('launcher') !== !allowed) {
-    startScreen.classList.toggle('launcher', !allowed);
-    if (typeof closePatchPanel === 'function') { closePatchPanel(); closePatchGroup(); }
-  }
-
-  if (allowed) {
-    gate.style.display = 'none';
-    gate.innerHTML = '';
-    slotsGrid.style.display = 'grid';
-    // ---- НОВОЕ (v0.15): обновить видимость кнопки рейтинга ----
-    if (typeof updateLeaderboardButtonVisibility === 'function') {
-      updateLeaderboardButtonVisibility();
-    }
-    return;
-  }
-
-  // v0.37: вместо второго «войдите в аккаунт» (это уже пишет форма входа) — листалка
-  // скриншотов. Уже нарисована — не трогаем, иначе повторный вызов (после префетча облака)
-  // сбросит её посреди просмотра.
-  gate.style.display = 'block';
-  if (!gate.querySelector('.start-shots')) {
-    gate.innerHTML = startShotsHtml();
-    initStartShots(gate);
-  }
-  slotsGrid.style.display = 'none';
-
-  // ---- НОВОЕ (v0.15): обновить видимость кнопки рейтинга ----
-  if (typeof updateLeaderboardButtonVisibility === 'function') {
-    updateLeaderboardButtonVisibility();
-  }
+  const start = document.getElementById('start-screen');
+  const allowed = typeof cloudIsAllowedToPlay !== 'function' || cloudIsAllowedToPlay();
+  start.classList.toggle('launcher', !allowed);
+  document.getElementById('start-entrance').hidden = allowed;
+  document.getElementById('start-roster').hidden = !allowed;
+  document.getElementById('start-account-button').hidden = !allowed;
+  if (typeof updateGuestChip === 'function') updateGuestChip();
+  if (typeof updateLeaderboardButtonVisibility === 'function') updateLeaderboardButtonVisibility();
 }
 
-// ========================================================
-//  v0.37: СКРИНШОТЫ НА ЭКРАНЕ ДО ВХОДА
-//  Листалка (свайп / стрелки / точки), по нажатию — на весь экран.
-// ========================================================
+// Скриншоты открываются из подвала по запросу игрока.
 const START_SHOTS = [
-  { src: 'img/start/battle.webp', w: 1171, h: 689, cap: 'Бой со стаей: навыки, криты, кровотечение' },
-  { src: 'img/start/beasts.webp', w: 1210, h: 422, cap: 'У каждой твари свои приёмы и добыча' },
+  { src: 'img/start/battle.webp', cap: 'Бой со стаей: навыки, криты, кровотечение' },
+  { src: 'img/start/beasts.webp', cap: 'У каждой твари свои приёмы и добыча' },
   { src: 'img/start/gear.webp',   w: 704,  h: 651, cap: 'Снаряжение: редкость, подгонка до +15, фишки тиров' },
   { src: 'img/start/forge.webp',  w: 989,  h: 925, cap: 'Кузница: добыча превращается в ресурсы' },
   { src: 'img/start/craft.webp',  w: 944,  h: 653, cap: 'Комплекты доспехов из редких материалов' },
 ];
 
-function startShotsHtml() {
-  const slides = START_SHOTS.map((s, i) => `
-    <figure class="start-shot">
-      <button type="button" class="start-shot-open" data-shot="${i}" aria-label="Открыть на весь экран: ${s.cap}">
-        <img src="${s.src}" width="${s.w}" height="${s.h}" alt="${s.cap}" ${i ? 'loading="lazy"' : ''} decoding="async">
-      </button>
-    </figure>`).join('');
-  const dots = START_SHOTS.map((s, i) =>
-    `<button type="button" class="start-shots-dot${i ? '' : ' active'}" data-dot="${i}" aria-label="Скриншот ${i + 1}"></button>`).join('');
-  // Подпись одна, под картинкой (меняется при листании) — стрелки и точки стоят по самой картинке.
-  return `
-    <div class="start-shots">
-      <div class="start-shots-view">
-        <div class="start-shots-track">${slides}</div>
-        <button type="button" class="start-shots-nav prev" aria-label="Предыдущий скриншот">‹</button>
-        <button type="button" class="start-shots-nav next" aria-label="Следующий скриншот">›</button>
-        <div class="start-shots-dots">${dots}</div>
-      </div>
-      <div class="start-shots-cap">${START_SHOTS[0].cap}</div>
-    </div>`;
+function openStartShot() {
+  const gallery = document.getElementById('start-shot-view');
+  showStartShot(0);
+  gallery.showModal();
 }
 
-function initStartShots(root) {
-  const track = root.querySelector('.start-shots-track');
-  if (!track) return;
-  const n = START_SHOTS.length;
-  const cur = () => Math.round(track.scrollLeft / Math.max(1, track.clientWidth));
-  // Пока идёт плавная прокрутка, следующее нажатие считаем от цели, а не от текущего места —
-  // иначе два быстрых нажатия листали только на один кадр.
-  let target = null, targetTimer = 0;
-  const base = () => (target !== null ? target : cur());
-  const go = (i) => {
-    target = (i + n) % n;
-    clearTimeout(targetTimer);
-    targetTimer = setTimeout(() => { target = null; }, 700);
-    track.scrollTo({ left: target * track.clientWidth, behavior: 'smooth' });
-  };
-  root.querySelector('.start-shots-nav.prev').onclick = () => go(base() - 1);
-  root.querySelector('.start-shots-nav.next').onclick = () => go(base() + 1);
-  const dots = root.querySelectorAll('.start-shots-dot');
-  const cap = root.querySelector('.start-shots-cap');
-  dots.forEach(d => { d.onclick = () => go(+d.dataset.dot); });
-  track.addEventListener('scroll', () => {
-    const i = Math.min(n - 1, Math.max(0, cur()));
-    dots.forEach((d, k) => d.classList.toggle('active', k === i));
-    if (cap) cap.textContent = START_SHOTS[i].cap;
-  }, { passive: true });
-  root.querySelectorAll('.start-shot-open').forEach(b => { b.onclick = () => openStartShot(+b.dataset.shot); });
+function moveStartShot(step) {
+  const gallery = document.getElementById('start-shot-view');
+  showStartShot(Number(gallery.dataset.index) + step);
 }
 
-function openStartShot(i) {
-  let box = document.getElementById('start-shot-view');
-  if (!box) {
-    box = document.createElement('div');
-    box.id = 'start-shot-view';
-    box.className = 'start-shot-view';
-    box.innerHTML = `
-      <img alt="">
-      <div class="start-shot-view-cap"></div>
-      <button type="button" class="start-shot-view-btn prev" aria-label="Предыдущий скриншот">‹</button>
-      <button type="button" class="start-shot-view-btn next" aria-label="Следующий скриншот">›</button>
-      <button type="button" class="start-shot-view-close" aria-label="Закрыть">×</button>`;
-    document.body.appendChild(box);
-    // Стрелки листают, нажатие в любое другое место (и на сам скриншот) закрывает.
-    box.addEventListener('click', (e) => {
-      const b = e.target.closest('.start-shot-view-btn');
-      if (b) showStartShot(box.__i + (b.classList.contains('prev') ? -1 : 1));
-      else closeStartShot();
-    });
-    document.addEventListener('keydown', (e) => {
-      if (!box.classList.contains('active')) return;
-      if (e.key === 'Escape') closeStartShot();
-      else if (e.key === 'ArrowLeft') showStartShot(box.__i - 1);
-      else if (e.key === 'ArrowRight') showStartShot(box.__i + 1);
-    });
-  }
-  showStartShot(i);
-  box.classList.add('active');
+function showStartShot(index) {
+  const gallery = document.getElementById('start-shot-view');
+  const position = (index + START_SHOTS.length) % START_SHOTS.length;
+  const shot = START_SHOTS[position];
+  const img = gallery.querySelector('img');
+  img.src = shot.src;
+  img.alt = shot.cap;
+  gallery.dataset.index = position;
+  gallery.querySelector('figcaption').textContent = `${shot.cap} · ${position + 1} из ${START_SHOTS.length}`;
 }
 
-function showStartShot(i) {
-  const box = document.getElementById('start-shot-view');
-  if (!box) return;
-  const n = START_SHOTS.length;
-  i = (i + n) % n;
-  box.__i = i;
-  const s = START_SHOTS[i];
-  const img = box.querySelector('img');
-  img.src = s.src;
-  img.alt = s.cap;
-  box.querySelector('.start-shot-view-cap').textContent = `${s.cap} · ${i + 1} из ${n}`;
-}
-
-function closeStartShot() {
-  const box = document.getElementById('start-shot-view');
-  if (box) box.classList.remove('active');
-}
+document.getElementById('start-shot-view').addEventListener('keydown', (event) => {
+  if (event.key === 'ArrowLeft') moveStartShot(-1);
+  if (event.key === 'ArrowRight') moveStartShot(1);
+});
 
 function hideStartScreen() {
-  document.getElementById('start-screen').classList.remove('active');
-  closeStartShot();
+  const start = document.getElementById('start-screen');
+  start.querySelectorAll('dialog[open]').forEach(dialog => dialog.close());
+  start.classList.remove('active');
 }
 
 function renderSlots() {
   const grid = document.getElementById('slots-grid');
-  grid.innerHTML = '';
-
-  const cloudSlots = (typeof cloudGetCachedSlots === 'function') ? cloudGetCachedSlots() : {};
+  const active = document.activeElement;
+  const focusedSlot = grid.contains(active) ? active.closest('[data-slot]')?.dataset.slot : null;
+  const focusedAction = active?.dataset?.slotAction;
+  const cloudSlots = typeof cloudGetCachedSlots === 'function' ? cloudGetCachedSlots() : {};
+  const cards = document.createDocumentFragment();
+  let freeSlot = null;
 
   for (let i = 0; i < SLOT_COUNT; i++) {
     const localMeta = readSlotMeta(i);
-    const cloudSlot = cloudSlots[i] || null;
-
-    const hasLocal = localMeta.used;
-    const hasCloud = !!cloudSlot;
-
-    let displayMeta = null;
-    let source = 'none';
-
-    if (hasLocal) {
-      displayMeta = localMeta;
-      source = hasCloud ? 'both' : 'local';
-    } else if (hasCloud) {
-      const cloudData = cloudSlot.data || {};
-      const p = cloudData.player || {};
-      displayMeta = {
-        used: true,
-        name: p.name || 'Безымянный',
-        classId: p.classId || null,
-        raceId: p.raceId || 'human',
-        level: p.level || 1,
-        subclass: p.subclass || null,   // v0.38
-      };
-      source = 'cloud';
+    const cloudPlayer = cloudSlots[i]?.data?.player;
+    if (!localMeta.used && !cloudSlots[i]) {
+      if (freeSlot === null) freeSlot = i;
+      continue;
     }
 
-    const card = document.createElement('div');
+    const meta = localMeta.used ? localMeta : (cloudPlayer || {});
+    const name = meta.name || 'Безымянный';
+    const safeName = escapeHtml(name);
+    const race = RACES[meta.raceId] || RACES.human;
+    const cls = CLASSES[meta.classId];
+    const portrait = getHeroPortrait(race.id, meta.classId, meta.subclass);
+    const subclass = SUBCLASSES[meta.subclass];
+    const role = subclass?.race === race.id && subclass.cls === meta.classId ? subclass.name : cls?.name;
 
-    if (!displayMeta) {
-      card.className = 'slot-card empty';
-      card.innerHTML = `
-        <div class="slot-plus">+</div>
-        <div class="slot-empty-text">Создать</div>
-        <div class="slot-number">${i + 1}</div>
-      `;
-      card.onclick = () => onSlotClick(i, false);
-    } else {
-      card.className = 'slot-card filled';
-      const cls = CLASSES[displayMeta.classId];
-      const race = RACES[displayMeta.raceId] || RACES.human;
-      const portrait = getHeroPortrait(displayMeta.raceId, displayMeta.classId, displayMeta.subclass);   // v0.38: с подклассом — его портрет
-
-      let sourceBadge = '';
-      if (source === 'both') {
-        sourceBadge = '<div class="slot-cloud-badge" title="Есть и локально, и в облаке">☁️</div>';
-      } else if (source === 'cloud') {
-        sourceBadge = '<div class="slot-cloud-badge cloud-only" title="Только в облаке — загрузится по клику">☁️</div>';
-      } else if (source === 'local') {
-        sourceBadge = '<div class="slot-cloud-badge local-only" title="Пока только на этом устройстве — уйдёт в облако само">💾</div>';
-      }
-
-      // v0.36.4: удалять можно и героя «только в облаке» — deleteSlot чистит и облако
-      const deleteBtn = `<button class="slot-delete" title="Удалить персонажа" data-slot="${i}">×</button>`;
-
-      // v0.33: герой в экспедиции — подпись с таймером (expeditions.js)
-      let expBadge = '';
-      if (typeof expSlotBadgeHtml === 'function') {
-        try {
-          const full = hasLocal ? readSlot(i) : (cloudSlot && cloudSlot.data);
-          expBadge = expSlotBadgeHtml(full && full.player);
-        } catch (e) { expBadge = ''; }
-      }
-
-      card.innerHTML = `
-        ${deleteBtn}
-        ${sourceBadge}
-        <div class="slot-portrait" style="background-image:url('${portrait}')"></div>
-        <div class="slot-info">
-          <div class="slot-name">${escapeHtml(displayMeta.name)}</div>
-          <div class="slot-race">${race.name}</div>
-          <div class="slot-class">${cls ? cls.name : '—'} · Ур. ${displayMeta.level}</div>
-          ${expBadge}
-        </div>
-        <div class="slot-number">${i + 1}</div>
-      `;
-
-      if (hasLocal) {
-        card.onclick = () => onSlotClick(i, true);
-      } else {
-        card.onclick = () => loadSlotFromCloudAndStart(i);
-      }
-      const delBtn = card.querySelector('.slot-delete');
-      if (delBtn) {
-        delBtn.onclick = (e) => {
-          e.stopPropagation();
-          onSlotDelete(i);
-        };
-      }
+    let badge = '';
+    if (cloudSlots[i]) {
+      const title = localMeta.used ? 'Есть и локально, и в облаке' : 'Только в облаке';
+      badge = `<span class="slot-cloud-badge" title="${title}" aria-label="${title}">☁</span>`;
+    } else if (typeof cloudIsReady === 'function' && cloudIsReady()) {
+      badge = '<span class="slot-cloud-badge local-only" title="Пока только на этом устройстве" aria-label="Пока только на этом устройстве">💾</span>';
     }
 
-    grid.appendChild(card);
+    let expedition = '';
+    if (typeof expSlotBadgeHtml === 'function') {
+      try {
+        expedition = expSlotBadgeHtml(localMeta.used ? readSlot(i)?.player : cloudPlayer);
+      } catch (e) { expedition = ''; }
+    }
+
+    const card = document.createElement('article');
+    card.className = 'slot-card filled';
+    card.dataset.slot = i;
+    card.innerHTML = `
+      <button type="button" class="slot-select" data-slot-action="select" aria-pressed="false">
+        <img class="slot-portrait" src="${portrait}" alt="">
+        <span class="slot-info">
+          <span class="slot-name">${safeName}</span>
+          <span class="slot-class">${race.name} · ${role || '—'} · Ур. ${Number(meta.level) || 1}</span>
+        </span>
+      </button>
+      ${badge}
+      <button type="button" class="slot-delete" data-slot-action="delete" title="Удалить персонажа" aria-label="Удалить персонажа ${safeName}">×</button>
+      ${expedition}
+      <button type="button" class="start-button primary slot-play" data-slot-action="play" hidden>Продолжить</button>
+    `;
+    card.querySelector('.slot-select').onclick = () => selectStartSlot(i);
+    card.querySelector('.slot-play').onclick = () => localMeta.used ? onSlotClick(i, true) : loadSlotFromCloudAndStart(i);
+    card.querySelector('.slot-delete').onclick = () => onSlotDelete(i, name);
+    cards.appendChild(card);
   }
+
+  if (freeSlot !== null) {
+    const create = document.createElement('button');
+    create.type = 'button';
+    create.className = 'slot-card empty';
+    create.dataset.slot = freeSlot;
+    create.dataset.slotAction = 'create';
+    create.innerHTML = '<span class="slot-plus" aria-hidden="true">+</span><span>Создать героя</span>';
+    create.onclick = () => onSlotClick(freeSlot, false);
+    cards.appendChild(create);
+  }
+
+  grid.replaceChildren(cards);
+  const selected = grid.querySelector(`.filled[data-slot="${selectedStartSlot}"]`) || grid.querySelector('.filled');
+  selectStartSlot(selected ? Number(selected.dataset.slot) : null);
+
+  if (focusedSlot !== null && focusedAction) {
+    const card = grid.querySelector(`[data-slot="${focusedSlot}"]`);
+    const button = card?.dataset.slotAction === focusedAction ? card : card?.querySelector(`[data-slot-action="${focusedAction}"]`);
+    button?.focus({ preventScroll: true });
+  }
+}
+
+function selectStartSlot(index) {
+  selectedStartSlot = index;
+  document.querySelectorAll('#slots-grid .filled').forEach(card => {
+    const selected = Number(card.dataset.slot) === index;
+    card.classList.toggle('selected', selected);
+    card.querySelector('.slot-select').setAttribute('aria-pressed', selected);
+    card.querySelector('.slot-play').hidden = !selected;
+  });
 }
 
 // v0.36.4: облако — главное, локальный слот — его копия. Свежий сейв берём сами,
@@ -378,8 +266,8 @@ function handleSlotConflict(slotIndex, cmp) {
   );
 }
 
-function onSlotDelete(slotIndex) {
-  if (!confirm(`Удалить персонажа из ячейки ${slotIndex + 1}? Это действие необратимо.`)) return;
+function onSlotDelete(slotIndex, name) {
+  if (!confirm(`Удалить персонажа «${name}»? Это действие необратимо.`)) return;
   deleteSlot(slotIndex);
   renderSlots();
 }
@@ -566,107 +454,139 @@ function openCreateScreen(slotIndex) {
   pendingClassId = null;
   pendingRaceId = 'human';
 
-  document.getElementById('start-screen').classList.remove('active');
+  hideStartScreen();
   document.getElementById('create-screen').classList.add('active');
 
-  const nameInput = document.getElementById('char-name-input');
-  if (nameInput) {
-    // ---- НОВОЕ (v0.15): поле пустое, реагируем на ввод ----
-    nameInput.value = '';
-    nameInput.oninput = updateCreateButton;
-  }
+  const form = document.getElementById('create-form');
+  form.reset();
+  form.onsubmit = (event) => {
+    event.preventDefault();
+    confirmCreateCharacter();
+  };
+  document.getElementById('char-name-input').oninput = updateCreateButton;
+  document.getElementById('create-stats').open = false;
+  if (typeof tutPresetSkipBox === 'function') tutPresetSkipBox();
 
   renderCreateScreen();
+  setCreateStep('race');
 }
 
 function closeCreateScreen() {
+  pendingSlotIndex = null;
   document.getElementById('create-screen').classList.remove('active');
   showStartScreen();
+  document.querySelector('#slots-grid .empty')?.focus();
+}
+
+function setCreateStep(step) {
+  const screen = document.getElementById('create-screen');
+  screen.dataset.step = step;
+  screen.querySelectorAll('[data-create-step]').forEach(button => {
+    if (button.dataset.createStep === step) button.setAttribute('aria-current', 'step');
+    else button.removeAttribute('aria-current');
+  });
+  screen.scrollTop = 0;
+  document.getElementById('create-title').focus({ preventScroll: true });
 }
 
 function renderCreateScreen() {
-  const racesBox = document.getElementById('races-list');
-  racesBox.innerHTML = '';
-
-  const raceIcon = getRaceIcon(pendingRaceId, pendingClassId);
-
-  Object.values(RACES).forEach(race => {
-    const el = document.createElement('div');
-    const isSelected = (pendingRaceId === race.id);
-    el.className = 'create-option race-option'
-      + (race.available ? '' : ' disabled')
-      + (isSelected ? ' selected' : '');
-
-    let portraitStyle;
-    if (race.available) {
-      const icon = isSelected ? raceIcon : race.icon;
-      portraitStyle = `background-image:url('${icon}')`;
-    } else {
-      portraitStyle = `background: repeating-linear-gradient(45deg, #1a1a22, #1a1a22 8px, #0d0d10 8px, #0d0d10 16px)`;
-    }
-
-    el.innerHTML = `
-      <div class="create-portrait" style="${portraitStyle}"></div>
-      <div class="create-name">${race.name}</div>
-      <div class="create-desc">${race.desc}</div>
+  const races = Object.values(RACES).map(race => {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'create-option race-option';
+    button.dataset.race = race.id;
+    button.disabled = !race.available;
+    button.innerHTML = `
+      <img src="${race.icon}" alt="">
+      <span><strong>${race.name}</strong><small>${race.creation.label}</small></span>
     `;
-    if (race.available) {
-      el.onclick = () => { pendingRaceId = race.id; renderCreateScreen(); };
-    }
-    racesBox.appendChild(el);
+    button.onclick = () => {
+      pendingRaceId = race.id;
+      updateCreatePreview();
+    };
+    return button;
+  });
+  document.getElementById('races-list').replaceChildren(...races);
+
+  const classes = Object.entries(CLASSES).map(([id, cls]) => {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'create-option class-option';
+    button.dataset.class = id;
+    button.innerHTML = `<strong>${cls.name}</strong><small></small>`;
+    button.onclick = () => {
+      pendingClassId = id;
+      updateCreatePreview();
+    };
+    return button;
+  });
+  document.getElementById('classes-list').replaceChildren(...classes);
+  document.getElementById('create-subclass-level').textContent = SUBCLASS_MIN_LEVEL;
+  updateCreatePreview();
+}
+
+function renderCreateTraits(id, guide) {
+  document.getElementById(id).innerHTML = `
+    <div>
+      <strong><span class="create-plus" aria-hidden="true">+</span> Сильная сторона</strong>
+      <p>${guide.strength}</p>
+    </div>
+    <div>
+      <strong><span class="create-minus" aria-hidden="true">−</span> Слабая сторона</strong>
+      <p>${guide.weakness}</p>
+    </div>
+  `;
+}
+
+function updateCreatePreview() {
+  const race = RACES[pendingRaceId];
+  const cls = CLASSES[pendingClassId];
+  document.getElementById('create-hero-portrait').src = getRaceIcon(race.id, pendingClassId);
+  document.getElementById('create-hero-race').textContent = race.name;
+  document.getElementById('create-chosen-race').textContent = race.name;
+  document.getElementById('create-hero-pair').textContent = cls ? `${race.name}-${cls.name.toLowerCase()}` : race.name;
+  document.getElementById('create-race-desc').textContent = race.desc;
+
+  document.querySelectorAll('#races-list [data-race]').forEach(button => {
+    button.setAttribute('aria-pressed', button.dataset.race === pendingRaceId);
+  });
+  document.querySelectorAll('#classes-list [data-class]').forEach(button => {
+    const id = button.dataset.class;
+    button.setAttribute('aria-pressed', id === pendingClassId);
+    button.querySelector('small').textContent = race.creation[id].style;
   });
 
-  const classesBox = document.getElementById('classes-list');
-  classesBox.innerHTML = '';
+  renderCreateTraits('create-race-traits', race.creation);
+  document.getElementById('create-class-hint').hidden = !!cls;
+  document.getElementById('create-class-preview').hidden = !cls;
+  if (cls) {
+    renderCreateTraits('create-class-traits', race.creation[pendingClassId]);
+    const stats = getRaceClassStats(race.id, pendingClassId);
+    const labels = { STR: 'Сила', DEX: 'Ловкость', CON: 'Телосложение', INT: 'Интеллект', WIT: 'Мудрость', MEN: 'Дух' };
+    document.getElementById('create-stat-values').innerHTML = Object.entries(labels).map(([key, label]) =>
+      `<div><dt>${label}</dt><dd>${stats[key]}</dd></div>`
+    ).join('');
 
-  ['warrior', 'mage'].forEach(classId => {
-    const cls = CLASSES[classId];
-    const isSelected = (pendingClassId === classId);
-    const stats = getRaceClassStats(pendingRaceId, classId) || cls.stats;
-
-    const el = document.createElement('div');
-    el.className = 'create-option class-option' + (isSelected ? ' selected' : '');
-
-    el.innerHTML = `
-      <div class="create-portrait" style="background-image:url('img/classes/${classId}.webp')"></div>
-      <div class="create-name">${cls.name}</div>
-      <div class="create-desc">${cls.desc}</div>
-      <div class="create-stats">
-        СТР ${stats.STR} · ЛОВ ${stats.DEX} · ТЕЛ ${stats.CON}<br>
-        ИНТ ${stats.INT} · МДР ${stats.WIT} · ДУХ ${stats.MEN}
-      </div>
-    `;
-    el.onclick = () => { pendingClassId = classId; renderCreateScreen(); };
-    classesBox.appendChild(el);
-  });
+    const subclasses = Object.values(SUBCLASSES).filter(subclass =>
+      subclass.race === race.id && subclass.cls === pendingClassId && subclass.ready
+    );
+    document.getElementById('create-subclasses').innerHTML = subclasses.map(subclass => `
+      <article class="create-subclass">
+        <div class="create-subclass-art"><img src="${subclass.portrait}" alt=""></div>
+        <div class="create-subclass-info">
+          <h4>${subclass.name}</h4>
+          <p>${subclass.preview}</p>
+        </div>
+      </article>
+    `).join('');
+  }
 
   updateCreateButton();
 }
 
-// ---- НОВОЕ (v0.15): кнопка «Создать» учитывает и класс, и имя ----
 function updateCreateButton() {
-  const btn = document.getElementById('btn-create-char');
-  if (!btn) return;
-
-  const nameInput = document.getElementById('char-name-input');
-  const name = (nameInput?.value || '').trim();
-
-  const hasClass = !!pendingClassId;
-  const hasName = name.length >= 2;
-
-  if (!hasClass && !hasName) {
-    btn.disabled = true;
-    btn.textContent = 'Введите имя и выберите класс';
-  } else if (!hasClass) {
-    btn.disabled = true;
-    btn.textContent = 'Выберите класс';
-  } else if (!hasName) {
-    btn.disabled = true;
-    btn.textContent = 'Введите имя (от 2 символов)';
-  } else {
-    btn.disabled = false;
-    btn.textContent = 'Создать персонажа';
-  }
+  const name = document.getElementById('char-name-input').value.trim();
+  document.getElementById('btn-create-char').disabled = !pendingClassId || name.length < 2;
 }
 
 function confirmCreateCharacter() {

@@ -37,16 +37,19 @@ function renderEffectsPanel() {
       const shortNames = {
         atkMixture:   'Атака',
         atkMixture2:  'Атака II',
+        atkMixture3:  'Атака III',
         luckMixture:  'Удача',
         defMixture:   'Крепость',
+        wardMixture:  'Оберег',
+        reposeMixture: 'Упокоение',
       };
       const shortName = shortNames[data.id] || data.name;
 
       // Цвет по типу микстуры.
       let cssClass = 'mixture';
-      if (data.id === 'atkMixture' || data.id === 'atkMixture2') cssClass = 'mixture-atk';
-      else if (data.id === 'luckMixture') cssClass = 'mixture-luck';
-      else if (data.id === 'defMixture') cssClass = 'mixture-def';
+      if (data.atkPercent) cssClass = 'mixture-atk';
+      else if (data.luckPercent) cssClass = 'mixture-luck';
+      else if (data.defPercent || data.magicDefPercent) cssClass = 'mixture-def';
 
       // Пульсация при низких зарядах.
       // Для playerAttacks/enemyAttacks — < 10. Для battles — < 5.
@@ -57,7 +60,7 @@ function renderEffectsPanel() {
       // SVG-иконка микстуры.
       const iconSvg = SVG[data.icon] || '⚗';
 
-      chips.push(`<div class="effect-chip ${cssClass}${pulseClass}"><span class="ec-icon">${iconSvg}</span><span class="ec-name">${shortName}</span><span class="ec-value">(${activeMix.chargesLeft})</span></div>`);
+      chips.push(`<div class="effect-chip ${cssClass}${pulseClass}" title="${data.desc}"><span class="ec-icon">${iconSvg}</span><span class="ec-name">${shortName}</span><span class="ec-value">(${activeMix.chargesLeft})</span></div>`);
     }
   }
 

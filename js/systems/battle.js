@@ -97,7 +97,8 @@ function renderConsumablesPanel() {
   else if (!hasItems) stateText = '—';
   else stateText = enabled ? 'ВКЛ' : 'ВЫКЛ';
 
-  el.innerHTML = `<span class="ct-icon">🧪</span>Зелье: ${stateText}<span class="ct-count">×${stock}</span>`;
+  const label = inSlot ? `Зелье ${getPotionThresholdResource(p.potionSlot)}` : 'Зелье';
+  el.innerHTML = `<span class="ct-icon">🧪</span>${label}: ${stateText}<span class="ct-count">×${stock}</span>`;
 
   if (hasItems && inSlot) {
     el.onclick = () => toggleConsumable('healPotion');
@@ -116,7 +117,7 @@ function toggleConsumable(key) {
 // --------------------------------------------------------
 //  ЗЕЛЬЕ
 // --------------------------------------------------------
-// force = true — игрок пьёт сам (ручной режим): без порога HP и переключателя
+// force = true — игрок пьёт сам (ручной режим) независимо от порога и переключателя.
 function checkHealPotion(force) {
   const p = state.player;
   const eff = state.battle.activeEffects;
@@ -128,8 +129,13 @@ function checkHealPotion(force) {
   const potion = p.inventory.find(i => i.shopId === p.potionSlot);
   if (!potion) return;
 
+  const def = POTION_EFFECTS[potion.shopId] || POTION_EFFECTS.healPotion;
+  const resource = getPotionThresholdResource(potion.shopId);
+  const restoresMana = resource === 'MP';
+  const current = restoresMana ? p.mp : p.hp;
+  const max = restoresMana ? p.maxMp : p.maxHp;
   const threshold = (p.potionThreshold || 40) / 100;
-  if (!force && p.hp / p.maxHp >= threshold) return;
+  if (!force && current / max >= threshold) return;
 
   potion.qty--;
   if (potion.qty <= 0) {
@@ -137,22 +143,27 @@ function checkHealPotion(force) {
     if (idx >= 0) p.inventory.splice(idx, 1);
   }
 
-  // v0.20: у зелий своё лечение (POTION_HEAL), у большого — ещё и лечение по ходам
-  const def = POTION_HEAL[potion.shopId] || POTION_HEAL.healPotion;
-  const heal = def.heal;
-  const hpBefore = p.hp;
-  p.hp = Math.min(p.maxHp, p.hp + heal);
-  if (typeof subclassOnHeroHeal === 'function') subclassOnHeroHeal(p.hp - hpBefore, heal - (p.hp - hpBefore));   // v0.38: Благодать, Очищение
+  const amount = restoresMana ? Math.floor(max * def.mpPercent / 100) : def.heal;
+  const restored = Math.min(amount, Math.max(0, max - current));
+  if (restoresMana) {
+    p.mp = current + restored;
+  } else {
+    p.hp = Math.min(max, current + amount);
+    if (typeof subclassOnHeroHeal === 'function') subclassOnHeroHeal(restored, amount - restored);
+  }
   eff.healPotionUsed = true;
 
-  spawnFloatDamage('fighter-player', heal, 'heal');
-  logCombat(`🧪 ${potion.name}: +${heal} HP${def.hotTurns ? ` и ещё +${def.hotPerTurn} HP на ${def.hotTurns} ходов` : ''}`, 'log-entry potion');
-  if (def.hotTurns) addDebuff('player', 'potionRegen', { turnsLeft: def.hotTurns, perTurn: def.hotPerTurn });
+  const shownAmount = restoresMana ? Math.round(restored * 10) / 10 : amount;
+  spawnFloatDamage('fighter-player', shownAmount, restoresMana ? 'mana' : 'heal');
+  logCombat(`🧪 ${potion.name}: +${shownAmount} ${resource}${def.hotTurns ? ` и ещё +${def.hotPerTurn} HP на ${def.hotTurns} ходов` : ''}`, 'log-entry potion');
+  if (def.hotTurns) {
+    addDebuff('player', 'potionRegen', { turnsLeft: def.hotTurns, perTurn: def.hotPerTurn, potionName: potion.name });
+  }
 
   updateTopStatus();
   updateBattleUI();
   renderInventory();
   renderEquipSlots();
 
-  showToast('🧪', `Восстановлено ${heal} HP`);
+  showToast('🧪', `Восстановлено ${shownAmount} ${resource}`);
 }

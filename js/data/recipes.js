@@ -646,5 +646,34 @@ const SHOP_ITEMS = [
     slotType: 'mixture',
     effect: '−30% физ. урона', description: 'Снижает получаемый физический урон от монстров на 30%. Магия и яд не режутся.',
     usage: 'Применяется в начале боя. Действует 50 ударов монстров.' },
+
+  { id: 'healPotionField', name: 'Зелье полевого лечения', price: 480, icon: 'potionHealField',
+    town: 'ilgrad', slotType: 'potion',
+    effect: '+120 HP, затем +20 HP × 3 хода', description: 'Восстанавливает 120 HP сразу и ещё по 20 HP в начале трёх следующих ваших ходов.',
+    usage: 'Применяется автоматически при HP ниже порога. Один раз за бой.' },
+
+  { id: 'clarityPotion', name: 'Зелье ясности', price: 400, icon: 'potionClarity',
+    town: 'ilgrad', slotType: 'potion',
+    effect: '+25% от максимума MP', description: 'Восстанавливает четверть максимального запаса маны.',
+    usage: 'Применяется автоматически при MP ниже порога. Один раз за бой.' },
+
+  { id: 'wardMixture', name: MIXTURE_EFFECTS.wardMixture.name, price: 600, icon: MIXTURE_EFFECTS.wardMixture.icon,
+    town: 'ilgrad', slotType: 'mixture',
+    effect: '−30% маг. урона', description: 'Снижает прямой магический урон от монстров на 30%.',
+    usage: 'Применяется в начале боя. Действует на 50 магических попаданий.' },
+
+  { id: 'reposeMixture', name: MIXTURE_EFFECTS.reposeMixture.name, price: 800, icon: MIXTURE_EFFECTS.reposeMixture.icon,
+    town: 'ilgrad', slotType: 'mixture',
+    effect: 'Отменяет «Неупокоенного»', description: 'Монстр падает от смертельного удара, даже если сработало свойство «Неупокоенный».',
+    usage: 'Применяется в начале боя. Из 20 зарядов тратится по одному за каждое отменённое срабатывание.' },
+
+  { id: 'atkMixture3', name: MIXTURE_EFFECTS.atkMixture3.name, price: 2000, icon: MIXTURE_EFFECTS.atkMixture3.icon,
+    town: 'ilgrad', slotType: 'mixture',
+    effect: '+65% урона', description: 'Увеличивает ваш урон на 65%.',
+    usage: 'Применяется в начале боя. Действует на 100 ваших атак.' },
   // v0.26: «Свиток телепортации» убран — магические тропы ведут во все стороны (map.js)
 ];
+
+function isShopItemSoldInTown(item, location) {
+  return isTownLoc(location) && (!item.town || item.town === location);
+}

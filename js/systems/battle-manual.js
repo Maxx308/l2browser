@@ -47,7 +47,7 @@ function doPlayerTurn(action) {
     const amount = Math.min(regen.perTurn || 10, p.maxHp - p.hp);
     if (amount > 0) { p.hp += amount; spawnFloatDamage('fighter-player', amount, 'heal'); }
     if (typeof subclassOnHeroHeal === 'function') subclassOnHeroHeal(Math.max(0, amount), (regen.perTurn || 10) - Math.max(0, amount));   // v0.38
-    logCombat(`🧪 Зелье лечения: +${Math.max(0, amount)} HP (осталось ${(regen.turnsLeft || 1) - 1} ход.)`, 'log-entry potion');
+    logCombat(`🧪 ${regen.potionName || 'Зелье лечения'}: +${Math.max(0, amount)} HP (осталось ${(regen.turnsLeft || 1) - 1} ход.)`, 'log-entry potion');
     regen.turnsLeft = (regen.turnsLeft || 1) - 1;
     if (regen.turnsLeft <= 0) removeDebuff('player', 'potionRegen');
     else renderDebuffBar('player');
@@ -176,7 +176,8 @@ function manualPotionState() {
   const p = state.player;
   const stock = p.inventory.filter(i => i.shopId === p.potionSlot).reduce((s, i) => s + i.qty, 0);
   const used = state.battle.activeEffects.healPotionUsed;
-  return { stock, used, inSlot: !!p.potionSlot, ok: !!p.potionSlot && stock > 0 && !used };
+  const item = SHOP_ITEMS.find(i => i.id === p.potionSlot);
+  return { stock, used, item, ok: !!item && stock > 0 && !used };
 }
 
 // ---------- панель ----------
@@ -209,7 +210,7 @@ function renderManualPanel(force) {
   const checks = slots.map(id => [id, manualSkillCheck(id)]);
   const pot = manualPotionState();
   const alive = (b.monsters || []).filter(m => m.hp > 0).length;
-  const sig = [waiting, alive > 1, pot.ok, pot.stock, ...checks.map(([id, c]) => id + (c.ok ? '+' : '-' + c.why))].join('|');
+  const sig = [waiting, alive > 1, pot.item?.id, pot.used, pot.stock, ...checks.map(([id, c]) => id + (c.ok ? '+' : '-' + c.why))].join('|');
   if (!force && sig === MANUAL_SIG) return;
   MANUAL_SIG = sig;
 
@@ -235,8 +236,10 @@ function renderManualPanel(force) {
       c.ok ? s.name : `${s.name}: ${c.why}`, waiting && c.ok, () => manualAct({ type: 'skill', id }));
   });
   mk('bxm-guard', '<span class="bxm-ic">🛡</span><span class="bxm-nm">Защита</span>', `Пропустить ход: −${GUARD_DAMAGE_CUT}% урона до следующего хода`, waiting, () => manualAct({ type: 'guard' }));
-  mk('bxm-potion', `<span class="bxm-ic">🧪</span><span class="bxm-nm">Зелье</span><span class="bxm-mp">×${pot.stock}</span>`,
-    pot.used ? 'Зелье уже выпито в этом бою' : (!pot.inSlot ? 'Зелье не в слоте' : 'Выпить зелье — ход не тратит'), pot.ok, manualDrinkPotion);
+  const potionLabel = pot.item ? `Зелье ${getPotionThresholdResource(pot.item.id)}` : 'Зелье';
+  mk('bxm-potion', `<span class="bxm-ic">🧪</span><span class="bxm-nm">${potionLabel}</span><span class="bxm-mp">×${pot.stock}</span>`,
+    pot.used ? 'Зелье уже выпито в этом бою' : (!pot.item ? 'Зелье не в слоте' : `Выпить «${pot.item.name}» без хода`),
+    pot.ok, manualDrinkPotion);
 
   const hint = document.getElementById('bxm-hint');
   if (hint) hint.textContent = alive > 1 ? 'Тапни по врагу, чтобы выбрать цель' : '';

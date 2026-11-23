@@ -11,7 +11,7 @@
 //      Шаг засчитывается по состоянию игры (куплено, надето, изучено, убито),
 //      а не по нажатию «Дальше», поэтому порядок может быть любым,
 //      а сделанное раньше времени просто пропускается.
-//    - Затемнение не держит: нажимать можно куда угодно.
+//    - Волны идут к следующему действию, контур остаётся до смены цели.
 //      «Потом» — прячет подсказки, остаётся значок «Продолжить обучение».
 //    - Во время разговоров, дороги и чужих окон подсказка прячется.
 //  Галочка «без обучения» — окно создания героя (index.html, confirmCreateCharacter).
@@ -27,7 +27,6 @@ let __tutScrolledKey = null;    // к какой подсказке уже пр�
 let __tutMeetTried = false;     // знакомство с сумкой уже открывали сами
 let __tutHelloTimer = null;
 let __tutSettingsOpen = false;
-let __tutCreateOpen = false;
 
 // --------------------------------------------------------
 //  СОСТОЯНИЕ
@@ -61,6 +60,43 @@ function tutKills() {
   return n;
 }
 
+function tutFreeFieldPath(from, to) {
+  if (from !== 'town' || to !== 'field' || !tutorialActive()) return false;
+  return !state.player.chronicle?.firsts?.['loc.field'] && tutKills() === 0;
+}
+
+function tutDeliverFirstLoot(reward) {
+  const p = state.player;
+  if (p.inventory.length >= invMaxSlots()) return false;
+  const helmet = MONSTERS.find(monster => monster.id === 'silkworm')?.drops.find(drop => drop.type === 'helmet');
+  if (!helmet) return false;
+  const bonusStats = rollRarityStats(RARITIES.blue.statPoints, getRarityStatProfile(helmet));
+  if (!addToInventory({ ...helmet, rarity: 'blue', bonusStats })) return false;
+
+  reward.itemId = p.inventory[p.inventory.length - 1].id;
+  const bonusText = formatRarityBonus(bonusStats);
+  logLoot(`✨ ${helmet.name} (${RARITIES.blue.name})${bonusText ? ' · ' + bonusText : ''}`, 'log-loot');
+  return true;
+}
+
+function tutEarnFirstLoot() {
+  const t = tutState();
+  if (!t || !t.on || t.done || t.firstLoot || tutKills() !== 0) return false;
+  t.firstLoot = { itemId: null };
+  if (!tutDeliverFirstLoot(t.firstLoot)) {
+    logLoot('🎒 Заплечник придержал редкий шлем. Освободи ячейку в сумке, чтобы его забрать.', 'log-info');
+  }
+  return true;
+}
+
+function tutNoteLootBag() {
+  const t = tutState();
+  if (!t || !t.on || t.done || tutKills() === 0 || t.ack?.lootBag) return;
+  t.ack = t.ack || {};
+  t.ack.lootBag = true;
+  tutSave();
+}
+
 // Квест Старейшины «Первые шаги» прошёл стадию stage (или уже недоступен — отказался и вырос).
 function tutFirstStepsPast(stage) {
   const pr = getQuestProgress('firstSteps');
@@ -75,12 +111,15 @@ function tutFlags() {
   const fsDone = tutFirstStepsPast('need_weapon');
   const learned = Object.values(p.learnedSkills || {}).some(v => v > 0) || (p.skillPoints || 0) < 1;
   const kills = tutKills();
+  const potionSlotted = !!p.potionSlot || (fsDone && !hasQuestItem('healPotion'));
+  const mixtureSlotted = !!p.mixtureSlot || (fsDone && !hasQuestItem('atkMixture'));
   return {
     elder:   started || fsDone,
     potion:  fsDone || tutFirstStepsPast('need_potion') || (started && hasQuestItem('healPotion')),
     mixture: fsDone || tutFirstStepsPast('need_mixture') || (started && hasQuestItem('atkMixture')),
     weapon:  fsDone,
-    slot:    !!p.potionSlot || (fsDone && !hasQuestItem('healPotion')),   // зелья нет совсем — шаг не держит
+    potionSlotted,
+    slot:    potionSlotted && mixtureSlotted,
     mentor:  learned,
     field:   kills > 0 || p.currentLocation === 'field',
     kill:    kills > 0,
@@ -143,17 +182,84 @@ function tutCity(key, onclick, txt) {
 
 function tutShop(shopId, cityTxt, buyTxt) {
   if (tutIsOpen('#trader-overlay')) {
-    const b = document.querySelector(`#trader-overlay button[onclick="buyItem('${shopId}', 1)"]`);
-    if (!tutVisible(b)) return null;   // открыта другая вкладка лавки
-    return { key: 'buy-' + shopId, el: b.closest('.trade-item') || b, ...buyTxt };
+    const buyTab = tutQ('#trader-overlay .window-tab[data-pane="buy"]');
+    if (buyTab && !buyTab.classList.contains('active')) {
+      return { key: 'trader-buy-tab', el: buyTab, ...TT().traderBuyTab };
+    }
+    const el = tutQ(`#trader-overlay button[onclick="buyItem('${shopId}', 1)"]`);
+    return el ? { key: 'buy-' + shopId, el, ...buyTxt } : null;
   }
   return tutCity('shop-' + shopId, 'openTrader()', cityTxt);
 }
 
 function tutToField() {
   if (tutOtherOverlay()) return null;
-  if (tutTabActive('map')) return { key: 'fieldCard', el: tutQ('#map-card-field'), ...TT().fieldCard };
+  if (tutTabActive('map')) {
+    if (tutFreeFieldPath(state.player.currentLocation, 'field')) {
+      return { key: 'freeFieldPath', el: tutQ('#map-card-field .map-magic-btn'), ...TT().freeFieldPath };
+    }
+    return { key: 'fieldCard', el: tutQ('#map-card-field .map-walk-btn'), ...TT().fieldCard };
+  }
   return { key: 'fieldTab', el: tutQ('.tab[data-tab="map"]'), ...TT().fieldTab };
+}
+
+function tutSupplyRoute(potion) {
+  const slot = potion ? 'potion' : 'mixture';
+  const shop = potion ? 'healPotion' : 'atkMixture';
+  if (tutIsOpen('#slot-picker')) {
+    const el = tutQ(`#slot-picker [onclick="selectSlotItem('${slot}', '${shop}')"]`);
+    if (el) return { key: potion ? 'slotPick' : 'mixtureSlotPick', el, ...(potion ? TT().slotPick : TT().mixtureSlotPick) };
+    return { key: 'slotClose', el: tutQ('#slot-picker .slot-picker-close'), ...TT().slotClose };
+  }
+  if (tutOtherOverlay()) return null;
+  if (tutTabActive('inventory')) {
+    const el = tutQ(`.equip-slot[data-slot="${slot}Slot"]`);
+    if (el) return { key: potion ? 'slotEl' : 'mixtureSlotEl', el, ...(potion ? TT().slotEl : TT().mixtureSlotEl) };
+  }
+  return { key: 'slotTab', el: tutQ('.tab[data-tab="inventory"]'), ...TT().slotTab };
+}
+
+function tutLootRoute(t, battle, prepared = true) {
+  if (tutOtherOverlay()) return null;
+  const session = typeof BSESS !== 'undefined' ? BSESS : null;
+  const bagOpen = !!session?.panelOpen;
+  const peeking = !!session?.peek;
+  const itemId = t.firstLoot?.itemId;
+  const needsSpace = !!t.firstLoot && !itemId;
+  const itemIndex = itemId ? state.player.inventory.findIndex(item => item.id === itemId) : -1;
+  const needsEquip = itemIndex >= 0;
+
+  if (!(t.ack?.loot || t.ack?.lootBag || peeking)) {
+    const ack = () => { t.ack = t.ack || {}; t.ack.loot = 1; tutSave(); };
+    const el = battle ? tutQ('#bx-loot-column') : null;
+    return { key: 'loot', el, ...TT().loot, btn: 'Дальше', onBtn: ack };
+  }
+
+  if (tutTabActive('inventory') && (needsEquip || needsSpace)) {
+    if (needsSpace) return { key: 'lootNoSpace', el: null, ...TT().lootNoSpace };
+    const el = tutQ(`#inventory-grid [data-item-id="${CSS.escape(itemId)}"]`);
+    if (el) return { key: 'lootEquip', el, ...TT().lootEquip };
+    const page = Math.floor(itemIndex / INVENTORY_PAGE_SIZE);
+    return { key: 'lootInventoryPage', el: tutQ(`#inventory-pagination [data-page="${page}"]`), ...TT().lootInventoryPage };
+  }
+  if (peeking) {
+    return { key: 'lootReturn', el: tutQ('#bx-peek-bar .bxp-back'), ...TT().lootReturn };
+  }
+  if (battle && bagOpen) {
+    return needsEquip || needsSpace
+      ? { key: 'lootInventory', el: tutQ('#bx-session .bxs-open-inv'), ...TT().lootInventory }
+      : { key: 'lootBagClose', el: tutQ('#bx-session .bxs-close'), ...TT().lootBagClose };
+  }
+  if (battle && (!t.ack?.lootBag || needsEquip || needsSpace)) {
+    return { key: 'lootBag', el: tutQ('#bx-loot-count'), ...TT().lootBag };
+  }
+  if (needsEquip || needsSpace) {
+    return { key: 'lootInventoryTab', el: tutQ('.tab[data-tab="inventory"]'), ...TT().lootInventoryTab };
+  }
+  if (!prepared) {
+    return { key: 'lootReturnToPrep', el: tutQ('#btn-close-battle'), ...TT().lootReturnToPrep };
+  }
+  return { key: 'final', el: null, text: TT().final.text, btn: TT().final.btn, final: true, onBtn: tutorialFinish };
 }
 
 function tutRoute() {
@@ -174,42 +280,45 @@ function tutRoute() {
   }
 
   const f = tutFlags();
+  // Пока окно боя открыто, можно посмотреть первую добычу даже при охоте раньше урока.
+  if (f.kill && battle) {
+    const prepared = f.elder && f.potion && f.mixture && f.weapon && f.slot && f.mentor;
+    return tutLootRoute(t, battle, prepared);
+  }
 
   // 2–5. Старейшина и его «Первые шаги»
   if (!f.elder)   return battle ? null : tutCity('elder', 'openElder()', TT().elder);
   if (!f.potion)  return battle ? null : tutShop('healPotion', TT().potionCity, TT().potionBuy);
   if (!f.mixture) return battle ? null : tutShop('atkMixture', TT().mixtureCity, TT().mixtureBuy);
+  if (!f.weapon && !battle && tutIsOpen('#trader-overlay')) {
+    const el = tutQ('#trader-overlay button[onclick="closeTrader()"]');
+    return { key: 'trader-close', el, handoff: true, ...TT().traderClose };
+  }
   if (!f.weapon)  return battle ? null : tutCity('weapon', 'openElder()', TT().weapon);
 
-  // 6. Зелье в слот
-  if (!f.slot) {
-    if (battle) return null;
-    if (tutIsOpen('#slot-picker')) {
-      const el = tutQ(`#slot-picker .slot-picker-item[onclick*="'healPotion'"]`);
-      return el ? { key: 'slotPick', el, ...TT().slotPick } : null;
-    }
-    if (tutOtherOverlay()) return null;
-    if (tutTabActive('inventory')) {
-      const el = tutQ('.equip-slot[data-slot="potionSlot"]');
-      if (el) return { key: 'slotEl', el, ...TT().slotEl };
-    }
-    return { key: 'slotTab', el: tutQ('.tab[data-tab="inventory"]'), ...TT().slotTab };
-  }
+  // 6. Зелье и микстура в слоты
+  if (!f.slot) return battle ? null : tutSupplyRoute(!f.potionSlotted);
 
   // 7. Навык у Урдаха
   if (!f.mentor) {
     if (battle) return null;
     if (tutIsOpen('#mentor-overlay')) {
-      const btns = Array.from(document.querySelectorAll('#mentor-pane-skills .skill-card-action .btn.success'));
+      const btns = Array.from(document.querySelectorAll('#mentor-pane-skills .skill-card-action .btn.success')).filter(tutVisible);
       // советуем первый активный навык (его видно в бою), иначе — первый доступный
-      const el = btns.find(b => { const c = b.closest('.skill-card'); return c && c.querySelector('.active-skill'); }) || btns.find(tutVisible);
-      return el ? { key: 'mentorLearn', el: el.closest('.skill-card') || el, ...TT().mentorLearn } : null;
+      const el = btns.find(b => b.closest('.skill-card')?.querySelector('.active-skill')) || btns[0];
+      return el ? { key: 'mentorLearn', el, ...TT().mentorLearn } : null;
     }
     return tutCity('mentor', 'openMentor()', TT().mentorCity);
   }
 
   // 8. На Поляну
-  if (!f.field && !battle) return tutToField();
+  if (!f.field && !battle) {
+    if (tutIsOpen('#mentor-overlay')) {
+      const el = tutQ('#mentor-overlay button[onclick="closeMentor()"]');
+      return { key: 'mentor-close', el, handoff: true, ...TT().mentorClose };
+    }
+    return tutToField();
+  }
 
   // 9. Бой
   if (!f.kill) {
@@ -241,17 +350,8 @@ function tutRoute() {
     return el ? { key: 'huntCard', el, ...TT().huntCard } : null;
   }
 
-  // 10. Добыча и «Появленцы возвращаются»
-  if (!(t.ack && t.ack.loot)) {
-    const ack = () => { t.ack = t.ack || {}; t.ack.loot = 1; tutSave(); };
-    if (battle) return { key: 'loot', el: tutQ('#bx-loot-column'), ...TT().loot, btn: 'Дальше', onBtn: ack };
-    if (tutOtherOverlay()) return null;
-    return { key: 'loot', el: null, ...TT().loot, btn: 'Дальше', onBtn: ack };
-  }
-
-  // 11. Итог
-  if (tutOtherOverlay()) return null;
-  return { key: 'final', el: null, text: TT().final.text, btn: TT().final.btn, final: true, onBtn: tutorialFinish };
+  // 10. Добыча, экипировка и итог
+  return tutLootRoute(t, battle);
 }
 
 // --------------------------------------------------------
@@ -286,6 +386,8 @@ function tutEls() {
     spot = document.createElement('div');
     spot.id = 'tut-spot';
     spot.className = 'tut-spot';
+    spot.setAttribute('aria-hidden', 'true');
+    spot.innerHTML = '<i class="tut-wave"></i>'.repeat(3);
     document.body.appendChild(spot);
     const bub = document.createElement('div');
     bub.id = 'tut-bubble';
@@ -316,8 +418,8 @@ function tutFixedShift() {
 
 function tutHide() {
   const { spot, bub } = tutEls();
-  spot.classList.remove('on');
-  bub.classList.remove('on', 'quiet');
+  spot.classList.remove('on', 'waves');
+  bub.classList.remove('on', 'quiet', 'action', 'handoff');
   if (__tutKey === 'hello') clearTimeout(__tutHelloTimer);   // приветствие спрятали (разговор и т.п.) — потом покажем заново
   __tutKey = null;
 }
@@ -331,7 +433,7 @@ function tutBubbleHtml(r) {
   const who = typeof bagSpeakerName === 'function' ? bagSpeakerName() : 'Заплечник';
   let row = '';
   if (r.btn) row += `<button type="button" class="tut-btn main" data-tut="go">${r.btn}</button>`;
-  if (!r.final) row += `<button type="button" class="tut-btn later" data-tut="later">Потом</button>`;
+  if (!r.final && !r.handoff) row += `<button type="button" class="tut-btn later" data-tut="later">Потом</button>`;
   return `<div class="tut-face"${tutFaceStyle()}></div>
     <div class="tut-body">
       <div class="tut-who">${who}</div>
@@ -343,10 +445,13 @@ function tutBubbleHtml(r) {
 
 function tutShow(r) {
   const { spot, bub } = tutEls();
-  if (r.key !== __tutKey) {
+  const changed = r.key !== __tutKey;
+  if (changed) {
     __tutKey = r.key;
     bub.innerHTML = tutBubbleHtml(r);
     bub.classList.remove('quiet');
+    bub.classList.toggle('action', !!r.act);
+    bub.classList.toggle('handoff', !!r.handoff);
     const go = bub.querySelector('[data-tut="go"]');
     if (go) go.onclick = (e) => { e.stopPropagation(); __tutKey = null; if (r.onBtn) r.onBtn(); tutTick(); };
     const later = bub.querySelector('[data-tut="later"]');
@@ -357,11 +462,12 @@ function tutShow(r) {
   const vw = window.innerWidth, vh = window.innerHeight;
   const bw = bub.offsetWidth, bh = bub.offsetHeight;
   const tabsEl = document.querySelector('.tabs');
-  const tabsTop = tabsEl && tutVisible(tabsEl) ? tabsEl.getBoundingClientRect().top : vh;
+  const inWindow = r.el?.closest('.overlay-base, #battle-window, #slot-picker');
+  const tabsTop = !inWindow && tutVisible(tabsEl) ? tabsEl.getBoundingClientRect().top : vh;
   const place = (el, x, y) => { const sh = tutFixedShift(); el.style.left = Math.round(x - sh.x) + 'px'; el.style.top = Math.round(y - sh.y) + 'px'; };
 
   if (!r.el) {
-    spot.classList.remove('on');
+    spot.classList.remove('on', 'waves');
     place(bub, (vw - bw) / 2, Math.max(10, (tabsTop - bh) / 2));
     return;
   }
@@ -380,13 +486,40 @@ function tutShow(r) {
   rc = r.el.getBoundingClientRect();
 
   // рамка не уходит за края экрана (у кнопок во всю ширину её иначе не видно)
-  const pad = 6, edge = 5;
+  const pad = 4, edge = 3;
   const sl = Math.max(edge, rc.left - pad), sr = Math.min(vw - edge, rc.right + pad);
   const st = Math.max(edge, rc.top - pad), sb = Math.min(vh - edge, rc.bottom + pad);
+  const startWaves = !!r.act && (changed || !spot.classList.contains('on'));
   place(spot, sl, st);
   spot.style.width = Math.max(0, sr - sl) + 'px';
   spot.style.height = Math.max(0, sb - st) + 'px';
   spot.classList.add('on');
+  spot.style.setProperty('--tut-wave-inset', [st, vw - sr, vh - sb, sl]
+    .map(space => -Math.min(30, Math.max(2, space - edge)) + 'px').join(' '));
+  if (startWaves) {
+    spot.classList.remove('waves');
+    void spot.offsetWidth; // Перезапуск только при появлении новой цели.
+    spot.classList.add('waves');
+  } else if (changed) {
+    spot.classList.remove('waves');
+  }
+
+  // Короткое подтверждение помещается в свободную часть шапки рядом с кнопкой закрытия.
+  const actions = r.handoff && r.el.closest('.window-header-actions');
+  if (actions) {
+    const header = actions.parentElement;
+    const bar = header.getBoundingClientRect();
+    const x = actions.getBoundingClientRect().left - bw - 12;
+    const y = rc.top + (rc.height - bh) / 2;
+    const occupied = Array.from(header.children).filter(el => el !== actions).some(el => {
+      const rect = el.getBoundingClientRect();
+      return rect.left < x + bw && rect.right > x && rect.top < y + bh && rect.bottom > y;
+    });
+    if (!occupied && x >= bar.left + 6 && y >= bar.top && y + bh <= bar.bottom) {
+      place(bub, x, y);
+      return;
+    }
+  }
 
   // пузырь: под целью, если влезает; иначе над ней; иначе сбоку
   const gap = 14;
@@ -492,7 +625,8 @@ function tutTip(t) {
 
 function tutShowTip(t, id) {
   const { spot, bub } = tutEls();
-  spot.classList.remove('on');
+  spot.classList.remove('on', 'waves');
+  bub.classList.remove('action', 'handoff');
   if (__tutKey !== 'tip-' + id) {
     __tutKey = 'tip-' + id;
     if (!t.seen[id]) { t.seen[id] = 1; tutSave(); }
@@ -579,6 +713,7 @@ function setTutorialEnabled(on) {
     if (t.done) { t.done = false; t.ack = {}; }
   }
   __tutKey = null; __tutScrolledKey = null;
+  if (typeof updateMapTravelButton === 'function') updateMapTravelButton();
   tutSave();
   renderTutorialSettings();
 }
@@ -602,11 +737,6 @@ function tutPresetSkipBox() {
 // --------------------------------------------------------
 function tutTick() {
   try {
-    // окно создания героя открылось — выставить галочку
-    const createOpen = tutIsOpen('#create-screen');
-    if (createOpen && !__tutCreateOpen) tutPresetSkipBox();
-    __tutCreateOpen = createOpen;
-
     // настройки открылись — нарисовать раздел «Обучение»
     const settingsOpen = tutIsOpen('#settings-overlay');
     if (settingsOpen && !__tutSettingsOpen) renderTutorialSettings();
@@ -615,6 +745,7 @@ function tutTick() {
     const t = tutState();
     const onScreen = !!document.querySelector('.screen-overlay.active');   // экран входа / создания
     if (!t || onScreen) { tutHide(); tutChip(false); if (!t) __tutMeetTried = false; return; }
+    if (t.firstLoot && !t.firstLoot.itemId && tutDeliverFirstLoot(t.firstLoot)) saveCurrentSlot();
 
     if (t.hello && !t.on) {
       tutChip(false);

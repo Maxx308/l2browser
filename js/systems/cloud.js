@@ -414,82 +414,86 @@ function translateCloudError(message) {
 // --------------------------------------------------------
 //  РЕНДЕР БЛОКА АВТОРИЗАЦИИ
 // --------------------------------------------------------
-function renderCloudAuth() {
-  const box = document.getElementById('cloud-auth');
-  if (!box) return;
+let cloudAuthMode = 'signin';
 
-  // v0.29.1: без библиотеки входа раньше блок молча прятался — игрок видел замок и не видел формы.
-  if (!supabaseClient) {
-    box.style.display = 'block';
-    box.innerHTML = `
-      <div class="cloud-auth-title">ВХОД В АККАУНТ</div>
-      <div class="cloud-auth-status error">
-        Не удалось загрузить вход. Проверьте интернет (или VPN) и обновите страницу.
-      </div>
-      <div class="cloud-auth-buttons">
-        <button class="btn" onclick="location.reload()">Обновить</button>
-      </div>
-      ${cloudIsMasterUnlocked() ? '' : cloudGuestBlockHtml()}
-    `;
-    return;
+function openCloudAuth(mode = 'signin') {
+  const dialog = document.getElementById('start-account');
+  const email = document.getElementById('cloud-email')?.value;
+  cloudAuthMode = mode;
+  renderCloudAuth();
+  const emailInput = document.getElementById('cloud-email');
+  if (emailInput && dialog.open) emailInput.value = email || '';
+  if (!dialog.open) {
+    const passwordInput = document.getElementById('cloud-password');
+    if (passwordInput) {
+      passwordInput.value = '';
+      setCloudStatus('');
+    }
+    dialog.showModal();
   }
-
-  box.style.display = 'block';
-
-  if (cloudUser) {
-    box.innerHTML = `
-      <div class="cloud-auth-user">
-        <div class="cloud-auth-user-email">${cloudUser.email || 'аккаунт'}</div>
-        <button class="btn danger" onclick="cloudSignOut()">Выйти</button>
-      </div>
-      <div class="cloud-auth-status ok" id="cloud-auth-status">
-        Облачное сохранение активно
-      </div>
-    `;
-    return;
-  }
-
-  const masterOn = cloudIsMasterUnlocked();
-  const masterHint = masterOn
-    ? `<div class="cloud-auth-status ok" style="margin-top:8px;">🛠 Мастер-режим: игра доступна без входа</div>`
-    : '';
-  const guestHtml = masterOn ? '' : cloudGuestBlockHtml();
-
-  box.innerHTML = `
-    <div class="cloud-auth-title">ВХОД В АККАУНТ</div>
-    <div class="cloud-auth-hint">
-      ☁️ Прогресс хранится в облаке: играйте с телефона и компьютера, ничего не потеряется.
-    </div>
-    <div class="cloud-auth-form">
-      <input type="email" id="cloud-email" class="cloud-auth-input" placeholder="email" autocomplete="email">
-      <input type="password" id="cloud-password" class="cloud-auth-input" placeholder="пароль" autocomplete="current-password">
-    </div>
-    <div class="cloud-auth-buttons">
-      <button class="btn success" onclick="cloudSignIn()">Войти</button>
-      <button class="btn" onclick="cloudSignUp()">Регистрация</button>
-    </div>
-    <div class="cloud-auth-status" id="cloud-auth-status"></div>
-    ${masterHint}
-    ${guestHtml}
-  `;
+  emailInput?.focus();
 }
 
-// v0.37: «Попробовать без регистрации» / строка гостевого режима под формой входа
-function cloudGuestBlockHtml() {
-  if (cloudIsGuest()) {
-    return `
-      <div class="cloud-guest cloud-guest-on">
-        <div class="cloud-guest-text">🎮 Вы играете как гость: герои хранятся только в этом браузере.
-          Зарегистрируйтесь — и они перейдут в аккаунт.</div>
-        <button type="button" class="cloud-guest-exit" onclick="cloudStopGuest()">Выйти из гостевого режима</button>
-      </div>`;
+function renderCloudAuth() {
+  const box = document.getElementById('cloud-auth');
+  const dialog = document.getElementById('start-account');
+  const guest = cloudIsGuest();
+  const view = cloudUser ? 'account' : !supabaseClient ? 'unavailable' : cloudAuthMode;
+  const key = `${view}:${guest}:${cloudUser?.email || ''}`;
+  if (box.dataset.view === key) return;
+
+  if (box.dataset.view && dialog.open && (cloudUser || box.dataset.view.startsWith('account:'))) dialog.close();
+  box.dataset.view = key;
+
+  if (view === 'account') {
+    box.innerHTML = `
+      <h2 id="cloud-auth-title">Аккаунт</h2>
+      <p class="cloud-auth-email">${escapeHtml(cloudUser.email || 'Аккаунт')}</p>
+      <p class="cloud-auth-status ok" id="cloud-auth-status" role="status">Облачное сохранение активно.</p>
+      <button type="button" class="start-button secondary" onclick="cloudSignOut()">Выйти из аккаунта</button>
+    `;
+    return;
   }
-  return `
-    <div class="cloud-guest">
-      <div class="cloud-guest-or"><span>или</span></div>
-      <button type="button" class="btn cloud-guest-btn" onclick="cloudStartGuest()">▶ Попробовать без регистрации</button>
-      <div class="cloud-guest-note">Герой сохранится только в этом браузере. Зарегистрироваться можно потом — он перейдёт в аккаунт.</div>
-    </div>`;
+
+  if (view === 'unavailable') {
+    box.innerHTML = `
+      <h2 id="cloud-auth-title">Вход в аккаунт</h2>
+      <p class="cloud-auth-status error">Не удалось загрузить вход. Проверьте подключение и обновите страницу.</p>
+      <button type="button" class="start-button secondary" onclick="location.reload()">Обновить</button>
+    `;
+    return;
+  }
+
+  const register = view === 'signup';
+  const title = register ? 'Создать аккаунт' : 'Войти в аккаунт';
+  box.innerHTML = `
+    <h2 id="cloud-auth-title">${title}</h2>
+    <p class="cloud-auth-hint">${guest ? 'После входа гостевой прогресс перенесётся в аккаунт.' : 'Облачное сохранение доступно с телефона и компьютера.'}</p>
+    <form class="cloud-auth-form">
+      <label for="cloud-email">Электронная почта</label>
+      <input type="email" id="cloud-email" name="email" autocomplete="email" required>
+      <label for="cloud-password">Пароль</label>
+      <input type="password" id="cloud-password" name="password" autocomplete="${register ? 'new-password' : 'current-password'}" required ${register ? 'minlength="6"' : ''}>
+      <button type="submit" class="start-button primary">${register ? 'Создать аккаунт' : 'Войти'}</button>
+    </form>
+    <p class="cloud-auth-status" id="cloud-auth-status" role="status"></p>
+    <button type="button" class="start-link" onclick="openCloudAuth('${register ? 'signin' : 'signup'}')">${register ? 'Уже есть аккаунт? Войти' : 'Создать аккаунт'}</button>
+    ${guest ? '<button type="button" class="start-link cloud-guest-exit" onclick="this.closest(\'dialog\').close(); cloudStopGuest()">Выйти из гостевого режима</button>' : ''}
+  `;
+
+  const form = box.querySelector('form');
+  form.onsubmit = async (event) => {
+    event.preventDefault();
+    const submit = form.querySelector('button[type="submit"]');
+    if (submit.disabled) return;
+    submit.disabled = true;
+    try {
+      if (register) await cloudSignUp();
+      else await cloudSignIn();
+    } finally {
+      submit.disabled = false;
+    }
+  };
 }
 
 function setCloudStatus(text, kind) {

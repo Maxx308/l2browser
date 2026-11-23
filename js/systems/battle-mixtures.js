@@ -25,8 +25,8 @@ function getActiveMixtureData() {
 
 // Тратит 1 заряд активной микстуры (n — сколько зарядов: v0.31 — Двойной удар и удар
 // двумя оружиями тратят 2, по заряду на каждый замах).
-// Если заряды кончились — пытается подставить такую же из инвентаря.
-// Если в инвентаре нет — очищает слот микстуры.
+// Повторяет выбранную микстуру, пока она есть в инвентаре.
+// Если игрок выбрал новую, она начнёт действовать в следующем бою.
 function tickMixtureCharge(n = 1) {
   if (n > 1) { for (let i = 0; i < n; i++) tickMixtureCharge(1); return; }
   const m = getActiveMixture();
@@ -47,7 +47,8 @@ function tickMixtureCharge(n = 1) {
   state.battle.activeEffects.mixture = null;
 
   // Проверяем, есть ли ещё такая же микстура в инвентаре.
-  const invItem = state.player.inventory.find(i => i.shopId === oldId);
+  const p = state.player;
+  const invItem = p.mixtureSlot === oldId ? p.inventory.find(i => i.shopId === oldId) : null;
   if (invItem) {
     // Активируем следующую.
     invItem.qty--;
@@ -68,8 +69,7 @@ function tickMixtureCharge(n = 1) {
     return;
   }
 
-  // В инвентаре больше нет — сбрасываем слот.
-  state.player.mixtureSlot = null;
+  if (p.mixtureSlot === oldId) p.mixtureSlot = null;
   showToast('⚗', `${name} закончилась`);
   logCombat(`⚗ ${name} закончилась.`, 'log-entry potion');
   renderEquipSlots();
@@ -109,10 +109,15 @@ function activateMixtureFromSlot() {
 //  МНОЖИТЕЛИ ОТ АКТИВНОЙ МИКСТУРЫ
 // --------------------------------------------------------
 
-// +30% / +50% к урону игрока.
-function getMixtureAtkMult() {
+// Номер замаха внутри действия, начиная с нуля. Заряды списываются в конце действия.
+function getMixtureAtkMult(swing = 0) {
   const data = getActiveMixtureData();
   if (!data || !data.atkPercent) return 1.0;
+  if (swing >= getActiveMixture().chargesLeft) {
+    const p = state.player;
+    const refill = p.mixtureSlot === data.id && p.inventory.some(i => i.shopId === data.id && i.qty > 0);
+    if (!refill) return 1.0;
+  }
   return 1 + data.atkPercent / 100;
 }
 
@@ -123,9 +128,9 @@ function getMixtureLuckMult() {
   return 1 + data.luckPercent / 100;
 }
 
-// −30% к физическому урону по игроку.
-function getMixtureDefMult() {
+// Снижение входящего урона соответствующего типа.
+function getMixtureDefMult(isMagic) {
   const data = getActiveMixtureData();
-  if (!data || !data.defPercent) return 1.0;
-  return 1 - data.defPercent / 100;
+  const percent = isMagic ? data?.magicDefPercent : data?.defPercent;
+  return 1 - (percent || 0) / 100;
 }

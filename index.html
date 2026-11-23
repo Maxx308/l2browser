@@ -86,37 +86,37 @@ applyTextFont(getSavedTextFont());
 <!-- v0.36.2: библиотека облака (Supabase, 213 КБ) переехала вниз, к остальным скриптам:
      в шапке она задерживала показ страницы, пока не скачается целиком. -->
 
-<link rel="stylesheet" href="css/base.css?v=0.38.2">
-<link rel="stylesheet" href="css/effects.css?v=0.38.2">
-<link rel="stylesheet" href="css/monsters.css?v=0.38.2">
-<link rel="stylesheet" href="css/city-map.css?v=0.38.2">
-<link rel="stylesheet" href="css/battle.css?v=0.38.2">
-<link rel="stylesheet" href="css/debuffs.css?v=0.38.2">
-<link rel="stylesheet" href="css/battle-autostop.css?v=0.38.2">
-<link rel="stylesheet" href="css/battle-arena.css?v=0.38.2">
-<link rel="stylesheet" href="css/underwood-fall.css?v=0.38.2">
-<link rel="stylesheet" href="css/battle-session.css?v=0.38.2">
-<link rel="stylesheet" href="css/battle-rest.css?v=0.38.2">
-<link rel="stylesheet" href="css/inventory.css?v=0.38.2">
-<link rel="stylesheet" href="css/inventory-equip.css?v=0.38.2">
-<link rel="stylesheet" href="css/inventory-slots.css?v=0.38.2">
-<link rel="stylesheet" href="css/windows.css?v=0.38.2">
-<link rel="stylesheet" href="css/screens.css?v=0.38.2">
-<link rel="stylesheet" href="css/patches.css?v=0.38.2">
-<link rel="stylesheet" href="css/settings.css?v=0.38.2">
-<link rel="stylesheet" href="css/cheat.css?v=0.38.2">
-<link rel="stylesheet" href="css/overlays.css?v=0.38.2">
-<link rel="stylesheet" href="css/dialogue.css?v=0.38.2">
-<link rel="stylesheet" href="css/storage.css?v=0.38.2">
-<link rel="stylesheet" href="css/refine.css?v=0.38.2">
-<link rel="stylesheet" href="css/alchemist.css?v=0.38.2">
-<link rel="stylesheet" href="css/leaderboard.css?v=0.38.2">
-<link rel="stylesheet" href="css/hero-inspect.css?v=0.38.2">
-<link rel="stylesheet" href="css/chronicle.css?v=0.38.2">
-<link rel="stylesheet" href="css/daynight.css?v=0.38.2">
-<link rel="stylesheet" href="css/expeditions.css?v=0.38.2">
-<link rel="stylesheet" href="css/subclass.css?v=0.38.2">
-<link rel="stylesheet" href="css/tutorial.css?v=0.38.2">
+<link rel="stylesheet" href="css/base.css?v=0.39">
+<link rel="stylesheet" href="css/effects.css?v=0.39">
+<link rel="stylesheet" href="css/monsters.css?v=0.39">
+<link rel="stylesheet" href="css/city-map.css?v=0.39">
+<link rel="stylesheet" href="css/battle.css?v=0.39">
+<link rel="stylesheet" href="css/debuffs.css?v=0.39">
+<link rel="stylesheet" href="css/battle-autostop.css?v=0.39">
+<link rel="stylesheet" href="css/battle-arena.css?v=0.39">
+<link rel="stylesheet" href="css/underwood-fall.css?v=0.39">
+<link rel="stylesheet" href="css/battle-session.css?v=0.39">
+<link rel="stylesheet" href="css/battle-rest.css?v=0.39">
+<link rel="stylesheet" href="css/inventory.css?v=0.39">
+<link rel="stylesheet" href="css/inventory-equip.css?v=0.39">
+<link rel="stylesheet" href="css/inventory-slots.css?v=0.39">
+<link rel="stylesheet" href="css/windows.css?v=0.39">
+<link rel="stylesheet" href="css/screens.css?v=0.39">
+<link rel="stylesheet" href="css/patches.css?v=0.39">
+<link rel="stylesheet" href="css/settings.css?v=0.39">
+<link rel="stylesheet" href="css/cheat.css?v=0.39">
+<link rel="stylesheet" href="css/overlays.css?v=0.39">
+<link rel="stylesheet" href="css/dialogue.css?v=0.39">
+<link rel="stylesheet" href="css/storage.css?v=0.39">
+<link rel="stylesheet" href="css/refine.css?v=0.39">
+<link rel="stylesheet" href="css/alchemist.css?v=0.39">
+<link rel="stylesheet" href="css/leaderboard.css?v=0.39">
+<link rel="stylesheet" href="css/hero-inspect.css?v=0.39">
+<link rel="stylesheet" href="css/chronicle.css?v=0.39">
+<link rel="stylesheet" href="css/daynight.css?v=0.39">
+<link rel="stylesheet" href="css/expeditions.css?v=0.39">
+<link rel="stylesheet" href="css/subclass.css?v=0.39">
+<link rel="stylesheet" href="css/tutorial.css?v=0.39">
 </head>
 <body>
 
@@ -124,65 +124,145 @@ applyTextFont(getSavedTextFont());
 <div id="toast-container"></div>
 
 <!-- ЭКРАН СТАРТА -->
-<div class="screen-overlay active" id="start-screen">
+<div class="screen-overlay active launcher" id="start-screen">
   <div class="start-bg" style="background-image:url('img/start-bg.webp')"></div>
-  <div class="patch-tabs" id="patch-tabs"></div>
-
   <div class="start-content">
-    <!-- v0.37: до входа экран — «лаунчер» (#start-screen.launcher, screens.css):
-         слева название, пара строк о игре и вход, справа скриншоты, версии строкой по низу -->
-    <div class="start-side">
-      <h1 class="start-title">L2 BROWSER</h1>
-      <div class="start-subtitle">Андервуд</div>
-      <div class="start-lead">
-        Браузерная RPG: выбери расу и класс, охоться на тварей, собирай добычу,
-        куй снаряжение и помогай жителям. Герой ходит в экспедиции, даже пока вас нет в игре.
+    <header class="start-header">
+      <div class="start-brand">
+        <span>L2 BROWSER</span>
+        <span class="start-brand-world">Андервуд</span>
       </div>
-      <div class="cloud-auth" id="cloud-auth" style="display:none;"></div>
-    </div>
+      <button type="button" class="start-button secondary" id="start-account-button" onclick="openCloudAuth()" hidden>Аккаунт</button>
+    </header>
 
-    <!-- Скриншоты (бывший замок): показать, если играть нельзя -->
-    <div class="cloud-access-gate" id="cloud-access-gate" style="display:none;"></div>
+    <section class="start-entrance" id="start-entrance" aria-labelledby="start-title">
+      <h1 class="start-title" id="start-title">Андервуд</h1>
+      <p class="start-lead">Охота, ремесло и приключения</p>
+      <div class="start-actions">
+        <button type="button" class="start-button primary" onclick="openCloudAuth()">Войти</button>
+        <button type="button" class="start-button secondary" onclick="openCloudAuth('signup')">Создать аккаунт</button>
+      </div>
+      <div class="start-guest">
+        <button type="button" class="start-link cloud-guest-btn" onclick="cloudStartGuest()">Играть гостем</button>
+        <p>Прогресс сохранится в этом браузере.</p>
+      </div>
+    </section>
 
-    <div class="slots-grid" id="slots-grid"></div>
+    <section class="start-roster" id="start-roster" aria-labelledby="start-roster-title" hidden>
+      <h1 id="start-roster-title">Выбор героя</h1>
+      <div class="slots-grid" id="slots-grid"></div>
+    </section>
 
-    <!-- v0.34: авторство (подробно — файл LICENSE) -->
-    <div class="start-copyright">© 2026 Никитин Максим. Все права защищены.</div>
+    <footer class="start-footer">
+      <nav class="start-links" aria-label="Об игре">
+        <button type="button" class="start-link" onclick="openStartShot()">Скриншоты</button>
+        <button type="button" class="start-link" onclick="openPatchNotes()">Обновления</button>
+      </nav>
+      <small>© 2026 Никитин Максим. Все права защищены.</small>
+    </footer>
   </div>
+
+  <dialog class="start-dialog" id="start-account" aria-labelledby="cloud-auth-title">
+    <button type="button" class="start-dialog-close" onclick="this.closest('dialog').close()" aria-label="Закрыть">×</button>
+    <div id="cloud-auth"></div>
+  </dialog>
+
+  <dialog class="start-dialog start-gallery" id="start-shot-view" aria-label="Скриншоты игры">
+    <button type="button" class="start-dialog-close" onclick="this.closest('dialog').close()" aria-label="Закрыть">×</button>
+    <figure>
+      <img alt="">
+      <figcaption class="start-shot-view-cap"></figcaption>
+    </figure>
+    <div class="start-gallery-controls">
+      <button type="button" class="start-button secondary" onclick="moveStartShot(-1)" aria-label="Предыдущий скриншот">‹</button>
+      <button type="button" class="start-button secondary" onclick="moveStartShot(1)" aria-label="Следующий скриншот">›</button>
+    </div>
+  </dialog>
+
+  <dialog class="start-dialog patch-notes" id="patch-notes" aria-labelledby="patch-notes-title">
+    <button type="button" class="start-dialog-close" onclick="this.closest('dialog').close()" aria-label="Закрыть">×</button>
+    <h2 id="patch-notes-title">Обновления</h2>
+    <label class="patch-version-label" for="patch-version">Версия</label>
+    <select id="patch-version" onchange="renderPatchNotes(this.value)"></select>
+    <article id="patch-entry"></article>
+  </dialog>
 </div>
 
 <!-- ЭКРАН СОЗДАНИЯ ПЕРСОНАЖА -->
-<div class="screen-overlay" id="create-screen">
+<div class="screen-overlay" id="create-screen" data-step="race">
+  <div class="start-bg" style="background-image:url('img/start-bg.webp')"></div>
   <div class="create-content">
-    <h2 class="create-title">СОЗДАНИЕ ПЕРСОНАЖА</h2>
+    <header class="start-header create-header">
+      <button type="button" class="start-link" onclick="closeCreateScreen()"><span aria-hidden="true">‹</span> К героям</button>
+      <span class="start-brand">L2 BROWSER</span>
+    </header>
 
-    <div class="create-block">
-      <div class="create-block-title">ВЫБЕРИТЕ РАСУ</div>
-      <div class="create-list" id="races-list"></div>
-    </div>
+    <nav class="create-steps" aria-label="Шаги создания героя">
+      <button type="button" class="start-link" data-create-step="race" aria-current="step" onclick="setCreateStep('race')">Раса</button>
+      <span aria-hidden="true">›</span>
+      <button type="button" class="start-link" data-create-step="class" onclick="setCreateStep('class')">Класс и имя</button>
+    </nav>
+    <h1 class="create-title" id="create-title" tabindex="-1">
+      <span class="create-title-wide">Создание героя</span>
+      <span class="create-title-race">Выбор расы</span>
+      <span class="create-title-class" id="create-chosen-race"></span>
+    </h1>
 
-    <div class="create-block">
-      <div class="create-block-title">ВЫБЕРИТЕ КЛАСС</div>
-      <div class="create-list" id="classes-list"></div>
-    </div>
+    <section class="create-races" aria-labelledby="create-race-label">
+      <h2 id="create-race-label">Раса</h2>
+      <div id="races-list" role="group" aria-labelledby="create-race-label"></div>
+    </section>
 
-    <div class="create-block">
-      <div class="create-block-title">ИМЯ ПЕРСОНАЖА</div>
-      <input type="text" id="char-name-input" class="char-name-input" maxlength="16" placeholder="Введите имя..." value="">
-      <div class="char-name-hint">Обязательно. От 2 до 16 символов. Так тебя увидят в рейтинге.</div>
-      <!-- v0.39: обучение «Первый день» (js/systems/tutorial.js); галочка стоит сама, если есть герой выше 5 ур. -->
-      <label class="tut-skip" for="tut-skip-chk">
-        <input type="checkbox" id="tut-skip-chk">
-        <span>
-          <span class="tut-skip-t">Я уже играл — без обучения</span>
-          <span class="tut-skip-h">Заплечник не будет подсказывать, Старейшина встретит как обычно. Включить обратно — Настройки → Игра.</span>
-        </span>
-      </label>
-    </div>
+    <div class="create-workspace">
+      <figure class="create-hero">
+        <img id="create-hero-portrait" alt="">
+        <figcaption class="create-hero-caption">
+          <strong id="create-hero-race"></strong>
+          <strong id="create-hero-pair"></strong>
+          <p id="create-race-desc"></p>
+        </figcaption>
+      </figure>
 
-    <div class="create-actions">
-      <button class="btn" onclick="closeCreateScreen()">Назад</button>
-      <button class="btn success" id="btn-create-char" onclick="confirmCreateCharacter()" disabled>Выберите класс</button>
+      <div class="create-race-step">
+        <div class="create-traits" id="create-race-traits"></div>
+        <button type="button" class="start-button primary" onclick="setCreateStep('class')">Выбрать класс</button>
+      </div>
+
+      <section class="create-panel" aria-labelledby="create-class-label">
+        <h2 class="create-class-label" id="create-class-label">Класс</h2>
+        <div id="classes-list" role="group" aria-labelledby="create-class-label"></div>
+        <p class="create-class-hint" id="create-class-hint">Выберите класс, чтобы увидеть его особенности и будущие подклассы.</p>
+        <div id="create-class-preview" hidden>
+          <div class="create-traits" id="create-class-traits"></div>
+          <details class="create-stats" id="create-stats">
+            <summary>Стартовые характеристики</summary>
+            <dl id="create-stat-values"></dl>
+          </details>
+
+          <section class="create-future" aria-labelledby="create-future-label">
+            <div class="create-future-header">
+              <h3 id="create-future-label">Подклассы</h3>
+              <p>С <span id="create-subclass-level"></span>-го уровня в Храме Ильграда</p>
+            </div>
+            <div id="create-subclasses"></div>
+          </section>
+        </div>
+
+        <form class="create-form" id="create-form">
+          <label for="char-name-input">Имя героя</label>
+          <div class="create-actions">
+            <input type="text" id="char-name-input" class="char-name-input" minlength="2" maxlength="16" placeholder="От 2 до 16 символов" autocomplete="off" required>
+            <button type="submit" class="start-button primary" id="btn-create-char" disabled>Создать героя</button>
+          </div>
+          <label class="tut-skip" for="tut-skip-chk">
+            <input type="checkbox" id="tut-skip-chk">
+            <span>
+              <span class="tut-skip-t">Я уже играл — без обучения</span>
+              <span class="tut-skip-h">Включить подсказки снова можно в разделе «Игра» в настройках.</span>
+            </span>
+          </label>
+        </form>
+      </section>
     </div>
   </div>
 </div>
@@ -1367,7 +1447,7 @@ applyTextFont(getSavedTextFont());
      v0.36.2: подключается здесь, а не в шапке (должна стоять раньше js/systems/cloud.js). -->
 <script src="js/vendor/supabase-2.118.0.js" defer></script>
 
-<script src="js/app.bundle.js?v=0.38.2" defer></script>
+<script src="js/app.bundle.js?v=0.39" defer></script>
 
 </body>
 </html>

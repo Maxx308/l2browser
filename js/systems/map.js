@@ -75,7 +75,8 @@ function useMagicPath(destination) {
   switchTab('hunt');
 
   const place = LOCATION_NAMES[destination] || destination;
-  logCombat(`🌀 Магические тропы: вы прибыли — ${place} (−${price} 🪙).`, 'log-entry levelup');
+  const cost = price === 0 ? 'бесплатно' : `−${price} 🪙`;
+  logCombat(`🌀 Магические тропы: вы прибыли — ${place} (${cost}).`, 'log-entry levelup');
   showToast('🌀', `Магические тропы: ${place}`);
 
   saveCurrentSlot();

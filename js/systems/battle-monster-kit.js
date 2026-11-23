@@ -86,10 +86,16 @@ function monsterTagDmg(m, dmg, kinds) {
   if (m.undying && final >= m.hp) {          // Неупокоенный: первый смертельный удар
     m.undying = false;
     // v0.37: не всегда, а с шансом (один бросок на тварь — на её первый смертельный удар)
-    if (Math.random() * 100 >= (MONSTER_TAGS.undying.undyingChance || 100)) { if (typeof subclassOnHeroDamage === 'function') subclassOnHeroDamage(m, final); return final; }
-    spawnFloatDamage('fighter-monster', 0, 'block', { mon: m, text: 'НЕ УПОКОЕН' });
-    logCombat(`💀 ${m.name} не падает!`, 'log-entry monster');
-    return Math.max(0, m.hp - 1);
+    if (Math.random() * 100 < (MONSTER_TAGS.undying.undyingChance || 100)) {
+      if (getActiveMixtureData()?.chargeType === 'undying') {
+        tickMixtureCharge();
+        logCombat(`⚗ Микстура упокоения отменяет «Неупокоенного» у ${m.name}.`, 'log-entry potion');
+      } else {
+        spawnFloatDamage('fighter-monster', 0, 'block', { mon: m, text: 'НЕ УПОКОЕН' });
+        logCombat(`💀 ${m.name} не падает!`, 'log-entry monster');
+        return Math.max(0, m.hp - 1);
+      }
+    }
   }
   if (typeof subclassOnHeroDamage === 'function') subclassOnHeroDamage(m, final);   // v0.38: На краю (вампиризм), Приговор
   return final;

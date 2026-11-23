@@ -1,26 +1,40 @@
 /* ========================================================
    ОБУЧЕНИЕ «ПЕРВЫЙ ДЕНЬ» (v0.39) — js/systems/tutorial.js
-   Подсветка (дыра в затемнении), пузырь Заплечника, значок прогресса,
+   Волны к цели, пузырь Заплечника, значок прогресса,
    галочка «без обучения» в окне создания героя.
    Слой выше окон (до ~960) и ниже подсказок предметов (2000).
    ======================================================== */
 
 .tut-spot {
   position: fixed; z-index: 1250; display: none;
-  border-radius: calc(8 * var(--u));
-  pointer-events: none;                       /* затемнение не держит: жать можно куда угодно */
-  box-shadow: 0 0 0 9999px rgba(4, 4, 6, 0.62);
-  /* без плавного переезда: в фоновой вкладке анимация замирает и рамка остаётся на старом месте */
+  border: 2px solid #f6d590;
+  border-radius: calc(7 * var(--u));
+  pointer-events: none;
+  box-shadow: 0 0 10px rgba(243, 203, 124, .35);
 }
 .tut-spot.on { display: block; }
-.tut-spot::after {
-  content: ''; position: absolute; inset: calc(-4 * var(--u));
-  border: 2px solid var(--gold-bright); border-radius: calc(10 * var(--u));
-  animation: tutPulse 1.4s ease-in-out infinite;
+.tut-wave {
+  position: absolute;
+  border: 2px solid #f3cb7c;
+  box-shadow: 0 0 8px rgba(244, 186, 105, .4);
+  opacity: 0;
+  pointer-events: none;
 }
-@keyframes tutPulse {
-  0%, 100% { opacity: .35; transform: scale(1); }
-  50%      { opacity: 1;   transform: scale(1.02); }
+.tut-spot.waves .tut-wave { animation: tutWave .72s ease-out forwards; }
+.tut-spot.waves .tut-wave:nth-child(2) { animation-delay: .31s; }
+.tut-spot.waves .tut-wave:nth-child(3) { animation-delay: .62s; }
+@keyframes tutWave {
+  0% {
+    inset: var(--tut-wave-inset);
+    border-radius: calc(17 * var(--u));
+    opacity: .13;
+  }
+  38% { opacity: .8; }
+  100% {
+    inset: -2px;
+    border-radius: calc(7 * var(--u));
+    opacity: 0;
+  }
 }
 
 .tut-bubble {
@@ -35,6 +49,34 @@
 }
 .tut-bubble.on { display: flex; }
 .tut-bubble.quiet { box-shadow: 0 4px 18px rgba(0, 0, 0, .6); }
+.tut-bubble.action {
+  width: min(calc(300 * var(--u)), calc(100vw - 20px));
+  gap: calc(8 * var(--u));
+  padding: calc(8 * var(--u)) calc(10 * var(--u));
+  pointer-events: none;
+}
+.tut-bubble.action button { pointer-events: auto; }
+.tut-bubble.action .tut-face {
+  width: calc(36 * var(--u));
+  height: calc(36 * var(--u));
+  animation: none;
+}
+.tut-bubble.action .tut-row { margin-top: calc(3 * var(--u)); }
+.tut-bubble.handoff {
+  width: min(calc(210 * var(--u)), calc(100vw - 20px));
+  min-height: calc(40 * var(--u));
+  align-items: center;
+  padding: calc(4 * var(--u)) calc(7 * var(--u));
+  background: linear-gradient(145deg, #29261d, #181912);
+}
+.tut-bubble.handoff .tut-face {
+  width: calc(29 * var(--u));
+  height: calc(29 * var(--u));
+}
+.tut-bubble.handoff .tut-who { display: none; }
+.tut-bubble.handoff .tut-text { font-size: var(--fs-small); line-height: 1.2; }
+.tut-bubble.handoff .tut-act { margin-top: 2px; font-size: var(--fs-large); font-weight: 700; line-height: 1.15; }
+.tut-bubble.handoff .tut-act::before { content: none; }
 
 .tut-face {
   width: calc(54 * var(--u)); height: calc(54 * var(--u)); flex: none;
@@ -45,6 +87,9 @@
 @keyframes tutBob {
   0%, 100% { transform: translateY(0) rotate(-2deg); }
   50%      { transform: translateY(-3px) rotate(2deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tut-spot.waves .tut-wave, .tut-bubble .tut-face { animation: none; }
 }
 .tut-body { flex: 1; min-width: 0; }
 .tut-who {

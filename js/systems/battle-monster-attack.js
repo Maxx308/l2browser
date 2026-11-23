@@ -105,7 +105,10 @@ function monsterStrike(attacker, skill) {
   const armorLeft = 1 - (m.armorIgnore || 0);   // v0.36: Острый
   let dmg;
 
-  const mixtureDefMult = getMixtureDefMult();
+  const mixtureDefMult = getMixtureDefMult(hitIsMagic);
+  const mixtureInfo = mixtureDefMult < 1
+    ? ` (${hitIsMagic ? 'оберег' : 'крепость'} −${Math.round((1 - mixtureDefMult) * 100)}%)`
+    : '';
   // v0.20: «Защита» в ручном режиме режет и физику, и магию
   const guardMult = typeof getGuardMult === 'function' ? getGuardMult() : 1;
   const guardInfo = guardMult < 1 ? ` (защита −${GUARD_DAMAGE_CUT}%)` : '';
@@ -121,6 +124,7 @@ function monsterStrike(attacker, skill) {
 
   if (hitIsMagic) {
     dmg = Math.max(1, raw - Math.floor(p.mDef * 0.5 * armorLeft));
+    if (mixtureDefMult < 1) dmg = Math.max(1, Math.floor(dmg * mixtureDefMult));
     if (stanceMult < 1) dmg = Math.max(1, Math.floor(dmg * stanceMult));
     if (guardMult < 1) dmg = Math.max(1, Math.floor(dmg * guardMult));
     if (scMult < 1) dmg = Math.max(1, Math.floor(dmg * scMult));
@@ -128,7 +132,7 @@ function monsterStrike(attacker, skill) {
     { const sh = manaShieldAbsorb(dmg); dmg = sh.hp; msAbsorbed += sh.mp; }
     p.hp -= dmg;
     spawnFloatDamage('fighter-player', dmg, 'magic');
-    logCombat(`✦ ${m.name} бьёт магией на ${dmg} урона.${guardInfo}${scInfo}`, 'log-entry magic');
+    logCombat(`✦ ${m.name} бьёт магией на ${dmg} урона.${mixtureInfo}${guardInfo}${scInfo}`, 'log-entry magic');
   } else {
     const flatReduce = Math.ceil(typeof subclassFlatReduce === 'function' ? subclassFlatReduce(p.flatDamageReduce || 0) : (p.flatDamageReduce || 0));   // v0.38: Сомкнуть броню, Закалка
     dmg = Math.max(1, raw - Math.floor(p.pDef * 0.3 * armorLeft) - flatReduce);
@@ -141,12 +145,11 @@ function monsterStrike(attacker, skill) {
     p.hp -= dmg;
     spawnFloatDamage('fighter-player', dmg, 'dmg');
     const reduceInfo = (flatReduce > 0 ? ` (щит/шкура -${flatReduce})` : '') + (stanceMult < 1 ? ` (стойка −${SHIELD_STANCE_DAMAGE_CUT}%)` : '');
-    const mixtureInfo = mixtureDefMult < 1.0 ? ` (крепость −30%)` : '';
     logCombat(`🩸 ${m.name} наносит ${dmg} урона.${reduceInfo}${mixtureInfo}${guardInfo}${scInfo}`, 'log-entry monster');
-
-    const mixtureData = getActiveMixtureData();
-    if (mixtureData && mixtureData.chargeType === 'enemyAttacks') tickMixtureCharge();
   }
+
+  const chargeType = hitIsMagic ? 'enemyMagicAttacks' : 'enemyAttacks';
+  if (getActiveMixtureData()?.chargeType === chargeType) tickMixtureCharge();
 
   // ========================================================
   //  ФИШКИ МОНСТРА

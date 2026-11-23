@@ -285,14 +285,16 @@ function expSupplyPlan(opt, hours) {
   const d = __expDialog || {};
   const take = d.take || {};
   const rows = expSupplyNeeds(opt, hours);
-  const inTown = isTownLoc(state.player.currentLocation);
+  const location = state.player.currentLocation;
   let gold = state.player.gold;
   let cost = 0;
   rows.forEach(r => {
     r.take = Math.max(0, Math.min(99999, Math.floor(take[r.id] !== undefined ? take[r.id] : r.need)));
     const want = Math.max(0, r.take - r.have);
-    r.buy = (inTown && d.buy !== false) ? Math.min(want, Math.floor(gold / r.shop.price)) : 0;
-    r.noGold = r.buy < want && inTown && d.buy !== false;
+    const canBuy = d.buy !== false && isShopItemSoldInTown(r.shop, location);
+    r.buy = canBuy ? Math.min(want, Math.floor(gold / r.shop.price)) : 0;
+    r.noGold = canBuy && r.buy < want;
+    r.soldOnlyInIlgrad = r.shop.town === 'ilgrad' && location !== 'ilgrad';
     gold -= r.buy * r.shop.price;
     cost += r.buy * r.shop.price;
     r.got = Math.min(r.take, r.have + r.buy);
@@ -463,7 +465,8 @@ function expRenderDialog() {
         const tail = [];
         tail.push(`в сумке ${expNum(r.have)}`);
         if (r.buy > 0) tail.push(`<b>докупит ${expNum(r.buy)}</b>`);
-        if (r.short > 0) tail.push(`<span class="exp-pack-warn">не хватает ${expNum(r.short)}${r.noGold ? ' — мало Оболов' : ''}</span>`);
+        const reason = r.noGold ? ' · мало Оболов' : (r.soldOnlyInIlgrad ? ' · продаётся в Ильграде' : '');
+        if (r.short > 0) tail.push(`<span class="exp-pack-warn">не хватает ${expNum(r.short)}${reason}</span>`);
         return `<div class="exp-pack-row">
           <span class="exp-pack-ico">${icon}</span>
           <span class="exp-pack-body"><span class="exp-pack-name">${r.shop.name}</span><span class="exp-pack-info">нужно ~${expNum(r.need)} · ${tail.join(' · ')}</span></span>

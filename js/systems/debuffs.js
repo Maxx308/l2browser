@@ -80,7 +80,7 @@ const DEBUFF_DEFS = {
     name: 'Зелье лечения',
     cssClass: 'debuff-regen',
     displayCount: (d) => d.turnsLeft || 0,
-    tooltip: (d) => `Зелье лечения · +${d.perTurn || 10} HP на каждом вашем ходу, осталось ${d.turnsLeft || 0}.`,
+    tooltip: (d) => `${d.potionName || 'Зелье лечения'} · +${d.perTurn || 10} HP на каждом вашем ходу, осталось ${d.turnsLeft || 0}.`,
   },
   guard: {
     icon: '🛡',

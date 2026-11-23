@@ -171,6 +171,7 @@ function onMonsterDeath(deadMonster) {
   const lootFilterLevel = p.lootFilterLevel || 0;
 
   const lootGroups = new Map();
+  const firstLootEarned = !m.fled && typeof tutEarnFirstLoot === 'function' && tutEarnFirstLoot();
 
   m.drops.forEach(d => {
     const dropChance = d.chance * mult_ * totalDropMult * greedDropMult * packDropMult;
@@ -280,7 +281,9 @@ function onMonsterDeath(deadMonster) {
 
   monsterTagsOnDeath(m);   // v0.36: Вор, Падальщик, Злопамятный
 
-  saveCurrentSlotSoon();   // v0.36.2: не чаще раза в несколько секунд (slots.js)
+  // Учебный шлем и первое убийство сохраняются вместе.
+  if (firstLootEarned) saveCurrentSlot();
+  else saveCurrentSlotSoon();   // v0.36.2: не чаще раза в несколько секунд (slots.js)
 
   // ========================================================
   //  ГРУППОВЫЕ БОИ: проверяем, остались ли живые

@@ -166,6 +166,7 @@ function openSessionPanel() {
   document.getElementById('bx-loot-column')?.classList.add('bx-bag-open');
   renderSessionPanel();
   bsessApplyPanelPos();
+  if (typeof tutNoteLootBag === 'function') tutNoteLootBag();
 }
 
 // --------------------------------------------------------

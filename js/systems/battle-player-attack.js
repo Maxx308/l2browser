@@ -162,7 +162,8 @@ function playerAttack() {
         if (weaponBonusPercent > 0) dmg = Math.floor(dmg * (1 + weaponBonusPercent / 100));
         if (deathBonus > 0) dmg = Math.floor(dmg * (1 + deathBonus / 100));
         if (gripBonus > 0) dmg = Math.floor(dmg * (1 + gripBonus / 100));
-        if (mixtureAtkMult > 1.0) dmg = Math.floor(dmg * mixtureAtkMult);
+        const swingMixtureMult = h === 0 ? mixtureAtkMult : getMixtureAtkMult(h);
+        if (swingMixtureMult > 1) dmg = Math.floor(dmg * swingMixtureMult);
         const isCrit = Math.random() * 100 < critChance;
         if (isCrit) dmg = Math.floor(dmg * critMult);
         if (isCrit && typeof subclassOnCrit === 'function') subclassOnCrit(m);   // v0.38: Азарт / Метка Егеря
@@ -411,8 +412,11 @@ function playerAttack() {
     logCls = 'log-entry player'; logIcon = '⚔'; dmgType = 'dmg';
   }
 
+  const offhandShare = offhand && p.offhandPAtk > 0 ? p.offhandPAtk / (p.pAtk + p.offhandPAtk) : 0;
+  const offhandMixtureMult = offhandShare ? getMixtureAtkMult(1) : 1;
+  const attackMixtureMult = mixtureAtkMult + (offhandMixtureMult - mixtureAtkMult) * offhandShare;
   if (weaponBonusPercent > 0) dmg = Math.floor(dmg * (1 + weaponBonusPercent / 100));
-  if (mixtureAtkMult > 1.0) dmg = Math.floor(dmg * mixtureAtkMult);
+  if (attackMixtureMult > 1) dmg = Math.floor(dmg * attackMixtureMult);
   // ---- v0.19: кинжал — добивание раненого ----
   const execMult = (!isMage() && typeof getExecuteMult === 'function') ? getExecuteMult(m, weaponCategory) : 1;
   if (execMult > 1) dmg = Math.floor(dmg * execMult);
@@ -437,8 +441,8 @@ function playerAttack() {
   // v0.38: и на арене — две цифры, два попадания (урон тот же, это только показ).
   let dmgText = String(dmg);
   let offPart = 0;
-  if (offhand && p.offhandPAtk > 0) {
-    const off = Math.round(dmg * p.offhandPAtk / (p.pAtk + p.offhandPAtk));
+  if (offhandShare) {
+    const off = Math.round(dmg * offhandShare * offhandMixtureMult / attackMixtureMult);
     if (off >= 1 && off < dmg) { offPart = off; dmgText = `${dmg - off} + ${off} = ${dmg}`; }   // слабая вторая рука (+0) — одним числом
   }
   if (offPart > 0) {

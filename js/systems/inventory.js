@@ -7,7 +7,7 @@
 //         Тултипы вынесены в tooltips.js.
 //
 //  + Модалка выбора для слотов расходников.
-//  + Порог HP для зелья (30/40/50/60/70).
+//  + Порог срабатывания зелья (30/40/50/60/70).
 //  + Поддержка hpBonus в статах предметов.
 //  + МИГРАЦИЯ сохранений: «Верх доспеха» → «Потрёпанная куртка»,
 //    «Низ доспеха» → «Потрёпанные штаны» (при загрузке слота).
@@ -349,6 +349,7 @@ function renderInventory() {
       const reqLevel = getItemReqLevel(item);
       const reqLocked = reqLevel && !canWearByLevel(item);
       slot.className = 'inv-slot' + (isConsumable ? ' consumable' : '') + (isFood ? ' food' : '') + rarityClass + (reqLocked ? ' req-locked' : '');
+      slot.dataset.itemId = item.id;
       slot.innerHTML = `${item.icon}<div class="item-name">${item.name}${refineSuffix}</div>${item.qty > 1 ? `<div class="qty">${item.qty}</div>` : ''}` +
         (reqLocked ? `<div class="inv-req" title="Надеть можно с ${reqLevel} уровня">🔒${reqLevel}</div>` : '');
 
@@ -389,6 +390,7 @@ function renderInventoryPagination() {
   for (let i = 0; i < invPages(); i++) {
     const btn = document.createElement('button');
     btn.className = 'inventory-page-btn' + (state.currentInventoryPage === i ? ' active' : '');
+    btn.dataset.page = i;
     btn.textContent = (i + 1);
     btn.onclick = () => setInventoryPage(i);
     cont.appendChild(btn);
@@ -539,7 +541,7 @@ function setSlotShopId(slotType, shopId) {
   else state.player.mixtureSlot = shopId;
 }
 
-// Возможные пороги HP для зелья.
+// Возможные пороги срабатывания зелья.
 const POTION_THRESHOLDS = [30, 40, 50, 60, 70];
 
 // Открыть модалку для слота.
@@ -561,17 +563,18 @@ function openSlotPicker(slotType) {
 
   let html = '';
 
-  // ---- СЕКЦИЯ «ПОРОГ HP» — только для зелья ----
+  // ---- Порог срабатывания зелья ----
   if (slotType === 'potion') {
+    const resource = getPotionThresholdResource(currentShopId);
     const current = state.player.potionThreshold || 40;
-    html += `<div class="slot-picker-section-label">Порог HP</div>`;
+    html += `<div class="slot-picker-section-label">Порог ${resource}</div>`;
     html += `<div class="slot-picker-thresholds">`;
     POTION_THRESHOLDS.forEach(v => {
       const activeClass = (v === current) ? ' active' : '';
       html += `<button class="slot-picker-threshold-btn${activeClass}" onclick="event.stopPropagation(); setPotionThreshold(${v})">${v}%</button>`;
     });
     html += `</div>`;
-    html += `<div class="slot-picker-threshold-hint">Зелье пьётся, когда HP ниже этого значения.</div>`;
+    html += `<div class="slot-picker-threshold-hint">Зелье пьётся, когда ${resource} ниже этого значения.</div>`;
     html += `<div class="slot-picker-divider"></div>`;
   }
 
@@ -699,9 +702,12 @@ function useConsumableFromBag(item) {
   closeSlotPicker();
   renderEquipSlots();
   saveCurrentSlot();
-  const how = slotType === 'potion'
-    ? `выпьется само, когда HP ниже ${state.player.potionThreshold || 40}%`
-    : 'сработает сама в начале боя';
+  let how = `выпьется само, когда ${getPotionThresholdResource(item.shopId)} ниже ${state.player.potionThreshold || 40}%`;
+  if (slotType === 'mixture') {
+    how = state.battle.activeEffects.mixture
+      ? 'вступит в силу со следующего боя после окончания текущей микстуры'
+      : 'сработает сама в начале боя';
+  }
   showToast('✅', `В слот ${where}: ${item.name} — ${how}`);
 }
 
@@ -725,7 +731,7 @@ function setPotionThreshold(value) {
     openSlotPicker('potion');
   }
 
-  showToast('⚙', `Порог зелья: ${value}%`);
+  showToast('⚙', `Порог ${getPotionThresholdResource(state.player.potionSlot)}: ${value}%`);
 }
 
 // ---------- ГЛОБАЛЬНЫЕ ОБРАБОТЧИКИ МОДАЛКИ ----------

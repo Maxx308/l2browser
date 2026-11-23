@@ -100,7 +100,10 @@ function updateMapTravelButton() {
     if (price !== null) {
       const poor = (p.gold || 0) < price;
       // v0.36.3: короче — «Тропы», полное название в подсказке; обе кнопки одной ширины (css .map-travel-btns)
-      btns.push(`<button class="map-travel-btn${poor ? ' map-travel-btn-disabled' : ''}" onclick="event.stopPropagation(); useMagicPath('${loc}')" title="${poor ? `Магические тропы: нужно ${price} Оболов` : 'Магические тропы — сразу, за Оболы'}">🌀 Тропы · 🪙 ${price}</button>`);
+      const cost = price === 0 ? 'бесплатно' : `🪙 ${price}`;
+      const title = price === 0 ? 'Первый переход на Поляну — сразу и бесплатно'
+        : poor ? `Магические тропы: нужно ${price} Оболов` : 'Магические тропы — сразу, за Оболы';
+      btns.push(`<button class="map-travel-btn map-magic-btn${poor ? ' map-travel-btn-disabled' : ''}" onclick="event.stopPropagation(); useMagicPath('${loc}')" title="${title}">🌀 Тропы · ${cost}</button>`);
     }
     slot.innerHTML = btns.length ? `<div class="map-travel-btns">${btns.join('')}</div>` : '';
   });

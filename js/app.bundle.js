@@ -1,4 +1,4 @@
-// L2 BROWSER — СБОРКА v0.38.2 (build.js; правки — в js/**, а не сюда). Файлов: 103
+// L2 BROWSER — СБОРКА v0.39 (build.js; правки — в js/**, а не сюда). Файлов: 103
 // ==== ФАЙЛ js/data/config.js ====
 const CHEAT_MULTIPLIER = 10;
 const MP_COST_PER_ATTACK = 5;
@@ -7,10 +7,15 @@ const MP_REGEN_BASE_IN = 0.5;
 const FOOD_DURATION = 30 * 60;
 const FOOD_HEAL_PER_SEC = 1;
 const MAX_BUFF_DURATION = 12 * 60 * 60;
-const POTION_HEAL = {
+const POTION_EFFECTS = {
 healPotion:  { heal: 50 },
 healPotion2: { heal: 70, hotPerTurn: 10, hotTurns: 5 },
+healPotionField: { heal: 120, hotPerTurn: 20, hotTurns: 3 },
+clarityPotion: { mpPercent: 25 },
 };
+function getPotionThresholdResource(shopId) {
+return POTION_EFFECTS[shopId]?.mpPercent ? 'MP' : 'HP';
+}
 const DISH_DURATION = 60 * 60;
 function getFoodDuration(item) {
 return item && item.food && item.food.dish ? DISH_DURATION : FOOD_DURATION;
@@ -51,7 +56,9 @@ const TAVERN_PROF_BONUS_PERCENT = 10;
 const MAGIC_PATH_PRICE_PER_SECOND = 10;
 function getMagicPathPrice(from, to) {
 const t = travelTime(from, to);
-return t === undefined ? null : t * MAGIC_PATH_PRICE_PER_SECOND;
+if (t === undefined) return null;
+if (typeof tutFreeFieldPath === 'function' && tutFreeFieldPath(from, to)) return 0;
+return t * MAGIC_PATH_PRICE_PER_SECOND;
 }
 function travelTime(from, to) {
 if ((to === 'ilgrad' || to === 'outskirts') && !(typeof ilgradOpen === 'function' && ilgradOpen())) return undefined;
@@ -414,6 +421,15 @@ charges: 100,
 icon: 'potionAtk2',
 desc: '+50% урона на 100 атак.',
 },
+atkMixture3: {
+id: 'atkMixture3',
+name: 'Микстура атаки III',
+atkPercent: 65,
+chargeType: 'playerAttacks',
+charges: 100,
+icon: 'potionAtk3',
+desc: '+65% урона на 100 атак.',
+},
 luckMixture: {
 id: 'luckMixture',
 name: 'Микстура Удачи',
@@ -431,6 +447,23 @@ chargeType: 'enemyAttacks',
 charges: 50,
 icon: 'potionDef',
 desc: '−30% физического урона от монстров на 50 их ударов. Магия и яд не режутся.',
+},
+wardMixture: {
+id: 'wardMixture',
+name: 'Микстура оберега',
+magicDefPercent: 30,
+chargeType: 'enemyMagicAttacks',
+charges: 50,
+icon: 'potionWard',
+desc: '−30% прямого магического урона от монстров на 50 попаданий.',
+},
+reposeMixture: {
+id: 'reposeMixture',
+name: 'Микстура упокоения',
+chargeType: 'undying',
+charges: 20,
+icon: 'potionRepose',
+desc: 'Отменяет срабатывание «Неупокоенного» после смертельного удара. 20 зарядов.',
 },
 };
 function computeMpRegen(maxMp, inBattle) {
@@ -518,7 +551,22 @@ id: 'human', name: 'Человек',
 icon:        'img/races/human.webp',
 iconWarrior: 'img/races/human_warrior.webp',
 iconMage:    'img/races/human_mage.webp',
-desc: 'Универсалы. Не лучшие ни в чём, но и не худшие. Умеют всё — понемногу.',
+desc: 'Навык «Опыт» ускоряет прокачку и помогает развивать владение оружием и стихиями.',
+creation: {
+label: 'Бонус к опыту',
+strength: 'Получает больше опыта и чаще получает бонус к владению.',
+weakness: 'Запас здоровья меньше, чем у орка или гнома того же класса.',
+warrior: {
+style: 'Оружие и двойные удары',
+strength: '«Двойной удар» дважды атакует одну цель. «Привал» ускоряет восстановление здоровья вне боя.',
+weakness: 'Базовый темп атак ниже, чем у воина-эльфа или дроу.',
+},
+mage: {
+style: 'Огонь, лёд и мана',
+strength: '«Ледяная стрела» может заморозить врага, а «Медитация» ускоряет восстановление маны вне боя.',
+weakness: 'Базовый запас здоровья меньше, чем у мага-орка или гнома.',
+},
+},
 available: true,
 },
 orc: {
@@ -526,7 +574,22 @@ id: 'orc', name: 'Орк',
 icon:        'img/races/orc.webp',
 iconWarrior: 'img/races/orc_warrior.webp',
 iconMage:    'img/races/orc_mage.webp',
-desc: 'Гора мышц и упрямства. Думают медленно, бьют сильно, живут долго. Отличный выбор для тех, кто устал от тонких материй.',
+desc: 'Кровь орка помогает восстанавливать здоровье даже во время боя.',
+creation: {
+label: 'Живучесть',
+strength: 'Большой запас здоровья и восстановление прямо в бою.',
+weakness: 'По базовой скорости действий уступает эльфам того же класса.',
+warrior: {
+style: 'Сила и живучесть',
+strength: '«Железная шкура» поглощает часть урона. «Ярость» наносит сильный удар без расхода маны.',
+weakness: '«Ярость» доступна от половины здоровья. Если враг выжил, удар ранит и самого орка.',
+},
+mage: {
+style: 'Магия Смерти и запас маны',
+strength: '«Шаманская мудрость» увеличивает запас маны и силу заклинаний. «Гнев» бьёт без расхода маны.',
+weakness: '«Гнев» доступен от половины здоровья и ранит орка, если враг пережил удар.',
+},
+},
 available: true,
 statsByClass: {
 warrior: { STR: 40, DEX: 26, CON: 47, INT: 18, WIT: 12, MEN: 27 },
@@ -538,7 +601,22 @@ id: 'elf', name: 'Эльф',
 icon:        'img/races/elf.webp',
 iconWarrior: 'img/races/elf_warrior.webp',
 iconMage:    'img/races/elf_mage.webp',
-desc: 'Живут вечно, стреляют метко, смотрят свысока. Умирают от одной стрелы в спину — ирония судьбы.',
+desc: 'Благословение Леса помогает развивать магию Жизни.',
+creation: {
+label: 'Магия Жизни',
+strength: 'У эльфа есть лечение в обоих классах.',
+weakness: 'Запас здоровья меньше, чем у орка или гнома того же класса.',
+warrior: {
+style: 'Ловкость и лечение',
+strength: '«Грация» помогает уворачиваться, а «Дыхание природы» восстанавливает здоровье в бою.',
+weakness: 'Базовая атака оружием слабее, чем у воина-человека или орка.',
+},
+mage: {
+style: 'Заклинания и лечение',
+strength: 'Лечит себя заклинаниями Жизни и быстро действует.',
+weakness: 'Меньше здоровья, чем у мага-орка или гнома.',
+},
+},
 available: true,
 statsByClass: {
 warrior: { STR: 36, DEX: 35, CON: 36, INT: 23, WIT: 14, MEN: 26 },
@@ -550,7 +628,22 @@ id: 'drow', name: 'Дроу',
 icon:        'img/races/drow.webp',
 iconWarrior: 'img/races/drow_warrior.webp',
 iconMage:    'img/races/drow_mage.webp',
-desc: 'Живут в темноте, ненавидят солнце и всех вокруг. Магия — сильная. Характер — так себе.',
+desc: '«Разряд» отодвигает ход врага. Наследие Грозы позволяет отвечать молнией на его удары.',
+creation: {
+label: 'Молния',
+strength: 'Может сбить темп противника и при подходящих условиях парализовать его.',
+weakness: 'Базовый запас здоровья меньше, чем у других рас того же класса.',
+warrior: {
+style: 'Увороты и молния',
+strength: 'Уворот ускоряет следующий ход и заряжает «Разряд», чтобы парализовать врага.',
+weakness: 'Если враг попадает, низкий запас здоровья оставляет меньше времени на восстановление.',
+},
+mage: {
+style: 'Молнии и контроль',
+strength: '«Разряд» задерживает врага, а «Цепной разум» может ускорить перезарядку навыков.',
+weakness: 'Базовый запас здоровья ниже, чем у мага любой другой расы.',
+},
+},
 available: true,
 statsByClass: {
 warrior: { STR: 37, DEX: 34, CON: 35, INT: 24, WIT: 13, MEN: 27 },
@@ -562,7 +655,22 @@ id: 'dwarf', name: 'Гном',
 icon:        'img/races/dwarf.webp',
 iconWarrior: 'img/races/dwarf_warrior.webp',
 iconMage:    'img/races/dwarf_mage.webp',
-desc: 'Низкорослые, бородатые, упрямые. Могут перепить орка и переспорить эльфа. Уважают только пиво и золото.',
+desc: 'Каменная кожа смягчает удары, а метки Жадности повышают награду за убитого монстра.',
+creation: {
+label: 'Больше наград',
+strength: 'Поглощает часть урона и может получать больше наград за охоту.',
+weakness: 'Чтобы получить бонус Жадности, цель должна умереть, пока на ней есть метки.',
+warrior: {
+style: 'Защита и добыча',
+strength: '«Крепкая стойка» даёт здоровье и защиту, а метки Жадности приносят больше добычи и опыта.',
+weakness: 'Базовый темп атак ниже, чем у воина-эльфа или дроу.',
+},
+mage: {
+style: 'Руны и Оболы',
+strength: '«Рунное знание» усиливает магию и увеличивает запас маны. Жадность даёт больше Оболов и опыта.',
+weakness: 'Базовая сила заклинаний ниже, чем у человека-мага.',
+},
+},
 available: true,
 statsByClass: {
 warrior: { STR: 39, DEX: 27, CON: 45, INT: 20, WIT: 10, MEN: 27 },
@@ -726,6 +834,11 @@ potionAtk:   img('atk'),
 potionAtk2:  img('atk2'),
 potionLuck:  img('luck'),
 potionDef:   img('def'),
+potionHealField: img('field_heal'),
+potionClarity: img('clarity'),
+potionWard: img('ward'),
+potionRepose: img('repose'),
+potionAtk3: img('atk3'),
 });
 const dust = (n) => `<img class="svg-icon dust-png" src="img/dust/${n}.webp" alt="" style="width:100%;height:100%;object-fit:contain;">`;
 Object.assign(SVG_CONSUMABLES, {
@@ -2128,65 +2241,95 @@ economy: { name: 'Ремесло',     icon: '⚒' },
 };
 const SUBCLASSES = {
 human_wallguard:    { race: 'human', cls: 'warrior', role: 'tank',    name: 'Страж стены',     ready: true,
+preview: 'Защита и приёмы со щитом',
 blurb: 'Держит удар, пока стоит стена. Щит не обязателен, но лучшие приёмы — только со щитом.' },
 human_huntsman:     { race: 'human', cls: 'warrior', role: 'damage',  name: 'Егерь',     ready: true,
+preview: 'Криты и сильное добивание',
 blurb: 'Луки, арбалеты, кинжалы. Копит азарт на критах и спускает его в одно добивание.' },
 human_templar:      { race: 'human', cls: 'warrior', role: 'hybrid',  name: 'Храмовник', ready: true,
+preview: 'Оружие и магия Света',
 rarityProfile: 'neutral',
 blurb: 'Воин со светом в руках: каждый удар подкреплён магией, нежить горит.' },
 human_elementalist: { race: 'human', cls: 'mage',    role: 'ruin',    name: 'Элементалист', ready: true,
+preview: 'Сочетания стихий',
 blurb: 'Сила в сочетаниях стихий: лёд раскалывает огонь, молния выжигает ману.' },
 human_priest:       { race: 'human', cls: 'mage',    role: 'support', name: 'Жрец',         ready: true,
+preview: 'Лечение себя и союзников',
 blurb: 'Свет и Жизнь. Один — почти бессмертный маг без зелий, с союзниками — их опора.' },
 human_necromancer:  { race: 'human', cls: 'mage',    role: 'allies',  name: 'Некромант',    ready: true,
+preview: 'Призывает павших',
 blurb: 'Поднимает павших: зомби, скелеты, духи. До трёх слуг в бою.' },
 orc_rock:      { race: 'orc', cls: 'warrior', role: 'tank',    name: 'Скала',          ready: true,
+preview: 'Восстанавливает здоровье в бою',
 blurb: 'Перелечивает любой урон. Щит не нужен — нужна кровь орка.' },
 orc_berserker: { race: 'orc', cls: 'warrior', role: 'damage',  name: 'Берсерк',        ready: true,
+preview: 'Двуручное оружие и удары за здоровье',
 blurb: 'Двуручное оружие и навыки за здоровье. Чем ближе к смерти, тем страшнее.' },
 orc_chieftain: { race: 'orc', cls: 'warrior', role: 'hybrid',  name: 'Вождь',          ready: true,
+preview: 'Боевой клич и сила предков',
 blurb: 'Боевой клич и сила предков. Любое оружие и броня.' },
 orc_hexer:     { race: 'orc', cls: 'mage',    role: 'ruin',    name: 'Проклинатель',   ready: true,
+preview: 'Накапливает проклятия',
 blurb: 'Разные проклятия на одной цели — и урон растёт с каждым ходом.' },
 orc_healer:    { race: 'orc', cls: 'mage',    role: 'support', name: 'Костоправ',      ready: true,
+preview: 'Лечится через Гниение',
 blurb: 'Лечит через кровь и Гниение: чем больше ран у врага, тем крепче сам.' },
 orc_shaman:    { race: 'orc', cls: 'mage',    role: 'allies',  name: 'Шаман',          ready: true,
+preview: 'Призывает тотемы духов',
 blurb: 'Тотемы духов — по одному за призыв, никогда не знаешь какой.' },
 elf_thornguard:  { race: 'elf', cls: 'warrior', role: 'tank',    name: 'Терновый страж', ready: true,
+preview: 'Получает урон постепенно',
 blurb: 'Растягивает удары во времени — рана приходит, когда он уже готов.' },
 elf_pathfinder:  { race: 'elf', cls: 'warrior', role: 'damage',  name: 'Следопыт', ready: true,
+preview: 'Точные удары и отложенный урон',
 blurb: 'Луки, глефы и копья. Верные попадания и отложенный урон.' },
 elf_bladesinger: { race: 'elf', cls: 'warrior', role: 'hybrid',  name: 'Певец клинка', ready: true,
+preview: 'Лечится ударами клинка',
 blurb: 'Клинок и Жизнь: танец, в котором каждый удар лечит.' },
 elf_stargazer:   { race: 'elf', cls: 'mage',    role: 'ruin',    name: 'Звездочёт', ready: true,
+preview: 'Урон по одной цели',
 blurb: 'Снайпер против одной цели: звезда падает не сразу, но наверняка.' },
 elf_grovekeeper: { race: 'elf', cls: 'mage',    role: 'support', name: 'Хранитель Рощи', ready: true,
+preview: 'Постепенное лечение',
 blurb: 'Лечение во времени и дары рощи.' },
 elf_druid:       { race: 'elf', cls: 'mage',    role: 'allies',  name: 'Друид', ready: true,
+preview: 'Призыв духа-зверя',
 blurb: 'Один дух-зверь на всю охоту — и он растёт вместе с тобой.' },
 drow_stormguard:   { race: 'drow', cls: 'warrior', role: 'tank',    name: 'Грозовой страж', ready: true,
+preview: 'Задерживает ходы врагов',
 blurb: 'Тварь просто не успевает ходить.' },
 drow_assassin:     { race: 'drow', cls: 'warrior', role: 'damage',  name: 'Ассасин', ready: true,
+preview: 'Парные кинжалы и быстрые ходы',
 blurb: 'Парные кинжалы и внеочередные ходы.' },
 drow_shadowweaver: { race: 'drow', cls: 'warrior', role: 'hybrid',  name: 'Теневой ткач', ready: true,
+preview: 'Оружие и удары молнией',
 blurb: 'Сталь и молния из тени.' },
 drow_stormcaller:  { race: 'drow', cls: 'mage',    role: 'ruin',    name: 'Буревестник', ready: true,
+preview: 'Копит заряд молнии',
 blurb: 'Молния за молнией — напряжение копится до разряда.' },
 drow_dreamweaver:  { race: 'drow', cls: 'mage',    role: 'support', name: 'Ткач снов', ready: true,
+preview: 'Усыпляет лишних врагов',
 blurb: 'Усыпляет лишних, пока сам разбирается с остальными.' },
 drow_spiderlord:   { race: 'drow', cls: 'mage',    role: 'allies',  name: 'Паучий владыка', ready: true,
+preview: 'Призывает паучиху и выводок',
 blurb: 'Паучиха-матка и её выводок.' },
 dwarf_steelwall:   { race: 'dwarf', cls: 'warrior', role: 'tank',    name: 'Стальная стена', ready: true,
+preview: 'Крепнет, получая удары',
 blurb: 'Поглощает удары сталью — с каждым ударом крепче.' },
 dwarf_hammerer:    { race: 'dwarf', cls: 'warrior', role: 'damage',  name: 'Молотобоец', ready: true,
+preview: 'Ломает броню молотами и топорами',
 blurb: 'Молоты и топоры: ломает броню и раскалывает лёд.' },
 dwarf_prospector:  { race: 'dwarf', cls: 'warrior', role: 'economy', name: 'Старатель', ready: true,
+preview: 'Больше добычи с охоты',
 blurb: 'Середнячок в бою — и больше всех добычи.' },
 dwarf_forgemaster: { race: 'dwarf', cls: 'mage',    role: 'economy', name: 'Мастер горна', ready: true,
+preview: 'Ковка более редких вещей',
 blurb: 'Жар в бою и у наковальни: ковка с лучшей редкостью.' },
 dwarf_runemaster:  { race: 'dwarf', cls: 'mage',    role: 'economy', name: 'Рунный мастер', ready: true,
+preview: 'Экономия при подгонке',
 blurb: 'Руны на себя и на вещи: подгонка без лишних трат.' },
 dwarf_stonecaller: { race: 'dwarf', cls: 'mage',    role: 'allies',  name: 'Заклинатель камня', ready: true,
+preview: 'Призывает элементалей',
 blurb: 'Элементали камня, огня и жилы.' },
 };
 Object.keys(SUBCLASSES).forEach(id => {
@@ -4514,7 +4657,30 @@ usage: 'Применяется в начале боя. Действует 50 б�
 slotType: 'mixture',
 effect: '−30% физ. урона', description: 'Снижает получаемый физический урон от монстров на 30%. Магия и яд не режутся.',
 usage: 'Применяется в начале боя. Действует 50 ударов монстров.' },
+{ id: 'healPotionField', name: 'Зелье полевого лечения', price: 480, icon: 'potionHealField',
+town: 'ilgrad', slotType: 'potion',
+effect: '+120 HP, затем +20 HP × 3 хода', description: 'Восстанавливает 120 HP сразу и ещё по 20 HP в начале трёх следующих ваших ходов.',
+usage: 'Применяется автоматически при HP ниже порога. Один раз за бой.' },
+{ id: 'clarityPotion', name: 'Зелье ясности', price: 400, icon: 'potionClarity',
+town: 'ilgrad', slotType: 'potion',
+effect: '+25% от максимума MP', description: 'Восстанавливает четверть максимального запаса маны.',
+usage: 'Применяется автоматически при MP ниже порога. Один раз за бой.' },
+{ id: 'wardMixture', name: MIXTURE_EFFECTS.wardMixture.name, price: 600, icon: MIXTURE_EFFECTS.wardMixture.icon,
+town: 'ilgrad', slotType: 'mixture',
+effect: '−30% маг. урона', description: 'Снижает прямой магический урон от монстров на 30%.',
+usage: 'Применяется в начале боя. Действует на 50 магических попаданий.' },
+{ id: 'reposeMixture', name: MIXTURE_EFFECTS.reposeMixture.name, price: 800, icon: MIXTURE_EFFECTS.reposeMixture.icon,
+town: 'ilgrad', slotType: 'mixture',
+effect: 'Отменяет «Неупокоенного»', description: 'Монстр падает от смертельного удара, даже если сработало свойство «Неупокоенный».',
+usage: 'Применяется в начале боя. Из 20 зарядов тратится по одному за каждое отменённое срабатывание.' },
+{ id: 'atkMixture3', name: MIXTURE_EFFECTS.atkMixture3.name, price: 2000, icon: MIXTURE_EFFECTS.atkMixture3.icon,
+town: 'ilgrad', slotType: 'mixture',
+effect: '+65% урона', description: 'Увеличивает ваш урон на 65%.',
+usage: 'Применяется в начале боя. Действует на 100 ваших атак.' },
 ];
+function isShopItemSoldInTown(item, location) {
+return isTownLoc(location) && (!item.town || item.town === location);
+}
 
 ;
 
@@ -4731,6 +4897,18 @@ return Math.min(50, total);
 
 // ==== ФАЙЛ js/data/changelog.js ====
 const CHANGELOG = [
+{
+version: 'v0.39',
+date: '23.11.2026',
+title: 'Первые шаги и Арсенал Ильграда',
+changes: [
+{ icon: '🚪', text: 'Обновили вход и выбор героя. Войти в аккаунт или создать его можно с первого экрана. Гостевой вход доступен по отдельной ссылке' },
+{ icon: '🧭', text: 'При создании героя видны особенности рас, сильные и слабые стороны классов и портреты будущих подклассов' },
+{ icon: '🎒', text: 'Заплечник показывает точную кнопку кольцами. На сборах он учит ставить в слоты зелье здоровья и микстуру атаки. Первый переход на Поляну по Магическим тропам во время обучения бесплатный' },
+{ icon: '💎', text: 'После первой победы Заплечник показывает журнал добычи и мешочек. За первую победу в обучении выдаётся редкий шлем, который можно сразу надеть' },
+{ icon: '⚗', text: 'В Арсенале Ильграда появились пять расходников с новыми иконками. Гарша продаёт зелья полевого лечения и ясности, микстуры оберега, упокоения и атаки III' },
+],
+},
 {
 version: 'v0.38.2',
 date: '20.11.2026',
@@ -7408,16 +7586,24 @@ text: 'Старик просил зелье лечения. Торговец —
 act: 'Нажми на «Торговца»',
 },
 potionBuy: {
-text: 'Красное — лечит. Пьют его, а не нюхают. …Откуда я это знаю? Неважно. Бери.',
-act: 'Купи Зелье малого лечения',
+text: 'Зелье малого лечения восстанавливает здоровье.',
+act: 'Нажми «Купить 1»',
 },
 mixtureCity: {
 text: 'Нам ещё микстура нужна. Обратно к Торговцу.',
 act: 'Нажми на «Торговца»',
 },
 mixtureBuy: {
-text: 'Теперь микстура атаки. Выпьешь — бьёшь сильнее, пока не выдохнется.',
-act: 'Купи Микстуру атаки',
+text: 'Теперь Микстура атаки. С ней удары сильнее.',
+act: 'Нажми «Купить 1»',
+},
+traderBuyTab: {
+text: 'Припасы продаются на вкладке покупки.',
+act: 'Открой вкладку «Купить»',
+},
+traderClose: {
+text: 'Покупки готовы',
+act: 'Закрой лавку',
 },
 weapon: {
 text: 'Всё купили. Возвращайся к старику — он обещал оружие. Выбирай, что по руке.',
@@ -7435,21 +7621,41 @@ slotPick: {
 text: 'Красное. Выбирай его.',
 act: 'Выбери Зелье малого лечения',
 },
+mixtureSlotEl: {
+text: 'Микстура усиливает удары. Для неё отдельный кармашек.',
+act: 'Нажми на слот микстуры',
+},
+mixtureSlotPick: {
+text: 'Вот та самая микстура из лавки.',
+act: 'Выбери микстуру атаки',
+},
+slotClose: {
+text: 'Нам сейчас нужен другой кармашек.',
+act: 'Закрой список',
+},
 mentorCity: {
 text: 'Здоровый, со шрамами — Урдах, наставник. Учит навыкам. А у тебя как раз есть свободное очко.',
 act: 'Нажми на «Наставника»',
 },
 mentorLearn: {
-text: 'Для начала бери этот. Активные навыки в бою срабатывают сами, когда хватает маны. Пассивные работают всегда. Остальные выучишь с новыми уровнями.',
-act: 'Изучи навык',
+text: 'Начни с этого навыка. Активные срабатывают в бою, когда хватает маны.',
+act: 'Нажми «Изучить»',
+},
+mentorClose: {
+text: 'Навык выучен',
+act: 'Закрой окно',
 },
 fieldTab: {
 text: 'Пора за ворота. Открой карту.',
 act: 'Открой «Карту»',
 },
 fieldCard: {
-text: 'Зелёная поляна. Жабы, шелкопряды, волки подальше. Для начала в самый раз. Пешком — даром, тропами — быстрее, но за Оболы.',
+text: 'На Поляну можно дойти бесплатно.',
 act: 'Нажми «Пешком» у «Зелёной поляны»',
+},
+freeFieldPath: {
+text: 'В первый раз Тропы доставят нас на Поляну сразу и бесплатно.',
+act: 'Нажми «Тропы · бесплатно»',
 },
 huntTab: {
 text: 'Мы на месте. Твари — на вкладке «Охота».',
@@ -7468,10 +7674,46 @@ text: 'Посмотрел{|а}? Тогда вперёд.',
 act: 'Нажми «В бой»',
 },
 battle: {
-text: 'Красная полоска — это ты. Синяя — силы на навыки. Бьёшь сам, команды не нужны. Зелье и навык сработают тоже сами. Просто смотри.',
+text: 'Красная полоска — здоровье, синяя — мана. Герой бьётся сам, зелье и навык срабатывают в бою.',
 },
 loot: {
-text: 'Добыча! Всё, что падает, я прячу у себя — тут видно, что набралось. И ещё: если упадёшь — не бойся. Вернёшься в Андервуд целым. Появленцы всегда возвращаются. Не спрашивай как.',
+text: 'Вот первая добыча. Всё забрал к себе, а здесь видно, что выпало. Если упадёшь, вернёшься в Андервуд.',
+},
+lootBag: {
+text: 'В мешочке видно всё, что выпало за эту охоту.',
+act: 'Нажми на мешочек в «Добыче»',
+},
+lootBagClose: {
+text: 'Добычу посмотрели.',
+act: 'Закрой окно мешочка',
+},
+lootInventory: {
+text: 'Нашли шлем. Примерим?',
+act: 'Нажми «Открыть весь инвентарь»',
+},
+lootInventoryTab: {
+text: 'Учебный шлем можно надеть из сумки.',
+act: 'Открой «Инвентарь»',
+},
+lootInventoryPage: {
+text: 'Шлем лежит на другой странице сумки.',
+act: 'Открой подсвеченную страницу',
+},
+lootEquip: {
+text: 'Синий цвет означает редкую вещь.',
+act: 'Нажми на шлем, чтобы надеть',
+},
+lootNoSpace: {
+text: 'Сумка полна, я придержал шлем.',
+act: 'Освободи одну ячейку, чтобы забрать его',
+},
+lootReturn: {
+text: 'С сумкой закончили.',
+act: 'Нажми «Вернуться в бой»',
+},
+lootReturnToPrep: {
+text: 'Есть ещё дела в Андервуде.',
+act: 'Закрой бой, чтобы закончить сборы',
 },
 final: {
 text: 'Ну вот. Старейшина, Торговец, Урдах, первая добыча. Дальше сам. Я рядом, за плечом, если что. …И спасибо, что слушал{|а}. Не все слушают.',
@@ -8433,7 +8675,10 @@ btns.push(`<button class="map-travel-btn map-walk-btn" onclick="event.stopPropag
 }
 if (price !== null) {
 const poor = (p.gold || 0) < price;
-btns.push(`<button class="map-travel-btn${poor ? ' map-travel-btn-disabled' : ''}" onclick="event.stopPropagation(); useMagicPath('${loc}')" title="${poor ? `Магические тропы: нужно ${price} Оболов` : 'Магические тропы — сразу, за Оболы'}">🌀 Тропы · 🪙 ${price}</button>`);
+const cost = price === 0 ? 'бесплатно' : `🪙 ${price}`;
+const title = price === 0 ? 'Первый переход на Поляну — сразу и бесплатно'
+: poor ? `Магические тропы: нужно ${price} Оболов` : 'Магические тропы — сразу, за Оболы';
+btns.push(`<button class="map-travel-btn map-magic-btn${poor ? ' map-travel-btn-disabled' : ''}" onclick="event.stopPropagation(); useMagicPath('${loc}')" title="${title}">🌀 Тропы · ${cost}</button>`);
 }
 slot.innerHTML = btns.length ? `<div class="map-travel-btns">${btns.join('')}</div>` : '';
 });
@@ -8463,19 +8708,22 @@ if (data) {
 const shortNames = {
 atkMixture:   'Атака',
 atkMixture2:  'Атака II',
+atkMixture3:  'Атака III',
 luckMixture:  'Удача',
 defMixture:   'Крепость',
+wardMixture:  'Оберег',
+reposeMixture: 'Упокоение',
 };
 const shortName = shortNames[data.id] || data.name;
 let cssClass = 'mixture';
-if (data.id === 'atkMixture' || data.id === 'atkMixture2') cssClass = 'mixture-atk';
-else if (data.id === 'luckMixture') cssClass = 'mixture-luck';
-else if (data.id === 'defMixture') cssClass = 'mixture-def';
+if (data.atkPercent) cssClass = 'mixture-atk';
+else if (data.luckPercent) cssClass = 'mixture-luck';
+else if (data.defPercent || data.magicDefPercent) cssClass = 'mixture-def';
 let pulseClass = '';
 const threshold = (data.chargeType === 'battles') ? 5 : 10;
 if (activeMix.chargesLeft <= threshold) pulseClass = ' low';
 const iconSvg = SVG[data.icon] || '⚗';
-chips.push(`<div class="effect-chip ${cssClass}${pulseClass}"><span class="ec-icon">${iconSvg}</span><span class="ec-name">${shortName}</span><span class="ec-value">(${activeMix.chargesLeft})</span></div>`);
+chips.push(`<div class="effect-chip ${cssClass}${pulseClass}" title="${data.desc}"><span class="ec-icon">${iconSvg}</span><span class="ec-name">${shortName}</span><span class="ec-value">(${activeMix.chargesLeft})</span></div>`);
 }
 }
 Object.keys(p.guildBuffs).forEach(buffId => {
@@ -9227,74 +9475,79 @@ return 'Нет соединения. Играем локально.';
 }
 return message;
 }
+let cloudAuthMode = 'signin';
+function openCloudAuth(mode = 'signin') {
+const dialog = document.getElementById('start-account');
+const email = document.getElementById('cloud-email')?.value;
+cloudAuthMode = mode;
+renderCloudAuth();
+const emailInput = document.getElementById('cloud-email');
+if (emailInput && dialog.open) emailInput.value = email || '';
+if (!dialog.open) {
+const passwordInput = document.getElementById('cloud-password');
+if (passwordInput) {
+passwordInput.value = '';
+setCloudStatus('');
+}
+dialog.showModal();
+}
+emailInput?.focus();
+}
 function renderCloudAuth() {
 const box = document.getElementById('cloud-auth');
-if (!box) return;
-if (!supabaseClient) {
-box.style.display = 'block';
+const dialog = document.getElementById('start-account');
+const guest = cloudIsGuest();
+const view = cloudUser ? 'account' : !supabaseClient ? 'unavailable' : cloudAuthMode;
+const key = `${view}:${guest}:${cloudUser?.email || ''}`;
+if (box.dataset.view === key) return;
+if (box.dataset.view && dialog.open && (cloudUser || box.dataset.view.startsWith('account:'))) dialog.close();
+box.dataset.view = key;
+if (view === 'account') {
 box.innerHTML = `
-      <div class="cloud-auth-title">ВХОД В АККАУНТ</div>
-      <div class="cloud-auth-status error">
-        Не удалось загрузить вход. Проверьте интернет (или VPN) и обновите страницу.
-      </div>
-      <div class="cloud-auth-buttons">
-        <button class="btn" onclick="location.reload()">Обновить</button>
-      </div>
-      ${cloudIsMasterUnlocked() ? '' : cloudGuestBlockHtml()}
+      <h2 id="cloud-auth-title">Аккаунт</h2>
+      <p class="cloud-auth-email">${escapeHtml(cloudUser.email || 'Аккаунт')}</p>
+      <p class="cloud-auth-status ok" id="cloud-auth-status" role="status">Облачное сохранение активно.</p>
+      <button type="button" class="start-button secondary" onclick="cloudSignOut()">Выйти из аккаунта</button>
     `;
 return;
 }
-box.style.display = 'block';
-if (cloudUser) {
+if (view === 'unavailable') {
 box.innerHTML = `
-      <div class="cloud-auth-user">
-        <div class="cloud-auth-user-email">${cloudUser.email || 'аккаунт'}</div>
-        <button class="btn danger" onclick="cloudSignOut()">Выйти</button>
-      </div>
-      <div class="cloud-auth-status ok" id="cloud-auth-status">
-        Облачное сохранение активно
-      </div>
+      <h2 id="cloud-auth-title">Вход в аккаунт</h2>
+      <p class="cloud-auth-status error">Не удалось загрузить вход. Проверьте подключение и обновите страницу.</p>
+      <button type="button" class="start-button secondary" onclick="location.reload()">Обновить</button>
     `;
 return;
 }
-const masterOn = cloudIsMasterUnlocked();
-const masterHint = masterOn
-? `<div class="cloud-auth-status ok" style="margin-top:8px;">🛠 Мастер-режим: игра доступна без входа</div>`
-: '';
-const guestHtml = masterOn ? '' : cloudGuestBlockHtml();
+const register = view === 'signup';
+const title = register ? 'Создать аккаунт' : 'Войти в аккаунт';
 box.innerHTML = `
-    <div class="cloud-auth-title">ВХОД В АККАУНТ</div>
-    <div class="cloud-auth-hint">
-      ☁️ Прогресс хранится в облаке: играйте с телефона и компьютера, ничего не потеряется.
-    </div>
-    <div class="cloud-auth-form">
-      <input type="email" id="cloud-email" class="cloud-auth-input" placeholder="email" autocomplete="email">
-      <input type="password" id="cloud-password" class="cloud-auth-input" placeholder="пароль" autocomplete="current-password">
-    </div>
-    <div class="cloud-auth-buttons">
-      <button class="btn success" onclick="cloudSignIn()">Войти</button>
-      <button class="btn" onclick="cloudSignUp()">Регистрация</button>
-    </div>
-    <div class="cloud-auth-status" id="cloud-auth-status"></div>
-    ${masterHint}
-    ${guestHtml}
+    <h2 id="cloud-auth-title">${title}</h2>
+    <p class="cloud-auth-hint">${guest ? 'После входа гостевой прогресс перенесётся в аккаунт.' : 'Облачное сохранение доступно с телефона и компьютера.'}</p>
+    <form class="cloud-auth-form">
+      <label for="cloud-email">Электронная почта</label>
+      <input type="email" id="cloud-email" name="email" autocomplete="email" required>
+      <label for="cloud-password">Пароль</label>
+      <input type="password" id="cloud-password" name="password" autocomplete="${register ? 'new-password' : 'current-password'}" required ${register ? 'minlength="6"' : ''}>
+      <button type="submit" class="start-button primary">${register ? 'Создать аккаунт' : 'Войти'}</button>
+    </form>
+    <p class="cloud-auth-status" id="cloud-auth-status" role="status"></p>
+    <button type="button" class="start-link" onclick="openCloudAuth('${register ? 'signin' : 'signup'}')">${register ? 'Уже есть аккаунт? Войти' : 'Создать аккаунт'}</button>
+    ${guest ? '<button type="button" class="start-link cloud-guest-exit" onclick="this.closest(\'dialog\').close(); cloudStopGuest()">Выйти из гостевого режима</button>' : ''}
   `;
+const form = box.querySelector('form');
+form.onsubmit = async (event) => {
+event.preventDefault();
+const submit = form.querySelector('button[type="submit"]');
+if (submit.disabled) return;
+submit.disabled = true;
+try {
+if (register) await cloudSignUp();
+else await cloudSignIn();
+} finally {
+submit.disabled = false;
 }
-function cloudGuestBlockHtml() {
-if (cloudIsGuest()) {
-return `
-      <div class="cloud-guest cloud-guest-on">
-        <div class="cloud-guest-text">🎮 Вы играете как гость: герои хранятся только в этом браузере.
-          Зарегистрируйтесь — и они перейдут в аккаунт.</div>
-        <button type="button" class="cloud-guest-exit" onclick="cloudStopGuest()">Выйти из гостевого режима</button>
-      </div>`;
-}
-return `
-    <div class="cloud-guest">
-      <div class="cloud-guest-or"><span>или</span></div>
-      <button type="button" class="btn cloud-guest-btn" onclick="cloudStartGuest()">▶ Попробовать без регистрации</button>
-      <div class="cloud-guest-note">Герой сохранится только в этом браузере. Зарегистрироваться можно потом — он перейдёт в аккаунт.</div>
-    </div>`;
+};
 }
 function setCloudStatus(text, kind) {
 const el = document.getElementById('cloud-auth-status');
@@ -10535,11 +10788,11 @@ if (overlay && overlay.classList.contains('active')) { e.stopImmediatePropagatio
 let pendingSlotIndex = null;
 let pendingClassId = null;
 let pendingRaceId = 'human';
+let selectedStartSlot = null;
 function showStartScreen() {
 document.getElementById('start-screen').classList.add('active');
 if (typeof slotsClaimForAccount === 'function') slotsClaimForAccount();
 renderSlots();
-if (typeof renderPatchTabs === 'function') renderPatchTabs();
 if (typeof renderCloudAuth === 'function') renderCloudAuth();
 updateCloudAccessGate();
 if (typeof updateCheatButtonVisibility === 'function') {
@@ -10568,221 +10821,134 @@ updateLeaderboardButtonVisibility();
 }
 }
 function updateCloudAccessGate() {
-const gate = document.getElementById('cloud-access-gate');
-const slotsGrid = document.getElementById('slots-grid');
-if (!gate || !slotsGrid) return;
-const allowed = (typeof cloudIsAllowedToPlay === 'function')
-? cloudIsAllowedToPlay()
-: true;
+const start = document.getElementById('start-screen');
+const allowed = typeof cloudIsAllowedToPlay !== 'function' || cloudIsAllowedToPlay();
+start.classList.toggle('launcher', !allowed);
+document.getElementById('start-entrance').hidden = allowed;
+document.getElementById('start-roster').hidden = !allowed;
+document.getElementById('start-account-button').hidden = !allowed;
 if (typeof updateGuestChip === 'function') updateGuestChip();
-const startScreen = document.getElementById('start-screen');
-if (startScreen && startScreen.classList.contains('launcher') !== !allowed) {
-startScreen.classList.toggle('launcher', !allowed);
-if (typeof closePatchPanel === 'function') { closePatchPanel(); closePatchGroup(); }
-}
-if (allowed) {
-gate.style.display = 'none';
-gate.innerHTML = '';
-slotsGrid.style.display = 'grid';
-if (typeof updateLeaderboardButtonVisibility === 'function') {
-updateLeaderboardButtonVisibility();
-}
-return;
-}
-gate.style.display = 'block';
-if (!gate.querySelector('.start-shots')) {
-gate.innerHTML = startShotsHtml();
-initStartShots(gate);
-}
-slotsGrid.style.display = 'none';
-if (typeof updateLeaderboardButtonVisibility === 'function') {
-updateLeaderboardButtonVisibility();
-}
+if (typeof updateLeaderboardButtonVisibility === 'function') updateLeaderboardButtonVisibility();
 }
 const START_SHOTS = [
-{ src: 'img/start/battle.webp', w: 1171, h: 689, cap: 'Бой со стаей: навыки, криты, кровотечение' },
-{ src: 'img/start/beasts.webp', w: 1210, h: 422, cap: 'У каждой твари свои приёмы и добыча' },
+{ src: 'img/start/battle.webp', cap: 'Бой со стаей: навыки, криты, кровотечение' },
+{ src: 'img/start/beasts.webp', cap: 'У каждой твари свои приёмы и добыча' },
 { src: 'img/start/gear.webp',   w: 704,  h: 651, cap: 'Снаряжение: редкость, подгонка до +15, фишки тиров' },
 { src: 'img/start/forge.webp',  w: 989,  h: 925, cap: 'Кузница: добыча превращается в ресурсы' },
 { src: 'img/start/craft.webp',  w: 944,  h: 653, cap: 'Комплекты доспехов из редких материалов' },
 ];
-function startShotsHtml() {
-const slides = START_SHOTS.map((s, i) => `
-    <figure class="start-shot">
-      <button type="button" class="start-shot-open" data-shot="${i}" aria-label="Открыть на весь экран: ${s.cap}">
-        <img src="${s.src}" width="${s.w}" height="${s.h}" alt="${s.cap}" ${i ? 'loading="lazy"' : ''} decoding="async">
-      </button>
-    </figure>`).join('');
-const dots = START_SHOTS.map((s, i) =>
-`<button type="button" class="start-shots-dot${i ? '' : ' active'}" data-dot="${i}" aria-label="Скриншот ${i + 1}"></button>`).join('');
-return `
-    <div class="start-shots">
-      <div class="start-shots-view">
-        <div class="start-shots-track">${slides}</div>
-        <button type="button" class="start-shots-nav prev" aria-label="Предыдущий скриншот">‹</button>
-        <button type="button" class="start-shots-nav next" aria-label="Следующий скриншот">›</button>
-        <div class="start-shots-dots">${dots}</div>
-      </div>
-      <div class="start-shots-cap">${START_SHOTS[0].cap}</div>
-    </div>`;
+function openStartShot() {
+const gallery = document.getElementById('start-shot-view');
+showStartShot(0);
+gallery.showModal();
 }
-function initStartShots(root) {
-const track = root.querySelector('.start-shots-track');
-if (!track) return;
-const n = START_SHOTS.length;
-const cur = () => Math.round(track.scrollLeft / Math.max(1, track.clientWidth));
-let target = null, targetTimer = 0;
-const base = () => (target !== null ? target : cur());
-const go = (i) => {
-target = (i + n) % n;
-clearTimeout(targetTimer);
-targetTimer = setTimeout(() => { target = null; }, 700);
-track.scrollTo({ left: target * track.clientWidth, behavior: 'smooth' });
-};
-root.querySelector('.start-shots-nav.prev').onclick = () => go(base() - 1);
-root.querySelector('.start-shots-nav.next').onclick = () => go(base() + 1);
-const dots = root.querySelectorAll('.start-shots-dot');
-const cap = root.querySelector('.start-shots-cap');
-dots.forEach(d => { d.onclick = () => go(+d.dataset.dot); });
-track.addEventListener('scroll', () => {
-const i = Math.min(n - 1, Math.max(0, cur()));
-dots.forEach((d, k) => d.classList.toggle('active', k === i));
-if (cap) cap.textContent = START_SHOTS[i].cap;
-}, { passive: true });
-root.querySelectorAll('.start-shot-open').forEach(b => { b.onclick = () => openStartShot(+b.dataset.shot); });
+function moveStartShot(step) {
+const gallery = document.getElementById('start-shot-view');
+showStartShot(Number(gallery.dataset.index) + step);
 }
-function openStartShot(i) {
-let box = document.getElementById('start-shot-view');
-if (!box) {
-box = document.createElement('div');
-box.id = 'start-shot-view';
-box.className = 'start-shot-view';
-box.innerHTML = `
-      <img alt="">
-      <div class="start-shot-view-cap"></div>
-      <button type="button" class="start-shot-view-btn prev" aria-label="Предыдущий скриншот">‹</button>
-      <button type="button" class="start-shot-view-btn next" aria-label="Следующий скриншот">›</button>
-      <button type="button" class="start-shot-view-close" aria-label="Закрыть">×</button>`;
-document.body.appendChild(box);
-box.addEventListener('click', (e) => {
-const b = e.target.closest('.start-shot-view-btn');
-if (b) showStartShot(box.__i + (b.classList.contains('prev') ? -1 : 1));
-else closeStartShot();
+function showStartShot(index) {
+const gallery = document.getElementById('start-shot-view');
+const position = (index + START_SHOTS.length) % START_SHOTS.length;
+const shot = START_SHOTS[position];
+const img = gallery.querySelector('img');
+img.src = shot.src;
+img.alt = shot.cap;
+gallery.dataset.index = position;
+gallery.querySelector('figcaption').textContent = `${shot.cap} · ${position + 1} из ${START_SHOTS.length}`;
+}
+document.getElementById('start-shot-view').addEventListener('keydown', (event) => {
+if (event.key === 'ArrowLeft') moveStartShot(-1);
+if (event.key === 'ArrowRight') moveStartShot(1);
 });
-document.addEventListener('keydown', (e) => {
-if (!box.classList.contains('active')) return;
-if (e.key === 'Escape') closeStartShot();
-else if (e.key === 'ArrowLeft') showStartShot(box.__i - 1);
-else if (e.key === 'ArrowRight') showStartShot(box.__i + 1);
-});
-}
-showStartShot(i);
-box.classList.add('active');
-}
-function showStartShot(i) {
-const box = document.getElementById('start-shot-view');
-if (!box) return;
-const n = START_SHOTS.length;
-i = (i + n) % n;
-box.__i = i;
-const s = START_SHOTS[i];
-const img = box.querySelector('img');
-img.src = s.src;
-img.alt = s.cap;
-box.querySelector('.start-shot-view-cap').textContent = `${s.cap} · ${i + 1} из ${n}`;
-}
-function closeStartShot() {
-const box = document.getElementById('start-shot-view');
-if (box) box.classList.remove('active');
-}
 function hideStartScreen() {
-document.getElementById('start-screen').classList.remove('active');
-closeStartShot();
+const start = document.getElementById('start-screen');
+start.querySelectorAll('dialog[open]').forEach(dialog => dialog.close());
+start.classList.remove('active');
 }
 function renderSlots() {
 const grid = document.getElementById('slots-grid');
-grid.innerHTML = '';
-const cloudSlots = (typeof cloudGetCachedSlots === 'function') ? cloudGetCachedSlots() : {};
+const active = document.activeElement;
+const focusedSlot = grid.contains(active) ? active.closest('[data-slot]')?.dataset.slot : null;
+const focusedAction = active?.dataset?.slotAction;
+const cloudSlots = typeof cloudGetCachedSlots === 'function' ? cloudGetCachedSlots() : {};
+const cards = document.createDocumentFragment();
+let freeSlot = null;
 for (let i = 0; i < SLOT_COUNT; i++) {
 const localMeta = readSlotMeta(i);
-const cloudSlot = cloudSlots[i] || null;
-const hasLocal = localMeta.used;
-const hasCloud = !!cloudSlot;
-let displayMeta = null;
-let source = 'none';
-if (hasLocal) {
-displayMeta = localMeta;
-source = hasCloud ? 'both' : 'local';
-} else if (hasCloud) {
-const cloudData = cloudSlot.data || {};
-const p = cloudData.player || {};
-displayMeta = {
-used: true,
-name: p.name || 'Безымянный',
-classId: p.classId || null,
-raceId: p.raceId || 'human',
-level: p.level || 1,
-subclass: p.subclass || null,
-};
-source = 'cloud';
+const cloudPlayer = cloudSlots[i]?.data?.player;
+if (!localMeta.used && !cloudSlots[i]) {
+if (freeSlot === null) freeSlot = i;
+continue;
 }
-const card = document.createElement('div');
-if (!displayMeta) {
-card.className = 'slot-card empty';
-card.innerHTML = `
-        <div class="slot-plus">+</div>
-        <div class="slot-empty-text">Создать</div>
-        <div class="slot-number">${i + 1}</div>
-      `;
-card.onclick = () => onSlotClick(i, false);
-} else {
-card.className = 'slot-card filled';
-const cls = CLASSES[displayMeta.classId];
-const race = RACES[displayMeta.raceId] || RACES.human;
-const portrait = getHeroPortrait(displayMeta.raceId, displayMeta.classId, displayMeta.subclass);
-let sourceBadge = '';
-if (source === 'both') {
-sourceBadge = '<div class="slot-cloud-badge" title="Есть и локально, и в облаке">☁️</div>';
-} else if (source === 'cloud') {
-sourceBadge = '<div class="slot-cloud-badge cloud-only" title="Только в облаке — загрузится по клику">☁️</div>';
-} else if (source === 'local') {
-sourceBadge = '<div class="slot-cloud-badge local-only" title="Пока только на этом устройстве — уйдёт в облако само">💾</div>';
+const meta = localMeta.used ? localMeta : (cloudPlayer || {});
+const name = meta.name || 'Безымянный';
+const safeName = escapeHtml(name);
+const race = RACES[meta.raceId] || RACES.human;
+const cls = CLASSES[meta.classId];
+const portrait = getHeroPortrait(race.id, meta.classId, meta.subclass);
+const subclass = SUBCLASSES[meta.subclass];
+const role = subclass?.race === race.id && subclass.cls === meta.classId ? subclass.name : cls?.name;
+let badge = '';
+if (cloudSlots[i]) {
+const title = localMeta.used ? 'Есть и локально, и в облаке' : 'Только в облаке';
+badge = `<span class="slot-cloud-badge" title="${title}" aria-label="${title}">☁</span>`;
+} else if (typeof cloudIsReady === 'function' && cloudIsReady()) {
+badge = '<span class="slot-cloud-badge local-only" title="Пока только на этом устройстве" aria-label="Пока только на этом устройстве">💾</span>';
 }
-const deleteBtn = `<button class="slot-delete" title="Удалить персонажа" data-slot="${i}">×</button>`;
-let expBadge = '';
+let expedition = '';
 if (typeof expSlotBadgeHtml === 'function') {
 try {
-const full = hasLocal ? readSlot(i) : (cloudSlot && cloudSlot.data);
-expBadge = expSlotBadgeHtml(full && full.player);
-} catch (e) { expBadge = ''; }
+expedition = expSlotBadgeHtml(localMeta.used ? readSlot(i)?.player : cloudPlayer);
+} catch (e) { expedition = ''; }
 }
+const card = document.createElement('article');
+card.className = 'slot-card filled';
+card.dataset.slot = i;
 card.innerHTML = `
-        ${deleteBtn}
-        ${sourceBadge}
-        <div class="slot-portrait" style="background-image:url('${portrait}')"></div>
-        <div class="slot-info">
-          <div class="slot-name">${escapeHtml(displayMeta.name)}</div>
-          <div class="slot-race">${race.name}</div>
-          <div class="slot-class">${cls ? cls.name : '—'} · Ур. ${displayMeta.level}</div>
-          ${expBadge}
-        </div>
-        <div class="slot-number">${i + 1}</div>
-      `;
-if (hasLocal) {
-card.onclick = () => onSlotClick(i, true);
-} else {
-card.onclick = () => loadSlotFromCloudAndStart(i);
+      <button type="button" class="slot-select" data-slot-action="select" aria-pressed="false">
+        <img class="slot-portrait" src="${portrait}" alt="">
+        <span class="slot-info">
+          <span class="slot-name">${safeName}</span>
+          <span class="slot-class">${race.name} · ${role || '—'} · Ур. ${Number(meta.level) || 1}</span>
+        </span>
+      </button>
+      ${badge}
+      <button type="button" class="slot-delete" data-slot-action="delete" title="Удалить персонажа" aria-label="Удалить персонажа ${safeName}">×</button>
+      ${expedition}
+      <button type="button" class="start-button primary slot-play" data-slot-action="play" hidden>Продолжить</button>
+    `;
+card.querySelector('.slot-select').onclick = () => selectStartSlot(i);
+card.querySelector('.slot-play').onclick = () => localMeta.used ? onSlotClick(i, true) : loadSlotFromCloudAndStart(i);
+card.querySelector('.slot-delete').onclick = () => onSlotDelete(i, name);
+cards.appendChild(card);
 }
-const delBtn = card.querySelector('.slot-delete');
-if (delBtn) {
-delBtn.onclick = (e) => {
-e.stopPropagation();
-onSlotDelete(i);
-};
+if (freeSlot !== null) {
+const create = document.createElement('button');
+create.type = 'button';
+create.className = 'slot-card empty';
+create.dataset.slot = freeSlot;
+create.dataset.slotAction = 'create';
+create.innerHTML = '<span class="slot-plus" aria-hidden="true">+</span><span>Создать героя</span>';
+create.onclick = () => onSlotClick(freeSlot, false);
+cards.appendChild(create);
+}
+grid.replaceChildren(cards);
+const selected = grid.querySelector(`.filled[data-slot="${selectedStartSlot}"]`) || grid.querySelector('.filled');
+selectStartSlot(selected ? Number(selected.dataset.slot) : null);
+if (focusedSlot !== null && focusedAction) {
+const card = grid.querySelector(`[data-slot="${focusedSlot}"]`);
+const button = card?.dataset.slotAction === focusedAction ? card : card?.querySelector(`[data-slot-action="${focusedAction}"]`);
+button?.focus({ preventScroll: true });
 }
 }
-grid.appendChild(card);
-}
+function selectStartSlot(index) {
+selectedStartSlot = index;
+document.querySelectorAll('#slots-grid .filled').forEach(card => {
+const selected = Number(card.dataset.slot) === index;
+card.classList.toggle('selected', selected);
+card.querySelector('.slot-select').setAttribute('aria-pressed', selected);
+card.querySelector('.slot-play').hidden = !selected;
+});
 }
 let __slotClickBusy = false;
 async function onSlotClick(slotIndex, isUsed) {
@@ -10834,8 +11000,8 @@ loadSlotAndStart(slotIndex);
 () => {}
 );
 }
-function onSlotDelete(slotIndex) {
-if (!confirm(`Удалить персонажа из ячейки ${slotIndex + 1}? Это действие необратимо.`)) return;
+function onSlotDelete(slotIndex, name) {
+if (!confirm(`Удалить персонажа «${name}»? Это действие необратимо.`)) return;
 deleteSlot(slotIndex);
 renderSlots();
 }
@@ -10965,88 +11131,126 @@ function openCreateScreen(slotIndex) {
 pendingSlotIndex = slotIndex;
 pendingClassId = null;
 pendingRaceId = 'human';
-document.getElementById('start-screen').classList.remove('active');
+hideStartScreen();
 document.getElementById('create-screen').classList.add('active');
-const nameInput = document.getElementById('char-name-input');
-if (nameInput) {
-nameInput.value = '';
-nameInput.oninput = updateCreateButton;
-}
+const form = document.getElementById('create-form');
+form.reset();
+form.onsubmit = (event) => {
+event.preventDefault();
+confirmCreateCharacter();
+};
+document.getElementById('char-name-input').oninput = updateCreateButton;
+document.getElementById('create-stats').open = false;
+if (typeof tutPresetSkipBox === 'function') tutPresetSkipBox();
 renderCreateScreen();
+setCreateStep('race');
 }
 function closeCreateScreen() {
+pendingSlotIndex = null;
 document.getElementById('create-screen').classList.remove('active');
 showStartScreen();
+document.querySelector('#slots-grid .empty')?.focus();
+}
+function setCreateStep(step) {
+const screen = document.getElementById('create-screen');
+screen.dataset.step = step;
+screen.querySelectorAll('[data-create-step]').forEach(button => {
+if (button.dataset.createStep === step) button.setAttribute('aria-current', 'step');
+else button.removeAttribute('aria-current');
+});
+screen.scrollTop = 0;
+document.getElementById('create-title').focus({ preventScroll: true });
 }
 function renderCreateScreen() {
-const racesBox = document.getElementById('races-list');
-racesBox.innerHTML = '';
-const raceIcon = getRaceIcon(pendingRaceId, pendingClassId);
-Object.values(RACES).forEach(race => {
-const el = document.createElement('div');
-const isSelected = (pendingRaceId === race.id);
-el.className = 'create-option race-option'
-+ (race.available ? '' : ' disabled')
-+ (isSelected ? ' selected' : '');
-let portraitStyle;
-if (race.available) {
-const icon = isSelected ? raceIcon : race.icon;
-portraitStyle = `background-image:url('${icon}')`;
-} else {
-portraitStyle = `background: repeating-linear-gradient(45deg, #1a1a22, #1a1a22 8px, #0d0d10 8px, #0d0d10 16px)`;
-}
-el.innerHTML = `
-      <div class="create-portrait" style="${portraitStyle}"></div>
-      <div class="create-name">${race.name}</div>
-      <div class="create-desc">${race.desc}</div>
+const races = Object.values(RACES).map(race => {
+const button = document.createElement('button');
+button.type = 'button';
+button.className = 'create-option race-option';
+button.dataset.race = race.id;
+button.disabled = !race.available;
+button.innerHTML = `
+      <img src="${race.icon}" alt="">
+      <span><strong>${race.name}</strong><small>${race.creation.label}</small></span>
     `;
-if (race.available) {
-el.onclick = () => { pendingRaceId = race.id; renderCreateScreen(); };
+button.onclick = () => {
+pendingRaceId = race.id;
+updateCreatePreview();
+};
+return button;
+});
+document.getElementById('races-list').replaceChildren(...races);
+const classes = Object.entries(CLASSES).map(([id, cls]) => {
+const button = document.createElement('button');
+button.type = 'button';
+button.className = 'create-option class-option';
+button.dataset.class = id;
+button.innerHTML = `<strong>${cls.name}</strong><small></small>`;
+button.onclick = () => {
+pendingClassId = id;
+updateCreatePreview();
+};
+return button;
+});
+document.getElementById('classes-list').replaceChildren(...classes);
+document.getElementById('create-subclass-level').textContent = SUBCLASS_MIN_LEVEL;
+updateCreatePreview();
 }
-racesBox.appendChild(el);
+function renderCreateTraits(id, guide) {
+document.getElementById(id).innerHTML = `
+    <div>
+      <strong><span class="create-plus" aria-hidden="true">+</span> Сильная сторона</strong>
+      <p>${guide.strength}</p>
+    </div>
+    <div>
+      <strong><span class="create-minus" aria-hidden="true">−</span> Слабая сторона</strong>
+      <p>${guide.weakness}</p>
+    </div>
+  `;
+}
+function updateCreatePreview() {
+const race = RACES[pendingRaceId];
+const cls = CLASSES[pendingClassId];
+document.getElementById('create-hero-portrait').src = getRaceIcon(race.id, pendingClassId);
+document.getElementById('create-hero-race').textContent = race.name;
+document.getElementById('create-chosen-race').textContent = race.name;
+document.getElementById('create-hero-pair').textContent = cls ? `${race.name}-${cls.name.toLowerCase()}` : race.name;
+document.getElementById('create-race-desc').textContent = race.desc;
+document.querySelectorAll('#races-list [data-race]').forEach(button => {
+button.setAttribute('aria-pressed', button.dataset.race === pendingRaceId);
 });
-const classesBox = document.getElementById('classes-list');
-classesBox.innerHTML = '';
-['warrior', 'mage'].forEach(classId => {
-const cls = CLASSES[classId];
-const isSelected = (pendingClassId === classId);
-const stats = getRaceClassStats(pendingRaceId, classId) || cls.stats;
-const el = document.createElement('div');
-el.className = 'create-option class-option' + (isSelected ? ' selected' : '');
-el.innerHTML = `
-      <div class="create-portrait" style="background-image:url('img/classes/${classId}.webp')"></div>
-      <div class="create-name">${cls.name}</div>
-      <div class="create-desc">${cls.desc}</div>
-      <div class="create-stats">
-        СТР ${stats.STR} · ЛОВ ${stats.DEX} · ТЕЛ ${stats.CON}<br>
-        ИНТ ${stats.INT} · МДР ${stats.WIT} · ДУХ ${stats.MEN}
-      </div>
-    `;
-el.onclick = () => { pendingClassId = classId; renderCreateScreen(); };
-classesBox.appendChild(el);
+document.querySelectorAll('#classes-list [data-class]').forEach(button => {
+const id = button.dataset.class;
+button.setAttribute('aria-pressed', id === pendingClassId);
+button.querySelector('small').textContent = race.creation[id].style;
 });
+renderCreateTraits('create-race-traits', race.creation);
+document.getElementById('create-class-hint').hidden = !!cls;
+document.getElementById('create-class-preview').hidden = !cls;
+if (cls) {
+renderCreateTraits('create-class-traits', race.creation[pendingClassId]);
+const stats = getRaceClassStats(race.id, pendingClassId);
+const labels = { STR: 'Сила', DEX: 'Ловкость', CON: 'Телосложение', INT: 'Интеллект', WIT: 'Мудрость', MEN: 'Дух' };
+document.getElementById('create-stat-values').innerHTML = Object.entries(labels).map(([key, label]) =>
+`<div><dt>${label}</dt><dd>${stats[key]}</dd></div>`
+).join('');
+const subclasses = Object.values(SUBCLASSES).filter(subclass =>
+subclass.race === race.id && subclass.cls === pendingClassId && subclass.ready
+);
+document.getElementById('create-subclasses').innerHTML = subclasses.map(subclass => `
+      <article class="create-subclass">
+        <div class="create-subclass-art"><img src="${subclass.portrait}" alt=""></div>
+        <div class="create-subclass-info">
+          <h4>${subclass.name}</h4>
+          <p>${subclass.preview}</p>
+        </div>
+      </article>
+    `).join('');
+}
 updateCreateButton();
 }
 function updateCreateButton() {
-const btn = document.getElementById('btn-create-char');
-if (!btn) return;
-const nameInput = document.getElementById('char-name-input');
-const name = (nameInput?.value || '').trim();
-const hasClass = !!pendingClassId;
-const hasName = name.length >= 2;
-if (!hasClass && !hasName) {
-btn.disabled = true;
-btn.textContent = 'Введите имя и выберите класс';
-} else if (!hasClass) {
-btn.disabled = true;
-btn.textContent = 'Выберите класс';
-} else if (!hasName) {
-btn.disabled = true;
-btn.textContent = 'Введите имя (от 2 символов)';
-} else {
-btn.disabled = false;
-btn.textContent = 'Создать персонажа';
-}
+const name = document.getElementById('char-name-input').value.trim();
+document.getElementById('btn-create-char').disabled = !pendingClassId || name.length < 2;
 }
 function confirmCreateCharacter() {
 if (!pendingClassId) return;
@@ -11334,297 +11538,30 @@ location.reload();
 ;
 
 // ==== ФАЙЛ js/systems/patches.js ====
-let __patchOpenVersion = null;
-let __patchOpenGroup = null;
-const PATCH_VISIBLE_RECENT = 10;
-function isPatchMobile() {
-return window.matchMedia('(max-width: 700px), (max-height: 500px) and (orientation: landscape)').matches;
-}
-function getPatchLayout() {
-if (typeof CHANGELOG === 'undefined' || !CHANGELOG.length) {
-return { recent: [], group: null };
-}
-if (CHANGELOG.length <= PATCH_VISIBLE_RECENT) {
-return { recent: CHANGELOG.slice(), group: null };
-}
-const recent = CHANGELOG.slice(0, PATCH_VISIBLE_RECENT);
-const group = CHANGELOG.slice(PATCH_VISIBLE_RECENT);
-return { recent, group };
-}
-function renderPatchTabs() {
-const container = document.getElementById('patch-tabs');
-if (!container) return;
-if (typeof CHANGELOG === 'undefined' || !CHANGELOG.length) return;
-container.innerHTML = '';
-const layout = getPatchLayout();
-layout.recent.forEach((entry, idx) => {
-const tab = buildPatchTab(entry, idx === 0);
-container.appendChild(tab);
+function openPatchNotes() {
+const dialog = document.getElementById('patch-notes');
+const select = document.getElementById('patch-version');
+if (!CHANGELOG.length) return;
+if (!select.options.length) {
+CHANGELOG.forEach(entry => {
+select.add(new Option(`${entry.version} · ${entry.date}`, entry.version));
 });
-if (layout.group && layout.group.length > 0) {
-const groupTab = buildPatchGroupTab(layout.group);
-container.appendChild(groupTab);
+renderPatchNotes(select.value);
 }
+dialog.showModal();
 }
-function buildPatchTab(entry, isLatest) {
-const tab = document.createElement('div');
-tab.className = 'patch-tab';
-if (isLatest) tab.classList.add('patch-tab-latest');
-tab.dataset.version = entry.version;
-tab.innerHTML = `<span class="pt-version">${entry.version}</span><span class="pt-date">${entry.date}</span>`;
-if (isPatchMobile()) {
-tab.addEventListener('click', (e) => {
-e.stopPropagation();
-if (__patchOpenVersion === entry.version) {
-closePatchPanel();
-} else {
-closePatchGroup();
-openPatchPanel(entry.version);
-}
-});
-} else {
-tab.addEventListener('mouseenter', () => {
-closePatchGroup();
-openPatchPanel(entry.version);
-});
-tab.addEventListener('mouseleave', () => {
-setTimeout(() => {
-if (!isPatchMobile() && __patchOpenVersion === entry.version) {
-const panel = document.getElementById('patch-panel');
-if (panel && panel.matches(':hover')) return;
-closePatchPanel();
-}
-}, 150);
-});
-}
-return tab;
-}
-function buildPatchGroupTab(groupEntries) {
-const first = groupEntries[groupEntries.length - 1];
-const last  = groupEntries[0];
-const tab = document.createElement('div');
-tab.className = 'patch-tab patch-tab-group';
-tab.dataset.group = 'old';
-tab.innerHTML = `
-    <span class="pt-version">${first.version} – ${last.version}</span>
-    <span class="pt-date">${groupEntries.length} патчей</span>
-    <span class="pt-arrow">▸</span>
-  `;
-const list = document.createElement('div');
-list.className = 'patch-group-list';
-list.dataset.groupList = 'old';
-const head = document.createElement('div');
-head.className = 'patch-group-head';
-head.textContent = `Старые версии · ${groupEntries.length}`;
-list.appendChild(head);
-const grid = document.createElement('div');
-grid.className = 'patch-group-grid';
-list.appendChild(grid);
-groupEntries.forEach((entry) => {
-const item = document.createElement('div');
-item.className = 'patch-group-item';
-item.dataset.version = entry.version;
-item.innerHTML = `<span class="pt-version">${entry.version}</span><span class="pt-date">${entry.date}</span>`;
-if (isPatchMobile()) {
-item.addEventListener('click', (e) => {
-e.stopPropagation();
-if (__patchOpenVersion === entry.version) {
-closePatchPanel();
-} else {
-openPatchPanel(entry.version);
-}
-});
-} else {
-item.addEventListener('mouseenter', () => {
-openPatchPanel(entry.version);
-});
-}
-grid.appendChild(item);
-});
-list.addEventListener('click', (e) => e.stopPropagation());
-tab.appendChild(list);
-if (isPatchMobile()) {
-tab.addEventListener('click', (e) => {
-e.stopPropagation();
-if (__patchOpenGroup === 'old') {
-closePatchGroup();
-} else {
-closePatchPanel();
-openPatchGroup();
-}
-});
-} else {
-tab.addEventListener('mouseenter', () => {
-openPatchGroup();
-});
-tab.addEventListener('mouseleave', () => {
-setTimeout(() => {
-if (isPatchMobile()) return;
-const group = document.getElementById('patch-tabs');
-const groupTab = group ? group.querySelector('.patch-tab-group') : null;
-const list = group ? group.querySelector('.patch-group-list') : null;
-if (groupTab && groupTab.matches(':hover')) return;
-if (list && list.matches(':hover')) return;
-const panel = document.getElementById('patch-panel');
-if (panel && panel.matches(':hover')) return;
-closePatchGroup();
-}, 150);
-});
-}
-return tab;
-}
-function openPatchGroup() {
-if (__patchOpenGroup === 'old') return;
-__patchOpenGroup = 'old';
-const list = document.querySelector('.patch-group-list');
-if (list) {
-list.classList.add('visible');
-positionPatchGroupList(list);
-}
-}
-function positionPatchGroupList(list) {
-const tab = list.closest('.patch-tab-group');
-const container = document.getElementById('patch-tabs');
-if (!tab || !container) return;
-const pad = 10;
-list.style.top = list.style.right = list.style.maxHeight = '';
-if (isPatchMobile()) {
-const r = tab.getBoundingClientRect();
-const below = window.innerHeight - r.bottom - 6 - pad;
-const above = r.top - 6 - pad;
-if (below >= 220 || below >= above) {
-list.style.top = (r.bottom + 6) + 'px';
-list.style.maxHeight = Math.max(160, below) + 'px';
-} else {
-list.style.maxHeight = Math.max(160, above) + 'px';
-list.style.top = Math.max(pad, r.top - 6 - list.offsetHeight) + 'px';
-}
-return;
-}
-const r = tab.getBoundingClientRect();
-const startScreen = document.getElementById('start-screen');
-if (startScreen && startScreen.classList.contains('launcher')) {
-list.style.right = Math.max(pad, window.innerWidth - r.right) + 'px';
-list.style.maxHeight = Math.max(160, r.top - 6 - pad) + 'px';
-list.style.top = Math.max(pad, r.top - 6 - list.offsetHeight) + 'px';
-return;
-}
-list.style.right = (window.innerWidth - r.left + 6) + 'px';
-list.style.maxHeight = (window.innerHeight - pad * 2) + 'px';
-const h = list.offsetHeight;
-list.style.top = Math.max(pad, Math.min(r.bottom - h, window.innerHeight - pad - h)) + 'px';
-}
-function closePatchGroup() {
-__patchOpenGroup = null;
-const list = document.querySelector('.patch-group-list');
-if (list) list.classList.remove('visible');
-}
-function openPatchPanel(version) {
-const container = document.getElementById('patch-tabs');
-if (!container) return;
-const entry = CHANGELOG.find(c => c.version === version);
+function renderPatchNotes(version) {
+const entry = CHANGELOG.find(item => item.version === version);
 if (!entry) return;
-__patchOpenVersion = version;
-container.querySelectorAll('.patch-tab, .patch-group-item').forEach(t => {
-t.classList.toggle('active', t.dataset.version === version);
-});
-let panel = document.getElementById('patch-panel');
-if (panel) panel.remove();
-panel = document.createElement('div');
-panel.className = 'patch-panel';
-panel.id = 'patch-panel';
-const changesHtml = entry.changes.map(c => `
-    <div class="patch-change">
-      <span class="pc-icon">${c.icon || '•'}</span>
-      <span class="pc-text">${c.text}</span>
-    </div>
-  `).join('');
-const mobile = isPatchMobile();
-const titleHtml = entry.title
-? `<div class="patch-panel-hero">${entry.title}</div>`
-: '';
-panel.innerHTML = `
-    <div class="patch-panel-header">
-      <div class="patch-panel-title">${entry.version}</div>
-      <div class="patch-panel-date">${entry.date}</div>
-      ${mobile ? '<button class="patch-panel-close" onclick="closePatchPanel()">×</button>' : ''}
-    </div>
-    ${titleHtml}
-    <div class="patch-panel-body">
-      ${changesHtml}
-    </div>
+const article = document.getElementById('patch-entry');
+article.innerHTML = `
+    ${entry.title ? `<h3>${entry.title}</h3>` : ''}
+    <ul class="patch-changes">
+      ${entry.changes.map(change => `<li><span aria-hidden="true">${change.icon || '•'}</span><div>${change.text}</div></li>`).join('')}
+    </ul>
   `;
-if (!mobile) {
-panel.addEventListener('mouseleave', () => {
-setTimeout(() => {
-const tab = container.querySelector(`.patch-tab[data-version="${version}"], .patch-group-item[data-version="${version}"]`);
-if (tab && tab.matches(':hover')) return;
-closePatchPanel();
-}, 150);
-});
+article.scrollTop = 0;
 }
-container.appendChild(panel);
-const groupList = container.querySelector('.patch-group-list.visible');
-const fromGroup = !!(groupList && groupList.querySelector(`.patch-group-item[data-version="${version}"]`));
-const startScreen = document.getElementById('start-screen');
-if (!mobile && startScreen && startScreen.classList.contains('launcher')) {
-const pad = 10;
-panel.style.top = 'auto';
-if (fromGroup) {
-const lr = groupList.getBoundingClientRect();
-panel.style.left = 'auto';
-panel.style.right = (window.innerWidth - lr.left + 6) + 'px';
-panel.style.bottom = Math.max(pad, window.innerHeight - lr.bottom) + 'px';
-panel.style.maxHeight = Math.max(200, lr.bottom - pad) + 'px';
-} else {
-const tab = container.querySelector(`.patch-tab[data-version="${version}"]`);
-const tr = tab ? tab.getBoundingClientRect() : container.getBoundingClientRect();
-const w = panel.offsetWidth;
-const left = Math.max(pad, Math.min(tr.left + tr.width / 2 - w / 2, window.innerWidth - w - pad));
-panel.style.right = 'auto';
-panel.style.left = left + 'px';
-panel.style.bottom = (window.innerHeight - tr.top + 8) + 'px';
-panel.style.maxHeight = Math.max(200, tr.top - 8 - pad) + 'px';
-}
-requestAnimationFrame(() => panel.classList.add('visible'));
-return;
-}
-if (!mobile && fromGroup) {
-const lr = groupList.getBoundingClientRect();
-panel.style.right = (window.innerWidth - lr.left + 6) + 'px';
-const top = Math.max(10, Math.min(lr.top, window.innerHeight * 0.2));
-panel.style.top = top + 'px';
-panel.style.maxHeight = (window.innerHeight - top - 10) + 'px';
-}
-requestAnimationFrame(() => panel.classList.add('visible'));
-}
-function closePatchPanel() {
-__patchOpenVersion = null;
-const container = document.getElementById('patch-tabs');
-if (container) {
-container.querySelectorAll('.patch-tab, .patch-group-item').forEach(t => t.classList.remove('active'));
-}
-const panel = document.getElementById('patch-panel');
-if (panel) {
-panel.classList.remove('visible');
-setTimeout(() => panel.remove(), 200);
-}
-}
-document.addEventListener('click', (e) => {
-if (!isPatchMobile()) return;
-if (!__patchOpenVersion && !__patchOpenGroup) return;
-const container = document.getElementById('patch-tabs');
-if (container && container.contains(e.target)) return;
-closePatchPanel();
-closePatchGroup();
-});
-window.addEventListener('resize', () => {
-if (__patchOpenVersion || __patchOpenGroup) {
-closePatchPanel();
-closePatchGroup();
-setTimeout(() => renderPatchTabs(), 50);
-}
-});
 
 ;
 
@@ -12309,7 +12246,7 @@ icon: '🧪',
 name: 'Зелье лечения',
 cssClass: 'debuff-regen',
 displayCount: (d) => d.turnsLeft || 0,
-tooltip: (d) => `Зелье лечения · +${d.perTurn || 10} HP на каждом вашем ходу, осталось ${d.turnsLeft || 0}.`,
+tooltip: (d) => `${d.potionName || 'Зелье лечения'} · +${d.perTurn || 10} HP на каждом вашем ходу, осталось ${d.turnsLeft || 0}.`,
 },
 guard: {
 icon: '🛡',
@@ -14137,7 +14074,8 @@ updateTopStatus();
 updateMapUI();
 switchTab('hunt');
 const place = LOCATION_NAMES[destination] || destination;
-logCombat(`🌀 Магические тропы: вы прибыли — ${place} (−${price} 🪙).`, 'log-entry levelup');
+const cost = price === 0 ? 'бесплатно' : `−${price} 🪙`;
+logCombat(`🌀 Магические тропы: вы прибыли — ${place} (${cost}).`, 'log-entry levelup');
 showToast('🌀', `Магические тропы: ${place}`);
 saveCurrentSlot();
 if (destination === 'town' && typeof tryAutoStartElderDialogue === 'function') {
@@ -14542,6 +14480,7 @@ const refineSuffix = getInvRefineSuffix(item);
 const reqLevel = getItemReqLevel(item);
 const reqLocked = reqLevel && !canWearByLevel(item);
 slot.className = 'inv-slot' + (isConsumable ? ' consumable' : '') + (isFood ? ' food' : '') + rarityClass + (reqLocked ? ' req-locked' : '');
+slot.dataset.itemId = item.id;
 slot.innerHTML = `${item.icon}<div class="item-name">${item.name}${refineSuffix}</div>${item.qty > 1 ? `<div class="qty">${item.qty}</div>` : ''}` +
 (reqLocked ? `<div class="inv-req" title="Надеть можно с ${reqLevel} уровня">🔒${reqLevel}</div>` : '');
 slot.onclick = () => {
@@ -14569,6 +14508,7 @@ cont.innerHTML = '';
 for (let i = 0; i < invPages(); i++) {
 const btn = document.createElement('button');
 btn.className = 'inventory-page-btn' + (state.currentInventoryPage === i ? ' active' : '');
+btn.dataset.page = i;
 btn.textContent = (i + 1);
 btn.onclick = () => setInventoryPage(i);
 cont.appendChild(btn);
@@ -14702,15 +14642,16 @@ return shopItem && shopItem.slotType === slotType;
 titleEl.textContent = slotType === 'potion' ? 'ВЫБЕРИТЕ ЗЕЛЬЕ' : 'ВЫБЕРИТЕ МИКСТУРУ';
 let html = '';
 if (slotType === 'potion') {
+const resource = getPotionThresholdResource(currentShopId);
 const current = state.player.potionThreshold || 40;
-html += `<div class="slot-picker-section-label">Порог HP</div>`;
+html += `<div class="slot-picker-section-label">Порог ${resource}</div>`;
 html += `<div class="slot-picker-thresholds">`;
 POTION_THRESHOLDS.forEach(v => {
 const activeClass = (v === current) ? ' active' : '';
 html += `<button class="slot-picker-threshold-btn${activeClass}" onclick="event.stopPropagation(); setPotionThreshold(${v})">${v}%</button>`;
 });
 html += `</div>`;
-html += `<div class="slot-picker-threshold-hint">Зелье пьётся, когда HP ниже этого значения.</div>`;
+html += `<div class="slot-picker-threshold-hint">Зелье пьётся, когда ${resource} ниже этого значения.</div>`;
 html += `<div class="slot-picker-divider"></div>`;
 }
 if (currentShopId) {
@@ -14815,9 +14756,12 @@ setSlotShopId(slotType, item.shopId);
 closeSlotPicker();
 renderEquipSlots();
 saveCurrentSlot();
-const how = slotType === 'potion'
-? `выпьется само, когда HP ниже ${state.player.potionThreshold || 40}%`
+let how = `выпьется само, когда ${getPotionThresholdResource(item.shopId)} ниже ${state.player.potionThreshold || 40}%`;
+if (slotType === 'mixture') {
+how = state.battle.activeEffects.mixture
+? 'вступит в силу со следующего боя после окончания текущей микстуры'
 : 'сработает сама в начале боя';
+}
 showToast('✅', `В слот ${where}: ${item.name} — ${how}`);
 }
 function clearSlot(slotType) {
@@ -14836,7 +14780,7 @@ const picker = document.getElementById('slot-picker');
 if (picker && picker.classList.contains('active')) {
 openSlotPicker('potion');
 }
-showToast('⚙', `Порог зелья: ${value}%`);
+showToast('⚙', `Порог ${getPotionThresholdResource(state.player.potionSlot)}: ${value}%`);
 }
 document.addEventListener('click', (e) => {
 const picker = document.getElementById('slot-picker');
@@ -15098,7 +15042,7 @@ potionEl.classList.add('filled');
 potionEl.innerHTML = `
           ${SVG[shopItem.icon] || ''}
           <div class="consumable-qty">×${invItem.qty}</div>
-          <div class="consumable-threshold">${p.potionThreshold || 40}</div>
+          <div class="consumable-threshold" title="Порог ${getPotionThresholdResource(p.potionSlot)}">${p.potionThreshold || 40}</div>
         `;
 } else {
 potionEl.classList.remove('filled');
@@ -15176,6 +15120,7 @@ const pane = document.getElementById('trader-pane-buy');
 pane.innerHTML = '';
 const p = state.player;
 SHOP_ITEMS.forEach(item => {
+if (!isShopItemSoldInTown(item, p.currentLocation)) return;
 const el = document.createElement('div');
 el.className = 'trade-item';
 const stock = p.inventory.filter(i => i.shopId === item.id).reduce((s, i) => s + i.qty, 0);
@@ -15319,7 +15264,7 @@ saveCurrentSlot();
 function buyItem(shopId, count) {
 const p = state.player;
 const item = SHOP_ITEMS.find(i => i.id === shopId);
-if (!item) return;
+if (!item || !isShopItemSoldInTown(item, p.currentLocation)) return;
 const maxAffordable = Math.floor(p.gold / item.price);
 if (maxAffordable <= 0) { logLoot(`Недостаточно Оболов.`, 'log-info'); return; }
 const actualCount = Math.min(count, maxAffordable);
@@ -18566,7 +18511,6 @@ let __tutScrolledKey = null;
 let __tutMeetTried = false;
 let __tutHelloTimer = null;
 let __tutSettingsOpen = false;
-let __tutCreateOpen = false;
 function tutorialNewHero(skip) {
 return { on: !skip, done: false, ack: {}, later: false, rewarded: false, hello: !!skip, tips: !skip, seen: {} };
 }
@@ -18587,6 +18531,38 @@ let n = 0;
 for (const key in k) n += k[key] || 0;
 return n;
 }
+function tutFreeFieldPath(from, to) {
+if (from !== 'town' || to !== 'field' || !tutorialActive()) return false;
+return !state.player.chronicle?.firsts?.['loc.field'] && tutKills() === 0;
+}
+function tutDeliverFirstLoot(reward) {
+const p = state.player;
+if (p.inventory.length >= invMaxSlots()) return false;
+const helmet = MONSTERS.find(monster => monster.id === 'silkworm')?.drops.find(drop => drop.type === 'helmet');
+if (!helmet) return false;
+const bonusStats = rollRarityStats(RARITIES.blue.statPoints, getRarityStatProfile(helmet));
+if (!addToInventory({ ...helmet, rarity: 'blue', bonusStats })) return false;
+reward.itemId = p.inventory[p.inventory.length - 1].id;
+const bonusText = formatRarityBonus(bonusStats);
+logLoot(`✨ ${helmet.name} (${RARITIES.blue.name})${bonusText ? ' · ' + bonusText : ''}`, 'log-loot');
+return true;
+}
+function tutEarnFirstLoot() {
+const t = tutState();
+if (!t || !t.on || t.done || t.firstLoot || tutKills() !== 0) return false;
+t.firstLoot = { itemId: null };
+if (!tutDeliverFirstLoot(t.firstLoot)) {
+logLoot('🎒 Заплечник придержал редкий шлем. Освободи ячейку в сумке, чтобы его забрать.', 'log-info');
+}
+return true;
+}
+function tutNoteLootBag() {
+const t = tutState();
+if (!t || !t.on || t.done || tutKills() === 0 || t.ack?.lootBag) return;
+t.ack = t.ack || {};
+t.ack.lootBag = true;
+tutSave();
+}
 function tutFirstStepsPast(stage) {
 const pr = getQuestProgress('firstSteps');
 if (!pr) return !isQuestAvailable('firstSteps');
@@ -18599,12 +18575,15 @@ const started = isQuestStarted('firstSteps');
 const fsDone = tutFirstStepsPast('need_weapon');
 const learned = Object.values(p.learnedSkills || {}).some(v => v > 0) || (p.skillPoints || 0) < 1;
 const kills = tutKills();
+const potionSlotted = !!p.potionSlot || (fsDone && !hasQuestItem('healPotion'));
+const mixtureSlotted = !!p.mixtureSlot || (fsDone && !hasQuestItem('atkMixture'));
 return {
 elder:   started || fsDone,
 potion:  fsDone || tutFirstStepsPast('need_potion') || (started && hasQuestItem('healPotion')),
 mixture: fsDone || tutFirstStepsPast('need_mixture') || (started && hasQuestItem('atkMixture')),
 weapon:  fsDone,
-slot:    !!p.potionSlot || (fsDone && !hasQuestItem('healPotion')),
+potionSlotted,
+slot:    potionSlotted && mixtureSlotted,
 mentor:  learned,
 field:   kills > 0 || p.currentLocation === 'field',
 kill:    kills > 0,
@@ -18654,16 +18633,79 @@ return { key, el: tutQ(`#city-grid-town .city-card[onclick="${onclick}"]`), ...t
 }
 function tutShop(shopId, cityTxt, buyTxt) {
 if (tutIsOpen('#trader-overlay')) {
-const b = document.querySelector(`#trader-overlay button[onclick="buyItem('${shopId}', 1)"]`);
-if (!tutVisible(b)) return null;
-return { key: 'buy-' + shopId, el: b.closest('.trade-item') || b, ...buyTxt };
+const buyTab = tutQ('#trader-overlay .window-tab[data-pane="buy"]');
+if (buyTab && !buyTab.classList.contains('active')) {
+return { key: 'trader-buy-tab', el: buyTab, ...TT().traderBuyTab };
+}
+const el = tutQ(`#trader-overlay button[onclick="buyItem('${shopId}', 1)"]`);
+return el ? { key: 'buy-' + shopId, el, ...buyTxt } : null;
 }
 return tutCity('shop-' + shopId, 'openTrader()', cityTxt);
 }
 function tutToField() {
 if (tutOtherOverlay()) return null;
-if (tutTabActive('map')) return { key: 'fieldCard', el: tutQ('#map-card-field'), ...TT().fieldCard };
+if (tutTabActive('map')) {
+if (tutFreeFieldPath(state.player.currentLocation, 'field')) {
+return { key: 'freeFieldPath', el: tutQ('#map-card-field .map-magic-btn'), ...TT().freeFieldPath };
+}
+return { key: 'fieldCard', el: tutQ('#map-card-field .map-walk-btn'), ...TT().fieldCard };
+}
 return { key: 'fieldTab', el: tutQ('.tab[data-tab="map"]'), ...TT().fieldTab };
+}
+function tutSupplyRoute(potion) {
+const slot = potion ? 'potion' : 'mixture';
+const shop = potion ? 'healPotion' : 'atkMixture';
+if (tutIsOpen('#slot-picker')) {
+const el = tutQ(`#slot-picker [onclick="selectSlotItem('${slot}', '${shop}')"]`);
+if (el) return { key: potion ? 'slotPick' : 'mixtureSlotPick', el, ...(potion ? TT().slotPick : TT().mixtureSlotPick) };
+return { key: 'slotClose', el: tutQ('#slot-picker .slot-picker-close'), ...TT().slotClose };
+}
+if (tutOtherOverlay()) return null;
+if (tutTabActive('inventory')) {
+const el = tutQ(`.equip-slot[data-slot="${slot}Slot"]`);
+if (el) return { key: potion ? 'slotEl' : 'mixtureSlotEl', el, ...(potion ? TT().slotEl : TT().mixtureSlotEl) };
+}
+return { key: 'slotTab', el: tutQ('.tab[data-tab="inventory"]'), ...TT().slotTab };
+}
+function tutLootRoute(t, battle, prepared = true) {
+if (tutOtherOverlay()) return null;
+const session = typeof BSESS !== 'undefined' ? BSESS : null;
+const bagOpen = !!session?.panelOpen;
+const peeking = !!session?.peek;
+const itemId = t.firstLoot?.itemId;
+const needsSpace = !!t.firstLoot && !itemId;
+const itemIndex = itemId ? state.player.inventory.findIndex(item => item.id === itemId) : -1;
+const needsEquip = itemIndex >= 0;
+if (!(t.ack?.loot || t.ack?.lootBag || peeking)) {
+const ack = () => { t.ack = t.ack || {}; t.ack.loot = 1; tutSave(); };
+const el = battle ? tutQ('#bx-loot-column') : null;
+return { key: 'loot', el, ...TT().loot, btn: 'Дальше', onBtn: ack };
+}
+if (tutTabActive('inventory') && (needsEquip || needsSpace)) {
+if (needsSpace) return { key: 'lootNoSpace', el: null, ...TT().lootNoSpace };
+const el = tutQ(`#inventory-grid [data-item-id="${CSS.escape(itemId)}"]`);
+if (el) return { key: 'lootEquip', el, ...TT().lootEquip };
+const page = Math.floor(itemIndex / INVENTORY_PAGE_SIZE);
+return { key: 'lootInventoryPage', el: tutQ(`#inventory-pagination [data-page="${page}"]`), ...TT().lootInventoryPage };
+}
+if (peeking) {
+return { key: 'lootReturn', el: tutQ('#bx-peek-bar .bxp-back'), ...TT().lootReturn };
+}
+if (battle && bagOpen) {
+return needsEquip || needsSpace
+? { key: 'lootInventory', el: tutQ('#bx-session .bxs-open-inv'), ...TT().lootInventory }
+: { key: 'lootBagClose', el: tutQ('#bx-session .bxs-close'), ...TT().lootBagClose };
+}
+if (battle && (!t.ack?.lootBag || needsEquip || needsSpace)) {
+return { key: 'lootBag', el: tutQ('#bx-loot-count'), ...TT().lootBag };
+}
+if (needsEquip || needsSpace) {
+return { key: 'lootInventoryTab', el: tutQ('.tab[data-tab="inventory"]'), ...TT().lootInventoryTab };
+}
+if (!prepared) {
+return { key: 'lootReturnToPrep', el: tutQ('#btn-close-battle'), ...TT().lootReturnToPrep };
+}
+return { key: 'final', el: null, text: TT().final.text, btn: TT().final.btn, final: true, onBtn: tutorialFinish };
 }
 function tutRoute() {
 const p = state.player, t = p.tutorial;
@@ -18680,33 +18722,35 @@ return { key: 'meetRetry', el: null, ...TT().meetRetry, btn: 'Поговорит
 onBtn: () => { tutHide(); if (typeof startBagMeeting === 'function') startBagMeeting(); } };
 }
 const f = tutFlags();
+if (f.kill && battle) {
+const prepared = f.elder && f.potion && f.mixture && f.weapon && f.slot && f.mentor;
+return tutLootRoute(t, battle, prepared);
+}
 if (!f.elder)   return battle ? null : tutCity('elder', 'openElder()', TT().elder);
 if (!f.potion)  return battle ? null : tutShop('healPotion', TT().potionCity, TT().potionBuy);
 if (!f.mixture) return battle ? null : tutShop('atkMixture', TT().mixtureCity, TT().mixtureBuy);
+if (!f.weapon && !battle && tutIsOpen('#trader-overlay')) {
+const el = tutQ('#trader-overlay button[onclick="closeTrader()"]');
+return { key: 'trader-close', el, handoff: true, ...TT().traderClose };
+}
 if (!f.weapon)  return battle ? null : tutCity('weapon', 'openElder()', TT().weapon);
-if (!f.slot) {
-if (battle) return null;
-if (tutIsOpen('#slot-picker')) {
-const el = tutQ(`#slot-picker .slot-picker-item[onclick*="'healPotion'"]`);
-return el ? { key: 'slotPick', el, ...TT().slotPick } : null;
-}
-if (tutOtherOverlay()) return null;
-if (tutTabActive('inventory')) {
-const el = tutQ('.equip-slot[data-slot="potionSlot"]');
-if (el) return { key: 'slotEl', el, ...TT().slotEl };
-}
-return { key: 'slotTab', el: tutQ('.tab[data-tab="inventory"]'), ...TT().slotTab };
-}
+if (!f.slot) return battle ? null : tutSupplyRoute(!f.potionSlotted);
 if (!f.mentor) {
 if (battle) return null;
 if (tutIsOpen('#mentor-overlay')) {
-const btns = Array.from(document.querySelectorAll('#mentor-pane-skills .skill-card-action .btn.success'));
-const el = btns.find(b => { const c = b.closest('.skill-card'); return c && c.querySelector('.active-skill'); }) || btns.find(tutVisible);
-return el ? { key: 'mentorLearn', el: el.closest('.skill-card') || el, ...TT().mentorLearn } : null;
+const btns = Array.from(document.querySelectorAll('#mentor-pane-skills .skill-card-action .btn.success')).filter(tutVisible);
+const el = btns.find(b => b.closest('.skill-card')?.querySelector('.active-skill')) || btns[0];
+return el ? { key: 'mentorLearn', el, ...TT().mentorLearn } : null;
 }
 return tutCity('mentor', 'openMentor()', TT().mentorCity);
 }
-if (!f.field && !battle) return tutToField();
+if (!f.field && !battle) {
+if (tutIsOpen('#mentor-overlay')) {
+const el = tutQ('#mentor-overlay button[onclick="closeMentor()"]');
+return { key: 'mentor-close', el, handoff: true, ...TT().mentorClose };
+}
+return tutToField();
+}
 if (!f.kill) {
 if (battle) {
 if (t.ack && t.ack.battle) return null;
@@ -18733,14 +18777,7 @@ const cards = document.querySelectorAll('#monsters-grid .monster-card:not(.monst
 const el = Array.from(cards).find(tutVisible);
 return el ? { key: 'huntCard', el, ...TT().huntCard } : null;
 }
-if (!(t.ack && t.ack.loot)) {
-const ack = () => { t.ack = t.ack || {}; t.ack.loot = 1; tutSave(); };
-if (battle) return { key: 'loot', el: tutQ('#bx-loot-column'), ...TT().loot, btn: 'Дальше', onBtn: ack };
-if (tutOtherOverlay()) return null;
-return { key: 'loot', el: null, ...TT().loot, btn: 'Дальше', onBtn: ack };
-}
-if (tutOtherOverlay()) return null;
-return { key: 'final', el: null, text: TT().final.text, btn: TT().final.btn, final: true, onBtn: tutorialFinish };
+return tutLootRoute(t, battle);
 }
 function tutorialFinish() {
 const t = tutState();
@@ -18767,6 +18804,8 @@ if (!spot) {
 spot = document.createElement('div');
 spot.id = 'tut-spot';
 spot.className = 'tut-spot';
+spot.setAttribute('aria-hidden', 'true');
+spot.innerHTML = '<i class="tut-wave"></i>'.repeat(3);
 document.body.appendChild(spot);
 const bub = document.createElement('div');
 bub.id = 'tut-bubble';
@@ -18792,8 +18831,8 @@ return { x: r.left, y: r.top };
 }
 function tutHide() {
 const { spot, bub } = tutEls();
-spot.classList.remove('on');
-bub.classList.remove('on', 'quiet');
+spot.classList.remove('on', 'waves');
+bub.classList.remove('on', 'quiet', 'action', 'handoff');
 if (__tutKey === 'hello') clearTimeout(__tutHelloTimer);
 __tutKey = null;
 }
@@ -18805,7 +18844,7 @@ function tutBubbleHtml(r) {
 const who = typeof bagSpeakerName === 'function' ? bagSpeakerName() : 'Заплечник';
 let row = '';
 if (r.btn) row += `<button type="button" class="tut-btn main" data-tut="go">${r.btn}</button>`;
-if (!r.final) row += `<button type="button" class="tut-btn later" data-tut="later">Потом</button>`;
+if (!r.final && !r.handoff) row += `<button type="button" class="tut-btn later" data-tut="later">Потом</button>`;
 return `<div class="tut-face"${tutFaceStyle()}></div>
     <div class="tut-body">
       <div class="tut-who">${who}</div>
@@ -18816,10 +18855,13 @@ return `<div class="tut-face"${tutFaceStyle()}></div>
 }
 function tutShow(r) {
 const { spot, bub } = tutEls();
-if (r.key !== __tutKey) {
+const changed = r.key !== __tutKey;
+if (changed) {
 __tutKey = r.key;
 bub.innerHTML = tutBubbleHtml(r);
 bub.classList.remove('quiet');
+bub.classList.toggle('action', !!r.act);
+bub.classList.toggle('handoff', !!r.handoff);
 const go = bub.querySelector('[data-tut="go"]');
 if (go) go.onclick = (e) => { e.stopPropagation(); __tutKey = null; if (r.onBtn) r.onBtn(); tutTick(); };
 const later = bub.querySelector('[data-tut="later"]');
@@ -18829,10 +18871,11 @@ bub.classList.add('on');
 const vw = window.innerWidth, vh = window.innerHeight;
 const bw = bub.offsetWidth, bh = bub.offsetHeight;
 const tabsEl = document.querySelector('.tabs');
-const tabsTop = tabsEl && tutVisible(tabsEl) ? tabsEl.getBoundingClientRect().top : vh;
+const inWindow = r.el?.closest('.overlay-base, #battle-window, #slot-picker');
+const tabsTop = !inWindow && tutVisible(tabsEl) ? tabsEl.getBoundingClientRect().top : vh;
 const place = (el, x, y) => { const sh = tutFixedShift(); el.style.left = Math.round(x - sh.x) + 'px'; el.style.top = Math.round(y - sh.y) + 'px'; };
 if (!r.el) {
-spot.classList.remove('on');
+spot.classList.remove('on', 'waves');
 place(bub, (vw - bw) / 2, Math.max(10, (tabsTop - bh) / 2));
 return;
 }
@@ -18847,13 +18890,38 @@ try { r.el.scrollIntoView({ block }); } catch (e) { r.el.scrollIntoView(); }
 }
 }
 rc = r.el.getBoundingClientRect();
-const pad = 6, edge = 5;
+const pad = 4, edge = 3;
 const sl = Math.max(edge, rc.left - pad), sr = Math.min(vw - edge, rc.right + pad);
 const st = Math.max(edge, rc.top - pad), sb = Math.min(vh - edge, rc.bottom + pad);
+const startWaves = !!r.act && (changed || !spot.classList.contains('on'));
 place(spot, sl, st);
 spot.style.width = Math.max(0, sr - sl) + 'px';
 spot.style.height = Math.max(0, sb - st) + 'px';
 spot.classList.add('on');
+spot.style.setProperty('--tut-wave-inset', [st, vw - sr, vh - sb, sl]
+.map(space => -Math.min(30, Math.max(2, space - edge)) + 'px').join(' '));
+if (startWaves) {
+spot.classList.remove('waves');
+void spot.offsetWidth;
+spot.classList.add('waves');
+} else if (changed) {
+spot.classList.remove('waves');
+}
+const actions = r.handoff && r.el.closest('.window-header-actions');
+if (actions) {
+const header = actions.parentElement;
+const bar = header.getBoundingClientRect();
+const x = actions.getBoundingClientRect().left - bw - 12;
+const y = rc.top + (rc.height - bh) / 2;
+const occupied = Array.from(header.children).filter(el => el !== actions).some(el => {
+const rect = el.getBoundingClientRect();
+return rect.left < x + bw && rect.right > x && rect.top < y + bh && rect.bottom > y;
+});
+if (!occupied && x >= bar.left + 6 && y >= bar.top && y + bh <= bar.bottom) {
+place(bub, x, y);
+return;
+}
+}
 const gap = 14;
 let x = rc.left + rc.width / 2 - bw / 2;
 let y;
@@ -18942,7 +19010,8 @@ return id;
 }
 function tutShowTip(t, id) {
 const { spot, bub } = tutEls();
-spot.classList.remove('on');
+spot.classList.remove('on', 'waves');
+bub.classList.remove('action', 'handoff');
 if (__tutKey !== 'tip-' + id) {
 __tutKey = 'tip-' + id;
 if (!t.seen[id]) { t.seen[id] = 1; tutSave(); }
@@ -19021,6 +19090,7 @@ t.later = false;
 if (t.done) { t.done = false; t.ack = {}; }
 }
 __tutKey = null; __tutScrolledKey = null;
+if (typeof updateMapTravelButton === 'function') updateMapTravelButton();
 tutSave();
 renderTutorialSettings();
 }
@@ -19036,15 +19106,13 @@ chk.checked = veteran;
 }
 function tutTick() {
 try {
-const createOpen = tutIsOpen('#create-screen');
-if (createOpen && !__tutCreateOpen) tutPresetSkipBox();
-__tutCreateOpen = createOpen;
 const settingsOpen = tutIsOpen('#settings-overlay');
 if (settingsOpen && !__tutSettingsOpen) renderTutorialSettings();
 __tutSettingsOpen = settingsOpen;
 const t = tutState();
 const onScreen = !!document.querySelector('.screen-overlay.active');
 if (!t || onScreen) { tutHide(); tutChip(false); if (!t) __tutMeetTried = false; return; }
+if (t.firstLoot && !t.firstLoot.itemId && tutDeliverFirstLoot(t.firstLoot)) saveCurrentSlot();
 if (t.hello && !t.on) {
 tutChip(false);
 if (tutDialogueOpen() || tutOtherOverlay() || tutIsOpen('#battle-window')) { tutHide(); return; }
@@ -20230,7 +20298,8 @@ const data = MIXTURE_EFFECTS[m.id];
 const name = data ? data.name : m.id;
 const oldId = m.id;
 state.battle.activeEffects.mixture = null;
-const invItem = state.player.inventory.find(i => i.shopId === oldId);
+const p = state.player;
+const invItem = p.mixtureSlot === oldId ? p.inventory.find(i => i.shopId === oldId) : null;
 if (invItem) {
 invItem.qty--;
 if (invItem.qty <= 0) {
@@ -20247,7 +20316,7 @@ renderEquipSlots();
 renderEffectsPanel();
 return;
 }
-state.player.mixtureSlot = null;
+if (p.mixtureSlot === oldId) p.mixtureSlot = null;
 showToast('⚗', `${name} закончилась`);
 logCombat(`⚗ ${name} закончилась.`, 'log-entry potion');
 renderEquipSlots();
@@ -20275,9 +20344,14 @@ renderInventory();
 renderEquipSlots();
 renderEffectsPanel();
 }
-function getMixtureAtkMult() {
+function getMixtureAtkMult(swing = 0) {
 const data = getActiveMixtureData();
 if (!data || !data.atkPercent) return 1.0;
+if (swing >= getActiveMixture().chargesLeft) {
+const p = state.player;
+const refill = p.mixtureSlot === data.id && p.inventory.some(i => i.shopId === data.id && i.qty > 0);
+if (!refill) return 1.0;
+}
 return 1 + data.atkPercent / 100;
 }
 function getMixtureLuckMult() {
@@ -20285,10 +20359,10 @@ const data = getActiveMixtureData();
 if (!data || !data.luckPercent) return 1.0;
 return 1 + data.luckPercent / 100;
 }
-function getMixtureDefMult() {
+function getMixtureDefMult(isMagic) {
 const data = getActiveMixtureData();
-if (!data || !data.defPercent) return 1.0;
-return 1 - data.defPercent / 100;
+const percent = isMagic ? data?.magicDefPercent : data?.defPercent;
+return 1 - (percent || 0) / 100;
 }
 
 ;
@@ -20849,7 +20923,8 @@ let dmg = Math.floor(baseDmg * skillMult);
 if (weaponBonusPercent > 0) dmg = Math.floor(dmg * (1 + weaponBonusPercent / 100));
 if (deathBonus > 0) dmg = Math.floor(dmg * (1 + deathBonus / 100));
 if (gripBonus > 0) dmg = Math.floor(dmg * (1 + gripBonus / 100));
-if (mixtureAtkMult > 1.0) dmg = Math.floor(dmg * mixtureAtkMult);
+const swingMixtureMult = h === 0 ? mixtureAtkMult : getMixtureAtkMult(h);
+if (swingMixtureMult > 1) dmg = Math.floor(dmg * swingMixtureMult);
 const isCrit = Math.random() * 100 < critChance;
 if (isCrit) dmg = Math.floor(dmg * critMult);
 if (isCrit && typeof subclassOnCrit === 'function') subclassOnCrit(m);
@@ -21066,8 +21141,11 @@ let baseDmg = Math.max(1, raw - pierce.effectivePDef);
 dmg = baseDmg;
 logCls = 'log-entry player'; logIcon = '⚔'; dmgType = 'dmg';
 }
+const offhandShare = offhand && p.offhandPAtk > 0 ? p.offhandPAtk / (p.pAtk + p.offhandPAtk) : 0;
+const offhandMixtureMult = offhandShare ? getMixtureAtkMult(1) : 1;
+const attackMixtureMult = mixtureAtkMult + (offhandMixtureMult - mixtureAtkMult) * offhandShare;
 if (weaponBonusPercent > 0) dmg = Math.floor(dmg * (1 + weaponBonusPercent / 100));
-if (mixtureAtkMult > 1.0) dmg = Math.floor(dmg * mixtureAtkMult);
+if (attackMixtureMult > 1) dmg = Math.floor(dmg * attackMixtureMult);
 const execMult = (!isMage() && typeof getExecuteMult === 'function') ? getExecuteMult(m, weaponCategory) : 1;
 if (execMult > 1) dmg = Math.floor(dmg * execMult);
 const isCrit = Math.random() * 100 < critChance;
@@ -21088,8 +21166,8 @@ const thorns = monsterThorns(m, weaponCategory);
 if (thorns > 0) notes.push(`🌵 шипы −${thorns} HP`);
 let dmgText = String(dmg);
 let offPart = 0;
-if (offhand && p.offhandPAtk > 0) {
-const off = Math.round(dmg * p.offhandPAtk / (p.pAtk + p.offhandPAtk));
+if (offhandShare) {
+const off = Math.round(dmg * offhandShare * offhandMixtureMult / attackMixtureMult);
 if (off >= 1 && off < dmg) { offPart = off; dmgText = `${dmg - off} + ${off} = ${dmg}`; }
 }
 if (offPart > 0) {
@@ -25177,7 +25255,7 @@ if (regen) {
 const amount = Math.min(regen.perTurn || 10, p.maxHp - p.hp);
 if (amount > 0) { p.hp += amount; spawnFloatDamage('fighter-player', amount, 'heal'); }
 if (typeof subclassOnHeroHeal === 'function') subclassOnHeroHeal(Math.max(0, amount), (regen.perTurn || 10) - Math.max(0, amount));
-logCombat(`🧪 Зелье лечения: +${Math.max(0, amount)} HP (осталось ${(regen.turnsLeft || 1) - 1} ход.)`, 'log-entry potion');
+logCombat(`🧪 ${regen.potionName || 'Зелье лечения'}: +${Math.max(0, amount)} HP (осталось ${(regen.turnsLeft || 1) - 1} ход.)`, 'log-entry potion');
 regen.turnsLeft = (regen.turnsLeft || 1) - 1;
 if (regen.turnsLeft <= 0) removeDebuff('player', 'potionRegen');
 else renderDebuffBar('player');
@@ -25284,7 +25362,8 @@ function manualPotionState() {
 const p = state.player;
 const stock = p.inventory.filter(i => i.shopId === p.potionSlot).reduce((s, i) => s + i.qty, 0);
 const used = state.battle.activeEffects.healPotionUsed;
-return { stock, used, inSlot: !!p.potionSlot, ok: !!p.potionSlot && stock > 0 && !used };
+const item = SHOP_ITEMS.find(i => i.id === p.potionSlot);
+return { stock, used, item, ok: !!item && stock > 0 && !used };
 }
 let MANUAL_SIG = '';
 function renderManualPanel(force) {
@@ -25313,7 +25392,7 @@ const slots = (p.skillSlots || []).filter(id => id && SKILLS[id] && SKILLS[id].t
 const checks = slots.map(id => [id, manualSkillCheck(id)]);
 const pot = manualPotionState();
 const alive = (b.monsters || []).filter(m => m.hp > 0).length;
-const sig = [waiting, alive > 1, pot.ok, pot.stock, ...checks.map(([id, c]) => id + (c.ok ? '+' : '-' + c.why))].join('|');
+const sig = [waiting, alive > 1, pot.item?.id, pot.used, pot.stock, ...checks.map(([id, c]) => id + (c.ok ? '+' : '-' + c.why))].join('|');
 if (!force && sig === MANUAL_SIG) return;
 MANUAL_SIG = sig;
 const row = document.getElementById('bxm-actions');
@@ -25338,8 +25417,10 @@ mk('bxm-skill' + (c.ok ? '' : ' bxm-off'), `<span class="bxm-ic">${s.icon || '�
 c.ok ? s.name : `${s.name}: ${c.why}`, waiting && c.ok, () => manualAct({ type: 'skill', id }));
 });
 mk('bxm-guard', '<span class="bxm-ic">🛡</span><span class="bxm-nm">Защита</span>', `Пропустить ход: −${GUARD_DAMAGE_CUT}% урона до следующего хода`, waiting, () => manualAct({ type: 'guard' }));
-mk('bxm-potion', `<span class="bxm-ic">🧪</span><span class="bxm-nm">Зелье</span><span class="bxm-mp">×${pot.stock}</span>`,
-pot.used ? 'Зелье уже выпито в этом бою' : (!pot.inSlot ? 'Зелье не в слоте' : 'Выпить зелье — ход не тратит'), pot.ok, manualDrinkPotion);
+const potionLabel = pot.item ? `Зелье ${getPotionThresholdResource(pot.item.id)}` : 'Зелье';
+mk('bxm-potion', `<span class="bxm-ic">🧪</span><span class="bxm-nm">${potionLabel}</span><span class="bxm-mp">×${pot.stock}</span>`,
+pot.used ? 'Зелье уже выпито в этом бою' : (!pot.item ? 'Зелье не в слоте' : `Выпить «${pot.item.name}» без хода`),
+pot.ok, manualDrinkPotion);
 const hint = document.getElementById('bxm-hint');
 if (hint) hint.textContent = alive > 1 ? 'Тапни по врагу, чтобы выбрать цель' : '';
 }
@@ -25404,10 +25485,16 @@ if (list.includes('fire') && monsterHasTagFlag(m, 'roots')) m.rootBlock = 3;
 const final = monsterManaAbsorb(m, dmg);
 if (m.undying && final >= m.hp) {
 m.undying = false;
-if (Math.random() * 100 >= (MONSTER_TAGS.undying.undyingChance || 100)) { if (typeof subclassOnHeroDamage === 'function') subclassOnHeroDamage(m, final); return final; }
+if (Math.random() * 100 < (MONSTER_TAGS.undying.undyingChance || 100)) {
+if (getActiveMixtureData()?.chargeType === 'undying') {
+tickMixtureCharge();
+logCombat(`⚗ Микстура упокоения отменяет «Неупокоенного» у ${m.name}.`, 'log-entry potion');
+} else {
 spawnFloatDamage('fighter-monster', 0, 'block', { mon: m, text: 'НЕ УПОКОЕН' });
 logCombat(`💀 ${m.name} не падает!`, 'log-entry monster');
 return Math.max(0, m.hp - 1);
+}
+}
 }
 if (typeof subclassOnHeroDamage === 'function') subclassOnHeroDamage(m, final);
 return final;
@@ -25731,7 +25818,10 @@ raw = monsterKitRaw(m, skill, raw);
 raw = monsterTagRaw(m, raw);
 const armorLeft = 1 - (m.armorIgnore || 0);
 let dmg;
-const mixtureDefMult = getMixtureDefMult();
+const mixtureDefMult = getMixtureDefMult(hitIsMagic);
+const mixtureInfo = mixtureDefMult < 1
+? ` (${hitIsMagic ? 'оберег' : 'крепость'} −${Math.round((1 - mixtureDefMult) * 100)}%)`
+: '';
 const guardMult = typeof getGuardMult === 'function' ? getGuardMult() : 1;
 const guardInfo = guardMult < 1 ? ` (защита −${GUARD_DAMAGE_CUT}%)` : '';
 const stanceMult = getShieldStanceMult();
@@ -25741,6 +25831,7 @@ let msAbsorbed = 0;
 let rawHit = 0;
 if (hitIsMagic) {
 dmg = Math.max(1, raw - Math.floor(p.mDef * 0.5 * armorLeft));
+if (mixtureDefMult < 1) dmg = Math.max(1, Math.floor(dmg * mixtureDefMult));
 if (stanceMult < 1) dmg = Math.max(1, Math.floor(dmg * stanceMult));
 if (guardMult < 1) dmg = Math.max(1, Math.floor(dmg * guardMult));
 if (scMult < 1) dmg = Math.max(1, Math.floor(dmg * scMult));
@@ -25748,7 +25839,7 @@ rawHit = dmg;
 { const sh = manaShieldAbsorb(dmg); dmg = sh.hp; msAbsorbed += sh.mp; }
 p.hp -= dmg;
 spawnFloatDamage('fighter-player', dmg, 'magic');
-logCombat(`✦ ${m.name} бьёт магией на ${dmg} урона.${guardInfo}${scInfo}`, 'log-entry magic');
+logCombat(`✦ ${m.name} бьёт магией на ${dmg} урона.${mixtureInfo}${guardInfo}${scInfo}`, 'log-entry magic');
 } else {
 const flatReduce = Math.ceil(typeof subclassFlatReduce === 'function' ? subclassFlatReduce(p.flatDamageReduce || 0) : (p.flatDamageReduce || 0));
 dmg = Math.max(1, raw - Math.floor(p.pDef * 0.3 * armorLeft) - flatReduce);
@@ -25761,11 +25852,10 @@ rawHit = dmg;
 p.hp -= dmg;
 spawnFloatDamage('fighter-player', dmg, 'dmg');
 const reduceInfo = (flatReduce > 0 ? ` (щит/шкура -${flatReduce})` : '') + (stanceMult < 1 ? ` (стойка −${SHIELD_STANCE_DAMAGE_CUT}%)` : '');
-const mixtureInfo = mixtureDefMult < 1.0 ? ` (крепость −30%)` : '';
 logCombat(`🩸 ${m.name} наносит ${dmg} урона.${reduceInfo}${mixtureInfo}${guardInfo}${scInfo}`, 'log-entry monster');
-const mixtureData = getActiveMixtureData();
-if (mixtureData && mixtureData.chargeType === 'enemyAttacks') tickMixtureCharge();
 }
+const chargeType = hitIsMagic ? 'enemyMagicAttacks' : 'enemyAttacks';
+if (getActiveMixtureData()?.chargeType === chargeType) tickMixtureCharge();
 const traits = m.traits;
 const chanceMult = m.traitChanceMult || 1.0;
 let hitDamageForBleed = dmg;
@@ -25978,6 +26068,7 @@ const RARITY_TYPES = [
 const CAPPED_COPIES = (p.stackCap !== undefined) ? p.stackCap : 3;
 const lootFilterLevel = p.lootFilterLevel || 0;
 const lootGroups = new Map();
+const firstLootEarned = !m.fled && typeof tutEarnFirstLoot === 'function' && tutEarnFirstLoot();
 m.drops.forEach(d => {
 const dropChance = d.chance * mult_ * totalDropMult * greedDropMult * packDropMult;
 const scMat = d.type === 'material' ? scLoot.material : 1;
@@ -26059,7 +26150,8 @@ if (typeof clearMonsterDebuffs === 'function') {
 clearMonsterDebuffs(m.index);
 }
 monsterTagsOnDeath(m);
-saveCurrentSlotSoon();
+if (firstLootEarned) saveCurrentSlot();
+else saveCurrentSlotSoon();
 const aliveLeft = state.battle.monsters.filter(x => x.hp > 0).length;
 if (aliveLeft > 0) {
 const next = getCurrentMonster();
@@ -26955,7 +27047,8 @@ let stateText = '';
 if (!inSlot) stateText = '— (нет в слоте)';
 else if (!hasItems) stateText = '—';
 else stateText = enabled ? 'ВКЛ' : 'ВЫКЛ';
-el.innerHTML = `<span class="ct-icon">🧪</span>Зелье: ${stateText}<span class="ct-count">×${stock}</span>`;
+const label = inSlot ? `Зелье ${getPotionThresholdResource(p.potionSlot)}` : 'Зелье';
+el.innerHTML = `<span class="ct-icon">🧪</span>${label}: ${stateText}<span class="ct-count">×${stock}</span>`;
 if (hasItems && inSlot) {
 el.onclick = () => toggleConsumable('healPotion');
 }
@@ -26975,27 +27068,38 @@ if (!force && !state.battle.consumables.healPotion.enabled) return;
 if (!p.potionSlot) return;
 const potion = p.inventory.find(i => i.shopId === p.potionSlot);
 if (!potion) return;
+const def = POTION_EFFECTS[potion.shopId] || POTION_EFFECTS.healPotion;
+const resource = getPotionThresholdResource(potion.shopId);
+const restoresMana = resource === 'MP';
+const current = restoresMana ? p.mp : p.hp;
+const max = restoresMana ? p.maxMp : p.maxHp;
 const threshold = (p.potionThreshold || 40) / 100;
-if (!force && p.hp / p.maxHp >= threshold) return;
+if (!force && current / max >= threshold) return;
 potion.qty--;
 if (potion.qty <= 0) {
 const idx = p.inventory.indexOf(potion);
 if (idx >= 0) p.inventory.splice(idx, 1);
 }
-const def = POTION_HEAL[potion.shopId] || POTION_HEAL.healPotion;
-const heal = def.heal;
-const hpBefore = p.hp;
-p.hp = Math.min(p.maxHp, p.hp + heal);
-if (typeof subclassOnHeroHeal === 'function') subclassOnHeroHeal(p.hp - hpBefore, heal - (p.hp - hpBefore));
+const amount = restoresMana ? Math.floor(max * def.mpPercent / 100) : def.heal;
+const restored = Math.min(amount, Math.max(0, max - current));
+if (restoresMana) {
+p.mp = current + restored;
+} else {
+p.hp = Math.min(max, current + amount);
+if (typeof subclassOnHeroHeal === 'function') subclassOnHeroHeal(restored, amount - restored);
+}
 eff.healPotionUsed = true;
-spawnFloatDamage('fighter-player', heal, 'heal');
-logCombat(`🧪 ${potion.name}: +${heal} HP${def.hotTurns ? ` и ещё +${def.hotPerTurn} HP на ${def.hotTurns} ходов` : ''}`, 'log-entry potion');
-if (def.hotTurns) addDebuff('player', 'potionRegen', { turnsLeft: def.hotTurns, perTurn: def.hotPerTurn });
+const shownAmount = restoresMana ? Math.round(restored * 10) / 10 : amount;
+spawnFloatDamage('fighter-player', shownAmount, restoresMana ? 'mana' : 'heal');
+logCombat(`🧪 ${potion.name}: +${shownAmount} ${resource}${def.hotTurns ? ` и ещё +${def.hotPerTurn} HP на ${def.hotTurns} ходов` : ''}`, 'log-entry potion');
+if (def.hotTurns) {
+addDebuff('player', 'potionRegen', { turnsLeft: def.hotTurns, perTurn: def.hotPerTurn, potionName: potion.name });
+}
 updateTopStatus();
 updateBattleUI();
 renderInventory();
 renderEquipSlots();
-showToast('🧪', `Восстановлено ${heal} HP`);
+showToast('🧪', `Восстановлено ${shownAmount} ${resource}`);
 }
 
 ;
@@ -28907,6 +29011,7 @@ el.style.display = 'flex';
 document.getElementById('bx-loot-column')?.classList.add('bx-bag-open');
 renderSessionPanel();
 bsessApplyPanelPos();
+if (typeof tutNoteLootBag === 'function') tutNoteLootBag();
 }
 const BSESS_POS_KEY = 'bsessPanelPos';
 function bsessDragAllowed() {
@@ -29571,14 +29676,16 @@ function expSupplyPlan(opt, hours) {
 const d = __expDialog || {};
 const take = d.take || {};
 const rows = expSupplyNeeds(opt, hours);
-const inTown = isTownLoc(state.player.currentLocation);
+const location = state.player.currentLocation;
 let gold = state.player.gold;
 let cost = 0;
 rows.forEach(r => {
 r.take = Math.max(0, Math.min(99999, Math.floor(take[r.id] !== undefined ? take[r.id] : r.need)));
 const want = Math.max(0, r.take - r.have);
-r.buy = (inTown && d.buy !== false) ? Math.min(want, Math.floor(gold / r.shop.price)) : 0;
-r.noGold = r.buy < want && inTown && d.buy !== false;
+const canBuy = d.buy !== false && isShopItemSoldInTown(r.shop, location);
+r.buy = canBuy ? Math.min(want, Math.floor(gold / r.shop.price)) : 0;
+r.noGold = canBuy && r.buy < want;
+r.soldOnlyInIlgrad = r.shop.town === 'ilgrad' && location !== 'ilgrad';
 gold -= r.buy * r.shop.price;
 cost += r.buy * r.shop.price;
 r.got = Math.min(r.take, r.have + r.buy);
@@ -29728,7 +29835,8 @@ const icon = SVG[r.shop.icon] || '🧪';
 const tail = [];
 tail.push(`в сумке ${expNum(r.have)}`);
 if (r.buy > 0) tail.push(`<b>докупит ${expNum(r.buy)}</b>`);
-if (r.short > 0) tail.push(`<span class="exp-pack-warn">не хватает ${expNum(r.short)}${r.noGold ? ' — мало Оболов' : ''}</span>`);
+const reason = r.noGold ? ' · мало Оболов' : (r.soldOnlyInIlgrad ? ' · продаётся в Ильграде' : '');
+if (r.short > 0) tail.push(`<span class="exp-pack-warn">не хватает ${expNum(r.short)}${reason}</span>`);
 return `<div class="exp-pack-row">
           <span class="exp-pack-ico">${icon}</span>
           <span class="exp-pack-body"><span class="exp-pack-name">${r.shop.name}</span><span class="exp-pack-info">нужно ~${expNum(r.need)} · ${tail.join(' · ')}</span></span>
