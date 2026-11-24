@@ -138,6 +138,7 @@ function checkHealPotion(force) {
   if (!force && current / max >= threshold) return;
 
   potion.qty--;
+  if (typeof bsessRecordSupplyUse === 'function') bsessRecordSupplyUse(potion.shopId);
   if (potion.qty <= 0) {
     const idx = p.inventory.indexOf(potion);
     if (idx >= 0) p.inventory.splice(idx, 1);

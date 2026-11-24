@@ -35,10 +35,14 @@ function renderGuildList() {
   buffShopRender('guild');
 }
 
+function isGuildBuffSoldInTown(buff, location) {
+  return !buff.town || buff.town === location;
+}
+
 function buyGuildBuff(buffId) {
   const p = state.player;
   const buff = GUILD_BUFFS[buffId];
-  if (!buff) return;
+  if (!buff || !isGuildBuffSoldInTown(buff, p.currentLocation)) return;
   if (!p.classId) {
     showToast('🔮', 'Сначала выберите класс');
     logLoot(`Сначала выберите класс.`, 'log-info');

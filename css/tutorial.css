@@ -111,6 +111,10 @@
 .tut-btn.later { margin-left: auto; background: none; border-color: transparent; color: var(--text-dim); }
 .tut-btn:hover { border-color: var(--gold-bright); }
 .tut-btn.later:hover { color: var(--text); border-color: transparent; }
+.tut-bubble.goal .tut-face { animation: none; }
+@media (pointer: coarse) {
+  .tut-bubble.goal .tut-btn { min-height: 44px; }
+}
 
 /* «щуп» для поправки position:fixed, когда у <html> стоит filter (tutFixedShift) */
 .tut-probe { position: fixed; left: 0; top: 0; width: 0; height: 0; pointer-events: none; visibility: hidden; }

@@ -63,6 +63,7 @@ const SAVE_PLAYER_DEFAULTS = {
 
   expedition: null,
   expeditionLoot: [],
+  expeditionKills: {},
   huntPace: {},
   huntVariant: {},
 
@@ -101,7 +102,7 @@ function saveIsPlainObject(v) {
 function saveNormalizePlayer(p) {
   // объекты
   ['equipment', 'learnedSkills', 'weaponSkills', 'elements', 'monsterKills',
-   'guildBuffs', 'tavernBuffs', 'quests', 'huntPace', 'huntVariant'].forEach(k => {
+   'guildBuffs', 'tavernBuffs', 'quests', 'expeditionKills', 'huntPace', 'huntVariant'].forEach(k => {
     if (!saveIsPlainObject(p[k])) p[k] = saveClone(SAVE_PLAYER_DEFAULTS[k]);
   });
 

@@ -15,6 +15,13 @@
 //  + Цепной разум — пассивка мага (шанс снизить КД на 1).
 // ========================================================
 
+const SKILL_REGEN_FORMAT = new Intl.NumberFormat('ru-RU', { maximumFractionDigits: 2 });
+
+function getScaledBattleRegen(baseRate, maxResource, scaleStart, maxMultiplier) {
+  const multiplier = Math.min(maxMultiplier, Math.max(1, maxResource / scaleStart));
+  return baseRate * multiplier;
+}
+
 const SKILLS = {
   // ========================================================
   //  ВОИН (любая раса)
@@ -89,8 +96,17 @@ const SKILLS = {
       { mpRegenInBattle: 0.5 }, { mpRegenInBattle: 0.6 }, { mpRegenInBattle: 0.7 },
       { mpRegenInBattle: 0.8 }, { mpRegenInBattle: 1.0 },
     ],
-    getDesc: (lvl) => { const d = SKILLS.manaRegen.levels[lvl-1]; return `Пассивно: <span class="val">+${d.mpRegenInBattle}</span> MP/сек в бою.`; },
-    getNextDesc: (lvl) => { if (lvl >= 5) return ''; const n = SKILLS.manaRegen.levels[lvl]; return `Следующий уровень: +${n.mpRegenInBattle} MP/сек в бою`; }
+    getRegen: (lvl, maxMp) => getScaledBattleRegen(SKILLS.manaRegen.levels[lvl - 1].mpRegenInBattle, maxMp, 850, 2.5),
+    getDesc: (lvl) => {
+      const bonus = SKILL_REGEN_FORMAT.format(SKILLS.manaRegen.getRegen(lvl, state.player.maxMp));
+      return `Открывает базовый реген маны в бою и даёт <span class="val">+${bonus} MP/сек</span>. Бонус растёт вместе с максимальной маной.`;
+    },
+    getNextDesc: (lvl) => {
+      const skill = SKILLS.manaRegen;
+      if (lvl === 0 || lvl >= skill.maxLevel) return '';
+      const bonus = SKILL_REGEN_FORMAT.format(skill.getRegen(lvl + 1, state.player.maxMp));
+      return `Следующий ранг · +${bonus} MP/сек при текущем запасе маны`;
+    }
   },
   weaponMasterM: {
     id: 'weaponMasterM', classId: 'mage', name: 'Мастер оружия', type: 'passive',
@@ -285,8 +301,17 @@ const SKILLS = {
       { hpRegenInBattle: 0.3 }, { hpRegenInBattle: 0.45 }, { hpRegenInBattle: 0.6 },
       { hpRegenInBattle: 0.8 }, { hpRegenInBattle: 1.0 },
     ],
-    getDesc: (lvl) => { const d = SKILLS.orcBlood.levels[lvl-1]; return `Пассивно: <span class="val">+${d.hpRegenInBattle}</span> HP/сек в бою.`; },
-    getNextDesc: (lvl) => { if (lvl >= 5) return ''; const n = SKILLS.orcBlood.levels[lvl]; return `Следующий уровень: +${n.hpRegenInBattle} HP/сек в бою`; }
+    getRegen: (lvl, maxHp) => getScaledBattleRegen(SKILLS.orcBlood.levels[lvl - 1].hpRegenInBattle, maxHp, 500, 4),
+    getDesc: (lvl) => {
+      const bonus = SKILL_REGEN_FORMAT.format(SKILLS.orcBlood.getRegen(lvl, state.player.maxHp));
+      return `Восстанавливает <span class="val">${bonus} HP/сек</span> в бою. Бонус растёт вместе с максимальным здоровьем.`;
+    },
+    getNextDesc: (lvl) => {
+      const skill = SKILLS.orcBlood;
+      if (lvl === 0 || lvl >= skill.maxLevel) return '';
+      const bonus = SKILL_REGEN_FORMAT.format(skill.getRegen(lvl + 1, state.player.maxHp));
+      return `Следующий ранг · ${bonus} HP/сек при текущем запасе здоровья`;
+    }
   },
   ironSkin: {
     id: 'ironSkin', classId: 'warrior', raceId: 'orc', name: 'Железная шкура', type: 'passive',
@@ -548,6 +573,18 @@ const GUILD_BUFFS = {
     price: BUFF_PRICE, duration: BUFF_DURATION,
     effects: {}, packMode: 'provoke', packRival: 'quietStep',
     desc: 'Чары вызова: стаи больше, подмога сбегается со всей округи.'
+  },
+  steadfastSeal: {
+    id: 'steadfastSeal', name: 'Печать выдержки', iconPng: 'img/buffs/steadfastSeal.webp',
+    town: 'ilgrad', price: BUFF_PRICE * 2, duration: BUFF_DURATION,
+    effects: { preserveTurn: true },
+    desc: 'Один раз за бой отменяет первое оглушение или сбивание шкалы хода от монстра.'
+  },
+  sixfoldSeal: {
+    id: 'sixfoldSeal', name: 'Печать шести сил', iconPng: 'img/buffs/sixfoldSeal.webp',
+    town: 'ilgrad', price: BUFF_PRICE * 2, duration: BUFF_DURATION,
+    effects: { allStatsFlat: 5 },
+    desc: 'Даёт +5 к силе, ловкости, телосложению, интеллекту, мудрости и духу.'
   },
 };
 

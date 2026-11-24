@@ -28,6 +28,7 @@
 // ========================================================
 
 function switchTab(tab) {
+  if (tab !== 'inventory' && document.getElementById('equip-compare')?.open) closeEquipmentComparison();
   // Скрываем тултип — при переключении вкладки он не нужен.
   if (typeof hideTooltip === 'function') hideTooltip();
   if (typeof closeHuntSheet === 'function') closeHuntSheet();   // шторка с карточкой монстра (телефон)

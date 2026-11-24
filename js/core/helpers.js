@@ -242,8 +242,7 @@ function getClassAccuracyBonus(classId) {
 }
 
 // Точность игрока.
-function getPlayerAccuracy() {
-  const p = state.player;
+function getPlayerAccuracy(p = state.player) {
   const dex = p.effDEX || p.DEX || 0;
   const lvl = p.level || 1;
 
@@ -258,11 +257,11 @@ function getPlayerAccuracy() {
   acc += getWeaponAccuracyBonus(category);
 
   // v0.27: парное оружие — точность −4.
-  if (getOffhandWeapon()) acc -= DUAL_WIELD_ACCURACY_PENALTY;
+  if (getOffhandWeapon(p)) acc -= DUAL_WIELD_ACCURACY_PENALTY;
 
   // Бонусы подгонки (v0.10 — теперь учитываются).
   acc += (p.accuracyBonus || 0);
-  if (typeof subclassAccuracyBonus === 'function') acc += subclassAccuracyBonus();   // v0.38: Глаз ястреба
+  if (typeof subclassAccuracyBonus === 'function') acc += subclassAccuracyBonus(p);   // v0.38: Глаз ястреба
 
   return Math.round(acc);
 }
@@ -278,13 +277,12 @@ const TWO_HAND_EVASION_PENALTY = 8;
 // v0.27: монстр попадает минимум в 35% случаев (уворот не выше 65%). Удары героя — порог 25%, как был.
 const MONSTER_MIN_HIT_CHANCE = 35;
 
-function getWeaponStyleEvasionPenalty() {
-  const p = state.player;
+function getWeaponStyleEvasionPenalty(p = state.player) {
   let pen = 0;
-  if (getEquippedShield()) pen += SHIELD_EVASION_PENALTY;
-  if (getOffhandWeapon()) pen += DUAL_WIELD_EVASION_PENALTY;
-  if (hasFreeHandStyle()) pen -= FREE_HAND_EVASION_BONUS;   // «Свободная рука» — бонус, а не штраф
-  if (typeof isTwoHandGripWeapon === 'function' && isTwoHandGripWeapon(p.equipment.weapon) && !(typeof isMage === 'function' && isMage())) {
+  if (getEquippedShield(p)) pen += SHIELD_EVASION_PENALTY;
+  if (getOffhandWeapon(p)) pen += DUAL_WIELD_EVASION_PENALTY;
+  if (hasFreeHandStyle(p)) pen -= FREE_HAND_EVASION_BONUS;   // «Свободная рука» — бонус, а не штраф
+  if (typeof isTwoHandGripWeapon === 'function' && isTwoHandGripWeapon(p.equipment.weapon) && p.classId !== 'mage') {
     pen += TWO_HAND_EVASION_PENALTY;
   }
   return pen;
@@ -294,8 +292,7 @@ function getWeaponStyleEvasionPenalty() {
 // attacker — монстр, который бьёт (необязательно). Если передан, часть уворота
 // «от уровня» считается не выше, чем (уровень монстра + 3).
 // Без attacker (панель персонажа) — полный уворот.
-function getPlayerEvasion(attacker) {
-  const p = state.player;
+function getPlayerEvasion(attacker, p = state.player) {
   const dex = p.effDEX || p.DEX || 0;
   let lvl = p.level || 1;
   if (attacker && attacker.level) lvl = Math.min(lvl, attacker.level + EVASION_LEVEL_GAP_CAP);
@@ -303,7 +300,7 @@ function getPlayerEvasion(attacker) {
   let eva = Math.sqrt(dex) * 6 + lvl * 2.5;
 
   // Стиль боя (v0.27): щит −5, двуручное −8 (посохи магов — без штрафа).
-  eva -= getWeaponStyleEvasionPenalty();
+  eva -= getWeaponStyleEvasionPenalty(p);
 
   // Бонусы подгонки (v0.10 — теперь учитываются).
   eva += (p.evasionBonus || 0);

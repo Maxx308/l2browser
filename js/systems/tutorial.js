@@ -151,6 +151,7 @@ function tutDialogueOpen() {
 }
 // Открыто какое-то окно, кроме названного (бой проверяется отдельно).
 function tutOtherOverlay(exceptId) {
+  if (document.getElementById('equip-compare')?.open) return true;
   const list = document.querySelectorAll('[id$="-overlay"].active, .slot-picker.active, .soon-overlay.active, .cheat-overlay.active');
   for (const el of list) {
     if (el.id === exceptId || el.id === 'dialogue-overlay') continue;
@@ -419,7 +420,7 @@ function tutFixedShift() {
 function tutHide() {
   const { spot, bub } = tutEls();
   spot.classList.remove('on', 'waves');
-  bub.classList.remove('on', 'quiet', 'action', 'handoff');
+  bub.classList.remove('on', 'quiet', 'action', 'handoff', 'goal');
   if (__tutKey === 'hello') clearTimeout(__tutHelloTimer);   // приветствие спрятали (разговор и т.п.) — потом покажем заново
   __tutKey = null;
 }
@@ -433,7 +434,7 @@ function tutBubbleHtml(r) {
   const who = typeof bagSpeakerName === 'function' ? bagSpeakerName() : 'Заплечник';
   let row = '';
   if (r.btn) row += `<button type="button" class="tut-btn main" data-tut="go">${r.btn}</button>`;
-  if (!r.final && !r.handoff) row += `<button type="button" class="tut-btn later" data-tut="later">Потом</button>`;
+  if (!r.final && !r.handoff) row += `<button type="button" class="tut-btn later" data-tut="later">${r.laterLabel || 'Потом'}</button>`;
   return `<div class="tut-face"${tutFaceStyle()}></div>
     <div class="tut-body">
       <div class="tut-who">${who}</div>
@@ -538,13 +539,23 @@ function tutShow(r) {
 
 // Значок внизу: «Первый день · N из 8» или «Продолжить обучение» (после «Потом»).
 function tutChip(show, later, n) {
+  if (!show) { tutEls().chip.classList.remove('on'); return; }
+  const label = later ? 'Продолжить обучение' : `Первый день · <b>${n} из ${TUT_TOTAL}</b>`;
+  tutPlaceChip(label, later, () => {
+    const t = tutState();
+    if (!t) return;
+    if (t.later) { t.later = false; tutSave(); }
+    __tutKey = null; __tutScrolledKey = null;
+    tutTick();
+  });
+}
+
+function tutPlaceChip(label, later, onClick) {
   const { chip } = tutEls();
-  if (!show) { chip.classList.remove('on'); return; }
   chip.classList.add('on');
   chip.classList.toggle('later', !!later);
-  const html = later
-    ? `<i${tutFaceStyle()}></i><span>Продолжить обучение</span>`
-    : `<i${tutFaceStyle()}></i><span>Первый день · <b>${n} из ${TUT_TOTAL}</b></span>`;
+  chip.style.visibility = '';
+  const html = `<i${tutFaceStyle()}></i><span>${label}</span>`;
   if (chip.__html !== html) { chip.innerHTML = html; chip.__html = html; }
   // над нижними вкладками, с поправкой на filter у <html> (см. tutFixedShift)
   const tabsEl = document.querySelector('.tabs');
@@ -553,13 +564,7 @@ function tutChip(show, later, n) {
   chip.style.bottom = 'auto';
   chip.style.left = (10 - sh.x) + 'px';
   chip.style.top = (tabsTop - chip.offsetHeight - 16 - sh.y) + 'px';
-  chip.onclick = () => {
-    const t = tutState();
-    if (!t) return;
-    if (t.later) { t.later = false; tutSave(); }
-    __tutKey = null; __tutScrolledKey = null;
-    tutTick();
-  };
+  chip.onclick = onClick;
 }
 
 // Значок не прячется под пузырём: если они наехали друг на друга — значок на время убираем.
@@ -590,6 +595,10 @@ function tutHello() {
     clearTimeout(__tutHelloTimer);
     __tutHelloTimer = setTimeout(done, 9000);
   }
+  tutPlaceQuietBubble(bub);
+}
+
+function tutPlaceQuietBubble(bub) {
   bub.classList.add('on', 'quiet');
   const vw = window.innerWidth;
   const tabsEl = document.querySelector('.tabs');
@@ -626,7 +635,7 @@ function tutTip(t) {
 function tutShowTip(t, id) {
   const { spot, bub } = tutEls();
   spot.classList.remove('on', 'waves');
-  bub.classList.remove('action', 'handoff');
+  bub.classList.remove('action', 'handoff', 'goal');
   if (__tutKey !== 'tip-' + id) {
     __tutKey = 'tip-' + id;
     if (!t.seen[id]) { t.seen[id] = 1; tutSave(); }
@@ -641,6 +650,89 @@ function tutShowTip(t, id) {
   const vw = window.innerWidth, vh = window.innerHeight, sh = tutFixedShift();
   bub.style.left = (Math.round((vw - bub.offsetWidth) / 2) - sh.x) + 'px';
   bub.style.top = (Math.max(8, vh - bub.offsetHeight - 18) - sh.y) + 'px';
+}
+
+// --------------------------------------------------------
+//  ОДНА СЛЕДУЮЩАЯ ЦЕЛЬ ПОСЛЕ «ПЕРВОГО ДНЯ»
+// --------------------------------------------------------
+function tutNextGoal(t) {
+  if (!t.done || !t.on || state.travel.active || state.battle.active || tutIsOpen('#battle-window') ||
+      tutDialogueOpen() || tutOtherOverlay() || document.querySelector('dialog[open]')) return null;
+
+  const p = state.player;
+  if (t.goals?.skill !== 'seen' && p.level >= 10 && p.skillPoints > 0) {
+    const skill = Object.values(SKILLS).find(s => s.minLevel === 10 && isSkillAvailableForPlayer(s, p) && !getSkillLevel(s.id));
+    if (skill) {
+      const inTown = isTownLoc();
+      const destination = p.underwoodFallen ? 'Загляни в Храм Ильграда.' : 'Загляни к Наставнику в Андервуде.';
+      return {
+        id: 'skill',
+        text: TUTORIAL_GOALS.skill.replace('{skill}', skill.name) + (inTown ? '' : ' ' + destination),
+        btn: inTown ? 'Открыть навыки' : 'На карту',
+        onBtn: () => {
+          if (!inTown) { switchTab('map'); return; }
+          openMentor();
+          const button = document.querySelector(`#mentor-pane-skills [data-skill-id="${CSS.escape(skill.id)}"] .btn.success`);
+          button?.scrollIntoView({ block: 'center' });
+          button?.focus({ preventScroll: true });
+        },
+      };
+    }
+  }
+
+  const firstQuest = BAG_QUESTS[0];
+  if (isQuestStarted(firstQuest.id) || !bagMet()) return null;
+  if (p.level < firstQuest.minLevel && t.goals?.hunt !== 'seen') {
+    const onField = p.currentLocation === 'field';
+    return {
+      id: 'hunt',
+      text: TUTORIAL_GOALS.hunt,
+      btn: onField ? 'К охоте' : 'На карту',
+      onBtn: () => switchTab(onField ? 'hunt' : 'map'),
+    };
+  }
+  if (p.level >= firstQuest.minLevel && t.goals?.bag !== 'seen') {
+    return { id: 'bag', text: TUTORIAL_GOALS.bag, btn: 'Поговорить', onBtn: openBagTalk };
+  }
+  return null;
+}
+
+function tutShowNextGoal(t, goal) {
+  const setStatus = status => {
+    (t.goals ||= {})[goal.id] = status;
+    tutSave();
+    tutHide();
+  };
+  if (t.goals?.[goal.id] === 'collapsed') {
+    if (__tutKey) tutHide();
+    tutPlaceChip('Следующая цель', true, () => {
+      setStatus('open');
+      tutTick();
+      document.querySelector('#tut-bubble.on [data-tut="go"]')?.focus({ preventScroll: true });
+    });
+    return;
+  }
+
+  tutChip(false);
+  const { bub } = tutEls();
+  const key = `goal-${goal.id}-${goal.btn}`;
+  if (__tutKey !== key) {
+    tutHide();
+    __tutKey = key;
+    bub.innerHTML = tutBubbleHtml({ ...goal, laterLabel: 'Свернуть' });
+    bub.classList.add('goal');
+    bub.querySelector('[data-tut="go"]').onclick = () => {
+      setStatus('seen');
+      goal.onBtn();
+      tutTick();
+    };
+    bub.querySelector('[data-tut="later"]').onclick = () => {
+      setStatus('collapsed');
+      tutTick();
+      tutEls().chip.focus({ preventScroll: true });
+    };
+  }
+  tutPlaceQuietBubble(bub);
 }
 
 // --------------------------------------------------------
@@ -759,16 +851,23 @@ function tutTick() {
     if (firstDay) {
       const busy = tutDialogueOpen() || tutIsOpen('#battle-window') || tutOtherOverlay();
       tutChip(!busy || t.later, t.later, tutDoneCount(tutFlags()));
-    } else tutChip(false);
+    }
 
     // «Первый день» ведёт — он главнее; в чужих окнах он молчит, и тогда говорит подсказка окна
     const r = firstDay && !t.later ? tutRoute() : null;
     if (!r) {
       const tipId = tutTip(t);
-      if (tipId) { tutShowTip(t, tipId); tutChipDodge(); return; }
+      if (tipId) {
+        if (!firstDay) tutChip(false);
+        tutShowTip(t, tipId); tutChipDodge(); return;
+      }
       if (__tutKey && __tutKey.indexOf('tip-') === 0) tutHide();   // окно закрыли
     }
-    if (!firstDay || t.later) { if (!(__tutKey && __tutKey.indexOf('tip-') === 0)) tutHide(); return; }
+    if (!firstDay) {
+      const goal = tutNextGoal(t);
+      if (goal) { tutShowNextGoal(t, goal); return; }
+      tutChip(false);
+    }
     if (!r) { tutHide(); tutChipDodge(); return; }
     tutShow(r);
     tutChipDodge();

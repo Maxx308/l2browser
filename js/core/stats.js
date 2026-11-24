@@ -15,15 +15,18 @@
 // ========================================================
 
 // v0.21: все надетые части комплекта подогнаны минимум до +lvl
-function isSetRefinedTo(set, lvl) {
-  const eq = Object.values(state.player.equipment).filter(e => e && set.pieces.includes(e.name));
+function isSetRefinedTo(set, lvl, equipment = state.player.equipment) {
+  const eq = Object.values(equipment).filter(e => e && set.pieces.includes(e.name));
   return eq.length >= set.pieces.length && eq.every(e => (e.refineLevel || 0) >= lvl);
 }
 
 function recalcStats() {
-  const p = state.player;
   if (typeof applySubclassSkills === 'function') applySubclassSkills();   // v0.38: навыки под подкласс текущего героя
+  calculatePlayerStats(state.player);
+}
 
+// Для сравнения можно передать копию текущего героя с другим комплектом.
+function calculatePlayerStats(p) {
   if (!p.classId) {
     p.maxHp = 0; p.maxMp = 0; p.pAtk = 0; p.mAtk = 0;
     p.pDef = 0; p.mDef = 0; p.atbSpeed = 0;
@@ -61,12 +64,13 @@ function recalcStats() {
     bonusMEN += item.bonusStats.MEN || 0;
   });
 
-  const effSTR = p.STR + bonusSTR;
-  const effDEX = p.DEX + bonusDEX;
-  const effCON = p.CON + bonusCON;
-  const effINT = p.INT + bonusINT;
-  const effWIT = p.WIT + bonusWIT;
-  const effMEN = p.MEN + bonusMEN;
+  const sealBonus = p.guildBuffs.sixfoldSeal?.timer > 0 ? GUILD_BUFFS.sixfoldSeal.effects.allStatsFlat : 0;
+  const effSTR = p.STR + bonusSTR + sealBonus;
+  const effDEX = p.DEX + bonusDEX + sealBonus;
+  const effCON = p.CON + bonusCON + sealBonus;
+  const effINT = p.INT + bonusINT + sealBonus;
+  const effWIT = p.WIT + bonusWIT + sealBonus;
+  const effMEN = p.MEN + bonusMEN + sealBonus;
 
   p.effSTR = effSTR;
   p.effDEX = effDEX;
@@ -123,8 +127,9 @@ function recalcStats() {
   // ---- Экипировка (обычные статы + бонусы подгонки) ----
   // v0.27: оружие во второй руке своих статов не даёт — его атака идёт в обычный удар
   // (p.offhandPAtk, 40%). Редкость (очки) и подгонка считаются как у любой вещи.
-  const offhand = getOffhandWeapon();
-  p.offhandPAtk = getOffhandPAtk();
+  const offhand = getOffhandWeapon(p);
+  const shield = getEquippedShield(p);
+  p.offhandPAtk = getOffhandPAtk(p);
   Object.values(p.equipment).forEach(item => {
     if (!item) return;
 
@@ -177,7 +182,7 @@ function recalcStats() {
   p.maxMp += bonusMaxMp;
   p.maxHp += bonusMaxHp;
   p.atbSpeed *= (1 + bonusAtbMod);
-  if (offhand && !isMage()) p.atbSpeed *= (1 + DUAL_WIELD_ATB_BONUS / 100);   // v0.27: парное — быстрее
+  if (offhand && p.classId !== 'mage') p.atbSpeed *= (1 + DUAL_WIELD_ATB_BONUS / 100);   // v0.27: парное — быстрее
   p.critChance += refineCritBonus;
   p.blockChance += refineBlockBonus;
 
@@ -213,18 +218,10 @@ function recalcStats() {
       passivePAtkPercent += data.pAtkPercent;
       passivePAtkFlat += data.pAtkFlat;
       p.skillBonuses.push(`${skill.name} (ур.${lvl}): +${data.pAtkPercent}% и +${data.pAtkFlat} физ. урона`);
-    } else if (skill.id === 'manaRegen') {
-      p.hasManaRegenPassive = true;
-      p.mpRegenInBonus += data.mpRegenInBattle;
-      p.skillBonuses.push(`${skill.name} (ур.${lvl}): +${data.mpRegenInBattle} MP/сек в бою`);
     } else if (skill.id === 'weaponMasterM') {
       passiveMAtkPercent += data.mAtkPercent || 0;   // v0.35
       passiveMAtkFlat += data.mAtkFlat;
       p.skillBonuses.push(`${skill.name} (ур.${lvl}): +${data.mAtkPercent || 0}% и +${data.mAtkFlat} маг. атаки`);
-    }
-    else if (skill.id === 'orcBlood') {
-      p.hpRegenIn += data.hpRegenInBattle;
-      p.skillBonuses.push(`${skill.name} (ур.${lvl}): +${data.hpRegenInBattle} HP/сек в бою`);
     } else if (skill.id === 'ironSkin') {
       p.flatDamageReduce += data.flatDamageReduce;
       p.skillBonuses.push(`${skill.name} (ур.${lvl}): поглощение урона +${data.flatDamageReduce}`);
@@ -270,11 +267,11 @@ function recalcStats() {
   if (typeof subclassApplyPassives === 'function') subclassApplyPassives(p);
 
   // v0.27: двуручный хват — показываем в окне персонажа рядом с пассивками
-  const gripBonus = (typeof getTwoHandGripBonus === 'function') ? getTwoHandGripBonus() : 0;
+  const gripBonus = (typeof getTwoHandGripBonus === 'function') ? getTwoHandGripBonus(p) : 0;
   if (gripBonus > 0) p.skillBonuses.push(`Двуручный хват: +${gripBonus}% к урону навыков, уворот −${TWO_HAND_EVASION_PENALTY}`);
-  if (getEquippedShield()) p.skillBonuses.push(`Стойка щита: −${SHIELD_STANCE_DAMAGE_CUT}% входящего урона, уворот −${SHIELD_EVASION_PENALTY}`);
-  if (offhand && !isMage()) p.skillBonuses.push(`Парное оружие: +${p.offhandPAtk} к обычной атаке (${offhand.name}), скорость +${DUAL_WIELD_ATB_BONUS}%, точность −${DUAL_WIELD_ACCURACY_PENALTY}, уворот −${DUAL_WIELD_EVASION_PENALTY}`);
-  if (hasFreeHandStyle()) p.skillBonuses.push(`Свободная рука: +${FREE_HAND_EVASION_BONUS} к увороту`);
+  if (shield) p.skillBonuses.push(`Стойка щита: −${SHIELD_STANCE_DAMAGE_CUT}% входящего урона, уворот −${SHIELD_EVASION_PENALTY}`);
+  if (offhand && p.classId !== 'mage') p.skillBonuses.push(`Парное оружие: +${p.offhandPAtk} к обычной атаке (${offhand.name}), скорость +${DUAL_WIELD_ATB_BONUS}%, точность −${DUAL_WIELD_ACCURACY_PENALTY}, уворот −${DUAL_WIELD_EVASION_PENALTY}`);
+  if (hasFreeHandStyle(p)) p.skillBonuses.push(`Свободная рука: +${FREE_HAND_EVASION_BONUS} к увороту`);
 
   if (passiveMaxMpPercent > 0) {
     p.maxMp = Math.floor(p.maxMp * (1 + passiveMaxMpPercent / 100));
@@ -317,7 +314,7 @@ function recalcStats() {
       p.skillFlatDamage += tier.value;
       p.setBonuses.push({ name: `${set.name} (${tier.pieces} вещи)`, text: `+${tier.value} к урону навыков и ДОТов` });
     }
-    let isFull = set.isFullSetEquipped ? set.isFullSetEquipped() :
+    let isFull = set.isFullSetEquipped ? set.isFullSetEquipped(p.equipment) :
       set.pieces.filter(name => Object.values(p.equipment).some(eq => eq && eq.name === name)).length >= set.pieces.length;
     if (isFull) {
       if (set.bonus.atbSpeed) p.atbSpeed *= (1 + set.bonus.atbSpeed);
@@ -338,7 +335,7 @@ function recalcStats() {
       p.setBonuses.push({ name: set.name, text: set.bonusText });
 
       // v0.21: вторая ступень — все части комплекта подогнаны до +10 и выше
-      if (set.bonus10 && isSetRefinedTo(set, 10)) {
+      if (set.bonus10 && isSetRefinedTo(set, 10, p.equipment)) {
         const b = set.bonus10;
         if (b.mAtkPercent) p.mAtk += Math.floor(p.mAtk * (b.mAtkPercent / 100));
         if (b.flatDamageReduce) p.flatDamageReduce += b.flatDamageReduce;
@@ -391,6 +388,8 @@ function recalcStats() {
     }
     const eff = buff.effects;
     const details = [];
+    if (eff.allStatsFlat) details.push(`+${eff.allStatsFlat} ко всем базовым характеристикам`);
+    if (eff.preserveTurn) details.push('защита от оглушения или сбивания шкалы один раз за бой');
     if (eff.pAtkPercent) { p.pAtk = Math.floor(p.pAtk * (1 + eff.pAtkPercent / 100)); details.push(`${eff.pAtkPercent > 0 ? '+' : ''}${eff.pAtkPercent}% физ.атк`); }
     if (eff.mAtkPercent) { p.mAtk = Math.floor(p.mAtk * (1 + eff.mAtkPercent / 100)); details.push(`${eff.mAtkPercent > 0 ? '+' : ''}${eff.mAtkPercent}% маг.атк`); }
     if (eff.pDefPercent) { p.pDef = Math.floor(p.pDef * (1 + eff.pDefPercent / 100)); details.push(`${eff.pDefPercent > 0 ? '+' : ''}${eff.pDefPercent}% физ.защ`); }
@@ -401,7 +400,7 @@ function recalcStats() {
       p.accuracyBonus = (p.accuracyBonus || 0) + eff.accuracyFlat;
       details.push(`+${eff.accuracyFlat} точность`);
     }
-    if (eff.blockFlat && getEquippedShield()) {   // v0.27: «Расширить щит» — только со щитом
+    if (eff.blockFlat && shield) {   // v0.27: «Расширить щит» — только со щитом
       p.blockChance += eff.blockFlat;
       details.push(`+${eff.blockFlat}% блок`);
     }
@@ -418,6 +417,23 @@ function recalcStats() {
     if (dish.pAtkPercent) p.pAtk = Math.floor(p.pAtk * (1 + dish.pAtkPercent / 100));
     if (dish.maxHpPercent) p.maxHp = Math.floor(p.maxHp * (1 + dish.maxHpPercent / 100));
     p.buffBonuses.push(`${dish.name}: ${dish.text}`);
+  }
+
+  // ---- Боевой реген навыков от итоговых максимальных HP/MP ----
+  const orcBloodLevel = p.learnedSkills.orcBlood;
+  if (orcBloodLevel > 0) {
+    const skill = SKILLS.orcBlood;
+    const bonus = skill.getRegen(orcBloodLevel, p.maxHp);
+    p.hpRegenIn += bonus;
+    p.skillBonuses.push(`${skill.name} (ур.${orcBloodLevel}): +${SKILL_REGEN_FORMAT.format(bonus)} HP/сек в бою`);
+  }
+  const manaRegenLevel = p.learnedSkills.manaRegen;
+  if (manaRegenLevel > 0) {
+    const skill = SKILLS.manaRegen;
+    const bonus = skill.getRegen(manaRegenLevel, p.maxMp);
+    p.hasManaRegenPassive = true;
+    p.mpRegenInBonus += bonus;
+    p.skillBonuses.push(`${skill.name} (ур.${manaRegenLevel}): +${SKILL_REGEN_FORMAT.format(bonus)} MP/сек в бою`);
   }
 
   // ---- Регенерация маны ----

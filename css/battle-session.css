@@ -61,6 +61,7 @@
   width: calc(380 * var(--u));
   max-width: calc(100% - 28 * var(--u));
   max-height: calc(470 * var(--u));
+  overflow-y: auto;
   display: flex; flex-direction: column; gap: calc(10 * var(--u));
   padding: calc(12 * var(--u)) calc(14 * var(--u)) calc(10 * var(--u));
   background: linear-gradient(180deg, rgba(26,22,16,.97), rgba(14,12,9,.97));
@@ -111,6 +112,44 @@
   grid-column: 1 / -1;
   text-align: center;
   font-size: var(--fs-small); color: var(--text-dim);
+}
+
+/* Итог по Оболам в мешочке и в экспедиции. */
+.hunt-balance {
+  min-width: 0;
+  padding: calc(8 * var(--u)) calc(10 * var(--u));
+  border: 1px solid var(--border);
+  border-radius: calc(5 * var(--u));
+  background: rgba(8, 7, 5, .46);
+  font-size: var(--fs-small);
+}
+.bxs-stats .hunt-balance { grid-column: 1 / -1; }
+.hunt-balance-title { color: var(--gold); margin-bottom: calc(4 * var(--u)); }
+.hunt-balance-rows > div {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: calc(8 * var(--u));
+  padding: calc(3 * var(--u)) 0;
+}
+.hunt-balance-rows dd {
+  max-width: 65%;
+  overflow-wrap: anywhere;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.hunt-balance-net {
+  margin-top: calc(2 * var(--u));
+  border-top: 1px solid var(--border);
+  color: var(--gold-bright);
+  font-weight: 700;
+}
+.hunt-balance-net.loss dd { color: #f0a296; }
+.hunt-balance-note {
+  margin-top: calc(4 * var(--u));
+  color: var(--text-dim);
+  font-size: var(--fs-tiny);
+  line-height: 1.4;
 }
 
 .bxs-items {

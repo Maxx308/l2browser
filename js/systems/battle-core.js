@@ -87,6 +87,7 @@ function startBattle(template, variantId) {
   state.battle.atbCarry = 0;             // v0.23: перебор шкалы от Скорости молнии
 
   state.battle.activeEffects.healPotionUsed = false;
+  state.battle.activeEffects.steadfastSealUsed = false;
   state.battle.skillCooldowns = {};
   Object.keys(state.battle.skillToggles).forEach(id => {
     state.battle.skillCooldowns[id] = 0;

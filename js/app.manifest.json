@@ -20,6 +20,7 @@
     "js/data/skills.js",
     "js/data/skills-aoe.js",
     "js/data/subclasses.js",
+    "js/data/skill-descriptions.js",
     "js/data/recipes.js",
     "js/data/weaponSkills.js",
     "js/data/elements.js",

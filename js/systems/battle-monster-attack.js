@@ -214,7 +214,8 @@ function monsterStrike(attacker, skill) {
   // ---- 4. ОГЛУШЕНИЕ (Энт) ----
   if (traits && traits.stunChance) {
     const stunChance = traits.stunChance * chanceMult;
-    if (Math.random() * 100 < stunChance) {
+    const unmovable = typeof subclassPlayerUnmovable === 'function' && subclassPlayerUnmovable();
+    if (Math.random() * 100 < stunChance && !unmovable && !tryUseSteadfastSeal('отменила оглушение')) {
       const turns = traits.stunTurns || 1;
       const existing = getDebuff('player', 'stun');
       if (existing) { existing.turnsLeft = Math.max(existing.turnsLeft || 0, turns); }

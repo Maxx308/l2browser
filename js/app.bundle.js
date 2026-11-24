@@ -1,4 +1,4 @@
-// L2 BROWSER — СБОРКА v0.39 (build.js; правки — в js/**, а не сюда). Файлов: 103
+// L2 BROWSER — СБОРКА v0.40 (build.js; правки — в js/**, а не сюда). Файлов: 104
 // ==== ФАЙЛ js/data/config.js ====
 const CHEAT_MULTIPLIER = 10;
 const MP_COST_PER_ATTACK = 5;
@@ -1535,6 +1535,11 @@ small: [
 ;
 
 // ==== ФАЙЛ js/data/skills.js ====
+const SKILL_REGEN_FORMAT = new Intl.NumberFormat('ru-RU', { maximumFractionDigits: 2 });
+function getScaledBattleRegen(baseRate, maxResource, scaleStart, maxMultiplier) {
+const multiplier = Math.min(maxMultiplier, Math.max(1, maxResource / scaleStart));
+return baseRate * multiplier;
+}
 const SKILLS = {
 powerStrike: {
 id: 'powerStrike', classId: 'warrior', name: 'Сильный удар', type: 'active',
@@ -1601,8 +1606,17 @@ levels: [
 { mpRegenInBattle: 0.5 }, { mpRegenInBattle: 0.6 }, { mpRegenInBattle: 0.7 },
 { mpRegenInBattle: 0.8 }, { mpRegenInBattle: 1.0 },
 ],
-getDesc: (lvl) => { const d = SKILLS.manaRegen.levels[lvl-1]; return `Пассивно: <span class="val">+${d.mpRegenInBattle}</span> MP/сек в бою.`; },
-getNextDesc: (lvl) => { if (lvl >= 5) return ''; const n = SKILLS.manaRegen.levels[lvl]; return `Следующий уровень: +${n.mpRegenInBattle} MP/сек в бою`; }
+getRegen: (lvl, maxMp) => getScaledBattleRegen(SKILLS.manaRegen.levels[lvl - 1].mpRegenInBattle, maxMp, 850, 2.5),
+getDesc: (lvl) => {
+const bonus = SKILL_REGEN_FORMAT.format(SKILLS.manaRegen.getRegen(lvl, state.player.maxMp));
+return `Открывает базовый реген маны в бою и даёт <span class="val">+${bonus} MP/сек</span>. Бонус растёт вместе с максимальной маной.`;
+},
+getNextDesc: (lvl) => {
+const skill = SKILLS.manaRegen;
+if (lvl === 0 || lvl >= skill.maxLevel) return '';
+const bonus = SKILL_REGEN_FORMAT.format(skill.getRegen(lvl + 1, state.player.maxMp));
+return `Следующий ранг · +${bonus} MP/сек при текущем запасе маны`;
+}
 },
 weaponMasterM: {
 id: 'weaponMasterM', classId: 'mage', name: 'Мастер оружия', type: 'passive',
@@ -1767,8 +1781,17 @@ levels: [
 { hpRegenInBattle: 0.3 }, { hpRegenInBattle: 0.45 }, { hpRegenInBattle: 0.6 },
 { hpRegenInBattle: 0.8 }, { hpRegenInBattle: 1.0 },
 ],
-getDesc: (lvl) => { const d = SKILLS.orcBlood.levels[lvl-1]; return `Пассивно: <span class="val">+${d.hpRegenInBattle}</span> HP/сек в бою.`; },
-getNextDesc: (lvl) => { if (lvl >= 5) return ''; const n = SKILLS.orcBlood.levels[lvl]; return `Следующий уровень: +${n.hpRegenInBattle} HP/сек в бою`; }
+getRegen: (lvl, maxHp) => getScaledBattleRegen(SKILLS.orcBlood.levels[lvl - 1].hpRegenInBattle, maxHp, 500, 4),
+getDesc: (lvl) => {
+const bonus = SKILL_REGEN_FORMAT.format(SKILLS.orcBlood.getRegen(lvl, state.player.maxHp));
+return `Восстанавливает <span class="val">${bonus} HP/сек</span> в бою. Бонус растёт вместе с максимальным здоровьем.`;
+},
+getNextDesc: (lvl) => {
+const skill = SKILLS.orcBlood;
+if (lvl === 0 || lvl >= skill.maxLevel) return '';
+const bonus = SKILL_REGEN_FORMAT.format(skill.getRegen(lvl + 1, state.player.maxHp));
+return `Следующий ранг · ${bonus} HP/сек при текущем запасе здоровья`;
+}
 },
 ironSkin: {
 id: 'ironSkin', classId: 'warrior', raceId: 'orc', name: 'Железная шкура', type: 'passive',
@@ -1989,6 +2012,18 @@ id: 'provoker', name: 'Провокатор', iconKey: 'buffProvoker', iconPng: 
 price: BUFF_PRICE, duration: BUFF_DURATION,
 effects: {}, packMode: 'provoke', packRival: 'quietStep',
 desc: 'Чары вызова: стаи больше, подмога сбегается со всей округи.'
+},
+steadfastSeal: {
+id: 'steadfastSeal', name: 'Печать выдержки', iconPng: 'img/buffs/steadfastSeal.webp',
+town: 'ilgrad', price: BUFF_PRICE * 2, duration: BUFF_DURATION,
+effects: { preserveTurn: true },
+desc: 'Один раз за бой отменяет первое оглушение или сбивание шкалы хода от монстра.'
+},
+sixfoldSeal: {
+id: 'sixfoldSeal', name: 'Печать шести сил', iconPng: 'img/buffs/sixfoldSeal.webp',
+town: 'ilgrad', price: BUFF_PRICE * 2, duration: BUFF_DURATION,
+effects: { allStatsFlat: 5 },
+desc: 'Даёт +5 к силе, ловкости, телосложению, интеллекту, мудрости и духу.'
 },
 };
 const TAVERN_BUFFS = {
@@ -2617,7 +2652,7 @@ getNextDesc: (lvl) => scNext(SKILLS.fireball, lvl, n => `×${n.multiplier.toFixe
 iceArrow: {
 name: 'Оковы света', weakTurns: 3, weakPct: 20,
 levels: scMap(SC_ICE_LEVELS, (x, i) => ({ stun: [25, 27, 30, 32, 35, 37, 40][i] })),
-getDesc: (lvl) => { const s = SKILLS.iceArrow, d = s.levels[lvl-1]; return `Свет на ${scX(d.multiplier)}. Шанс ${scV(d.stun + '%')} оглушить; цель ${s.weakTurns} хода бьёт на ${scV('20%')} слабее. MP: ${scV(d.mpCost)}. КД: ${s.cooldown} ATB.`; },
+getDesc: (lvl) => { const s = SKILLS.iceArrow, d = s.levels[lvl-1], mod = SUBCLASSES.human_priest.mods.iceArrow; return `Свет на ${scX(d.multiplier)}. Шанс ${scV(d.stun + '%')} оглушить; цель ${mod.weakTurns} хода бьёт на ${scV(mod.weakPct + '%')} слабее. MP: ${scV(d.mpCost)}. КД: ${s.cooldown} ATB.`; },
 getNextDesc: (lvl) => scNext(SKILLS.iceArrow, lvl, n => `×${n.multiplier.toFixed(2)}, оглушение ${n.stun}%`),
 },
 elementalVolley: {
@@ -2643,7 +2678,7 @@ getNextDesc: (lvl) => scNext(SKILLS.fireball, lvl, n => `×${n.multiplier.toFixe
 iceArrow: {
 name: 'Проклятие слабости', weakTurns: 3,
 levels: scMap(SC_ICE_LEVELS, (x, i) => ({ weak: [15, 17, 18, 20, 22, 23, 25][i] })),
-getDesc: (lvl) => { const s = SKILLS.iceArrow, d = s.levels[lvl-1]; return `Проклятие Смерти на ${scX(d.multiplier)}: цель ${s.weakTurns} хода бьёт на ${scV(d.weak + '%')} слабее. MP: ${scV(d.mpCost)}. КД: ${s.cooldown} ATB.`; },
+getDesc: (lvl) => { const s = SKILLS.iceArrow, d = s.levels[lvl-1], mod = SUBCLASSES.human_necromancer.mods.iceArrow; return `Проклятие Смерти на ${scX(d.multiplier)}: цель ${mod.weakTurns} хода бьёт на ${scV(d.weak + '%')} слабее. MP: ${scV(d.mpCost)}. КД: ${s.cooldown} ATB.`; },
 getNextDesc: (lvl) => scNext(SKILLS.iceArrow, lvl, n => `×${n.multiplier.toFixed(2)}, ослабление ${n.weak}%`),
 },
 elementalVolley: {
@@ -4150,6 +4185,354 @@ const SUBCLASS_ANNAL = 'Посвящение в Храме Ильграда. М�
 
 ;
 
+// ==== ФАЙЛ js/data/skill-descriptions.js ====
+const SKILL_BRIEFS = {
+powerStrike: 'Примерно {weaponDamage} урона одним ударом.',
+resilience: '+{pDefPercent}% к физической защите и +{maxHpPercent}% к запасу здоровья.',
+weaponMasterW: '+{pAtkPercent}% и ещё {pAtkFlat} к физической атаке.',
+fireball: 'Примерно {fireDamage} урона огнём. Поджигает цель на 3 хода.',
+manaRegen: '+{manaRegen} маны в секунду в бою.',
+weaponMasterM: '+{mAtkPercent}% и ещё {mAtkFlat} к магической атаке.',
+forestBlessing: '+{lifeXpBonusPercent}% опыта магии Жизни.',
+heal: 'Восстанавливает здоровье. При запасе от 70% ранит нежить.',
+fastPrayer: 'Шкала хода заполняется на {atbPercent}% быстрее.',
+natureHeal: 'Восстанавливает здоровье. Срабатывает само, если Терновый вихрь убил врага.',
+grace: '+{evasionBonus}% к шансу увернуться.',
+discharge: 'Бьёт молнией и сбивает шкалу хода врагов на {atbReduction}%.',
+stormLegacy: 'Отвечает молнией на удары врага.',
+lightningSpeed: 'Уворот заполняет {value}% шкалы хода и заряжает Разряд.',
+chainMind: 'Атака с шансом {chance}% приближает повторное применение навыка на 1 ход.',
+orcRage: 'Сильный удар. Нужно от 50% здоровья. Если враг выжил, теряете {recoilPercent}% запаса здоровья.',
+spiritWrath: 'Бьёт магией Смерти. Нужно от 50% здоровья. Если враг выжил, теряете {recoilPercent}% запаса здоровья.',
+orcBlood: '+{healthRegen} здоровья в секунду в бою.',
+ironSkin: 'Поглощает {flatDamageReduce} урона от удара.',
+shamanWisdom: '+{maxMpPercent}% к запасу маны и +{mAtkFlat} к магической атаке.',
+dwarfGreed: 'Бьёт и метит врага для дополнительной добычи и опыта.',
+dwarfGreedMagic: 'Бьёт магией и метит врага для дополнительных Оболов и опыта.',
+stoneSkin: 'Поглощает {flatDamageReduce} урона от удара.',
+dwarfFortitude: '+{pDefPercent}% к обеим защитам и +{maxHpPercent}% к запасу здоровья.',
+runeKnowledge: '+{maxMpPercent}% к запасу маны и +{mAtkFlat} к магической атаке.',
+experience: '+{xpBonusPercent}% опыта и выше шанс получить дополнительный опыт владения.',
+rest: '+{hpRegenOutBonus} здоровья в секунду вне боя.',
+doubleStrike: 'Два удара подряд, примерно по {weaponDamage} урона.',
+meditation: '+{mpRegenOutBonus} маны в секунду вне боя.',
+iceArrow: 'Примерно {iceDamage} урона льдом. С шансом 20% враг пропускает удар.',
+whirlwind: 'Бьёт до {targets} врагов вокруг.',
+elementalVolley: 'Выпускает {shots} снаряда огня, льда или молнии в случайных врагов.',
+bloodHarvest: 'Бьёт до {targets} врагов. За каждого убитого возвращает {healPercent}% запаса здоровья.',
+pestilence: 'Насылает гниение на врагов. При гибели заражённого гниение переходит на соседа.',
+thornWhirl: 'Бьёт врагов терном и на {turns} хода снижает их точность на {accReduction}%.',
+lifeDrain: 'Бьёт врагов по цепочке. Возвращает {healPercent}% урона здоровьем.',
+sparkSlash: 'Бьёт до {targets} врагов и сбивает шкалу хода стаи на {atbCut}%.',
+chainLightning: 'Молния прыгает по врагам. Каждый прыжок слабее предыдущего.',
+frostQuake: 'Бьёт льдом и замораживает с шансом {freezeChance}%. Разносит Метки Жадности.',
+blizzardRune: 'На следующем ходу обрушивает на врагов буран и сбивает их шкалу хода на {atbCut}%.',
+wgHoldLine: 'На 5 ходов снижает получаемый урон на {cut}%. Со щитом чаще блокируете удары.',
+wgShieldRetort: 'Со щитом отвечает на критический удар и оглушает врага.',
+wgShieldMastery: '+{block}% к блоку и +{shieldPct}% к защите и поглощению щита.',
+wgLastStand: 'Раз за бой оставляет 1 здоровье после смертельного удара и на 2 хода снижает урон на {cut}%.',
+jgEvade: 'За 2 заряда Азарта уклоняетесь от двух следующих атак.',
+jgMark: 'Критический удар метит врага. По метке ваш урон выше на {bonus}%.',
+jgEye: 'С луком, арбалетом или кинжалом чаще и сильнее наносите критические удары.',
+jgSilver: '+{undead}% урона по нежити. Критический удар по ней даёт заряд Азарта.',
+tpSeal: 'На 5 ходов добавляет урон светом к ударам оружием.',
+tpRadiance: 'Каждый ход ранит всех врагов светом. Урон растёт с каждым ходом.',
+tpVow: 'Бьёте нежить на {pct}% сильнее и получаете от неё на {pct}% меньше урона.',
+tpBalance: 'Удары оружием возвращают ману, в среднем по {mp} за удар.',
+elLightning: 'Бьёт молнией, замедляет врагов и выжигает ману. Горящая цель ранит соседей взрывом.',
+elEcho: 'С шансом {chance}% передаёт стихийный эффект погибшего врага соседу.',
+elFusion: '+{pct}% урона по врагу под действием двух стихий.',
+elShift: 'Заклинание другой стихии стоит на {pct}% меньше маны.',
+prBlessing: 'До конца боя получаете на {cut}% меньше урона и лечитесь каждый ход.',
+prIntercede: 'Если здоровье падает ниже 35%, возвращает {heal}% его запаса.',
+prGrace: 'Лишнее лечение создаёт барьер до {cap}% запаса здоровья.',
+prCleanse: 'Лечение снимает вредные эффекты: яд, кровотечение и паутину.',
+nmRaise: 'Призывает павшего врага на вашу сторону. Если павших нет, поднимает скелета.',
+nmBonePlate: 'Слуга принимает за вас удары сильнее {over}% вашего запаса здоровья.',
+nmBonds: 'Слуги получают часть вашей магической атаки и здоровья.',
+nmFeast: 'Гибель слуги возвращает {mp}% запаса маны.',
+rkTrance: 'На 5 ходов ускоряет восстановление здоровья в {mult} раза и дополнительно лечит каждый ход.',
+rkGuardian: 'Дух принимает {take}% урона от сильного удара по вам.',
+rkHide: 'Без щита с шансом {chance}% получаете вдвое меньше урона от удара.',
+rkBoil: 'Чем меньше здоровья, тем быстрее оно восстанавливается в бою.',
+bkFrenzy: 'Тратит 10% здоровья. На 4 хода ходите чаще и бьёте сильнее, но получаете больше урона.',
+bkThirst: 'После убийства бесплатно бьёте следующего врага.',
+bkTwoHand: 'С двуручным оружием бьёте сильнее и лучше уклоняетесь.',
+bkEdge: 'Ниже 50% здоровья удары лечат на {steal}% урона. Ниже 25% лечение удваивается.',
+chAncestor: 'Зовёт духа на 6 ходов: Волк усиливает атаку, Медведь защищает.',
+chBloodCurse: 'Враг, нанёсший критический удар, гниёт 3 хода.',
+chAncestralBlood: 'Добавляет {pct}% запаса здоровья к магической атаке.',
+chTribute: 'За убийство возвращает {hp}% запаса здоровья и {mp}% запаса маны.',
+hxCurse: 'Накладывает одно из трёх проклятий, которого ещё нет на цели.',
+hxBurst: 'Проклятия погибшего врага ранят соседей и переходят на одного из них.',
+hxBlackBook: 'Каждое разное проклятие усиливает урон всех проклятий по цели на {pct}%.',
+hxCarrion: 'Гибель проклятого врага возвращает {mp}% запаса маны.',
+hlWarpaint: 'До конца боя бьёте на {dmg}% сильнее и получаете на {cut}% меньше урона.',
+hlBloodBond: 'Ниже 35% здоровья ранит всех врагов и возвращает весь нанесённый урон здоровьем.',
+hlVitality: 'Лечение в бою сильнее на {pct}%.',
+hlBrews: 'Лечение в бою возвращает ещё и ману: {pct}% от вылеченного.',
+smTotem: 'Ставит случайный тотем. Тот защищает, атакует или восстанавливает здоровье и ману.',
+smVengeance: 'Разбитый тотем взрывается и ранит всех врагов магией Смерти.',
+smOak: '+{pct}% к здоровью тотемов.',
+smVoice: 'Тотемы Ярости и Духов на {pct}% сильнее бьют и лечат.',
+tgRoot: 'На 5 ходов корни откладывают {share}% урона. Половина отложенного исчезает.',
+tgBarbs: 'Получаете на {cut}% меньше урона и возвращаете часть урона врагу шипами.',
+tgRoots: 'Корни откладывают {share}% урона. Половина отложенного исчезает.',
+tgSap: 'Лечение в бою сильнее на {pct}%.',
+pfSeed: 'Удары могут посеять в цели семена. Через 3 хода они ранят врага.',
+pfLeaves: 'Ранит всех врагов листьями и сажает в каждого семя терна.',
+pfHawk: '+{acc} к точности. Удары навыков пробивают {ignore}% защиты.',
+pfGrowth: 'Семена терна ранят на {pct}% сильнее и распускаются на ход раньше.',
+bsWind: 'На 5 ходов шкала хода заполняется на {atb}% быстрее, а Песнь не сбивается.',
+bsSprout: 'Лишнее лечение ранит врага магией Жизни.',
+bsHarmony: 'Добавляет {pct}% физической атаки к магической.',
+bsLiving: 'Урон магией Жизни лечит на {pct}% от нанесённого.',
+sgReflect: 'Лишний урон после убийства переходит в следующего врага.',
+sgStarfall: 'Бьёт лучом. Если на врага уже летит звезда, она падает сразу.',
+sgFocus: 'Каждое заклинание подряд по той же цели прибавляет {pct}% урона, до 5 раз.',
+sgClear: 'Заклинания пробивают {pct}% магической защиты врага.',
+gkGift: 'До конца боя лечит каждый ход, усиливает лечение и урон.',
+gkBud: 'Ниже 40% здоровья восстанавливает {total}% его запаса за 3 хода.',
+gkDew: 'Лечение, которое действует несколько ходов, с шансом {chance}% длится на ход дольше.',
+gkCycle: 'Лечение в бою возвращает ману: {pct}% от вылеченного.',
+drSpirit: 'Призывает духа зверя. Повторный призыв усиливает следующую атаку духа.',
+drHunt: 'Заклинание может вызвать дополнительный удар духа по той же цели.',
+drBonds: 'Дух получает часть вашей магической атаки и здоровья.',
+drGrowing: 'За каждое убийство дух становится на {per}% сильнее, до +{cap}%.',
+sgArmor: 'На 5 ходов снижает урон на {cut}% и отвечает на удары молнией и Статикой.',
+sgStatic: 'Удары врага копят на нём Статику. Три заряда бьют молнией и замедляют его.',
+sgGround: 'Получаете на {magic}% меньше магического урона. Статика ослабляет удары врага.',
+sgConductor: 'Наследие Грозы срабатывает чаще и бьёт сильнее от вашей защиты.',
+asStep: 'Сразу даёт следующий ход. Урон на нём выше на {dmg}%.',
+asSting: 'Удары отравляют врага. Чем больше яда, тем сильнее вы бьёте.',
+asDual: 'Вторая рука даёт {off}% атаки. Парное оружие больше не снижает точность.',
+asLight: 'Убийство заполняет {atb}% шкалы хода.',
+swDouble: 'На 5 ходов зовёт двойника, который повторяет удары на {pct}% силы.',
+swBlade: 'После Разряда следующий удар оружием добавляет молнию и замедляет врага.',
+swDeep: 'Двойник бьёт на {pct}% сильнее и остаётся на ход дольше.',
+swFlesh: '+{mp}% к запасу маны. Паралич возвращает часть маны.',
+scStormFront: 'На 4 хода призывает грозу, которая бьёт случайного врага каждый ход.',
+scSpark: 'Когда срабатывает Цепной разум, искра ранит случайного врага.',
+scBlood: 'Цепной разум срабатывает чаще. Шанс выше на {chance}%.',
+scTension: 'После пяти молний подряд следующая бьёт сильнее и не тратит ману.',
+dwHaste: 'На 5 ходов шкала хода заполняется на {atb}% быстрее.',
+dwMist: 'Ниже 40% здоровья усыпляет всех врагов на ход или до первого удара.',
+dwLullaby: 'Пока враг спит, здоровье восстанавливается быстрее, а лечение сильнее на {heal}%.',
+dwNightmare: 'Удар, разбудивший врага, наносит на {pct}% больше урона.',
+slMother: 'Призывает паучиху и её выводок. Повторный призыв ускоряет появление паучат.',
+slVenom: 'Укусы пауков отравляют врагов. До пяти слоёв яда на цель.',
+slBrood: 'У паучат на {pct}% больше здоровья и урона.',
+slSilk: 'Паутина замедляет шкалу хода врага на {slow}%.',
+swlClose: 'На 5 ходов усиливает поглощение урона в {mult} раза.',
+swlTemper: 'Каждый удар по вам прибавляет 1 поглощения до конца боя, до +{max}.',
+swlSteel: '+{pct}% к защите от тяжёлой брони Оплота и Палача.',
+swlUnmoved: '+{hp}% к запасу здоровья. Защищает от оглушения и сбивания шкалы хода.',
+hmAnvil: 'Тяжёлый удар. По врагу с тремя Проломами бьёт сильнее и оглушает.',
+hmCrack: 'Удары оружием регулярно накладывают бесплатный Пролом.',
+hmHeavy: 'С молотом, дубиной или топором бьёте на {pct}% сильнее и обходите поглощение врага.',
+hmIce: 'Раскол чаще замораживает. По замороженным бьёте на {dmg}% сильнее.',
+prVein: 'До конца боя шанс получить редкую добычу выше на {rare}%.',
+prEye: 'Враг с {need} метками Жадности может дать дополнительную добычу.',
+prLode: 'Материалы с врагов выпадают на {pct}% чаще.',
+prThrift: '+{pct}% Оболов за убитых врагов.',
+fmBellows: 'На 5 ходов усиливает урон на {dmg}%, удешевляет огонь и помогает накопить Жар.',
+fmSparks: 'На пяти зарядах Жара враг вспыхивает и ранит соседей огнём.',
+fmSmith: 'Помогает выковать более редкую вещь и иногда сберегает материалы.',
+fmSmelt: 'В кузнице возвращает {pct}% материалов за переплавленное снаряжение.',
+rmInscribe: 'До конца боя усиливает ваш урон и защиту, а также лечит каждый ход.',
+rmWard: 'Ниже 35% здоровья даёт барьер на {shield}% его запаса.',
+rmSteady: 'Подгонка успешнее на {chance}%. При неудаче платите половину цены.',
+rmWeave: 'С шансом {chance}% подгонка выбирает лучший из двух случайных бонусов.',
+scSummon: 'По очереди зовёт элементалей Камня, Огня и Жилы. Вместе они сливаются в одного.',
+scShards: 'Разбитый элементаль взрывается и ранит всех врагов своей стихией.',
+scStoneblood: 'Элементали наследуют ваше поглощение урона и {atk}% магической атаки.',
+scFusion: 'Усиливает Великого элементаля при слиянии.',
+};
+const SUBCLASS_SKILL_BRIEFS = {
+human_wallguard: {
+powerStrike: 'Сильный удар. Со щитом ещё пробивает врага щитом.',
+doubleStrike: 'Два удара. Со щитом второй удар сильнее и может оглушить.',
+whirlwind: 'Бьёт до {targets} врагов. На 3 хода они атакуют только вас и получают больше урона.',
+},
+human_huntsman: {
+powerStrike: 'Тратит весь Азарт на удар. Нужно от 2 зарядов. Сильнее по врагу с низким здоровьем.',
+doubleStrike: 'Три быстрых удара. Каждый критический удар даёт заряд Азарта.',
+whirlwind: 'Бьёт до {targets} врагов. Каждый критический удар даёт заряд Азарта.',
+},
+human_templar: {
+powerStrike: 'Бьёт светом. С шансом 20% оглушает нежить.',
+doubleStrike: 'Бьёт дважды. Возвращает {heal}% нанесённого урона здоровьем.',
+whirlwind: 'Бьёт врагов светом. Возвращает {heal}% запаса здоровья за каждого задетого.',
+},
+human_elementalist: {
+fireball: 'Примерно {fireDamage} урона огнём. Поджигает цель. Бьёт сильнее по замороженной.',
+iceArrow: 'Примерно {iceDamage} урона льдом. Может заморозить цель, чтобы усилить Огненный шар.',
+elementalVolley: 'Бьёт огнём, льдом и молнией. Следующий Огненный шар или Ледяная стрела без затрат маны.',
+},
+human_priest: {
+fireball: 'Бьёт светом и возвращает 20% урона здоровьем. Сильнее против нежити.',
+iceArrow: 'Бьёт светом. Может оглушить. На 3 хода ослабляет удары врага на 20%.',
+elementalVolley: 'Ранит случайных врагов светом. Каждое попадание возвращает {heal}% запаса здоровья.',
+},
+human_necromancer: {
+fireball: 'Бьёт магией Смерти. Убитый враг встаёт слугой, если есть место.',
+iceArrow: 'Бьёт магией Смерти. На 3 хода ослабляет удары врага на {weak}%.',
+elementalVolley: 'Бьёт врагов магией Смерти. Убитые встают слугами, пока есть место.',
+},
+orc_rock: {
+powerStrike: 'Таран, усиленный вашим запасом здоровья. Может оглушить.',
+orcRage: 'Удар тем сильнее, чем меньше у вас здоровья. Возвращает часть урона здоровьем.',
+bloodHarvest: 'Заставляет задетых врагов бить только вас и слабее. Лечит за каждого убитого.',
+},
+orc_berserker: {
+powerStrike: 'Сильный удар за 4% здоровья. Двуручное оружие пробивает часть защиты.',
+orcRage: 'Чем меньше здоровья, тем сильнее удар. Отдача {recoilPercent}%, ниже 30% здоровья её нет.',
+bloodHarvest: 'Бьёт врагов вокруг за 4% здоровья. Лечит за каждого убитого.',
+},
+orc_chieftain: {
+powerStrike: 'Бьёт силой предков. Наносит дополнительный урон от запаса здоровья врага.',
+orcRage: 'Половина удара — магия Смерти. Нужно от 50% здоровья. Отдача {recoilPercent}%, если враг выжил.',
+bloodHarvest: 'Бьёт врагов вокруг и вызывает гниение на {rotTurns} хода. Лечит за каждого убитого.',
+},
+orc_hexer: {
+fireball: 'Бьёт огнём. Поджигает цель и вызывает гниение.',
+spiritWrath: 'Бьёт Смертью, сильнее по проклятым. Нужно от 50% здоровья. Отдача {recoilPercent}%, если враг выжил.',
+pestilence: 'Насылает гниение, до 4 слоёв на врага. После его смерти гниение переходит на соседа.',
+},
+orc_healer: {
+fireball: 'Бьёт Смертью. На 3 хода ослабляет удары врага на {weak}%.',
+spiritWrath: 'Бьёт Смертью и возвращает {heal}% урона здоровьем.',
+pestilence: 'Насылает гниение на врагов. Возвращает {heal}% его урона здоровьем.',
+},
+orc_shaman: {
+fireball: 'Бьёт огнём и поджигает. Каждый тотем усиливает удар.',
+spiritWrath: 'Бьёт Смертью. Нужно от 50% здоровья. Тотем принимает отдачу в {recoilPercent}% за вас.',
+pestilence: 'Насылает гниение на врагов. Каждый тотем усиливает гниение.',
+},
+elf_thornguard: {
+powerStrike: 'Бьёт и на 2 хода опутывает врага, заставляя его ходить реже.',
+natureHeal: 'Восстанавливает здоровье. На 3 хода снижает получаемый урон на {bark}%.',
+thornWhirl: 'Бьёт и опутывает врагов. На 2 хода они ходят реже и атакуют только вас.',
+},
+elf_pathfinder: {
+powerStrike: 'Выстрел без промаха пробивает {pierce}% защиты и сажает два семени терна.',
+natureHeal: 'Сразу раскрывает все семена на враге, усиливает их и лечит на 30% урона.',
+thornWhirl: 'Бьёт залпом, сажает семена терна и снижает точность задетых на {accReduction}%.',
+},
+elf_bladesinger: {
+powerStrike: 'Сильный удар мечом, усиленный магией Жизни.',
+natureHeal: 'Восстанавливает здоровье. Два следующих удара оружием добавляют урон магией Жизни.',
+thornWhirl: 'Бьёт и опутывает врагов. Возвращает {heal}% запаса здоровья за каждого задетого.',
+},
+elf_stargazer: {
+fireball: 'Через 2 хода звезда падает на врага. Если тот погиб раньше, она бьёт соседа.',
+heal: 'Восстанавливает здоровье. При запасе от 70% ранит любого врага.',
+lifeDrain: 'Обрушивает звёзды на врагов. Часть урона возвращает здоровьем.',
+},
+elf_grovekeeper: {
+fireball: 'Бьёт магией Жизни. За 3 хода возвращает 15% урона здоровьем.',
+heal: 'Восстанавливает здоровье постепенно, за 4 хода.',
+lifeDrain: 'Бьёт врагов по цепочке. Часть урона возвращает здоровьем за 3 хода.',
+},
+elf_druid: {
+fireball: 'Бьёт огнём и поджигает. Дух зверя сразу атакует ту же цель.',
+heal: 'Лечит вас и духа зверя. При запасе здоровья от 70% ранит нежить.',
+lifeDrain: 'Бьёт врагов по цепочке. Лечит вас и духа зверя на {healPercent}% урона.',
+},
+drow_stormguard: {
+powerStrike: 'Бьёт громом и сбивает шкалу хода врага на 30%.',
+discharge: 'Бьёт молнией и сбивает шкалу хода на {atbReduction}%. Парализует врага со Статикой.',
+sparkSlash: 'Бьёт молнией, добавляет Статику и заставляет задетых атаковать вас.',
+},
+drow_assassin: {
+powerStrike: 'Бьёт сильнее, если шкала хода врага заполнена меньше чем наполовину.',
+discharge: 'Бьёт молнией, сбивает шкалу хода врага и заполняет 30% вашей.',
+sparkSlash: 'Бьёт нескольких врагов и сбивает шкалу хода стаи на {atbCut}%.',
+},
+drow_shadowweaver: {
+powerStrike: 'Бьёт молнией и сбивает шкалу хода врага на 20%.',
+discharge: 'Бьёт молнией. Паралич призывает двойника или оставляет его на 2 хода дольше.',
+sparkSlash: 'Бьёт нескольких врагов и сбивает их шкалу хода. Двойник бьёт вместе с вами.',
+},
+drow_stormcaller: {
+fireball: 'Бьёт молнией. Сосед цели получает половину урона.',
+discharge: 'Бьёт молнией, сбивает шкалу хода на {atbReduction}% и копит Напряжение.',
+chainLightning: 'Молния прыгает по врагам. Парализованная цель не даёт молнии ослабнуть.',
+},
+drow_dreamweaver: {
+fireball: 'Усыпляет врага на 3 хода или до первого удара. Если усыплять некого, бьёт молнией.',
+discharge: 'Бьёт молнией, лечит и заполняет 30% вашей шкалы хода.',
+chainLightning: 'Молния прыгает по врагам и на 2 хода усыпляет всех задетых, кроме вашей цели.',
+},
+drow_spiderlord: {
+fireball: 'Бьёт ядом и накладывает два слоя отравления.',
+discharge: 'Бьёт молнией. Если враг парализован, на него бросаются все ваши пауки.',
+chainLightning: 'Молния прыгает по врагам. За каждого паука поражает ещё одного.',
+},
+dwarf_steelwall: {
+powerStrike: 'Бьёт сильнее от вашей физической защиты.',
+dwarfGreed: 'Метит врага для дополнительной добычи и опыта. Метки ещё и ослабляют его удары.',
+frostQuake: 'Замораживает с шансом {freezeChance}%, разносит Метки Жадности и заставляет врагов бить вас.',
+},
+dwarf_hammerer: {
+powerStrike: 'Сильный удар снижает защиту врага на 15% до конца боя, до трёх раз.',
+dwarfGreed: 'Бьёт и ставит Метку Жадности. На замороженного врага ставит две.',
+frostQuake: 'Бьёт льдом и может заморозить. Уже замороженные получают двойной урон и оттаивают.',
+},
+dwarf_prospector: {
+powerStrike: 'Удар кайлом. Убийство даёт дополнительный шанс получить добычу.',
+dwarfGreed: 'Бьёт и ставит Метку Жадности. Каждая из семи возможных меток даёт +30% к добыче.',
+frostQuake: 'Бьёт льдом и разносит Метки Жадности. Враги с метками могут выронить руду.',
+},
+dwarf_forgemaster: {
+fireball: 'Примерно {fireDamage} урона огнём. Поджигает и добавляет Жар, который снижает защиту.',
+dwarfGreedMagic: 'Бьёт и метит врага для дополнительных Оболов. Раскалённый враг с меткой роняет руду.',
+blizzardRune: 'На следующем ходу обрушивает буран. Сильнее бьёт по раскалённым целям.',
+},
+dwarf_runemaster: {
+fireball: 'Бьёт огнём и ставит руну, которая взрывается перед ударом врага.',
+dwarfGreedMagic: 'Метит врага для дополнительных Оболов. Убийство врага с меткой возвращает ману.',
+blizzardRune: 'На следующем ходу обрушивает буран. Затем 3 хода получаете на 15% меньше урона.',
+},
+dwarf_stonecaller: {
+fireball: 'Примерно {fireDamage} урона огнём. Поджигает цель. Элементали сразу атакуют ещё раз.',
+dwarfGreedMagic: 'Метит врагов для дополнительных Оболов. Удары элементалей тоже ставят метки.',
+blizzardRune: 'На следующем ходу обрушивает буран, замедляет врагов и призывает элементаля.',
+},
+};
+const SKILL_TEXT_NUMBER = new Intl.NumberFormat('ru-RU', { maximumFractionDigits: 2 });
+function formatSkillDamageRange(attack, multiplier, elementBonus = 0) {
+const variance = Math.floor(attack * 0.2);
+const damage = raw => Math.floor(Math.floor(Math.max(1, raw) * multiplier) * (1 + elementBonus / 100));
+const min = damage(attack - variance);
+const max = damage(attack + Math.max(0, variance - 1));
+return min === max ? SKILL_TEXT_NUMBER.format(min) : `${SKILL_TEXT_NUMBER.format(min)}–${SKILL_TEXT_NUMBER.format(max)}`;
+}
+function getSkillBrief(skill, rank, withMana = true) {
+const p = state.player;
+rank = Math.min(rank, skill.maxLevel);
+const data = skill.levels[rank - 1];
+const text = SUBCLASS_SKILL_BRIEFS[p.subclass]?.[skill.id] || SKILL_BRIEFS[skill.id] || 'Подробности в Энциклопедии.';
+const effect = text.replace(/\{(\w+)\}/g, (_, field) => {
+if (field === 'fireDamage') return formatSkillDamageRange(p.mAtk, data.multiplier, getElementDamageBonus('fire'));
+if (field === 'iceDamage') return formatSkillDamageRange(p.mAtk, data.multiplier, getElementDamageBonus('ice'));
+if (field === 'weaponDamage') return formatSkillDamageRange(p.pAtk, data.multiplier);
+if (field === 'manaRegen') return SKILL_TEXT_NUMBER.format(skill.getRegen(rank, p.maxMp));
+if (field === 'healthRegen') return SKILL_TEXT_NUMBER.format(skill.getRegen(rank, p.maxHp));
+return SKILL_TEXT_NUMBER.format(data[field]);
+});
+if (!withMana) return effect;
+if (skill.id === 'tpRadiance') return `${effect} ${SKILL_TEXT_NUMBER.format(data.mp)} маны за ход.`;
+if (data.mpCost > 0) return `${effect} ${data.mpCost} маны.`;
+return effect;
+}
+function getSkillTypeLabel(skill) {
+if (skill.semiPassive) return 'Срабатывает в слоте';
+return skill.type === 'active' ? 'Активный' : 'Пассивный';
+}
+
+;
+
 // ==== ФАЙЛ js/data/recipes.js ====
 const SETS = {
 gambeson: { name: 'Гамбезон', bonus: { atbSpeed: 0.07 }, bonusText: 'Скорость атаки +7%',
@@ -4158,13 +4541,12 @@ robe: { name: 'Мантия ученика', bonus: { mAtkPercent: 5 }, bonusTex
 pieces: ['Мантия ученика (верх)', 'Мантия ученика (низ)', 'Мантия ученика (шлем)', 'Мантия ученика (ботинки)', 'Мантия ученика (перчатки)'] },
 novice: { name: 'Новичок', bonus: { maxHpFlat: 30, maxMpFlat: 30, campHpRegen: 1, campMpRegen: 1 }, bonusText: '+30 HP и +30 MP; у костра +1 HP/сек и +1 MP/сек',
 pieces: ['Кольцо Новичка', 'Серьга Новичка', 'Ожерелье Новичка'],
-isFullSetEquipped: function() {
-const p = state.player;
-return p.equipment.ring1?.name === 'Кольцо Новичка' &&
-p.equipment.ring2?.name === 'Кольцо Новичка' &&
-p.equipment.earring1?.name === 'Серьга Новичка' &&
-p.equipment.earring2?.name === 'Серьга Новичка' &&
-p.equipment.necklace?.name === 'Ожерелье Новичка';
+isFullSetEquipped: function(e = state.player.equipment) {
+return e.ring1?.name === 'Кольцо Новичка' &&
+e.ring2?.name === 'Кольцо Новичка' &&
+e.earring1?.name === 'Серьга Новичка' &&
+e.earring2?.name === 'Серьга Новичка' &&
+e.necklace?.name === 'Ожерелье Новичка';
 }
 },
 chain: { name: 'Кольчуга Копей', bonus: { flatDamageReduce: 3 }, bonusText: 'Поглощение урона +3',
@@ -4177,8 +4559,7 @@ skillFlatTiers: { 2: 10, 3: 15, 4: 20 },
 pieces: ['Шёлковая мантия (верх)', 'Шёлковая мантия (низ)', 'Шёлковая мантия (шлем)', 'Шёлковая мантия (ботинки)', 'Шёлковая мантия (перчатки)'] },
 malachite: { name: 'Малахитовые обереги', bonus: { hpRegenOutBonus: 1, mpRegenOutBonus: 1 }, bonusText: '+1 HP/сек и +1 MP/сек вне боя',
 pieces: ['Малахитовое кольцо', 'Малахитовая серьга', 'Малахитовое ожерелье'],
-isFullSetEquipped: function() {
-const e = state.player.equipment;
+isFullSetEquipped: function(e = state.player.equipment) {
 return e.ring1?.name === 'Малахитовое кольцо' && e.ring2?.name === 'Малахитовое кольцо' &&
 e.earring1?.name === 'Малахитовая серьга' && e.earring2?.name === 'Малахитовая серьга' &&
 e.necklace?.name === 'Малахитовое ожерелье';
@@ -4615,8 +4996,7 @@ stats: { ring: { mDef: 6, hpBonus: 15, mpBonus: 35 }, earring: { mDef: 6, hpBonu
 T4_JEWELRY.forEach(j => {
 SETS[j.id] = {
 name: j.name, bonus: j.bonus, bonusText: j.bonusText, pieces: [j.pieces.ring, j.pieces.earring, j.pieces.necklace],
-isFullSetEquipped: function () {
-const e = state.player.equipment;
+isFullSetEquipped: function (e = state.player.equipment) {
 return e.ring1?.name === j.pieces.ring && e.ring2?.name === j.pieces.ring &&
 e.earring1?.name === j.pieces.earring && e.earring2?.name === j.pieces.earring &&
 e.necklace?.name === j.pieces.necklace;
@@ -4823,9 +5203,9 @@ const TWO_HAND_GRIP_SKILL_BONUS = 10;
 function isTwoHandGripWeapon(item) {
 return !!(item && item.type === 'weapon' && item.twoHanded && getWeaponCategory(item.name) !== 'staves');
 }
-function getTwoHandGripBonus() {
-if (typeof isMage === 'function' && isMage()) return 0;
-return isTwoHandGripWeapon(state.player.equipment.weapon) ? TWO_HAND_GRIP_SKILL_BONUS : 0;
+function getTwoHandGripBonus(p = state.player) {
+if (p.classId === 'mage') return 0;
+return isTwoHandGripWeapon(p.equipment.weapon) ? TWO_HAND_GRIP_SKILL_BONUS : 0;
 }
 const SHIELD_STANCE_DAMAGE_CUT = 8;
 function getShieldStanceMult() {
@@ -4838,9 +5218,8 @@ const DUAL_WIELD_ATB_BONUS = 15;
 const DUAL_WIELD_ACCURACY_PENALTY = 2;
 const DUAL_WIELD_EVASION_PENALTY = 4;
 const FREE_HAND_EVASION_BONUS = 8;
-function hasFreeHandStyle() {
-const p = state.player;
-if (typeof isMage === 'function' && isMage()) return false;
+function hasFreeHandStyle(p = state.player) {
+if (p.classId === 'mage') return false;
 const w = p.equipment.weapon;
 return !!(w && !w.twoHanded && !p.equipment.shield);
 }
@@ -4848,17 +5227,17 @@ function canDualWield(item) {
 return !!(item && item.type === 'weapon' && !item.twoHanded &&
 DUAL_WIELD_CATEGORIES.includes(getWeaponCategory(item.name)));
 }
-function getEquippedShield() {
-const s = state.player.equipment.shield;
+function getEquippedShield(p = state.player) {
+const s = p.equipment.shield;
 return s && s.type === 'shield' ? s : null;
 }
-function getOffhandWeapon() {
-const s = state.player.equipment.shield;
+function getOffhandWeapon(p = state.player) {
+const s = p.equipment.shield;
 return s && s.type === 'weapon' ? s : null;
 }
-function getOffhandPAtk() {
-const off = getOffhandWeapon();
-if (!off || (typeof isMage === 'function' && isMage())) return 0;
+function getOffhandPAtk(p = state.player) {
+const off = getOffhandWeapon(p);
+if (!off || p.classId === 'mage') return 0;
 return Math.floor(getItemStat(off, 'pAtk') * DUAL_WIELD_OFFHAND_PERCENT / 100);
 }
 function getWeaponTraits(itemName) {
@@ -4897,6 +5276,24 @@ return Math.min(50, total);
 
 // ==== ФАЙЛ js/data/changelog.js ====
 const CHANGELOG = [
+{
+version: 'v0.40',
+date: '24.11.2026',
+title: 'Снаряжение и путь героя',
+changes: [
+{ icon: '🛡', text: 'Перед надеванием вещи можно сравнить «Надето» и «После замены». Учитываются подгонка, навыки и комплекты. Для колец и серёг можно выбрать ячейку, а для снятых вещей игра заранее проверяет место в сумке' },
+{ icon: '⚒', text: 'Нажмите на материал в кузнице, чтобы узнать, где его добыть. Подсказка открывает карточку монстра с нужной добычей или ведёт к рецепту материала' },
+{ icon: '🎒', text: 'После «Первого дня» Заплечник предлагает одну ближайшую цель. Он подскажет, когда взять первое поручение и какой навык стал доступен на 10-м уровне. Карточку можно свернуть' },
+{ icon: '🗺', text: 'С 20-го уровня путь в Ильград на карте ведёт к Собранию у Старейшины. После прибытия над зданиями города видно ближайшее доступное поручение Коменданта' },
+{ icon: '🪙', text: 'В мешочке охоты, на сборах и в отчёте экспедиции видны добыча, расходы и остаток. На охоте учитываются зелья и заряды микстур по ценам лавки, в экспедиции — закупка припасов' },
+{ icon: '⛺', text: 'Экспедиции идут с темпом до половины вашей автоохоты и считают убийства отдельно от Бестиария. Души самоцветов добываются в бою' },
+{ icon: '✨', text: 'Пассивные навыки «Кровь орка» и «Регенерация маны» усиливаются с ростом запаса здоровья и маны соответственно, до своего предела' },
+{ icon: '🔮', text: 'В Башне магов Ильграда две печати по 4 000 Оболов. Печать выдержки один раз за бой отменяет оглушение или сбивание шкалы хода. Печать шести сил добавляет по 5 ко всем шести базовым характеристикам' },
+{ icon: '📖', text: 'У Наставника и в сумке описания навыков стали короче. Подробности, условия и значения по рангам можно посмотреть в Энциклопедии' },
+{ icon: '📜', text: 'Хроники получили книжное оформление. Ключевые события выделены в Летописи, а у каждого активного поручения показан ближайший шаг' },
+{ icon: '🖼', text: 'Обновлены панорама Андервуда на карте, портрет мага-дроу и несколько изображений снаряжения и навыков' },
+],
+},
 {
 version: 'v0.39',
 date: '23.11.2026',
@@ -6689,6 +7086,7 @@ const ANNALS_REWRITES_351 = [
 
 // ==== ФАЙЛ js/data/encyclopedia.js ====
 const LORE_CATEGORIES = [
+{ id: 'skills', name: 'Навыки' },
 { id: 'places', name: 'Места' },
 { id: 'beasts', name: 'Бестиарий' },
 { id: 'people', name: 'Жители' },
@@ -7701,7 +8099,7 @@ act: 'Открой подсвеченную страницу',
 },
 lootEquip: {
 text: 'Синий цвет означает редкую вещь.',
-act: 'Нажми на шлем, чтобы надеть',
+act: 'Нажми на шлем и выбери «Надеть»',
 },
 lootNoSpace: {
 text: 'Сумка полна, я придержал шлем.',
@@ -7720,6 +8118,11 @@ text: 'Ну вот. Старейшина, Торговец, Урдах, перв
 btn: 'Пока, Заплечник',
 },
 skipHello: 'Опытн{ый|ая}, значит. Ну-ну. Посмотрим. Если что — я тут, за плечом.',
+};
+const TUTORIAL_GOALS = {
+hunt: 'Продолжи охоту на Зелёной поляне. На 2-м уровне у меня будет для тебя поручение.',
+bag: 'У меня для тебя первое поручение. Выполнишь — в сумке будет на одну ячейку больше.',
+skill: 'Тебе доступен новый навык — «{skill}».',
 };
 const TUTORIAL_TIPS = {
 'forge-overlay':
@@ -7797,6 +8200,7 @@ elements: {},
 monsterKills: {},
 expedition: null,
 expeditionLoot: [],
+expeditionKills: {},
 huntPace: {},
 huntVariant: {},
 quests: {},
@@ -8018,8 +8422,7 @@ function getClassAccuracyBonus(classId) {
 if (classId === 'mage') return 8;
 return 0;
 }
-function getPlayerAccuracy() {
-const p = state.player;
+function getPlayerAccuracy(p = state.player) {
 const dex = p.effDEX || p.DEX || 0;
 const lvl = p.level || 1;
 let acc = Math.sqrt(dex) * 6 + lvl * 2.5;
@@ -8027,33 +8430,31 @@ acc += getClassAccuracyBonus(p.classId);
 const weapon = p.equipment.weapon;
 const category = weapon ? getWeaponCategory(weapon.name) : null;
 acc += getWeaponAccuracyBonus(category);
-if (getOffhandWeapon()) acc -= DUAL_WIELD_ACCURACY_PENALTY;
+if (getOffhandWeapon(p)) acc -= DUAL_WIELD_ACCURACY_PENALTY;
 acc += (p.accuracyBonus || 0);
-if (typeof subclassAccuracyBonus === 'function') acc += subclassAccuracyBonus();
+if (typeof subclassAccuracyBonus === 'function') acc += subclassAccuracyBonus(p);
 return Math.round(acc);
 }
 const EVASION_LEVEL_GAP_CAP = 3;
 const SHIELD_EVASION_PENALTY = 5;
 const TWO_HAND_EVASION_PENALTY = 8;
 const MONSTER_MIN_HIT_CHANCE = 35;
-function getWeaponStyleEvasionPenalty() {
-const p = state.player;
+function getWeaponStyleEvasionPenalty(p = state.player) {
 let pen = 0;
-if (getEquippedShield()) pen += SHIELD_EVASION_PENALTY;
-if (getOffhandWeapon()) pen += DUAL_WIELD_EVASION_PENALTY;
-if (hasFreeHandStyle()) pen -= FREE_HAND_EVASION_BONUS;
-if (typeof isTwoHandGripWeapon === 'function' && isTwoHandGripWeapon(p.equipment.weapon) && !(typeof isMage === 'function' && isMage())) {
+if (getEquippedShield(p)) pen += SHIELD_EVASION_PENALTY;
+if (getOffhandWeapon(p)) pen += DUAL_WIELD_EVASION_PENALTY;
+if (hasFreeHandStyle(p)) pen -= FREE_HAND_EVASION_BONUS;
+if (typeof isTwoHandGripWeapon === 'function' && isTwoHandGripWeapon(p.equipment.weapon) && p.classId !== 'mage') {
 pen += TWO_HAND_EVASION_PENALTY;
 }
 return pen;
 }
-function getPlayerEvasion(attacker) {
-const p = state.player;
+function getPlayerEvasion(attacker, p = state.player) {
 const dex = p.effDEX || p.DEX || 0;
 let lvl = p.level || 1;
 if (attacker && attacker.level) lvl = Math.min(lvl, attacker.level + EVASION_LEVEL_GAP_CAP);
 let eva = Math.sqrt(dex) * 6 + lvl * 2.5;
-eva -= getWeaponStyleEvasionPenalty();
+eva -= getWeaponStyleEvasionPenalty(p);
 eva += (p.evasionBonus || 0);
 if (typeof subclassEvasionBonus === 'function') eva += subclassEvasionBonus();
 if (attacker && attacker.heroEvaMult) eva *= attacker.heroEvaMult;
@@ -8228,13 +8629,15 @@ applyChatFilter();
 ;
 
 // ==== ФАЙЛ js/core/stats.js ====
-function isSetRefinedTo(set, lvl) {
-const eq = Object.values(state.player.equipment).filter(e => e && set.pieces.includes(e.name));
+function isSetRefinedTo(set, lvl, equipment = state.player.equipment) {
+const eq = Object.values(equipment).filter(e => e && set.pieces.includes(e.name));
 return eq.length >= set.pieces.length && eq.every(e => (e.refineLevel || 0) >= lvl);
 }
 function recalcStats() {
-const p = state.player;
 if (typeof applySubclassSkills === 'function') applySubclassSkills();
+calculatePlayerStats(state.player);
+}
+function calculatePlayerStats(p) {
 if (!p.classId) {
 p.maxHp = 0; p.maxMp = 0; p.pAtk = 0; p.mAtk = 0;
 p.pDef = 0; p.mDef = 0; p.atbSpeed = 0;
@@ -8268,12 +8671,13 @@ bonusINT += item.bonusStats.INT || 0;
 bonusWIT += item.bonusStats.WIT || 0;
 bonusMEN += item.bonusStats.MEN || 0;
 });
-const effSTR = p.STR + bonusSTR;
-const effDEX = p.DEX + bonusDEX;
-const effCON = p.CON + bonusCON;
-const effINT = p.INT + bonusINT;
-const effWIT = p.WIT + bonusWIT;
-const effMEN = p.MEN + bonusMEN;
+const sealBonus = p.guildBuffs.sixfoldSeal?.timer > 0 ? GUILD_BUFFS.sixfoldSeal.effects.allStatsFlat : 0;
+const effSTR = p.STR + bonusSTR + sealBonus;
+const effDEX = p.DEX + bonusDEX + sealBonus;
+const effCON = p.CON + bonusCON + sealBonus;
+const effINT = p.INT + bonusINT + sealBonus;
+const effWIT = p.WIT + bonusWIT + sealBonus;
+const effMEN = p.MEN + bonusMEN + sealBonus;
 p.effSTR = effSTR;
 p.effDEX = effDEX;
 p.effCON = effCON;
@@ -8313,8 +8717,9 @@ let refineGoldBonus = 0;
 let refineDropBonus = 0;
 let refineHpRegenOut = 0;
 let refineMpRegenOut = 0;
-const offhand = getOffhandWeapon();
-p.offhandPAtk = getOffhandPAtk();
+const offhand = getOffhandWeapon(p);
+const shield = getEquippedShield(p);
+p.offhandPAtk = getOffhandPAtk(p);
 Object.values(p.equipment).forEach(item => {
 if (!item) return;
 if (item.stats && item !== offhand) {
@@ -8359,7 +8764,7 @@ p.basePDefForUI = p.pDef;
 p.maxMp += bonusMaxMp;
 p.maxHp += bonusMaxHp;
 p.atbSpeed *= (1 + bonusAtbMod);
-if (offhand && !isMage()) p.atbSpeed *= (1 + DUAL_WIELD_ATB_BONUS / 100);
+if (offhand && p.classId !== 'mage') p.atbSpeed *= (1 + DUAL_WIELD_ATB_BONUS / 100);
 p.critChance += refineCritBonus;
 p.blockChance += refineBlockBonus;
 p.skillBonuses = [];
@@ -8390,18 +8795,10 @@ p.skillBonuses.push(`${skill.name} (ур.${lvl}): +${data.pDefPercent}% защи
 passivePAtkPercent += data.pAtkPercent;
 passivePAtkFlat += data.pAtkFlat;
 p.skillBonuses.push(`${skill.name} (ур.${lvl}): +${data.pAtkPercent}% и +${data.pAtkFlat} физ. урона`);
-} else if (skill.id === 'manaRegen') {
-p.hasManaRegenPassive = true;
-p.mpRegenInBonus += data.mpRegenInBattle;
-p.skillBonuses.push(`${skill.name} (ур.${lvl}): +${data.mpRegenInBattle} MP/сек в бою`);
 } else if (skill.id === 'weaponMasterM') {
 passiveMAtkPercent += data.mAtkPercent || 0;
 passiveMAtkFlat += data.mAtkFlat;
 p.skillBonuses.push(`${skill.name} (ур.${lvl}): +${data.mAtkPercent || 0}% и +${data.mAtkFlat} маг. атаки`);
-}
-else if (skill.id === 'orcBlood') {
-p.hpRegenIn += data.hpRegenInBattle;
-p.skillBonuses.push(`${skill.name} (ур.${lvl}): +${data.hpRegenInBattle} HP/сек в бою`);
 } else if (skill.id === 'ironSkin') {
 p.flatDamageReduce += data.flatDamageReduce;
 p.skillBonuses.push(`${skill.name} (ур.${lvl}): поглощение урона +${data.flatDamageReduce}`);
@@ -8443,11 +8840,11 @@ p.skillBonuses.push(`${skill.name} (ур.${lvl}): +${data.atbPercent}% скор�
 }
 p.scMAtkAdd = 0;
 if (typeof subclassApplyPassives === 'function') subclassApplyPassives(p);
-const gripBonus = (typeof getTwoHandGripBonus === 'function') ? getTwoHandGripBonus() : 0;
+const gripBonus = (typeof getTwoHandGripBonus === 'function') ? getTwoHandGripBonus(p) : 0;
 if (gripBonus > 0) p.skillBonuses.push(`Двуручный хват: +${gripBonus}% к урону навыков, уворот −${TWO_HAND_EVASION_PENALTY}`);
-if (getEquippedShield()) p.skillBonuses.push(`Стойка щита: −${SHIELD_STANCE_DAMAGE_CUT}% входящего урона, уворот −${SHIELD_EVASION_PENALTY}`);
-if (offhand && !isMage()) p.skillBonuses.push(`Парное оружие: +${p.offhandPAtk} к обычной атаке (${offhand.name}), скорость +${DUAL_WIELD_ATB_BONUS}%, точность −${DUAL_WIELD_ACCURACY_PENALTY}, уворот −${DUAL_WIELD_EVASION_PENALTY}`);
-if (hasFreeHandStyle()) p.skillBonuses.push(`Свободная рука: +${FREE_HAND_EVASION_BONUS} к увороту`);
+if (shield) p.skillBonuses.push(`Стойка щита: −${SHIELD_STANCE_DAMAGE_CUT}% входящего урона, уворот −${SHIELD_EVASION_PENALTY}`);
+if (offhand && p.classId !== 'mage') p.skillBonuses.push(`Парное оружие: +${p.offhandPAtk} к обычной атаке (${offhand.name}), скорость +${DUAL_WIELD_ATB_BONUS}%, точность −${DUAL_WIELD_ACCURACY_PENALTY}, уворот −${DUAL_WIELD_EVASION_PENALTY}`);
+if (hasFreeHandStyle(p)) p.skillBonuses.push(`Свободная рука: +${FREE_HAND_EVASION_BONUS} к увороту`);
 if (passiveMaxMpPercent > 0) {
 p.maxMp = Math.floor(p.maxMp * (1 + passiveMaxMpPercent / 100));
 }
@@ -8485,7 +8882,7 @@ if (tier) {
 p.skillFlatDamage += tier.value;
 p.setBonuses.push({ name: `${set.name} (${tier.pieces} вещи)`, text: `+${tier.value} к урону навыков и ДОТов` });
 }
-let isFull = set.isFullSetEquipped ? set.isFullSetEquipped() :
+let isFull = set.isFullSetEquipped ? set.isFullSetEquipped(p.equipment) :
 set.pieces.filter(name => Object.values(p.equipment).some(eq => eq && eq.name === name)).length >= set.pieces.length;
 if (isFull) {
 if (set.bonus.atbSpeed) p.atbSpeed *= (1 + set.bonus.atbSpeed);
@@ -8501,7 +8898,7 @@ if (set.bonus.flatDamageReduce) p.flatDamageReduce += set.bonus.flatDamageReduce
 if (set.bonus.manaShield) p.manaShield += set.bonus.manaShield;
 applySetExtras(set.bonus);
 p.setBonuses.push({ name: set.name, text: set.bonusText });
-if (set.bonus10 && isSetRefinedTo(set, 10)) {
+if (set.bonus10 && isSetRefinedTo(set, 10, p.equipment)) {
 const b = set.bonus10;
 if (b.mAtkPercent) p.mAtk += Math.floor(p.mAtk * (b.mAtkPercent / 100));
 if (b.flatDamageReduce) p.flatDamageReduce += b.flatDamageReduce;
@@ -8539,6 +8936,8 @@ return;
 }
 const eff = buff.effects;
 const details = [];
+if (eff.allStatsFlat) details.push(`+${eff.allStatsFlat} ко всем базовым характеристикам`);
+if (eff.preserveTurn) details.push('защита от оглушения или сбивания шкалы один раз за бой');
 if (eff.pAtkPercent) { p.pAtk = Math.floor(p.pAtk * (1 + eff.pAtkPercent / 100)); details.push(`${eff.pAtkPercent > 0 ? '+' : ''}${eff.pAtkPercent}% физ.атк`); }
 if (eff.mAtkPercent) { p.mAtk = Math.floor(p.mAtk * (1 + eff.mAtkPercent / 100)); details.push(`${eff.mAtkPercent > 0 ? '+' : ''}${eff.mAtkPercent}% маг.атк`); }
 if (eff.pDefPercent) { p.pDef = Math.floor(p.pDef * (1 + eff.pDefPercent / 100)); details.push(`${eff.pDefPercent > 0 ? '+' : ''}${eff.pDefPercent}% физ.защ`); }
@@ -8548,7 +8947,7 @@ if (eff.accuracyFlat) {
 p.accuracyBonus = (p.accuracyBonus || 0) + eff.accuracyFlat;
 details.push(`+${eff.accuracyFlat} точность`);
 }
-if (eff.blockFlat && getEquippedShield()) {
+if (eff.blockFlat && shield) {
 p.blockChance += eff.blockFlat;
 details.push(`+${eff.blockFlat}% блок`);
 }
@@ -8561,6 +8960,21 @@ if (dish) {
 if (dish.pAtkPercent) p.pAtk = Math.floor(p.pAtk * (1 + dish.pAtkPercent / 100));
 if (dish.maxHpPercent) p.maxHp = Math.floor(p.maxHp * (1 + dish.maxHpPercent / 100));
 p.buffBonuses.push(`${dish.name}: ${dish.text}`);
+}
+const orcBloodLevel = p.learnedSkills.orcBlood;
+if (orcBloodLevel > 0) {
+const skill = SKILLS.orcBlood;
+const bonus = skill.getRegen(orcBloodLevel, p.maxHp);
+p.hpRegenIn += bonus;
+p.skillBonuses.push(`${skill.name} (ур.${orcBloodLevel}): +${SKILL_REGEN_FORMAT.format(bonus)} HP/сек в бою`);
+}
+const manaRegenLevel = p.learnedSkills.manaRegen;
+if (manaRegenLevel > 0) {
+const skill = SKILLS.manaRegen;
+const bonus = skill.getRegen(manaRegenLevel, p.maxMp);
+p.hasManaRegenPassive = true;
+p.mpRegenInBonus += bonus;
+p.skillBonuses.push(`${skill.name} (ур.${manaRegenLevel}): +${SKILL_REGEN_FORMAT.format(bonus)} MP/сек в бою`);
 }
 if (itemMpRegenIn > 0) {
 p.hasManaRegenPassive = true;
@@ -8624,6 +9038,7 @@ else badge.innerHTML = `НАВЫКИ <b>${p.skillPoints}</b>`;
 
 // ==== ФАЙЛ js/core/tabs.js ====
 function switchTab(tab) {
+if (tab !== 'inventory' && document.getElementById('equip-compare')?.open) closeEquipmentComparison();
 if (typeof hideTooltip === 'function') hideTooltip();
 if (typeof closeHuntSheet === 'function') closeHuntSheet();
 if (tab === 'map' && typeof cancelWaitingForResume === 'function') {
@@ -8833,6 +9248,7 @@ elements: {},
 monsterKills: {},
 expedition: null,
 expeditionLoot: [],
+expeditionKills: {},
 huntPace: {},
 huntVariant: {},
 quests: {},
@@ -8860,7 +9276,7 @@ return !!v && typeof v === 'object' && !Array.isArray(v);
 }
 function saveNormalizePlayer(p) {
 ['equipment', 'learnedSkills', 'weaponSkills', 'elements', 'monsterKills',
-'guildBuffs', 'tavernBuffs', 'quests', 'huntPace', 'huntVariant'].forEach(k => {
+'guildBuffs', 'tavernBuffs', 'quests', 'expeditionKills', 'huntPace', 'huntVariant'].forEach(k => {
 if (!saveIsPlainObject(p[k])) p[k] = saveClone(SAVE_PLAYER_DEFAULTS[k]);
 });
 SAVE_PLAYER_DEFAULTS.equipment && Object.keys(SAVE_PLAYER_DEFAULTS.equipment).forEach(slot => {
@@ -10790,6 +11206,7 @@ let pendingClassId = null;
 let pendingRaceId = 'human';
 let selectedStartSlot = null;
 function showStartScreen() {
+if (document.getElementById('equip-compare')?.open) closeEquipmentComparison();
 document.getElementById('start-screen').classList.add('active');
 if (typeof slotsClaimForAccount === 'function') slotsClaimForAccount();
 renderSlots();
@@ -11062,13 +11479,14 @@ state.player.xpNext = getXpForLevel(state.player.level + 1);
 }
 if (typeof checkLevelUp === 'function') checkLevelUp();
 }
-if (state.player.classId && typeof unequipUnderLevel === 'function') unequipUnderLevel();
+const equipmentRepaired = state.player.classId && repairEquippedItemsOnLoad();
 if (!state.player.classId) {
 openCreateScreen(slotIndex);
 return;
 }
 hideStartScreen();
 initGame();
+if (equipmentRepaired) saveCurrentSlotSoon();
 if (typeof expOnEnterGame === 'function') expOnEnterGame();
 if (typeof loreSyncBeasts === 'function') loreSyncBeasts(true);
 fallOmensCheck();
@@ -11353,6 +11771,7 @@ state.player.monsterKills = {};
 state.player.quests = {};
 state.player.expedition = null;
 state.player.expeditionLoot = [];
+state.player.expeditionKills = {};
 state.player.huntPace = {};
 state.player.huntVariant = {};
 state.player.breakthroughResult = 0;
@@ -12098,14 +12517,10 @@ resetTooltipTimer();
 }
 function showSkillTooltip(e, skill) {
 const tt = document.getElementById('item-tooltip');
-const lvl = getSkillLevel(skill.id);
-const data = skill.levels[lvl - 1];
-const isMaxed = lvl >= skill.maxLevel;
+const lvl = Math.max(1, getSkillLevel(skill.id));
 let lines = `<div class="tt-name">${skill.name}</div>`;
-lines += `<div class="tt-line stat">${skill.type === 'active' ? `Активный · MP: ${data.mpCost} · КД ${skill.cooldown}` : 'Пассивный'} · Ур. ${lvl}/${skill.maxLevel}</div>`;
-lines += `<div class="tt-line effect">${skill.getDesc(lvl).replace(/<[^>]*>/g, '')}</div>`;
-if (!isMaxed) lines += `<div class="tt-line next">Следующий ур.: ${skill.getNextDesc(lvl).replace(/<[^>]*>/g, '')}</div>`;
-else lines += `<div class="tt-line maxed">МАКСИМАЛЬНЫЙ УРОВЕНЬ</div>`;
+lines += `<div class="tt-line stat">${getSkillTypeLabel(skill)} · Ур. ${lvl}/${skill.maxLevel}</div>`;
+lines += `<div class="tt-line effect">${getSkillBrief(skill, lvl)}</div>`;
 tt.innerHTML = lines;
 tt.style.display = 'block';
 tt.style.left = Math.min(window.innerWidth - 340, e.clientX + 15) + 'px';
@@ -12671,6 +13086,7 @@ unlockLore('underwood');
 unlockLore('elder');
 if (typeof annalsFirst === 'function') annalsFirst('elder');
 }
+if (npcId === 'commander') renderIlgradCommandOffer();
 }
 document.addEventListener('keydown', (e) => {
 if (e.key === 'Escape' && __activeDialogue) {
@@ -13043,35 +13459,55 @@ box.innerHTML = `<div class="chron-soon">Поручений пока нет. П�
 markQuestsSeen();
 return;
 }
-const head = q => `<div class="quest-head"><span class="quest-name">${esc(q.name)}</span><span class="quest-giver">${esc(q.giver)} · ${esc(q.place)}</span></div>`;
+const head = q => `<header class="quest-head"><div class="quest-giver">${esc(q.giver)} · ${esc(q.place)}</div><h3 class="quest-name">${esc(q.name)}</h3></header>`;
+const oldGroups = new Map(Array.from(box.querySelectorAll('.quest-group-fold'), group => [group.dataset.group, group.open]));
+const openStories = new Set(Array.from(box.querySelectorAll('.quest-story[open]'), story => story.dataset.quest));
+const group = (id, title, cards, open = false) => `<details class="quest-group-fold" data-group="${id}"${(oldGroups.get(id) ?? open) ? ' open' : ''}>
+    <summary>${title}</summary>${cards.join('')}
+  </details>`;
 let html = '';
 if (active.length) {
-html += `<div class="quest-group">Текущие</div>`;
+html += '<h2 class="chron-section-title">В работе</h2>';
 active.forEach(q => {
-const cur = q.stages.indexOf(getQuestProgress(q.id).stage);
-html += `<div class="quest-card">${head(q)}<div class="quest-text">${esc(heroText(q.journal))}</div><div class="quest-steps">`;
-q.steps.forEach(s => {
-const i = q.stages.indexOf(s.stage);
-const fin = i < cur || (s.done ? s.done() : false);
-const cls = fin ? 'done' : i === cur ? 'now' : 'later';
-const mark = fin ? '✓' : i === cur ? '▸' : '·';
-const text = typeof s.text === 'function' ? s.text() : s.text;
-html += `<div class="quest-step ${cls}"><span class="quest-mark">${mark}</span>${esc(heroText(text))}</div>`;
+const stage = getQuestProgress(q.id).stage;
+const cur = q.stages.indexOf(stage);
+const steps = q.steps.map(step => ({
+step,
+done: q.stages.indexOf(step.stage) < cur || Boolean(step.done?.()),
+}));
+const gathering = q.needs && steps.some(({ step, done }) => step.stage === stage && step.done && !done);
+const current = [];
+const other = [];
+steps.forEach(({ step, done }) => {
+const text = esc(heroText(typeof step.text === 'function' ? step.text() : step.text));
+if (step.stage === stage && !done && (!gathering || step.done)) current.push(text);
+else other.push(`<li class="quest-step ${done ? 'done' : 'later'}"><span class="quest-mark" aria-label="${done ? 'Выполнено' : 'Предстоит'}">${done ? '✓' : '○'}</span>${text}</li>`);
 });
-html += `</div><div class="quest-reward"><span>Награда</span>${esc(q.reward)}</div></div>`;
+const portrait = q.bag ? bagLookImg()
+: Object.values(LORE_ARTICLES).find(a => a.cat === 'people' && a.title === q.giver && a.kind === q.place)?.portrait;
+html += `<article class="quest-card quest-active">
+        <div class="quest-identity">${portrait ? `<img class="quest-portrait" src="${portrait}" alt="" width="58" height="66">` : ''}${head(q)}</div>
+        ${current.length ? `<div class="quest-current">
+          <div class="chron-meta chron-attention">${current.length > 1 ? 'Что сделать сейчас' : 'Следующий шаг'}</div>
+          <ul>${current.map(text => `<li>${text}</li>`).join('')}</ul>
+        </div>` : ''}
+        ${other.length ? `<ol class="quest-steps">${other.join('')}</ol>` : ''}
+        <div class="quest-reward"><span>Награда</span>${esc(q.reward)}</div>
+        <details class="quest-story" data-quest="${q.id}"${openStories.has(q.id) ? ' open' : ''}><summary>О поручении</summary><p class="quest-text">${esc(heroText(q.journal))}</p></details>
+      </article>`;
 });
 }
 if (offered.length) {
-html += `<div class="quest-group">Можно взять</div>`;
-offered.forEach(q => { html += `<div class="quest-card offered">${head(q)}<div class="quest-text">${esc(heroText(q.offer))}</div></div>`; });
+html += group('offered', 'Можно взять', offered.map(q => `<article class="quest-card offered">${head(q)}<p class="quest-text">${esc(heroText(q.offer))}</p></article>`), true);
 }
 if (lost.length) {
-html += `<div class="quest-group">Не успели</div>`;
-lost.forEach(q => { html += `<div class="quest-card lost">${head(q)}<div class="quest-text">${esc(heroText(q.journal))}</div><div class="quest-lost-note">Андервуда больше нет.</div></div>`; });
+html += group('lost', 'Не успели', lost.map(q => `<article class="quest-card lost">${head(q)}<p class="quest-text">${esc(heroText(q.journal))}</p><p class="quest-lost-note">Андервуда больше нет.</p></article>`));
 }
 if (done.length) {
-html += `<div class="quest-group">Выполненные</div>`;
-done.forEach(q => { html += `<div class="quest-card done">${head(q)}<div class="quest-text">✓ ${esc(heroText((q.needs || q.bag || q.steps.some(s => typeof s.text === 'function')) ? q.journal : q.steps.map(s => s.text).join(' · ')))}</div></div>`; });
+html += group('done', 'Завершённые', done.map(q => {
+const text = q.needs || q.bag || q.steps.some(s => typeof s.text === 'function') ? q.journal : q.steps.map(s => s.text).join(' · ');
+return `<article class="quest-card done">${head(q)}<p class="quest-text">${esc(heroText(text))}</p></article>`;
+}));
 }
 box.innerHTML = html;
 markQuestsSeen();
@@ -13103,7 +13539,42 @@ renderMentorSkills();
 if (state.player.currentLocation === 'town' && typeof unlockLore === 'function') unlockLore('mentor');
 if (typeof updateTalkButtons === 'function') updateTalkButtons();
 }
-function closeMentor() { document.getElementById('mentor-overlay').classList.remove('active'); }
+let mentorSkillObserver = null;
+function closeMentor() {
+mentorSkillObserver?.disconnect();
+document.getElementById('mentor-overlay').classList.remove('active');
+}
+function watchMentorSkills(list) {
+const overlay = document.getElementById('mentor-overlay');
+if (!overlay.classList.contains('active')) return;
+const cards = Array.from(list.children).filter(card => !knowsLore('skill.' + card.dataset.skillId));
+if (!cards.length) return;
+if (typeof IntersectionObserver !== 'function') {
+unlockViewedSkills(cards.map(card => card.dataset.skillId));
+return;
+}
+mentorSkillObserver = new IntersectionObserver((entries, observer) => {
+if (!overlay.classList.contains('active') || !list.isConnected) return;
+const viewed = entries.filter(entry => entry.intersectionRatio >= 0.35);
+viewed.forEach(entry => observer.unobserve(entry.target));
+unlockViewedSkills(viewed.map(entry => entry.target.dataset.skillId));
+}, { root: overlay.querySelector('.window-content'), threshold: 0.35 });
+cards.forEach(card => mentorSkillObserver.observe(card));
+}
+function openMentorSkillArticle(skillId) {
+unlockViewedSkills([skillId]);
+closeMentor();
+switchTab('chronicle');
+switchChronicleSection('lore');
+openLoreArticle('skill.' + skillId, true);
+document.querySelector('.lore-skill-ranks .btn[aria-pressed="true"]')?.focus();
+}
+function returnToMentorSkill(skillId) {
+if (!isTownLoc(state.player.currentLocation)) return;
+switchTab('hunt');
+openMentor();
+document.querySelector(`.skill-card[data-skill-id="${skillId}"] .skill-card-guide`)?.focus();
+}
 function resetSkills() {
 const p = state.player;
 let totalSpent = 0;
@@ -13144,6 +13615,7 @@ if (typeof markDeed === 'function') markDeed('mentor.reset');
 saveCurrentSlot();
 }
 function renderMentorSkills() {
+mentorSkillObserver?.disconnect();
 const cont = document.getElementById('mentor-pane-skills');
 const p = state.player;
 if (!p.classId) {
@@ -13173,6 +13645,7 @@ const lockedByLevel = !!(skill.minLevel && p.level < skill.minLevel);
 const canUpgrade = !isMaxed && !lockedByLevel && p.skillPoints >= 1;
 const card = document.createElement('div');
 card.className = 'skill-card' + (isMaxed ? ' maxed' : (isLearned ? ' learned' : ''));
+card.dataset.skillId = skill.id;
 let actionHtml;
 if (isMaxed) actionHtml = `<div class="skill-maxed-badge">МАКС</div>`;
 else if (lockedByLevel) actionHtml = `<button class="btn" disabled>🔒 Откроется на ${skill.minLevel} уровне</button>`;
@@ -13183,23 +13656,25 @@ else actionHtml = canUpgrade
 ? `<button class="btn success" onclick="upgradeSkill('${skill.id}')">Улучшить до Ур. ${lvl + 1} — 1 очко</button>`
 : `<button class="btn" disabled>Нужно 1 очко</button>`;
 const currentLevel = lvl > 0 ? lvl : 1;
-const descHtml = skill.getDesc(currentLevel);
-const nextHtml = isLearned && !isMaxed ? skill.getNextDesc(lvl) : (!isLearned ? skill.getNextDesc(0) : '');
+const brief = getSkillBrief(skill, currentLevel);
 const levelBadge = isLearned ? `<div class="skill-card-level-badge">Ур. ${lvl}/${skill.maxLevel}</div>` : '';
 card.innerHTML = `
       <div class="skill-card-icon">${skill.icon || ''}${levelBadge}</div>
       <div class="skill-card-body">
         <div class="skill-card-name">${skill.name}</div>
-        <div class="skill-card-type ${skill.type === 'active' ? 'active-skill' : 'passive-skill'}">${skill.type === 'active' ? 'Активный' : 'Пассивный'} · Ур. ${lvl} / ${skill.maxLevel}</div>
-        <div class="skill-card-desc">${descHtml}</div>
-        ${nextHtml ? `<div class="skill-card-next">${nextHtml}</div>` : ''}
-        <div class="skill-card-action">${actionHtml}</div>
+        <div class="skill-card-type ${skill.type === 'active' ? 'active-skill' : 'passive-skill'}">${getSkillTypeLabel(skill)} · Ур. ${lvl} / ${skill.maxLevel}</div>
+        <div class="skill-card-desc">${brief}</div>
+        <div class="skill-card-action">
+          ${actionHtml}
+          <button type="button" class="skill-card-guide" onclick="openMentorSkillArticle('${skill.id}')">О навыке</button>
+        </div>
       </div>
     `;
 list.appendChild(card);
 });
 cont.innerHTML = header;
 cont.appendChild(list);
+watchMentorSkills(list);
 }
 function upgradeSkill(skillId) {
 const p = state.player;
@@ -13635,10 +14110,13 @@ if (el) el.textContent = state.player.gold;
 function renderGuildList() {
 buffShopRender('guild');
 }
+function isGuildBuffSoldInTown(buff, location) {
+return !buff.town || buff.town === location;
+}
 function buyGuildBuff(buffId) {
 const p = state.player;
 const buff = GUILD_BUFFS[buffId];
-if (!buff) return;
+if (!buff || !isGuildBuffSoldInTown(buff, p.currentLocation)) return;
 if (!p.classId) {
 showToast('🔮', 'Сначала выберите класс');
 logLoot(`Сначала выберите класс.`, 'log-info');
@@ -13759,7 +14237,7 @@ function buffShopDef(kind) {
 const p = state.player;
 if (kind === 'guild') {
 return {
-kind, defs: Object.values(GUILD_BUFFS), store: p.guildBuffs,
+kind, defs: Object.values(GUILD_BUFFS).filter(buff => isGuildBuffSoldInTown(buff, p.currentLocation)), store: p.guildBuffs,
 price: (b) => b.price,
 icon: (b) => b.icon || '',
 emoji: '🔮', listId: 'guild-list', barId: 'guild-setbar',
@@ -13785,6 +14263,7 @@ function buffShopDefaultInSet(kind, buff) {
 if (!buffShopAllowed(buff)) return false;
 if (buff.id === 'shieldwall' && !getEquippedShield()) return false;
 if (buff.packMode) return false;
+if (buff.town === 'ilgrad') return false;
 return true;
 }
 function buffShopInSet(kind, buff) {
@@ -13864,6 +14343,7 @@ const parts = [];
 const lore = [];
 items.forEach(({ buff, n }) => {
 if (n <= 0) return;
+if (kind === 'guild' && !isGuildBuffSoldInTown(buff, p.currentLocation)) return;
 const cost = n * d.price(buff);
 if (p.gold < cost) return;
 if (buff.packRival && d.store[buff.packRival]) d.store[buff.packRival].timer = 0;
@@ -13923,6 +14403,8 @@ if (eff.mDefPercent) out.push(`<div class="${cls(eff.mDefPercent)}">${sign(eff.m
 if (eff.atbPercent) out.push(`<div class="plus">+${eff.atbPercent}% ${buff.id === 'eloquence' ? 'скорость каста' : 'скорость ATB'}</div>`);
 if (eff.accuracyFlat) out.push(`<div class="plus">+${eff.accuracyFlat} к точности</div>`);
 if (eff.blockFlat) out.push(`<div class="plus">+${eff.blockFlat}% к шансу блока</div>`);
+if (eff.allStatsFlat) out.push(`<div class="plus">+${eff.allStatsFlat} ко всем базовым характеристикам</div>`);
+if (eff.preserveTurn) out.push('<div class="plus">Защита от оглушения или сбивания шкалы · 1 раз за бой</div>');
 if (buff.packMode === 'quiet') {
 out.push(`<div class="plus">Стаи меньше на старте</div>`);
 out.push(`<div class="plus">Подмога почти не приходит (×${PACK_BUFF_MODS.quiet.reinforceMult})</div>`);
@@ -14088,7 +14570,7 @@ if (state.travel.active) return;
 if (loc === p.currentLocation) return;
 const lock = mapLockInfo(loc);
 if (lock) {
-if (lock.ready) startIlgradBreakthrough();
+if (lock.ready) openIlgradAssemblyRoute();
 else showToast('🗣', lock.rumor);
 return;
 }
@@ -14250,7 +14732,7 @@ const INVENTORY_PAGE_SIZE = 30;
 function invMaxSlots() {
 return INVENTORY_MAX_SLOTS + (typeof bagSlotBonus === 'function' ? bagSlotBonus() : 0);
 }
-function invPages() { return Math.ceil(invMaxSlots() / INVENTORY_PAGE_SIZE); }
+function invPages() { return Math.ceil(Math.max(invMaxSlots(), state.player.inventory.length) / INVENTORY_PAGE_SIZE); }
 function getInvRefineSuffix(item) {
 if (!item) return '';
 const lvl = item.refineLevel || 0;
@@ -14487,7 +14969,7 @@ slot.onclick = () => {
 if (slot._skipClick) { slot._skipClick = false; return; }
 if (item.type === 'food') useFood(item);
 else if (isConsumable) useConsumableFromBag(item);
-else equipItem(item);
+else openEquipmentComparison(item);
 };
 slot.oncontextmenu = (e) => e.preventDefault();
 attachInvSlotGestures(slot, item);
@@ -14567,6 +15049,7 @@ const lostMin = (!same && had) ? Math.ceil(p.foodTimer / 60) : 0;
 if (lostMin >= 5 && !confirm(`Сейчас действует «${FOOD_KINDS[had].name}» — ещё ${buffShopDur(Math.floor(p.foodTimer))}.\n\n«${kind.name}» заменит её, остаток пропадёт. Съесть?`)) return;
 p.foodTimer = same ? addBuffTime(p.foodTimer, duration) : duration;
 p.foodKind = kindId;
+if (!same && typeof expPaceStamp === 'function') expPaceStamp();
 const idx = p.inventory.indexOf(item);
 item.qty--;
 if (item.qty <= 0) p.inventory.splice(idx, 1);
@@ -14593,6 +15076,7 @@ return;
 }
 const replaced = p.dish && p.dish.timer > 0 && !same ? DISHES[p.dish.id] : null;
 p.dish = { id, timer: same ? p.dish.timer + dur : dur };
+if (!same && typeof expPaceStamp === 'function') expPaceStamp();
 const idx = p.inventory.indexOf(item);
 item.qty--;
 if (item.qty <= 0) p.inventory.splice(idx, 1);
@@ -14841,63 +15325,199 @@ ring: ['ring1', 'ring2'],
 };
 return map[type] || null;
 }
-function equipItem(item, toOffhand) {
+function planEquipmentChange(item, toOffhand, chosenSlot) {
 const p = state.player;
 const slots = getEquipSlotForType(item.type);
-if (!slots) {
-showToast('📦', `${item.name} — не надевается`);
-logLoot(`${item.name} — не надевается.`, 'log-info');
-return;
-}
-if (item.type === 'shield' && hasTwoHandedWeapon()) {
-showToast('🛡', 'Нельзя: двуручное оружие');
-logLoot(`Нельзя: двуручное оружие.`, 'log-info');
-return;
-}
+if (!slots) return { error: `${item.name} — не надевается` };
+if (item.type === 'shield' && hasTwoHandedWeapon()) return { error: 'Снимите двуручное оружие, чтобы надеть щит' };
 if (toOffhand) {
-let why = '';
-if (isMage()) why = 'парное оружие — только для воинов';
-else if (!canDualWield(item)) why = 'во вторую руку — только одноручные мечи, топоры, кинжалы и дубины';
-else if (!p.equipment.weapon) why = 'сначала возьмите оружие в основную руку';
-else if (hasTwoHandedWeapon()) why = 'в основной руке двуручное оружие';
-if (why) { showToast('🗡', `Нельзя: ${why}`); logLoot(`Нельзя: ${why}.`, 'log-info'); return; }
+if (isMage()) return { error: 'Парное оружие доступно воинам' };
+if (!canDualWield(item)) return { error: 'Во вторую руку подходят одноручные мечи, топоры, кинжалы и дубины' };
+if (!p.equipment.weapon) return { error: 'Сначала возьмите оружие в основную руку' };
+if (hasTwoHandedWeapon()) return { error: 'В основной руке двуручное оружие' };
 }
+if (!canWearByLevel(item)) return { error: `${item.name} можно надеть с ${getItemReqLevel(item)}-го уровня` };
+const invIndex = p.inventory.indexOf(item);
+if (invIndex < 0) return { error: 'Предмета больше нет в сумке' };
+const targetSlot = toOffhand ? 'shield'
+: (slots.includes(chosenSlot) ? chosenSlot : slots.find(slot => !p.equipment[slot]) || slots[0]);
+const removeSlots = [targetSlot];
+if (item.type === 'weapon' && item.twoHanded) removeSlots.push('shield');
+const removed = removeSlots.filter(slot => p.equipment[slot]).map(slot => ({ slot, item: p.equipment[slot] }));
+const inventorySize = p.inventory.length - (item.qty > 1 ? 0 : 1) + removed.length;
+const extra = inventorySize - Math.max(invMaxSlots(), p.inventory.length);
+const spaceError = extra > 0
+? `Освободите ещё ${extra === 1 ? 'одну ячейку' : 'две ячейки'} в сумке.` : '';
+return { targetSlot, removed, invIndex, spaceError };
+}
+function showEquipmentError(message) {
+const text = escChronicle(message);
+showToast('🛡', text);
+logLoot(text, 'log-info');
+}
+function equipItem(item, toOffhand = false, chosenSlot) {
+const p = state.player;
 const currentSlot = Object.keys(p.equipment).find(k => p.equipment[k] && p.equipment[k].id === item.id);
 if (currentSlot) { unequipSlot(currentSlot); return; }
-if (!canWearByLevel(item)) {
-const req = getItemReqLevel(item);
-showToast('🔒', `${item.name}: нужен ${req} уровень`);
-logLoot(`🔒 Нельзя надеть «${item.name}»: нужен ${req} уровень.`, 'log-info');
+const plan = planEquipmentChange(item, toOffhand, chosenSlot);
+const error = plan.error || plan.spaceError;
+if (error) { showEquipmentError(error); return; }
+const oldMaxMp = p.maxMp;
+const inventory = p.inventory.slice();
+const equipment = { ...p.equipment };
+let equipped = item;
+if (item.qty > 1) {
+inventory[plan.invIndex] = { ...item, qty: item.qty - 1 };
+equipped = { ...item, qty: 1, id: 'item_' + Date.now() + '_' + Math.random() + '_eq' };
+} else {
+inventory.splice(plan.invIndex, 1);
+}
+for (const removed of plan.removed) {
+equipment[removed.slot] = null;
+inventory.push({ ...removed.item, qty: 1 });
+}
+equipment[plan.targetSlot] = equipped;
+const next = { ...p, inventory, equipment };
+calculatePlayerStats(next);
+const gainedMp = next.maxMp - oldMaxMp;
+if (gainedMp > 0) next.mp = Math.min(next.maxMp, next.mp + gainedMp);
+Object.assign(p, next);
+renderInventory();
+renderEquipSlots();
+updateCharacterPanel();
+updateTopStatus();
+updateInventoryFooter();
+plan.removed.forEach(({ item }) => logLoot(`Снято: ${escChronicle(item.name)}`, 'log-info'));
+logLoot(toOffhand ? `Во вторую руку: ${escChronicle(item.name)}` : `Надето: ${escChronicle(item.name)}`, 'log-info');
+if (toOffhand) showToast('🗡', `Вторая рука: ${escChronicle(item.name)}`);
+saveCurrentSlot();
+return true;
+}
+const EQUIP_COMPARE_NUMBER = new Intl.NumberFormat('ru-RU', { maximumFractionDigits: 2 });
+const EQUIP_COMPARE_STATS = [
+['Физ. атака', p => p.pAtk],
+['Маг. атака', p => p.mAtk],
+['Физ. защита', p => p.pDef],
+['Маг. защита', p => p.mDef],
+['Запас здоровья', p => p.maxHp],
+['Запас маны', p => p.maxMp],
+['Урон второй руки', p => p.offhandPAtk],
+['Скорость хода', p => p.atbSpeed],
+['Точность', p => getPlayerAccuracy(p)],
+['Уворот', p => getPlayerEvasion(null, p)],
+['Поглощение урона', p => p.flatDamageReduce],
+['Шанс блока', p => p.blockChance, '%'],
+['Шанс крита', p => p.critChance, '%'],
+['Двуручный хват', p => getTwoHandGripBonus(p), '%'],
+['Снижение урона щитом', p => getEquippedShield(p) ? SHIELD_STANCE_DAMAGE_CUT : 0, '%'],
+['Урон навыков от сета', p => p.skillFlatDamage],
+['Здоровье в бою / сек.', p => p.hpRegenIn],
+['Мана в бою / сек.', p => p.hasManaRegenPassive ? (p.mpRegenIn || 0.5) : 0],
+['Мана-щит', p => p.manaShield, '%'],
+];
+let equipmentComparison = null;
+function openEquipmentComparison(item, toOffhand = false) {
+const plan = planEquipmentChange(item, toOffhand);
+if (plan.error) { showEquipmentError(plan.error); return; }
+hideTooltip();
+equipmentComparison = { player: state.player, item, toOffhand, slot: plan.targetSlot };
+renderEquipmentComparison();
+const dialog = document.getElementById('equip-compare');
+if (!dialog.open) dialog.showModal();
+}
+function closeEquipmentComparison() {
+equipmentComparison = null;
+document.getElementById('equip-compare').close();
+}
+function confirmEquipmentComparison() {
+if (!equipmentComparison) return;
+const { player, item, toOffhand, slot } = equipmentComparison;
+if (player !== state.player || !player.inventory.includes(item)) {
+closeEquipmentComparison();
+showEquipmentError('Предмета больше нет в сумке');
 return;
 }
-const oldMaxMp = p.maxMp;
-let targetSlot = toOffhand ? 'shield' : (slots.find(s => p.equipment[s] === null) || slots[0]);
-if (p.equipment[targetSlot]) unequipSlot(targetSlot);
-if (p.equipment[targetSlot]) return;
-if (item.type === 'weapon' && item.twoHanded && p.equipment.shield) {
-logLoot(getOffhandWeapon() ? `Двуручное оружие: вторая рука освобождена.` : `Двуручное оружие: щит снят.`, 'log-info');
-unequipSlot('shield');
+const plan = planEquipmentChange(item, toOffhand, slot);
+if (plan.error || plan.spaceError) { renderEquipmentComparison(); return; }
+if (equipItem(item, toOffhand, slot)) closeEquipmentComparison();
 }
-let itemToEquip = item;
-if (item.qty > 1) {
-item.qty--;
-itemToEquip = JSON.parse(JSON.stringify(item));
-itemToEquip.qty = 1;
-itemToEquip.id = 'item_' + Date.now() + '_' + Math.random() + '_eq';
-} else {
-const idx = p.inventory.indexOf(item);
-if (idx >= 0) p.inventory.splice(idx, 1);
+function renderEquipmentComparison() {
+const { player, item, toOffhand, slot } = equipmentComparison;
+const body = document.getElementById('equip-compare-body');
+const confirm = document.getElementById('equip-compare-confirm');
+const plan = planEquipmentChange(item, toOffhand, slot);
+confirm.disabled = Boolean(plan.error || plan.spaceError);
+if (plan.error) {
+body.innerHTML = `<p class="equip-compare-error">${escChronicle(plan.error)}</p>`;
+return;
 }
-p.equipment[targetSlot] = itemToEquip;
-recalcStats();
-const diff = p.maxMp - oldMaxMp;
-if (diff > 0) p.mp = Math.min(p.maxMp, p.mp + diff);
-else if (diff < 0 && p.mp > p.maxMp) p.mp = p.maxMp;
-renderInventory(); renderEquipSlots();
-updateCharacterPanel(); updateInventoryFooter();
-logLoot(toOffhand ? `Во вторую руку: ${item.name} (парное оружие)` : `Надето: ${item.name}`, 'log-info');
-if (toOffhand) showToast('🗡', `Вторая рука: ${item.name}`);
-saveCurrentSlot();
+const equipment = { ...player.equipment };
+plan.removed.forEach(({ slot }) => { equipment[slot] = null; });
+equipment[plan.targetSlot] = item;
+const preview = { ...player, equipment };
+calculatePlayerStats(preview);
+const choices = getEquipSlotForType(item.type);
+const picker = choices.length > 1 ? `<label class="equip-compare-picker">
+    Ячейка
+    <select id="equip-compare-slot">
+      ${choices.map((key, index) => {
+        const label = item.type === 'ring' ? 'Кольцо' : 'Серьга';
+        const worn = player.equipment[key];
+        return `<option value="${key}"${key === slot ? ' selected' : ''}>${label} ${index + 1} · ${worn ? equipComparisonItemName(worn) : 'свободно'}</option>`;
+      }).join('')}
+    </select>
+  </label>` : '';
+const removal = plan.removed.find(({ slot }) => slot !== plan.targetSlot);
+const note = removal
+? `<p class="equip-compare-note">В сумку уйдёт ${removal.item.type === 'shield' ? 'щит' : 'оружие из второй руки'} <strong>«${equipComparisonItemName(removal.item)}»</strong>.</p>` : '';
+const stats = EQUIP_COMPARE_STATS.map(([label, read, unit = '']) => {
+const before = Number((read(player) || 0).toFixed(2));
+const after = Number((read(preview) || 0).toFixed(2));
+const difference = Number((after - before).toFixed(2));
+if (!difference) return '';
+const amount = EQUIP_COMPARE_NUMBER.format(Math.abs(difference));
+const change = difference > 0 ? '+' + amount : '−' + amount;
+return `<tr><th scope="row">${label}</th>
+      <td>${EQUIP_COMPARE_NUMBER.format(before)}${unit}</td>
+      <td>${EQUIP_COMPARE_NUMBER.format(after)}${unit}</td>
+      <td class="${difference > 0 ? 'gain' : 'loss'}">${change}${unit}</td></tr>`;
+}).join('');
+body.innerHTML = `
+    ${picker}
+    <div class="equip-compare-items">
+      ${renderEquipmentComparisonItem('Надето', player.equipment[plan.targetSlot])}
+      ${renderEquipmentComparisonItem('После замены', item)}
+    </div>
+    ${note}
+    ${stats ? `<table class="equip-compare-stats">
+      <thead><tr><th scope="col">Характеристика</th><th scope="col">Было</th><th scope="col">Будет</th><th scope="col">Разница</th></tr></thead>
+      <tbody>${stats}</tbody>
+    </table>` : '<p class="equip-compare-note">Характеристики совпадают.</p>'}
+    ${plan.spaceError ? `<p class="equip-compare-error">${plan.spaceError}</p>` : ''}
+  `;
+const select = body.querySelector('#equip-compare-slot');
+if (select) select.onchange = () => {
+equipmentComparison.slot = select.value;
+renderEquipmentComparison();
+document.getElementById('equip-compare-slot').focus();
+};
+}
+function equipComparisonItemName(item) {
+return escChronicle(item.name) + (item.refineLevel > 0 ? ` +${item.refineLevel}` : '');
+}
+function renderEquipmentComparisonItem(label, item) {
+const rarity = RARITIES[item?.rarity];
+const name = item ? equipComparisonItemName(item) : 'Свободная ячейка';
+return `<div class="equip-compare-item">
+    <div class="equip-compare-label">${label}</div>
+    <div class="equip-compare-item-head">
+      ${item ? `<span class="equip-compare-icon">${normalizeIconHtml(item.icon)}</span>` : ''}
+      <div>
+        <strong${rarity ? ` style="color:${rarity.color}"` : ''}>${name}</strong>
+        ${item?.twoHanded ? '<small>Двуручное</small>' : ''}
+      </div>
+    </div>
+  </div>`;
 }
 function openOffhandPicker() {
 const p = state.player;
@@ -14940,7 +15560,7 @@ function pickOffhandItem(invIdx) {
 const item = state.player.inventory[invIdx];
 closeSlotPicker();
 if (!item) return;
-equipItem(item, item.type === 'weapon');
+openEquipmentComparison(item, item.type === 'weapon');
 }
 function unequipSlot(slotKey) {
 const p = state.player;
@@ -14962,7 +15582,7 @@ updateCharacterPanel(); updateInventoryFooter();
 logLoot(`Снято: ${item.name}`, 'log-info');
 saveCurrentSlot();
 }
-function unequipUnderLevel() {
+function repairEquippedItemsOnLoad() {
 const p = state.player;
 const off = [];
 Object.keys(p.equipment || {}).forEach(slot => {
@@ -14976,7 +15596,14 @@ if (off.length) setTimeout(() => {
 showToast('🔒', `Снято не по уровню: ${off.length}`);
 logLoot(`🔒 Снято — не по уровню: ${off.join(', ')}. Вещи в сумке, наденете, когда дорастёте.`, 'log-info');
 }, 1800);
-return off.length > 0;
+const leftHand = hasTwoHandedWeapon() && p.equipment.shield;
+if (leftHand) {
+p.equipment.shield = null;
+p.inventory.push({ ...leftHand, qty: 1 });
+const name = escChronicle(leftHand.name);
+showToast('🛡', `${name} возвращается в сумку. С двуручным оружием нужна свободная вторая рука.`);
+}
+return off.length > 0 || Boolean(leftHand);
 }
 function findShopItemInInventory(shopId) {
 if (!shopId) return null;
@@ -15445,7 +16072,10 @@ if (typeof refreshStorageFromCloud === 'function') refreshStorageFromCloud();
 if (typeof unlockLore === 'function') unlockLore('smith');
 if (typeof updateTalkButtons === 'function') updateTalkButtons();
 }
-function closeForge() { document.getElementById('forge-overlay').classList.remove('active'); }
+function closeForge() {
+document.getElementById('forge-sources').close();
+document.getElementById('forge-overlay').classList.remove('active');
+}
 function updateForgeGold() {
 const el = document.getElementById('forge-gold');
 if (el) el.textContent = state.player.gold;
@@ -15769,6 +16399,71 @@ return `<div class="recipe-result">${getRecipeIconHtml(r)}</div><div class="reci
     <div class="recipe-action">${actionHtml}</div></div>`;
 }
 function escForge(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;'); }
+function addForgeSource(list, name, detail, icon, openSource) {
+const button = document.createElement('button');
+button.type = 'button';
+button.className = 'forge-source';
+button.innerHTML = `
+    <span class="forge-source-icon" aria-hidden="true">${icon}</span>
+    <span class="forge-source-text"><strong>${escForge(name)}</strong><small>${escForge(detail)}</small></span>
+    <span class="forge-source-arrow" aria-hidden="true">›</span>`;
+button.onclick = () => openSource(button);
+list.append(button);
+}
+function openForgeMaterialSources(trigger) {
+const name = trigger.dataset.material;
+const dialog = document.getElementById('forge-sources');
+const body = document.getElementById('forge-sources-body');
+const list = document.getElementById('forge-sources-list');
+const preview = document.getElementById('forge-source-preview');
+document.getElementById('forge-sources-material').innerHTML = `${getMatIcon(name)}<span>${escForge(name)}</span>`;
+list.replaceChildren();
+list.hidden = false;
+preview.replaceChildren();
+preview.hidden = true;
+const unlocked = ilgradOpen();
+const monsters = ALL_HUNT_MONSTERS.filter(m => m.drops.some(d => d.name === name && d.chance > 0));
+const recipes = RECIPES.resources.filter(r => r.result.name === name);
+for (const monster of monsters) {
+const loc = getMonsterLocation(monster.id);
+if (loc === 'outskirts' && !unlocked) continue;
+addForgeSource(list, monster.name, LOCATION_NAMES[loc], `<img src="${escForge(monster.art)}" alt="">`, sourceButton => {
+const nav = document.createElement('div');
+nav.className = 'forge-source-nav';
+nav.innerHTML = `<button type="button" class="btn">← К источникам</button><span>${escForge(LOCATION_NAMES[loc])}</span>`;
+const back = nav.querySelector('button');
+const scrollTop = body.scrollTop;
+back.onclick = () => {
+preview.hidden = true;
+list.hidden = false;
+sourceButton.focus({ preventScroll: true });
+body.scrollTop = scrollTop;
+};
+preview.replaceChildren(nav, buildMonsterCard(monster, 'normal', loc === 'mine', { preview: true, highlightDrop: name }));
+list.hidden = true;
+preview.hidden = false;
+body.scrollTop = 0;
+back.focus({ preventScroll: true });
+});
+}
+for (const recipe of recipes) {
+if (recipe.requiresIlgrad && !unlocked) continue;
+addForgeSource(list, 'Открыть рецепт', 'Кузница · Ресурсы', getRecipeIconHtml(recipe), () => {
+dialog.close();
+switchForgeTab('resources');
+const card = document.querySelector(`#forge-pane-resources [data-recipe-id="${CSS.escape(recipe.id)}"]`);
+card.tabIndex = -1;
+card.focus({ preventScroll: true });
+card.scrollIntoView({ block: 'center' });
+});
+}
+if (!list.childElementCount) {
+list.textContent = monsters.length || recipes.length ? 'Источник откроется позже.' : 'Источник пока неизвестен.';
+}
+trigger.focus({ preventScroll: true });
+dialog.showModal();
+body.scrollTop = 0;
+}
 function buildRecipeCard(r, category) {
 const can = canCraft(r);
 const price = r.price || 0;
@@ -15776,12 +16471,19 @@ const canAfford = state.player.gold >= price;
 const canCraftFinal = can && canAfford;
 const card = document.createElement('div');
 card.className = 'recipe-card' + (canCraftFinal ? ' can-craft' : '');
+card.dataset.recipeId = r.id;
 const matsHtml = r.materials.map(m => {
 const inStore = countMaterialInStorage(m.name);
 const have = countMaterialInInventory(m.name) + inStore;
 const cls = have >= m.qty ? 'have' : 'lack';
 const storeHtml = inStore > 0 ? `<span class="mat-store" title="Из них на складе: ${inStore}">🏦${inStore}</span>` : '';
-return `<div class="recipe-mat ${cls}">${getMatIcon(m.name)}<span>${m.name}</span>${storeHtml}<span class="mat-count">${have} / ${m.qty}</span></div>`;
+const name = escForge(m.name);
+return `<div class="recipe-mat ${cls}">
+      <button type="button" class="recipe-mat-source" data-material="${name}" onclick="openForgeMaterialSources(this)" aria-label="${name} — где добыть" title="Где добыть" aria-haspopup="dialog">
+        ${getMatIcon(m.name)}<span>${name}</span><span class="recipe-mat-arrow" aria-hidden="true">›</span>
+      </button>
+      ${storeHtml}<span class="mat-count">${have} / ${m.qty}</span>
+    </div>`;
 }).join('');
 const lines = [];
 const st = r.result.stats || {};
@@ -17975,6 +18677,13 @@ const CHRONICLE_MAX_ENTRIES = 300;
 const BAG_NAME = 'Видавшая виды сумка';
 const BAG_DESC = 'Потёртая, латаная, пахнет пылью и чем-то горелым. Кажется, ей лет сто. Или больше.';
 const CHRONICLE_START_YEAR = 213;
+const ANNALS_MILESTONES = {
+elder: { title: 'Встреча со Старейшиной' },
+kill: { title: 'Первая победа', useFirstSentence: true },
+'loc.field': { title: 'За воротами Андервуда', scene: 'field' },
+'loc.mine': { title: 'Спуск в Копи', scene: 'mine' },
+'loc.outskirts': { title: 'На Окраинах Ильграда', scene: 'outskirts' },
+};
 const CHRONICLE_FACTS = {
 start_place: { unknown: 'неизвестном месте', known: 'Андервуде', loc: 'town' },
 bag_name: { unknown: '???', known: 'Заплечник' },
@@ -18072,7 +18781,7 @@ if (!c.firsts) c.firsts = {};
 if (c.firsts[key]) return;
 c.firsts[key] = Date.now();
 const text = ANNALS_FIRSTS[key].replace(/%(\w+)%/g, (m, k) => (vars && vars[k] != null ? vars[k] : ''));
-addChronicleEntry(text, opts);
+addChronicleEntry(text, ANNALS_MILESTONES[key] ? Object.assign({}, opts, { firstKey: key }) : opts);
 }
 function knowsChronicleFact(key) {
 const c = state.player.chronicle;
@@ -18105,6 +18814,7 @@ speaker: o.speaker || 'hero',
 text,
 };
 if (o.title) entry.title = o.title;
+if (o.firstKey) entry.firstKey = o.firstKey;
 if (o.ask && o.ask.options && o.ask.options.length) {
 entry.ask = { options: o.ask.options.map(x => ({ text: x.text, reply: x.reply || '', trust: x.trust || 0 })), answer: null };
 if (typeof o.ask.answer === 'number') { entry.ask.answer = o.ask.answer; entry.ask.answeredAt = entry.at; }
@@ -18207,7 +18917,11 @@ if (hidden) return 'Неизвестное место';
 return (typeof LOCATION_NAMES !== 'undefined' && LOCATION_NAMES[e.loc]) || '';
 }
 function renderChronicle() {
-document.querySelectorAll('.chron-sub').forEach(b => b.classList.toggle('active', b.dataset.sec === __chronicleSection));
+document.querySelectorAll('.chron-sub').forEach(b => {
+const active = b.dataset.sec === __chronicleSection;
+b.classList.toggle('active', active);
+b.setAttribute('aria-pressed', String(active));
+});
 const box = document.getElementById('chronicle-body');
 if (!box) return;
 if (__chronicleSection === 'lore') {
@@ -18219,30 +18933,73 @@ renderQuestJournal(box);
 updateChronicleDot();
 return;
 }
-const c = state.player.chronicle;
-if (!c || !c.entries.length) {
-box.innerHTML = `<div class="chron-soon">Летопись пока пуста.</div>`;
-return;
+const entries = state.player.chronicle?.entries || [];
+const ordered = entries.slice().reverse().map(entry => ({ entry, milestone: chronicleMilestone(entry) }));
+const pending = ordered.filter(({ entry }) => entry.ask?.answer === null);
+const history = ordered.filter(({ entry }) => entry.ask?.answer !== null);
+const featuredIndex = history.findIndex(({ milestone }) => milestone?.scene);
+const featured = featuredIndex < 0 ? null : history.splice(featuredIndex, 1)[0];
+const timeline = history.map(({ entry, milestone }) => `<li>${renderAnnalsEntry(entry, milestone)}</li>`).join('');
+box.innerHTML = `
+    ${renderChronicleBagCall()}
+    ${pending.map(({ entry, milestone }) => renderAnnalsEntry(entry, milestone)).join('')}
+    <h2 class="chron-section-title">Путь героя</h2>
+    ${featured ? renderAnnalsEntry(featured.entry, featured.milestone, featured.milestone.scene) : ''}
+    ${timeline ? `<ol class="chron-timeline">${timeline}</ol>` : ''}
+    ${!entries.length ? '<p class="chron-soon">Летопись пока пуста.</p>' : ''}
+  `;
 }
-box.innerHTML = c.entries.slice().reverse().map(e => {
-const where = chronicleWhere(e);
-const pending = e.ask && e.ask.answer === null;
-let html = `<div class="chron-entry${e.speaker === 'bag' ? ' bag' : ''}${pending ? ' pending' : ''}">`;
-const who = e.speaker === 'bag' ? `<span class="chron-who">${escChronicle(bagSpeakerName())}</span> · ` : '';
-html += `<div class="chron-meta">${who}${escChronicle(where)}${where ? ' · ' : ''}${e.lvl} ур.${pending ? ' · <b>не отвечено</b>' : ''}</div>`;
-if (e.title) html += `<div class="chron-title">${chronicleTextHtml(e.title)}</div>`;
-html += `<div class="chron-text">${e.speaker === 'bag' ? chronicleSpeechHtml(e.text) : chronicleTextHtml(e.text)}</div>`;
-if (e.ask) {
+function chronicleMilestone(entry) {
+if (entry.firstKey) return ANNALS_MILESTONES[entry.firstKey];
+const key = Object.keys(ANNALS_MILESTONES).find(id => {
+const original = ANNALS_FIRSTS[id];
+if (id === 'kill') return entry.text.startsWith(original.split('%monster%')[0]);
+return entry.text === original;
+});
+return ANNALS_MILESTONES[key];
+}
+function renderChronicleBagCall() {
+const { status, q } = bagQuestState();
+if (status !== 'offer' && status !== 'ready') return '';
+const heading = status === 'offer' ? 'Заплечник хочет поговорить' : 'Заплечник ждёт вас';
+const text = status === 'offer' ? chronicleSpeechHtml(q.ask.split('\n\n')[0]) : chronicleTextHtml(q.name);
+return `<aside class="chron-bag-call">
+    <img src="${bagLookImg()}" alt="" width="58" height="58">
+    <div>
+      <div class="chron-meta chron-attention">${heading}</div>
+      <p class="chron-text">${text}</p>
+      <button type="button" class="chron-link" onclick="openBagTalk()">Поговорить</button>
+    </div>
+  </aside>`;
+}
+function renderAnnalsEntry(entry, milestone, scene) {
+const where = chronicleWhere(entry);
+const bag = entry.speaker === 'bag';
+const pending = entry.ask?.answer === null;
+const meta = [bag && bagSpeakerName(), where, `${entry.lvl} ур.`].filter(Boolean).join(' · ');
+let title = entry.title || milestone?.title;
+let text = entry.text;
+if (!entry.title && milestone?.useFirstSentence) {
+const stop = text.indexOf('. ');
+if (stop > 0) {
+title = text.slice(0, stop);
+text = text.slice(stop + 2);
+}
+}
+let html = `<article class="chron-entry${bag ? ' bag' : ''}${pending ? ' pending' : ''}${scene ? ' chron-feature' : ''}"${scene ? ` data-scene="${scene}"` : ''}>`;
+html += `<div class="chron-meta">${escChronicle(meta)}${pending ? ' · <b>Ждёт ответа</b>' : ''}</div>`;
+if (title) html += `<h3 class="chron-title">${chronicleTextHtml(title)}</h3>`;
+html += `<div class="chron-text">${bag ? chronicleSpeechHtml(text) : chronicleTextHtml(text)}</div>`;
 if (pending) {
-html += `<div class="chron-answers">${e.ask.options.map((o, i) => `<button class="chron-answer" onclick="answerChronicle(${e.id}, ${i})">${chronicleTextHtml(o.text)}</button>`).join('')}</div>`;
-} else {
-const o = e.ask.options[e.ask.answer];
-html += `<div class="chron-reply">${chronicleAnswerHtml(o.text)}</div>`;
-if (o.reply) html += `<div class="chron-text">${chronicleSpeechHtml(o.reply)}</div>`;
+html += `<div class="chron-answers">${entry.ask.options.map((option, i) => `<button type="button" class="chron-link" onclick="answerChronicle(${entry.id}, ${i})">${chronicleTextHtml(option.text)}</button>`).join('')}</div>`;
+} else if (entry.ask) {
+const option = entry.ask.options[entry.ask.answer];
+if (option) {
+html += `<div class="chron-reply">${chronicleAnswerHtml(option.text)}</div>`;
+if (option.reply) html += `<div class="chron-text">${chronicleSpeechHtml(option.reply)}</div>`;
 }
 }
-return html + `</div>`;
-}).join('');
+return html + '</article>';
 }
 function openChroniclePanel() {
 const c = state.player.chronicle;
@@ -18609,6 +19366,7 @@ function tutDialogueOpen() {
 return (typeof __activeDialogue !== 'undefined' && !!__activeDialogue) || tutIsOpen('#dialogue-overlay');
 }
 function tutOtherOverlay(exceptId) {
+if (document.getElementById('equip-compare')?.open) return true;
 const list = document.querySelectorAll('[id$="-overlay"].active, .slot-picker.active, .soon-overlay.active, .cheat-overlay.active');
 for (const el of list) {
 if (el.id === exceptId || el.id === 'dialogue-overlay') continue;
@@ -18832,7 +19590,7 @@ return { x: r.left, y: r.top };
 function tutHide() {
 const { spot, bub } = tutEls();
 spot.classList.remove('on', 'waves');
-bub.classList.remove('on', 'quiet', 'action', 'handoff');
+bub.classList.remove('on', 'quiet', 'action', 'handoff', 'goal');
 if (__tutKey === 'hello') clearTimeout(__tutHelloTimer);
 __tutKey = null;
 }
@@ -18844,7 +19602,7 @@ function tutBubbleHtml(r) {
 const who = typeof bagSpeakerName === 'function' ? bagSpeakerName() : 'Заплечник';
 let row = '';
 if (r.btn) row += `<button type="button" class="tut-btn main" data-tut="go">${r.btn}</button>`;
-if (!r.final && !r.handoff) row += `<button type="button" class="tut-btn later" data-tut="later">Потом</button>`;
+if (!r.final && !r.handoff) row += `<button type="button" class="tut-btn later" data-tut="later">${r.laterLabel || 'Потом'}</button>`;
 return `<div class="tut-face"${tutFaceStyle()}></div>
     <div class="tut-body">
       <div class="tut-who">${who}</div>
@@ -18936,13 +19694,22 @@ y = Math.max(6, Math.min(y, vh - bh - 6));
 place(bub, x, y);
 }
 function tutChip(show, later, n) {
+if (!show) { tutEls().chip.classList.remove('on'); return; }
+const label = later ? 'Продолжить обучение' : `Первый день · <b>${n} из ${TUT_TOTAL}</b>`;
+tutPlaceChip(label, later, () => {
+const t = tutState();
+if (!t) return;
+if (t.later) { t.later = false; tutSave(); }
+__tutKey = null; __tutScrolledKey = null;
+tutTick();
+});
+}
+function tutPlaceChip(label, later, onClick) {
 const { chip } = tutEls();
-if (!show) { chip.classList.remove('on'); return; }
 chip.classList.add('on');
 chip.classList.toggle('later', !!later);
-const html = later
-? `<i${tutFaceStyle()}></i><span>Продолжить обучение</span>`
-: `<i${tutFaceStyle()}></i><span>Первый день · <b>${n} из ${TUT_TOTAL}</b></span>`;
+chip.style.visibility = '';
+const html = `<i${tutFaceStyle()}></i><span>${label}</span>`;
 if (chip.__html !== html) { chip.innerHTML = html; chip.__html = html; }
 const tabsEl = document.querySelector('.tabs');
 const tabsTop = tabsEl && tutVisible(tabsEl) ? tabsEl.getBoundingClientRect().top : window.innerHeight;
@@ -18950,13 +19717,7 @@ const sh = tutFixedShift();
 chip.style.bottom = 'auto';
 chip.style.left = (10 - sh.x) + 'px';
 chip.style.top = (tabsTop - chip.offsetHeight - 16 - sh.y) + 'px';
-chip.onclick = () => {
-const t = tutState();
-if (!t) return;
-if (t.later) { t.later = false; tutSave(); }
-__tutKey = null; __tutScrolledKey = null;
-tutTick();
-};
+chip.onclick = onClick;
 }
 function tutChipDodge() {
 const { chip, bub, spot } = tutEls();
@@ -18983,6 +19744,9 @@ bub.querySelector('[data-tut="ok"]').onclick = (e) => { e.stopPropagation(); don
 clearTimeout(__tutHelloTimer);
 __tutHelloTimer = setTimeout(done, 9000);
 }
+tutPlaceQuietBubble(bub);
+}
+function tutPlaceQuietBubble(bub) {
 bub.classList.add('on', 'quiet');
 const vw = window.innerWidth;
 const tabsEl = document.querySelector('.tabs');
@@ -19011,7 +19775,7 @@ return id;
 function tutShowTip(t, id) {
 const { spot, bub } = tutEls();
 spot.classList.remove('on', 'waves');
-bub.classList.remove('action', 'handoff');
+bub.classList.remove('action', 'handoff', 'goal');
 if (__tutKey !== 'tip-' + id) {
 __tutKey = 'tip-' + id;
 if (!t.seen[id]) { t.seen[id] = 1; tutSave(); }
@@ -19026,6 +19790,81 @@ bub.classList.add('on', 'quiet');
 const vw = window.innerWidth, vh = window.innerHeight, sh = tutFixedShift();
 bub.style.left = (Math.round((vw - bub.offsetWidth) / 2) - sh.x) + 'px';
 bub.style.top = (Math.max(8, vh - bub.offsetHeight - 18) - sh.y) + 'px';
+}
+function tutNextGoal(t) {
+if (!t.done || !t.on || state.travel.active || state.battle.active || tutIsOpen('#battle-window') ||
+tutDialogueOpen() || tutOtherOverlay() || document.querySelector('dialog[open]')) return null;
+const p = state.player;
+if (t.goals?.skill !== 'seen' && p.level >= 10 && p.skillPoints > 0) {
+const skill = Object.values(SKILLS).find(s => s.minLevel === 10 && isSkillAvailableForPlayer(s, p) && !getSkillLevel(s.id));
+if (skill) {
+const inTown = isTownLoc();
+const destination = p.underwoodFallen ? 'Загляни в Храм Ильграда.' : 'Загляни к Наставнику в Андервуде.';
+return {
+id: 'skill',
+text: TUTORIAL_GOALS.skill.replace('{skill}', skill.name) + (inTown ? '' : ' ' + destination),
+btn: inTown ? 'Открыть навыки' : 'На карту',
+onBtn: () => {
+if (!inTown) { switchTab('map'); return; }
+openMentor();
+const button = document.querySelector(`#mentor-pane-skills [data-skill-id="${CSS.escape(skill.id)}"] .btn.success`);
+button?.scrollIntoView({ block: 'center' });
+button?.focus({ preventScroll: true });
+},
+};
+}
+}
+const firstQuest = BAG_QUESTS[0];
+if (isQuestStarted(firstQuest.id) || !bagMet()) return null;
+if (p.level < firstQuest.minLevel && t.goals?.hunt !== 'seen') {
+const onField = p.currentLocation === 'field';
+return {
+id: 'hunt',
+text: TUTORIAL_GOALS.hunt,
+btn: onField ? 'К охоте' : 'На карту',
+onBtn: () => switchTab(onField ? 'hunt' : 'map'),
+};
+}
+if (p.level >= firstQuest.minLevel && t.goals?.bag !== 'seen') {
+return { id: 'bag', text: TUTORIAL_GOALS.bag, btn: 'Поговорить', onBtn: openBagTalk };
+}
+return null;
+}
+function tutShowNextGoal(t, goal) {
+const setStatus = status => {
+(t.goals ||= {})[goal.id] = status;
+tutSave();
+tutHide();
+};
+if (t.goals?.[goal.id] === 'collapsed') {
+if (__tutKey) tutHide();
+tutPlaceChip('Следующая цель', true, () => {
+setStatus('open');
+tutTick();
+document.querySelector('#tut-bubble.on [data-tut="go"]')?.focus({ preventScroll: true });
+});
+return;
+}
+tutChip(false);
+const { bub } = tutEls();
+const key = `goal-${goal.id}-${goal.btn}`;
+if (__tutKey !== key) {
+tutHide();
+__tutKey = key;
+bub.innerHTML = tutBubbleHtml({ ...goal, laterLabel: 'Свернуть' });
+bub.classList.add('goal');
+bub.querySelector('[data-tut="go"]').onclick = () => {
+setStatus('seen');
+goal.onBtn();
+tutTick();
+};
+bub.querySelector('[data-tut="later"]').onclick = () => {
+setStatus('collapsed');
+tutTick();
+tutEls().chip.focus({ preventScroll: true });
+};
+}
+tutPlaceQuietBubble(bub);
 }
 function renderTutorialSettings() {
 const cont = document.getElementById('tutorial-settings-buttons');
@@ -19124,14 +19963,21 @@ const firstDay = !!(t.on && !t.done);
 if (firstDay) {
 const busy = tutDialogueOpen() || tutIsOpen('#battle-window') || tutOtherOverlay();
 tutChip(!busy || t.later, t.later, tutDoneCount(tutFlags()));
-} else tutChip(false);
+}
 const r = firstDay && !t.later ? tutRoute() : null;
 if (!r) {
 const tipId = tutTip(t);
-if (tipId) { tutShowTip(t, tipId); tutChipDodge(); return; }
+if (tipId) {
+if (!firstDay) tutChip(false);
+tutShowTip(t, tipId); tutChipDodge(); return;
+}
 if (__tutKey && __tutKey.indexOf('tip-') === 0) tutHide();
 }
-if (!firstDay || t.later) { if (!(__tutKey && __tutKey.indexOf('tip-') === 0)) tutHide(); return; }
+if (!firstDay) {
+const goal = tutNextGoal(t);
+if (goal) { tutShowNextGoal(t, goal); return; }
+tutChip(false);
+}
 if (!r) { tutHide(); tutChipDodge(); return; }
 tutShow(r);
 tutChipDodge();
@@ -19159,10 +20005,17 @@ function mapLockInfo(loc) {
 const p = state.player;
 if (!p || loc === p.currentLocation) return null;
 if (loc === 'ilgrad' && !ilgradOpen()) {
-if ((p.level || 1) >= ILGRAD_MIN_LEVEL) {
-return { ready: true, desc: 'Город в кольце нежити. К воротам можно только пробиться.', meta: '⚔ Дорога — через орду' };
+if (typeof fallReady === 'function' && fallReady()) {
+const inTown = p.currentLocation === 'town';
+return {
+ready: true,
+desc: inTown ? 'Город в кольце нежити. Старейшина созывает Собрание.' : 'Собрание у Старейшины пройдёт в Андервуде.',
+meta: '⚔ Дорога — через орду',
+button: inTown ? 'На Собрание к Старейшине' : 'К дороге в Андервуд',
+};
 }
-return { stamp: 'В осаде', desc: 'Дороги нет. Нежить держит все подступы.', meta: `🔒 с ${ILGRAD_MIN_LEVEL} уровня`, rumor: ilgradRumor() };
+const meta = p.level >= ILGRAD_MIN_LEVEL ? '🔒 Дорога закрыта' : `🔒 с ${ILGRAD_MIN_LEVEL} уровня`;
+return { stamp: 'В осаде', desc: 'Дороги нет. Нежить держит все подступы.', meta, rumor: ilgradRumor() };
 }
 if (loc === 'town' && p.underwoodFallen) {
 return { stamp: 'Пал', desc: 'Там теперь хозяйничают мёртвые.', meta: '🔒 Пути нет', rumor: 'Из Андервуда больше никто не приходит.' };
@@ -19207,15 +20060,21 @@ const meta = document.getElementById('map-meta-' + loc);
 if (meta && lock) meta.innerHTML = `<span class="map-meta-line">${lock.meta}</span>`;
 const slot = document.getElementById(MAP_TRAVEL_SLOTS[loc]);
 if (slot && lock && lock.ready) {
-slot.innerHTML = `<div class="map-travel-btns"><button class="map-travel-btn" onclick="event.stopPropagation(); startIlgradBreakthrough()">⚔ Прорваться</button></div>`;
+slot.innerHTML = `<div class="map-travel-btns"><button type="button" class="map-travel-btn map-assembly-btn" onclick="openIlgradAssemblyRoute()">${lock.button}</button></div>`;
 }
 });
 }
-function startIlgradBreakthrough() {
-if ((state.player.level || 1) < ILGRAD_MIN_LEVEL) return;
-showSoon('ПРОРЫВ', window.FALL_LINES
-? 'Одному к воротам не пробиться. Старейшина собирает всех в Андервуде: поговори с ним.'
-: 'Нежить стоит у самых ворот, и пробиться к ним пока нельзя. Скоро.');
+function openIlgradAssemblyRoute() {
+if (state.travel.active || state.battle.active || !mapLockInfo('ilgrad')?.ready) return;
+if (state.player.currentLocation === 'town') {
+switchTab('hunt');
+window.scrollTo(0, 0);
+openElder();
+return;
+}
+const walk = document.querySelector('#map-travel-slot-town .map-walk-btn');
+walk?.focus({ preventScroll: true });
+walk?.closest('.map-card').scrollIntoView({ block: 'center' });
 }
 const CITY_HEADERS = {
 town:   { title: 'АНДЕРВУД', subtitle: 'Последний оплот живых на краю земель' },
@@ -19233,6 +20092,7 @@ TOWN_LOCS.forEach(id => {
 const g = document.getElementById('city-grid-' + id);
 if (g) g.style.display = id === loc ? '' : 'none';
 });
+renderIlgradCommandOffer();
 applyTownWindowTitles();
 }
 const ILGRAD_WINDOW_TITLES = {
@@ -19270,6 +20130,28 @@ if (b.dataset.origTitle === undefined) b.dataset.origTitle = b.title;
 const who = il && typeof ownerHere === 'function' ? NPCS[ownerHere(b.dataset.npc)] : null;
 b.title = who ? `Поговорить: ${who.name}` : b.dataset.origTitle;
 });
+}
+const ILGRAD_COMMAND_OFFERS = [
+{ quest: 'ilgradCount', topic: 'map' },
+{ quest: 'ilgradArmor', topic: 'armor' },
+{ quest: 'ilgradScouts', topic: 'scouts' },
+];
+function ilgradCommandOffer() {
+const p = state.player;
+if (p.currentLocation !== 'ilgrad' || !p.underwoodFallen || !ilgradOpen() || !DIALOGUES.commander) return null;
+const topics = ownerTopics('commander');
+return ILGRAD_COMMAND_OFFERS.find(({ quest, topic }) =>
+!isQuestStarted(quest) && topics.some(t => t.id === topic)) || null;
+}
+function renderIlgradCommandOffer() {
+const button = document.getElementById('ilgrad-command-offer');
+const offer = ilgradCommandOffer();
+button.hidden = !offer;
+if (offer) document.getElementById('ilgrad-command-quest').textContent = QUESTS[offer.quest].name;
+}
+function openIlgradCommandOffer() {
+const offer = ilgradCommandOffer();
+if (offer) openDialogue('commander', 't_' + offer.topic);
 }
 function openIlgradCommand() {
 if (state.player.currentLocation !== 'ilgrad') return;
@@ -19346,6 +20228,8 @@ saveCurrentSlot();
 
 // ==== ФАЙЛ js/systems/encyclopedia.js ====
 let __loreOpen = null;
+let __loreSkillFromMentor = false;
+let __loreSkillRank = null;
 function loreState() {
 const c = state.player.chronicle;
 if (!c) return null;
@@ -19363,7 +20247,37 @@ SHOP_ITEMS.forEach(it => list.push({ id: 'item.' + it.id, cat: 'items', title: i
 Object.values(GUILD_BUFFS).forEach(b => list.push(loreBuffArticle('guild', b)));
 Object.values(TAVERN_BUFFS).forEach(b => list.push(loreBuffArticle('tavern', b)));
 RECIPES.consumables.forEach(r => { if (r.result.type === 'food') list.push(loreFoodArticle(r)); });
+const known = state.player.chronicle?.lore || {};
+for (const id of Object.keys(known)) {
+if (!id.startsWith('skill.')) continue;
+const article = loreSkillArticle(id);
+if (article) list.push(article);
+}
 return list;
+}
+function loreSkillArticle(id) {
+const skill = SKILLS[id.slice('skill.'.length)];
+if (!skill || !isSkillAvailableForPlayer(skill, state.player)) return null;
+return {
+id, cat: 'skills', title: skill.name, kind: getSkillTypeLabel(skill),
+icon: skill.iconPng, skill, parts: [{ key: id }],
+};
+}
+function unlockViewedSkills(ids) {
+const c = loreState();
+if (!c) return;
+const timestamp = Date.now();
+let changed = false;
+for (const skillId of ids) {
+const key = 'skill.' + skillId;
+if (c.lore[key] || !loreSkillArticle(key)) continue;
+c.lore[key] = timestamp;
+changed = true;
+}
+if (!changed) return;
+updateChronicleDot();
+if (isChronicleOpen()) renderChronicle();
+saveCurrentSlotSoon();
 }
 function loreBuffArticle(kind, b) {
 const guild = kind === 'guild';
@@ -19450,6 +20364,7 @@ if (p.foodTimer > 0) keys.push('satiety');
 unlockLoreMany(keys, true);
 }
 function getLoreArticle(id) {
+if (id.startsWith('skill.')) return loreSkillArticle(id);
 return getLoreArticles().find(a => a.id === id) || null;
 }
 function unlockLore(key, silent) {
@@ -19511,54 +20426,70 @@ function loreArticleIsNew(a) {
 const c = state.player.chronicle;
 return a.parts.some(p => knowsLore(p.key) && !(c.loreSeen && c.loreSeen[p.key]));
 }
-function openLoreArticle(id) {
+function openLoreArticle(id, fromMentor = false) {
 const a = getLoreArticle(id);
 if (!a || !knowsLore(a.parts[0].key)) return;
 __loreOpen = id;
+__loreSkillFromMentor = fromMentor;
+__loreSkillRank = null;
 const c = loreState();
 let changed = false;
 a.parts.forEach(p => { if (knowsLore(p.key) && !c.loreSeen[p.key]) { c.loreSeen[p.key] = true; changed = true; } });
 renderChronicle();
+document.querySelector('.lore-title')?.focus();
 updateChronicleDot();
 if (changed && typeof saveCurrentSlotSoon === 'function') saveCurrentSlotSoon();
 }
 function closeLoreArticle() {
+const previous = __loreOpen;
 __loreOpen = null;
+__loreSkillFromMentor = false;
+__loreSkillRank = null;
 renderChronicle();
+if (previous) document.querySelector(`.lore-item[data-lore-id="${CSS.escape(previous)}"]`)?.focus();
 }
 function renderEncyclopedia(box) {
 const arts = getLoreArticles();
 let open = __loreOpen && getLoreArticle(__loreOpen);
 if (open && !knowsLore(open.parts[0].key)) open = null;
-let list = '';
-LORE_CATEGORIES.forEach(cat => {
+const list = LORE_CATEGORIES.map(cat => {
 const inCat = arts.filter(a => a.cat === cat.id).sort((x, y) => (x.order || 0) - (y.order || 0));
 const known = inCat.filter(a => knowsLore(a.parts[0].key));
-list += `<div class="lore-cat">${cat.name} · ${known.length} из ${inCat.length}</div>`;
-inCat.forEach(a => {
-if (!knowsLore(a.parts[0].key)) { list += `<div class="lore-item locked">???</div>`; return; }
-const active = open && open.id === a.id ? ' active' : '';
+const count = cat.id === 'skills' ? known.length : `${known.length} из ${inCat.length}`;
+const items = known.map(a => {
+const active = open?.id === a.id;
 const isNew = loreArticleIsNew(a) ? '<span class="lore-new">новое</span>' : '';
-list += `<div class="lore-item${active}" onclick="openLoreArticle('${a.id}')">${escChronicle(a.title)}${isNew}</div>`;
-});
-});
+return `<button type="button" class="lore-item${a.skill ? ' lore-skill-item' : ''}${active ? ' active' : ''}" data-lore-id="${a.id}"${active ? ' aria-current="true"' : ''} onclick="openLoreArticle('${a.id}')">
+        <span>${escChronicle(a.title)}</span>${isNew}
+      </button>`;
+}).join('');
+const hint = cat.id === 'skills' && !known.length
+? '<p class="lore-skill-hint">Откроются при просмотре у Наставника или в Храме.</p>' : '';
+return `<section class="lore-category">
+      <h3 class="lore-cat">${cat.name}<span>${count}</span></h3>${items}${hint}
+    </section>`;
+}).join('');
 const article = open ? renderLoreArticle(open) : `<div class="lore-empty">Выбери статью из списка.</div>`;
-box.innerHTML = `<div class="lore${open ? ' has-open' : ''}"><div class="lore-list">${list}</div><div class="lore-article">${article}</div></div>`;
+box.innerHTML = `<div class="lore${open ? ' has-open' : ''}"><nav class="lore-list" aria-label="Статьи энциклопедии">${list}</nav><article class="lore-article">${article}</article></div>`;
 }
 function renderLoreArticle(a) {
 const knownParts = a.parts.filter(p => knowsLore(p.key)).length;
-let html = `<div class="lore-back" onclick="closeLoreArticle()">← К списку</div>`;
+const scene = { underwood: 'town', field: 'field', mine: 'mine' }[a.id];
+let html = `<button type="button" class="lore-back chron-link" onclick="closeLoreArticle()">← К статьям</button>`;
+if (scene) html += `<div class="lore-scene" data-scene="${scene}"></div>`;
 html += `<div class="lore-head">`;
 if (a.shop && typeof SVG !== 'undefined' && SVG[a.shop.icon]) html += `<div class="lore-icon">${SVG[a.shop.icon]}</div>`;
 if (a.portrait) html += `<div class="lore-portrait"><img src="${a.portrait}" alt=""></div>`;
 if (a.icon) html += `<div class="lore-icon lore-icon-big"><img src="${a.icon}" alt=""></div>`;
-html += `<div><div class="lore-title">${escChronicle(a.title)}</div>`;
+html += '<div>';
 const kind = a.race ? `${a.race} · ${a.kind}` : a.kind;
 html += `<div class="lore-kind">${escChronicle(kind)}${a.parts.length > 1 ? ` · открыто ${knownParts} из ${a.parts.length}` : ''}</div>`;
+html += `<h2 class="lore-title" tabindex="-1">${escChronicle(a.title)}</h2>`;
 if (typeof OWNER_CHATS !== 'undefined' && OWNER_CHATS[a.id] && typeof rapportWord === 'function') {
 html += `<div class="lore-rapport">🤝 ${chronicleTextHtml(rapportWord(a.id))}</div>`;
 }
 html += `</div></div>`;
+if (a.skill) return html + renderLoreSkill(a.skill);
 if (a.shop) {
 const it = a.shop;
 const flavor = LORE_ITEM_FLAVOR[it.id];
@@ -19581,6 +20512,76 @@ html += `<p class="lore-text">${label}${chronicleTextHtml(p.text)}</p>`;
 if (p.rows) html += `<div class="lore-stats lore-rows">${p.rows.map(r => `<div><span>${r[2] ? `<img class="lore-row-icon" src="${r[2]}" alt="">` : ''}${escChronicle(r[0])}</span>${escChronicle(r[1])}</div>`).join('')}</div>`;
 });
 return html;
+}
+function renderLoreSkill(skill) {
+const rank = Math.min(skill.maxLevel, Math.max(1, __loreSkillRank ?? getSkillLevel(skill.id)));
+const buttons = Array.from({ length: skill.maxLevel }, (_, index) => {
+const choice = index + 1;
+return `<button type="button" class="btn" aria-label="Уровень ${choice}" aria-pressed="${choice === rank}"
+      data-rank="${choice}" onclick="selectLoreSkillRank(this, '${skill.id}')">${choice}</button>`;
+}).join('');
+const returnLabel = state.player.currentLocation === 'ilgrad' ? 'В Храм' : 'К Наставнику';
+return `
+    <p class="lore-skill-effect">${escChronicle(loreSkillEffect(skill, rank))}</p>
+    <div class="lore-skill-ranks" role="group" aria-label="Уровень навыка">
+      <span>Уровень</span>${buttons}
+    </div>
+    <div class="lore-skill-detail" aria-live="polite">${loreSkillDetail(skill, rank)}</div>
+    ${__loreSkillFromMentor && isTownLoc(state.player.currentLocation)
+      ? `<button type="button" class="btn lore-skill-return" onclick="returnToMentorSkill('${skill.id}')">← ${returnLabel}</button>` : ''}
+  `;
+}
+function selectLoreSkillRank(button, skillId) {
+const skill = SKILLS[skillId];
+const rank = Number(button.dataset.rank);
+__loreSkillRank = rank;
+for (const choice of button.parentElement.querySelectorAll('button')) {
+choice.setAttribute('aria-pressed', String(choice === button));
+}
+const article = button.closest('.lore-article');
+article.querySelector('.lore-skill-effect').textContent = loreSkillEffect(skill, rank);
+article.querySelector('.lore-skill-detail').innerHTML = loreSkillDetail(skill, rank);
+}
+function isBaseFireball(skill) {
+return skill.id === 'fireball' && !getPlayerSubclass()?.mods?.fireball;
+}
+function loreSkillEffect(skill, rank) {
+if (isBaseFireball(skill)) return `Бьёт огнём и поджигает цель на ${skill.burnTurns} ${loreSkillTurnLabel(skill.burnTurns)}.`;
+return getSkillBrief(skill, rank, false);
+}
+function loreSkillDetail(skill, rank) {
+const desc = skill.getDesc(rank);
+const data = skill.levels[rank - 1];
+const rows = [];
+const fireball = isBaseFireball(skill);
+if (fireball) {
+rows.push(['Удар', `×${SKILL_TEXT_NUMBER.format(data.multiplier)} от магической атаки`]);
+rows.push(['Поджог', `${data.burnPercent}% магической атаки за ход`]);
+}
+if (data.mpCost > 0) rows.push(['Расход', `${data.mpCost} маны`]);
+if (skill.id === 'tpRadiance') rows.push(['Расход', `${SKILL_TEXT_NUMBER.format(data.mp)} маны за ход`]);
+if (skill.cooldown > 0) rows.push(['Перезарядка', `${skill.cooldown} ${loreSkillTurnLabel(skill.cooldown)}`]);
+if (skill.minLevel) rows.push(['Доступен', `С ${skill.minLevel}-го уровня героя`]);
+const text = desc
+.replace(/\s*\bMP:\s*(?:<span class="val">)?\d+(?:<\/span>)?\.(?=\s|$)/g, '')
+.replace(/\s*КД:\s*\d+(?:\s+ATB)?\.(?=\s|$)/g, '')
+.replace(/\bHP\/сек/g, 'здоровья в секунду')
+.replace(/\bMP\/сек/g, 'маны в секунду')
+.replace(/\bMP\s*:/g, 'Расход маны —')
+.replace(/КД\s*:/g, 'Перезарядка —')
+.replace(/КД(?=\s)/g, 'перезарядка')
+.replace(/(\d+)\s+ATB\b/g, (_, turns) => `${turns} ${loreSkillTurnLabel(Number(turns))}`)
+.replace(/(шкал[аеуы]|шкалой) ATB/gi, '$1 хода')
+.replace(/сбивает ATB/gi, 'сбивает шкалу хода')
+.replace(/\bATB\b/g, 'шкала хода')
+.replace(/\bHP\b/g, 'здоровья')
+.replace(/\bMP\b/g, 'маны');
+const details = fireball ? '' : `<div class="lore-text">${text}</div>`;
+return details + (rows.length ? `<dl class="lore-skill-stats">${rows.map(([label, value]) => `<div><dt>${label}</dt><dd>${value}</dd></div>`).join('')}</dl>` : '');
+}
+function loreSkillTurnLabel(turns) {
+if (turns === 1) return 'ход';
+return turns >= 2 && turns <= 4 ? 'хода' : 'ходов';
 }
 
 ;
@@ -20051,7 +21052,7 @@ glorious:    { img: 'glorious',    css: 'glorious',    name: 'Прославле
 magnificent: { img: 'magnificent', css: 'magnificent', name: 'Великолепный охотник' },
 };
 const KILL_REVEAL_STEPS = [KILL_THRESHOLDS.atk, KILL_THRESHOLDS.drop, KILL_THRESHOLDS.gold, KILL_THRESHOLDS.title];
-function buildMonsterCard(template, variantId, fromMine = false) {
+function buildMonsterCard(template, variantId, fromMine = false, { preview = false, highlightDrop } = {}) {
 const monster = buildMonsterInstance(template, variantId);
 const variant = MONSTER_VARIANTS[variantId];
 const card = document.createElement('div');
@@ -20059,7 +21060,7 @@ card.className = 'monster-card ' + variant.cssClass +
 (monster.attackType === 'magic' ? ' magic-type' : '');
 card.dataset.id = template.id;
 card.dataset.variant = variantId;
-card.onclick = () => selectMonster(template, variantId, fromMine);
+if (!preview) card.onclick = () => selectMonster(template, variantId, fromMine);
 const kills = getMonsterKills(template.id, variantId);
 const unlockedHp    = isStatUnlocked(template.id, variantId, 'hp');
 const unlockedAtk   = isStatUnlocked(template.id, variantId, 'atk');
@@ -20078,7 +21079,8 @@ return `<span class="chance titled" title="Без титула ${base}%, с ти
 let dropRows = `<div class="row">${SVG.gold}<span>Оболы: ${goldStr}</span>${chanceHtml(monster.goldChance, unlockedGold)}</div>`;
 monster.drops.forEach(d => {
 const iconHtml = getDropIconHtml(d);
-dropRows += `<div class="row">${iconHtml}<span>${d.name}</span>${chanceHtml(d.chance, unlockedDrop)}</div>`;
+const rowClass = d.name === highlightDrop ? 'row drop-highlight' : 'row';
+dropRows += `<div class="${rowClass}">${iconHtml}<span>${d.name}</span>${chanceHtml(d.chance, unlockedDrop)}</div>`;
 });
 const statHtml = (key, open, val, dataStat) => {
 const def = MONSTER_STAT_ICONS[key];
@@ -20097,12 +21099,15 @@ const statsHtml = `<div class="monster-stats">${[
     statHtml('eva', unlockedEvasion, evasionValue, null),
   ].join('')}</div>`;
 const titleDef = MONSTER_TITLE_ICONS[getMonsterTitle(template.id, variantId)];
-const titleHtml = titleDef ? `<button type="button" class="monster-hunter ${titleDef.css}" title="${titleDef.name} — нажмите, что это даёт" data-title-info><img src="img/tags/${titleDef.img}.webp" alt="${titleDef.name}"></button>` : '';
+const titleIcon = titleDef ? `<img src="img/tags/${titleDef.img}.webp" alt="${titleDef.name}">` : '';
+const titleHtml = !titleDef ? '' : preview
+? `<span class="monster-hunter ${titleDef.css}" title="${titleDef.name}">${titleIcon}</span>`
+: `<button type="button" class="monster-hunter ${titleDef.css}" title="${titleDef.name} — нажмите, что это даёт" data-title-info>${titleIcon}</button>`;
 const nextGoal = KILL_REVEAL_STEPS.find(n => kills < n);
 const killsText = nextGoal ? `${kills}/${nextGoal}` : `${kills}`;
 const metaHtml = (variant.name ? `<span class="monster-variant-word">${variant.name}</span>` : '') +
 (typeof primeTimeLineHtml === 'function' ? primeTimeLineHtml(template) : '');
-const toTitle = nextGoal === KILL_THRESHOLDS.title;
+const toTitle = !preview && nextGoal === KILL_THRESHOLDS.title;
 const killsHtml = `<div class="monster-kills${toTitle ? ' to-title' : ''}"${toTitle ? ' data-title-info' : ''} title="${toTitle ? `До титула «Охотник» — ${KILL_THRESHOLDS.title} убийств. Нажмите, что он даёт` : 'Убито. Следующая цифра — сколько нужно, чтобы узнать о твари больше'}"><img class="kills-ico" src="img/tags/kills.webp" alt=""><span>${killsText}</span>${toTitle ? '<img class="kills-title-ico" src="img/tags/hunter.webp" alt="">' : ''}</div>`;
 card.innerHTML = `
     <div class="monster-portrait-img" style="background-image:url('${monster.art}')">${packBadgeHtml(template)}${monsterTagsHtml(monster)}</div>
@@ -20291,6 +21296,7 @@ if (n > 1) { for (let i = 0; i < n; i++) tickMixtureCharge(1); return; }
 const m = getActiveMixture();
 if (!m) return;
 m.chargesLeft -= 1;
+if (typeof bsessRecordSupplyUse === 'function') bsessRecordSupplyUse(m.id, MIXTURE_EFFECTS[m.id]?.charges);
 renderEquipSlots();
 renderEffectsPanel();
 if (m.chargesLeft > 0) return;
@@ -22272,9 +23278,9 @@ if (scIsElf()) { elfApplyPassives(p); return; }
 if (scIsOrc()) { orcApplyPassives(p); return; }
 if (p.subclass === 'human_wallguard') {
 const mLvl = p.learnedSkills.wgShieldMastery || 0;
-if (mLvl > 0 && getEquippedShield()) {
+const sh = getEquippedShield(p);
+if (mLvl > 0 && sh) {
 const d = SKILLS.wgShieldMastery.levels[mLvl - 1];
-const sh = getEquippedShield();
 const addDef = Math.round((getItemStat(sh, 'pDef') || 0) * d.shieldPct / 100);
 const addAbs = ((sh.stats && sh.stats.flatDamageReduce) || 0) * d.shieldPct / 100;
 p.blockChance += d.block;
@@ -22945,8 +23951,8 @@ function scHpPct() {
 const p = state.player;
 return p.maxHp > 0 ? p.hp / p.maxHp * 100 : 100;
 }
-function scTwoHanded() {
-return typeof isTwoHandGripWeapon === 'function' && isTwoHandGripWeapon(state.player.equipment.weapon);
+function scTwoHanded(p = state.player) {
+return typeof isTwoHandGripWeapon === 'function' && isTwoHandGripWeapon(p.equipment.weapon);
 }
 function scTotems() { return (typeof alliesList === 'function' ? alliesList() : []).filter(a => a.totem); }
 DEBUFF_DEFS.trance = { icon: '🥁', name: 'Боевой транс', cssClass: 'debuff-regen',
@@ -23029,7 +24035,7 @@ return { mult, add };
 function orcApplyPassives(p) {
 if (p.subclass === 'orc_berserker') {
 const d = scSkillData('bkTwoHand');
-if (d && scTwoHanded()) {
+if (d && scTwoHanded(p)) {
 p.evasionBonus += TWO_HAND_EVASION_PENALTY / 2;
 p.skillBonuses.push(`Двуручник (ур.${scSkillLvl('bkTwoHand')}): +${d.dmg}% урона, +${d.crit}% урона крита, штраф уворота вдвое меньше`);
 } else if (d) p.skillBonuses.push(`Двуручник: не действует — нужно двуручное оружие`);
@@ -23044,7 +24050,7 @@ p.skillBonuses.push(`Кровь предков (ур.${scSkillLvl('chAncestralBl
 }
 } else if (p.subclass === 'orc_rock') {
 const h = scSkillData('rkHide');
-if (h) p.skillBonuses.push(`Шкура вместо щита (ур.${scSkillLvl('rkHide')}): ${h.chance}% принять удар на шкуру (−50%)${getEquippedShield() ? ' — не действует со щитом' : ''}`);
+if (h) p.skillBonuses.push(`Шкура вместо щита (ур.${scSkillLvl('rkHide')}): ${h.chance}% принять удар на шкуру (−50%)${getEquippedShield(p) ? ' — не действует со щитом' : ''}`);
 }
 }
 function orcStrikeMult(skill, data, m, notes) {
@@ -23558,8 +24564,8 @@ if (!hasSubclass('elf_bladesinger')) return 0;
 const s = getDebuff('player', 'song');
 return s ? s.level * SONG_EVA : 0;
 }
-function subclassAccuracyBonus() {
-if (scIsDrow()) return drowAccuracyBonus();
+function subclassAccuracyBonus(p = state.player) {
+if (scIsDrow()) return drowAccuracyBonus(p);
 if (!hasSubclass('elf_pathfinder')) return 0;
 const d = scSkillData('pfHawk');
 return d ? d.acc : 0;
@@ -24252,7 +25258,7 @@ return mult;
 function drowApplyPassives(p) {
 if (p.subclass === 'drow_assassin') {
 const d = scSkillData('asDual');
-const off = getOffhandWeapon();
+const off = getOffhandWeapon(p);
 if (d && off) {
 p.offhandPAtk = Math.floor(getItemStat(off, 'pAtk') * d.off / 100);
 p.skillBonuses.push(`Парные клинки (ур.${scSkillLvl('asDual')}): вторая рука ${d.off}% (+${p.offhandPAtk}), без штрафа точности`);
@@ -24265,8 +25271,8 @@ const g = scSkillData('sgGround');
 if (g) p.skillBonuses.push(`Заземление (ур.${scSkillLvl('sgGround')}): маг. урон по вам −${g.magic}%`);
 }
 }
-function drowAccuracyBonus() {
-if (hasSubclass('drow_assassin') && scSkillData('asDual') && getOffhandWeapon()) return DUAL_WIELD_ACCURACY_PENALTY;
+function drowAccuracyBonus(p = state.player) {
+if (hasSubclass('drow_assassin') && scSkillData('asDual') && getOffhandWeapon(p)) return DUAL_WIELD_ACCURACY_PENALTY;
 return 0;
 }
 function drowHitAtk(skillId) {
@@ -25551,6 +26557,7 @@ const p = state.player;
 if (!monsterHasTagFlag(m, 'thief') || p.gold <= 0 || Math.random() * 100 >= MONSTER_THIEF_CHANCE) return;
 const n = Math.min(p.gold, m.level * 6);
 p.gold -= n;
+if (typeof bsessRecordGoldLoss === 'function') bsessRecordGoldLoss(n);
 m.stolen = (m.stolen || 0) + n;
 logCombat(`🫳 ${m.name} стащил ${n} Оболов!`, 'log-entry loss');
 updateTopStatus();
@@ -25698,6 +26705,13 @@ const t = WEAPON_CATEGORY_TRAITS[m.weapon] || {};
 const mult = m.weapon === 'axes' ? t.cleaveMult : m.weapon === 'spears' ? t.pierceSecondMult : 0;
 if (mult) allies[0].hp -= Math.max(1, Math.floor(dmg * mult));
 }
+function tryUseSteadfastSeal(message) {
+const b = state.battle;
+if (!b.active || b.activeEffects.steadfastSealUsed || !(state.player.guildBuffs.steadfastSeal?.timer > 0)) return false;
+b.activeEffects.steadfastSealUsed = true;
+logCombat(`✦ Печать выдержки ${message}.`, 'log-entry potion');
+return true;
+}
 function monsterKitAfterSkill(m, skill, landed) {
 if (m.hp <= 0 || state.player.hp <= 0 || !state.battle.active) return;
 if (skill.recoilPercent) {
@@ -25714,9 +26728,13 @@ spawnFloatDamage('fighter-monster', 0, 'block', { mon: m, text: `+${heal} HP` })
 logCombat(`🩸 ${m.name} восстанавливает ${heal} HP.`, 'log-entry monster');
 }
 }
-if (skill.atbCut && landed > 0) {
-if (!(typeof subclassPlayerUnmovable === 'function' && subclassPlayerUnmovable())) state.battle.playerATB = Math.max(0, (state.battle.playerATB || 0) - skill.atbCut);
-logCombat(`⚡ ${m.name} сбивает вашу шкалу хода на ${Math.round(skill.atbCut * 100)}%.`, 'log-entry monster');
+const b = state.battle;
+if (skill.atbCut && landed > 0 && b.playerATB > 0) {
+if (typeof subclassPlayerUnmovable === 'function' && subclassPlayerUnmovable()) return;
+if (tryUseSteadfastSeal('сохранила шкалу хода')) return;
+const lost = Math.min(b.playerATB, skill.atbCut);
+b.playerATB -= lost;
+logCombat(`⚡ ${m.name} сбивает вашу шкалу хода на ${Math.round(lost * 100)}%.`, 'log-entry monster');
 }
 }
 function tryMonsterParry(m) {
@@ -25908,7 +26926,8 @@ logCombat(`🩸 ${m.name} ранил вас — кровотечение! ${blee
 }
 if (traits && traits.stunChance) {
 const stunChance = traits.stunChance * chanceMult;
-if (Math.random() * 100 < stunChance) {
+const unmovable = typeof subclassPlayerUnmovable === 'function' && subclassPlayerUnmovable();
+if (Math.random() * 100 < stunChance && !unmovable && !tryUseSteadfastSeal('отменила оглушение')) {
 const turns = traits.stunTurns || 1;
 const existing = getDebuff('player', 'stun');
 if (existing) { existing.turnsLeft = Math.max(existing.turnsLeft || 0, turns); }
@@ -26595,6 +27614,7 @@ else if (wCat === 'crossbows') startATB = 1.0;
 state.battle.playerATB = startATB;
 state.battle.atbCarry = 0;
 state.battle.activeEffects.healPotionUsed = false;
+state.battle.activeEffects.steadfastSealUsed = false;
 state.battle.skillCooldowns = {};
 Object.keys(state.battle.skillToggles).forEach(id => {
 state.battle.skillCooldowns[id] = 0;
@@ -26735,6 +27755,8 @@ const now = performance.now();
 const dt = Math.min(0.1, (now - state.lastTick) / 1000);
 state.lastTick = now;
 flushPendingSlotSave(false);
+if (state.player.expedition) return;
+let huntEffectsChanged = false;
 if (state.player.foodTimer > 0) {
 state.player.foodTimer -= dt;
 if (state.player.foodTimer <= 0) {
@@ -26742,6 +27764,7 @@ const k = FOOD_KINDS[state.player.foodKind] || FOOD_KINDS.cookedMeat;
 state.player.foodTimer = 0;
 state.player.foodTickAccum = 0;
 state.player.foodKind = null;
+huntEffectsChanged = true;
 logCombat(`${k.icon} Действие сытности («${k.name}») закончилось.`, 'log-entry food');
 }
 }
@@ -26772,6 +27795,7 @@ state.player.dish.timer -= dt;
 if (state.player.dish.timer <= 0) {
 const d = DISHES[state.player.dish.id];
 state.player.dish = null;
+huntEffectsChanged = true;
 if (d) logCombat(`${d.icon} Действие блюда «${d.name}» закончилось.`, 'log-entry food');
 recalcStats();
 updateCharacterPanel();
@@ -26791,10 +27815,12 @@ logCombat(`🔮 Действие усиления «${GUILD_BUFFS[buffId].name}�
 }
 });
 if (needRecalc) {
+huntEffectsChanged = true;
 recalcStats();
 updateCharacterPanel();
 }
 }
+if (huntEffectsChanged && typeof expPaceStamp === 'function') expPaceStamp();
 if (state.player.tavernBuffs) {
 Object.keys(state.player.tavernBuffs).forEach(buffId => {
 const b = state.player.tavernBuffs[buffId];
@@ -27076,6 +28102,7 @@ const max = restoresMana ? p.maxMp : p.maxHp;
 const threshold = (p.potionThreshold || 40) / 100;
 if (!force && current / max >= threshold) return;
 potion.qty--;
+if (typeof bsessRecordSupplyUse === 'function') bsessRecordSupplyUse(potion.shopId);
 if (potion.qty <= 0) {
 const idx = p.inventory.indexOf(potion);
 if (idx >= 0) p.inventory.splice(idx, 1);
@@ -28908,6 +29935,8 @@ start: 0,
 kills: 0,
 xp: 0,
 gold: 0,
+supplyCost: 0,
+stolenGold: 0,
 lost: 0,
 items: new Map(),
 collecting: false,
@@ -28941,6 +29970,31 @@ const sec = bsessElapsedSec();
 if (sec < 20) return null;
 return value / sec * 3600;
 }
+const HUNT_BALANCE_NUMBER = new Intl.NumberFormat('ru-RU', { maximumFractionDigits: 2 });
+function huntBalanceHtml(earned, spent, note, forecast = false) {
+const cost = Number.isFinite(spent) ? Math.round(spent * 100) / 100 : null;
+const gold = forecast ? Math.round(earned) : earned;
+const net = cost === null ? null : gold - cost;
+const format = (n, approx = false) => n === null ? '—' :
+(approx ? '≈ ' : '') + HUNT_BALANCE_NUMBER.format(n).replace(/^-/, '−');
+return `<div class="hunt-balance">
+    <div class="hunt-balance-title">${forecast ? 'Прогноз · Оболы' : 'Оболы'}</div>
+    <dl class="hunt-balance-rows">
+      <div><dt>Добыто</dt><dd>${format(gold, forecast)}</dd></div>
+      <div><dt>Потрачено</dt><dd>${format(cost)}</dd></div>
+      <div class="hunt-balance-net${net < 0 ? ' loss' : ''}"><dt>Осталось</dt><dd>${format(net, forecast)}</dd></div>
+    </dl>
+    <p class="hunt-balance-note">${note}</p>
+  </div>`;
+}
+function bsessRecordSupplyUse(shopId, charges = 1) {
+if (!BSESS.active) return;
+const price = SHOP_ITEMS.find(item => item.id === shopId)?.price;
+if (price > 0 && charges > 0) BSESS.supplyCost += price / charges;
+}
+function bsessRecordGoldLoss(amount) {
+if (BSESS.active) BSESS.stolenGold += amount;
+}
 function bsessNoteLoot(drop, n, ok) {
 if (!BSESS.collecting || !drop) return;
 n = Math.max(1, n || 1);
@@ -28961,6 +30015,8 @@ BSESS.start = performance.now();
 BSESS.kills = 0;
 BSESS.xp = 0;
 BSESS.gold = 0;
+BSESS.supplyCost = 0;
+BSESS.stolenGold = 0;
 BSESS.lost = 0;
 BSESS.items = new Map();
 bsessUpdateBag();
@@ -29097,12 +30153,14 @@ const h = left / xpH;
 const txt = h >= 1 ? `${Math.floor(h)} ч ${Math.round((h % 1) * 60)} мин` : `${Math.max(1, Math.round(h * 60))} мин`;
 toLevel = `<div class="bxs-note">До ${p.level + 1} уровня ≈ ${txt}</div>`;
 }
+const costsNote = 'Зелья и заряды микстур по ценам лавки' + (BSESS.stolenGold > 0 ? ' · потери от краж' : '');
 box.innerHTML = `
     <div class="bxs-stat"><span>⏱</span><b>${bsessTime(bsessElapsedSec())}</b><i>время</i></div>
     <div class="bxs-stat"><span>💀</span><b>${BSESS.kills}</b><i>убито</i></div>
     <div class="bxs-stat"><span>✨</span><b>${bsessNum(BSESS.xp)}</b><i>опыт</i>${rate(xpH)}</div>
-    <div class="bxs-stat"><span>🪙</span><b>${bsessNum(BSESS.gold)}</b><i>Оболы</i>${rate(goldH)}</div>
-    ${toLevel}`;
+    <div class="bxs-stat"><span>🪙</span><b>${goldH === null ? '—' : bsessNum(goldH)}</b><i>Оболов / ч</i></div>
+    ${toLevel}
+    ${huntBalanceHtml(BSESS.gold, BSESS.supplyCost + BSESS.stolenGold, costsNote)}`;
 }
 function renderSessionPanel() {
 if (!BSESS.panelOpen) return;
@@ -29208,10 +30266,10 @@ function updatePeekBar() {
   startBattle = function () {
     const win = document.getElementById('battle-window');
     const wasOpen = !!(win && win.classList.contains('active'));
+    // Удача тратит первый заряд уже внутри старта боя.
+    if (!wasOpen || !BSESS.active) bsessReset();
     const r = origStart.apply(this, arguments);
-    const nowOpen = !!(win && win.classList.contains('active'));
-    if ((!wasOpen && nowOpen) || (nowOpen && !BSESS.active)) bsessReset();
-    else bsessUpdateBag();
+    bsessUpdateBag();
     return r;
   };
 
@@ -29469,6 +30527,7 @@ return r;
 const EXP_STACKABLE = ['material', 'consumable', 'food'];
 const EXP_RARITY_TYPES = ['weapon', 'shield', 'helmet', 'armorTop', 'armorBottom', 'gloves', 'boots', 'ring', 'earring', 'necklace'];
 let __expDialog = null;
+let __expStarting = false;
 let __expAwayTimer = null;
 let __expResolving = false;
 let __expLastReport = null;
@@ -29492,6 +30551,7 @@ return null;
 }
 }
 function expDurationMs(exp) { return (exp.hours || 0) * 3600 * 1000; }
+function expReturnMs(exp) { return exp.returnMs ?? expDurationMs(exp); }
 function expElapsedMs(exp, serverNow) {
 let ms;
 if (serverNow && exp.serverTime) ms = serverNow - exp.startedAt;
@@ -29500,7 +30560,7 @@ return Math.max(0, Math.min(expDurationMs(exp), ms));
 }
 function expLeftMsLocal(exp) {
 if (!exp) return 0;
-return Math.max(0, expDurationMs(exp) - (Date.now() - (exp.startedLocal || exp.startedAt)));
+return Math.max(0, expReturnMs(exp) - (Date.now() - (exp.startedLocal || exp.startedAt)));
 }
 function expFormatLeft(ms) {
 const s = Math.max(0, Math.ceil(ms / 1000));
@@ -29516,29 +30576,53 @@ if (h) return `${h} ч`;
 return `${m} мин`;
 }
 function expNum(n) { return Math.round(n || 0).toLocaleString('ru-RU'); }
-const __expPace = { key: null, t: 0 };
+const __expPace = { key: null, effects: '', store: null, t: 0 };
+const EXP_PACE_VER = 3;
+const EXP_PACE_PROFILES_LIMIT = 8;
+const EXP_HOUR_MS = 3600000;
 function expPaceKey(id, variantId) { return id + '_' + (variantId || 'normal'); }
 function expPaceStore() {
 const p = state.player;
 if (!p.huntPace || typeof p.huntPace !== 'object') p.huntPace = {};
 return p.huntPace;
 }
-const EXP_PACE_VER = 2;
-function expPaceEntry(key) {
+function expHuntEffects() {
+const p = state.player;
+const effects = {};
+Object.entries(p.guildBuffs || {}).forEach(([id, buff]) => {
+const def = GUILD_BUFFS[id];
+if (def && buff?.timer > 0 && (!def.mageOnly || p.classId === 'mage')) effects['guild:' + id] = buff.timer;
+});
+if (p.foodTimer > 0) effects['food:' + (p.foodKind || 'cookedMeat')] = p.foodTimer;
+if (p.dish?.timer > 0) effects['dish:' + p.dish.id] = p.dish.timer;
+return effects;
+}
+function expPaceEntry(key, effects) {
 const st = expPaceStore();
-let e = st[key];
-if (!e || e.v !== EXP_PACE_VER) e = st[key] = { k: 0, s: 0, v: EXP_PACE_VER, use: {} };
-if (!e.use) e.use = {};
+if (st[key]?.v !== EXP_PACE_VER || !st[key].profiles) st[key] = { v: EXP_PACE_VER, profiles: {} };
+const profiles = st[key].profiles;
+let e = profiles[effects];
+if (!e) {
+const others = Object.keys(profiles).filter(Boolean);
+if (effects && others.length >= EXP_PACE_PROFILES_LIMIT) {
+const oldest = others.reduce((a, b) => profiles[a].last <= profiles[b].last ? a : b);
+delete profiles[oldest];
+}
+e = profiles[effects] = { k: 0, s: 0, use: {}, last: Date.now() };
+}
+e.last = Date.now();
 return e;
 }
 function expRecordUse(shopId, n) {
 const key = expCurrentHuntKey();
 if (!key || !shopId || !(n > 0) || !state.player.classId) return;
-const e = expPaceEntry(key);
+const e = expPaceEntry(key, Object.keys(expHuntEffects()).sort().join('|'));
 e.use[shopId] = (e.use[shopId] || 0) + n;
 }
 function expCurrentHuntKey() {
 const b = state.battle;
+if (!b.autoBattle || b.breakthrough || state.player.expedition) return null;
+if (!b.active && !b.repeatBattle && !b.waitingForResume) return null;
 const win = document.getElementById('battle-window');
 if (!win || !win.classList.contains('active')) return null;
 const t = b.lastTarget || b.packTemplate;
@@ -29546,10 +30630,12 @@ return t && t.id ? expPaceKey(t.id, t.variantId) : null;
 }
 function expPaceStamp() {
 const now = performance.now();
-if (__expPace.key && __expPace.t) {
+const key = expCurrentHuntKey();
+const store = state.player.huntPace;
+if (__expPace.key && __expPace.t && __expPace.store === store) {
 const dt = (now - __expPace.t) / 1000;
 if (dt > 0 && dt <= HUNT_PACE_MAX_GAP_SEC) {
-const e = expPaceEntry(__expPace.key);
+const e = expPaceEntry(__expPace.key, __expPace.effects);
 e.s += dt;
 if (e.s > HUNT_PACE_WINDOW_SEC) {
 const f = HUNT_PACE_WINDOW_SEC / e.s;
@@ -29558,20 +30644,47 @@ Object.keys(e.use).forEach(id => { e.use[id] *= f; });
 }
 }
 }
-__expPace.key = expCurrentHuntKey();
+__expPace.key = key;
+__expPace.effects = key ? Object.keys(expHuntEffects()).sort().join('|') : '';
+__expPace.store = store;
 __expPace.t = now;
 }
 function expPaceKill(m) {
-if (!m || !state.player.classId) return;
+if (!m || m.fled || !state.player.classId || !expCurrentHuntKey()) return;
 expPaceStamp();
 const key = expPaceKey(m.templateId || m.id, m.variantId);
-expPaceEntry(key).k += 1;
+expPaceEntry(key, __expPace.effects).k += 1;
 }
-function expGetPace(id, variantId) {
-const e = (state.player.huntPace || {})[expPaceKey(id, variantId)];
-if (e && e.v !== EXP_PACE_VER) return { ok: false, old: true, k: 0, s: 0 };
-if (!e || e.s < EXPEDITION_MIN_PACE_SEC || e.k < EXPEDITION_MIN_PACE_KILLS) return { ok: false, k: e ? e.k : 0, s: e ? e.s : 0 };
-return { ok: true, kph: e.k / e.s * 3600, k: e.k, s: e.s, use: e.use || {} };
+function expGetPace(id, variantId, effects = expHuntEffects()) {
+const record = (state.player.huntPace || {})[expPaceKey(id, variantId)];
+if (record?.v !== EXP_PACE_VER) return { ok: false, old: !!record };
+let chosen = null, count = -1;
+Object.entries(record.profiles || {}).forEach(([key, p]) => {
+if (!(p?.s >= EXPEDITION_MIN_PACE_SEC && p.k >= EXPEDITION_MIN_PACE_KILLS)) return;
+const keys = key ? key.split('|') : [];
+if (keys.length < count || keys.some(k => !effects[k])) return;
+const kph = p.k / p.s * 3600;
+if (keys.length === count && kph >= chosen.kph) return;
+const use = Object.fromEntries(Object.entries(p.use || {}).map(([id, qty]) => [id, qty / p.k]));
+chosen = { ok: true, kph, use, effects: keys };
+count = keys.length;
+});
+return chosen || { ok: false };
+}
+function expHuntStages(opt, hours, effects = expHuntEffects()) {
+const stages = [];
+let remaining = hours * EXP_HOUR_MS;
+while (remaining > 0) {
+const pace = expGetPace(opt.template.id, opt.variantId, effects);
+if (!pace.ok) break;
+const ms = Math.min(remaining, ...pace.effects.map(key => effects[key] * 1000));
+stages.push({ ms, kph: pace.kph, use: pace.use });
+remaining -= ms;
+effects = Object.fromEntries(Object.entries(effects)
+.filter(([, sec]) => sec * 1000 > ms)
+.map(([key, sec]) => [key, sec - ms / 1000]));
+}
+return stages;
 }
 function expHuntOptions(loc) {
 const list = [];
@@ -29581,23 +30694,22 @@ const kills = getMonsterKills(t.id, v);
 const pace = expGetPace(t.id, v);
 let reason = '';
 if (kills < EXPEDITION_MIN_KILLS) reason = `нужно ${EXPEDITION_MIN_KILLS} убийств (сейчас ${kills})`;
-else if (pace.old) reason = 'замерим заново, теперь и расход зелий: поохотьтесь на них 5 минут';
-else if (!pace.ok) reason = 'поохотьтесь на них хотя бы 5 минут — так прикинем темп и расход зелий';
+else if (pace.old) reason = 'нужен новый замер: 5 минут автоохоты и 10 убийств';
+else if (!pace.ok) reason = 'нужны 5 минут автоохоты и 10 убийств с текущими усилениями или без них';
 const inst = buildMonsterInstance(t, v);
 list.push({ key: expPaceKey(t.id, v), template: t, variantId: v, name: inst.name, level: inst.level, kills, pace, ok: !reason, reason });
 });
 });
 return list;
 }
-function expEstimate(template, variantId, kph, hours) {
+function expEstimate(template, variantId, kills) {
 const p = state.player;
 const inst = buildMonsterInstance(template, variantId);
-const kills = kph * EXPEDITION_RATE * hours;
 const xpBonus = (p.xpBonus || 0) + (p.xpBonusFromRefine || 0);
 const xp = kills * inst.xpReward * XP_MONSTER_MULTIPLIER * mult() * (1 + xpBonus / 100);
 const titleMult = getTitleDropMultiplier(template.id, variantId);
 const goldAvg = (inst.goldMin + inst.goldMax) / 2 * (1 + (p.goldBonusFromRefine || 0) / 100) * mult();
-const gold = kills * Math.min(100, inst.goldChance * mult() * titleMult) / 100 * goldAvg;
+const gold = kills * inst.goldChance * mult() * titleMult / 100 * goldAvg;
 return { kills, xp, gold };
 }
 function expInvCount(shopId) {
@@ -29631,15 +30743,18 @@ if (!Array.isArray(p.expeditionLoot)) p.expeditionLoot = [];
 expPoolAdd(p.expeditionLoot, item, qty);
 }
 }
-function expSupplyNeeds(opt, hours) {
-const pace = opt.pace;
-if (!pace || !pace.ok || !pace.k) return [];
-const kills = pace.kph * EXPEDITION_RATE * hours;
-return Object.keys(pace.use || {}).map(id => {
+function expSupplyNeeds(stages) {
+const amounts = {};
+stages.forEach(stage => {
+const kills = stage.kph * EXPEDITION_RATE * stage.ms / EXP_HOUR_MS;
+Object.entries(stage.use).forEach(([id, perKill]) => {
+amounts[id] = (amounts[id] || 0) + perKill * kills;
+});
+});
+return Object.entries(amounts).map(([id, amount]) => {
 const shop = SHOP_ITEMS.find(s => s.id === id);
-const perKill = (pace.use[id] || 0) / pace.k;
-if (!shop || !(perKill > 0)) return null;
-return { id, shop, perKill, need: Math.ceil(perKill * kills - 1e-6), have: expInvCount(id) };
+if (!shop || !(amount > 0)) return null;
+return { id, shop, need: Math.max(1, Math.ceil(amount - 1e-6)), have: expInvCount(id) };
 }).filter(r => r && r.need > 0)
 .sort((a, b) => (expSupplyKind(a.id).kind === 'hard' ? 0 : 1) - (expSupplyKind(b.id).kind === 'hard' ? 0 : 1));
 }
@@ -29672,10 +30787,35 @@ luckKills: luck ? Math.min(kills, luck.cap) : 0, luckValue: luck ? luck.value : 
 atkOutMs: atk && atkMs < ms ? atkMs : null, atkName: atk ? atk.s.name : '',
 };
 }
+function expSimulateTrip(supplies, stages, elapsed) {
+const used = Object.fromEntries(supplies.map(s => [s.id, 0]));
+const result = { kills: 0, ms: 0, ranOut: null, luckKills: 0, luckValue: 0, atkOutMs: null, atkName: '', used };
+for (const stage of stages) {
+const duration = Math.min(stage.ms, elapsed - result.ms);
+if (duration <= 0) break;
+const stock = supplies.map(s => ({
+...s, qty: Math.max(0, s.qty - used[s.id]), perKill: stage.use[s.id] || 0,
+}));
+const sim = expSimulate(stock, stage.kph * EXPEDITION_RATE / EXP_HOUR_MS, duration);
+if (result.atkOutMs === null && sim.atkOutMs !== null) {
+result.atkOutMs = result.ms + sim.atkOutMs;
+result.atkName = sim.atkName;
+}
+stock.forEach(s => { used[s.id] += Math.min(s.qty, s.perKill * sim.kills); });
+result.kills += sim.kills;
+result.ms += sim.ms;
+result.luckKills += sim.luckKills;
+result.luckValue = Math.max(result.luckValue, sim.luckValue);
+if (sim.ranOut) { result.ranOut = sim.ranOut; break; }
+}
+result.pacedOut = !result.ranOut && result.ms < elapsed - 1;
+return result;
+}
 function expSupplyPlan(opt, hours) {
 const d = __expDialog || {};
 const take = d.take || {};
-const rows = expSupplyNeeds(opt, hours);
+const stages = expHuntStages(opt, hours);
+const rows = expSupplyNeeds(stages);
 const location = state.player.currentLocation;
 let gold = state.player.gold;
 let cost = 0;
@@ -29692,9 +30832,9 @@ r.got = Math.min(r.take, r.have + r.buy);
 r.short = Math.max(0, r.take - r.got);
 r.name = r.shop.name;
 });
-const T = hours * 3600000;
-const sim = expSimulate(rows.map(r => ({ id: r.id, name: r.name, qty: r.got, perKill: r.perKill })), opt.pace.kph * EXPEDITION_RATE / 3600000, T);
-return { rows, cost, sim, coverH: sim.ms / 3600000, enough: !sim.ranOut };
+const stock = rows.map(r => ({ id: r.id, name: r.name, qty: r.got }));
+const sim = expSimulateTrip(stock, stages, hours * EXP_HOUR_MS);
+return { rows, cost, sim, stages };
 }
 function expMakeItem(drop, qty) {
 let stats = null;
@@ -29751,6 +30891,7 @@ gold += g;
 }
 const dm = (luck && k < luck.kills) ? dropMult + luck.value / 100 : dropMult;
 inst.drops.forEach(d => {
+if (d.soulGem) return;
 const n = rollDropCount(d.chance * m * dm);
 for (let i = 0; i < n; i++) {
 if (EXP_RARITY_TYPES.includes(d.type)) {
@@ -29804,10 +30945,12 @@ if (!d) return;
 const opts = expHuntOptions(d.loc);
 const place = LOCATION_NAMES[d.loc] || d.loc;
 const sel = opts.find(o => o.key === d.key && o.ok) || null;
+const plan = sel ? expSupplyPlan(sel, d.hours) : null;
+const inTown = isTownLoc(state.player.currentLocation);
 const rows = opts.slice().sort((a, b) => (b.ok - a.ok)).map(o => {
 const kph = o.pace.ok ? Math.round(o.pace.kph) : 0;
 const info = o.ok
-? `<span class="exp-mon-pace">ваш темп ~${expNum(kph)}/ч → в экспедиции ~${expNum(kph * EXPEDITION_RATE)}/ч</span>`
+? `<span class="exp-mon-pace">автоохота ~${expNum(kph)}/ч · на старте похода до ${expNum(kph * EXPEDITION_RATE)}/ч</span>`
 : `<span class="exp-mon-why">🔒 ${o.reason}</span>`;
 return `<button type="button" class="exp-mon variant-${o.variantId}${o.ok ? '' : ' locked'}${sel && sel.key === o.key ? ' on' : ''}" data-key="${o.key}"${o.ok ? '' : ' disabled'}>
       <span class="exp-mon-pic" style="background-image:url('${o.template.art}')"></span>
@@ -29816,17 +30959,27 @@ return `<button type="button" class="exp-mon variant-${o.variantId}${o.ok ? '' :
 }).join('');
 const hours = EXPEDITION_HOURS.map(h => `<button type="button" class="exp-hours${d.hours === h ? ' on' : ''}" data-h="${h}">${h} ч</button>`).join('');
 let est = '<div class="exp-est exp-est-empty">Выберите, на кого охотиться.</div>';
-if (sel) {
-const e = expEstimate(sel.template, sel.variantId, sel.pace.kph, d.hours);
+if (plan) {
+const sim = plan.sim;
+const full = !sim.ranOut && !sim.pacedOut;
+const rewardKills = sim.kills / (full ? 1 : 1 + EXPEDITION_FULL_BONUS);
+const e = expEstimate(sel.template, sel.variantId, rewardKills);
+const paceLine = plan.stages.length > 1
+? `<div class="exp-rep-supplies">${plan.stages.map(stage => `${expFormatDuration(stage.ms)} по ${expNum(stage.kph * EXPEDITION_RATE)}/ч`).join(' · затем ')}</div>`
+: '';
+const paceNotice = sim.pacedOut
+? `<div class="exp-pack-warn">Хватит примерно на ${expFormatDuration(sim.ms)}. Затем усиления из замера закончатся. Для более долгого похода нужен обычный замер автоохоты.</div>`
+: '';
+const balanceNote = inTown ? `Закупка припасов у Торговца · в кошельке ${expNum(state.player.gold)} Оболов` : 'Прогноз по припасам в сумке';
 est = `<div class="exp-est">
-      <div>Примерно: <b>${expNum(e.kills)}</b> убийств · <b>+${expNum(e.xp)}</b> опыта · <b>~${expNum(e.gold)}</b> Оболов, плюс дроп</div>
-      <div class="exp-est-bonus">Дождётесь конца — ещё +${Math.round(EXPEDITION_FULL_BONUS * 100)}% ко всему</div>
+      <div>Примерно <b>${expNum(sim.kills)}</b> убийств в походе · <b>+${expNum(e.xp)}</b> опыта, плюс предметы</div>
+      ${huntBalanceHtml(e.gold, plan.cost, balanceNote, true)}
+      ${paceLine}
+      ${paceNotice}
     </div>`;
 }
-const inTown = isTownLoc(state.player.currentLocation);
 let pack = '';
-if (sel) {
-const plan = expSupplyPlan(sel, d.hours);
+if (plan) {
 if (!plan.rows.length) {
 pack = `<div class="exp-sub">Сборы</div><div class="exp-note">Припасы не нужны: на этой охоте вы не пили зелий и не брали микстур.</div>`;
 } else {
@@ -29844,16 +30997,14 @@ return `<div class="exp-pack-row">
         </div>`;
 }).join('');
 let sum = '';
-if (plan.cost > 0) sum += `<div>Докупит у Торговца на <b>${expNum(plan.cost)}</b> Оболов (у вас ${expNum(state.player.gold)})</div>`;
 const sim = plan.sim;
 if (sim.atkOutMs !== null) {
 sum += sim.atkOutMs < 60000
 ? `<div class="exp-pack-warn">«${sim.atkName}» не взята — герой бьёт медленнее, чем на вашей охоте.</div>`
 : `<div class="exp-pack-warn">«${sim.atkName}» кончится примерно через ${expFormatDuration(sim.atkOutMs)} — дальше герой бьёт медленнее.</div>`;
 }
-if (!plan.enough) sum += `<div class="exp-pack-warn">Хватит примерно на ${expFormatDuration(sim.ms)} из ${d.hours} ч: кончится «${sim.ranOut.name}», и герой вернётся раньше, без бонуса.</div>`;
-else if (sim.atkOutMs === null) sum += `<div class="exp-pack-ok">Припасов хватит на всю экспедицию. Что останется — вернётся в сумку.</div>`;
-else sum += `<div class="exp-pack-ok">Герой вернётся в срок. Остаток припасов — обратно в сумку.</div>`;
+if (sim.ranOut) sum += `<div class="exp-pack-warn">Хватит примерно на ${expFormatDuration(sim.ms)} из ${d.hours} ч: кончится «${sim.ranOut.name}», и герой вернётся раньше.</div>`;
+else sum += '<div class="exp-pack-ok">Хватит на запланированную охоту. Остаток припасов вернётся в сумку.</div>';
 pack = `<div class="exp-sub">Сборы</div>
         <div class="exp-pack">${lines}</div>
         ${inTown ? `<label class="exp-pack-buy"><input type="checkbox" id="exp-pack-buy"${d.buy !== false ? ' checked' : ''}> Докупить недостающее у Торговца</label>` : ''}
@@ -29863,7 +31014,7 @@ pack = `<div class="exp-sub">Сборы</div>
 const townNote = inTown ? '' : `<div class="exp-pack-warn exp-town-note">Собраться в экспедицию можно только в городе: вернитесь туда — герой закупится и уйдёт.</div>`;
 expOverlay(`
     <div class="exp-head"><span>⛺ Экспедиция: ${place}</span><button type="button" class="exp-x" onclick="closeExpeditionDialog()" aria-label="Закрыть">×</button></div>
-    <div class="exp-note">Герой уйдёт из города охотиться сам — вдвое медленнее, чем с вами. Пока он в пути, им нельзя играть. Зелья и микстуры берёт с собой, бафы и сытость тратятся как на обычной охоте. Без душ самоцветов.</div>
+    <div class="exp-note">Темп похода — до ${expNum(EXPEDITION_RATE * 100)}% вашей автоохоты. Убийства идут в отдельный счётчик походов. Души самоцветов добываются в бою.</div>
     <div class="exp-sub">На кого</div>
     <div class="exp-mons">${rows}</div>
     <div class="exp-sub">На сколько</div>
@@ -29871,7 +31022,7 @@ expOverlay(`
     ${est}
     ${pack}
     ${townNote}
-    <div class="exp-actions"><button type="button" class="exp-btn exp-btn-main"${sel && inTown ? '' : ' disabled'} onclick="expStartHunt()">Отправиться</button></div>
+    <div class="exp-actions"><button type="button" class="exp-btn exp-btn-main"${inTown && plan?.sim.ms > 0 ? '' : ' disabled'} onclick="expStartHunt()">Отправиться</button></div>
   `);
 document.querySelectorAll('#exp-overlay .exp-mon:not(.locked)').forEach(b => {
 b.onclick = () => { __expDialog.key = b.dataset.key; __expDialog.take = {}; expRenderDialog(); };
@@ -29892,23 +31043,29 @@ if (buyBox) buyBox.onchange = () => { __expDialog.buy = buyBox.checked; expRende
 }
 async function expStartHunt() {
 const d = __expDialog;
-if (!d || expIsAway()) return;
+if (!d || __expStarting || expIsAway()) return;
 const o = expHuntOptions(d.loc).find(x => x.key === d.key && x.ok);
 if (!o) return;
 if (state.travel.active) { showToast('⛺', 'Сначала дойдите до места'); return; }
 if (!isTownLoc(state.player.currentLocation)) { showToast('⛺', 'Собраться в экспедицию можно только в городе'); return; }
 const btn = document.querySelector('#exp-overlay .exp-btn-main');
+const slot = state.activeSlotIndex;
+__expStarting = true;
 if (btn) { btn.disabled = true; btn.textContent = 'Собираемся…'; }
+try {
+const srv = await expServerNow();
+if (__expDialog !== d || slot !== state.activeSlotIndex || !isTownLoc() || state.travel.active) return;
+const plan = expSupplyPlan(o, d.hours);
+if (!(plan.sim.ms > 0)) { showToast('⛺', 'Для похода нужен замер автоохоты и припасы по этому замеру'); return; }
 const b = state.battle;
 if (b.active || b.repeatBattle || b.waitingForResume) closeBattle();
-const plan = expSupplyPlan(o, d.hours);
+const goldBefore = state.player.gold;
 plan.rows.forEach(r => { if (r.buy > 0) buyItem(r.id, r.buy); });
-const supplies = [];
-plan.rows.forEach(r => {
-const got = Math.min(r.take, expInvCount(r.id));
-if (got <= 0) { supplies.push({ id: r.id, name: r.shop.name, qty: 0, perKill: r.perKill }); return; }
-expInvTake(r.id, got);
-supplies.push({ id: r.id, name: r.shop.name, qty: got, perKill: r.perKill });
+const supplyCost = goldBefore - state.player.gold;
+const supplies = plan.rows.map(r => {
+const qty = Math.min(r.take, expInvCount(r.id));
+expInvTake(r.id, qty);
+return { id: r.id, name: r.name, qty };
 });
 if (supplies.length) {
 renderInventory();
@@ -29916,23 +31073,20 @@ if (typeof renderEquipSlots === 'function') renderEquipSlots();
 if (typeof renderConsumablesPanel === 'function') renderConsumablesPanel();
 if (typeof updateInventoryFooter === 'function') updateInventoryFooter();
 }
-const srv = await expServerNow();
+const sim = expSimulateTrip(supplies, plan.stages, d.hours * EXP_HOUR_MS);
+const now = Date.now();
 state.player.expedition = {
-type: 'hunt',
-loc: d.loc,
-monsterId: o.template.id,
-variantId: o.variantId,
-name: o.name,
-kph: o.pace.kph,
-hours: d.hours,
-startedAt: srv || Date.now(),
-startedLocal: Date.now(),
-serverTime: !!srv,
-supplies,
+type: 'hunt', loc: d.loc, monsterId: o.template.id, variantId: o.variantId, name: o.name,
+hours: d.hours, startedAt: srv || now, startedLocal: now, serverTime: !!srv,
+stages: plan.stages, supplies, supplyCost, returnMs: sim.ms,
 };
-logCombat(`⛺ ${state.player.name} уходит в экспедицию: ${LOCATION_NAMES[d.loc] || d.loc}, ${o.name}, ${d.hours} ч.`, 'log-entry levelup');
+logCombat(`⛺ ${state.player.name} уходит в экспедицию: ${LOCATION_NAMES[d.loc] || d.loc}, ${o.name}, ${expFormatDuration(sim.ms)}.`, 'log-entry levelup');
 saveCurrentSlot();
 expShowAway();
+} finally {
+__expStarting = false;
+if (btn?.isConnected) { btn.disabled = false; btn.textContent = 'Отправиться'; }
+}
 }
 function expShowAway() {
 const exp = state.player.expedition;
@@ -29942,10 +31096,10 @@ const tpl = ALL_HUNT_MONSTERS.find(t => t.id === exp.monsterId);
 expOverlay(`
     <div class="exp-head"><span>⛺ ${state.player.name} в экспедиции</span></div>
     <div class="exp-away-pic" style="background-image:url('${tpl ? tpl.art : ''}')"></div>
-    <div class="exp-away-where">${place} · ${exp.name} · ${exp.hours} ч</div>
+    <div class="exp-away-where">${place} · ${exp.name} · ${expFormatDuration(expReturnMs(exp))}</div>
     <div class="exp-away-left" id="exp-away-left"></div>
     <div class="exp-away-bar"><div class="exp-away-fill" id="exp-away-fill"></div></div>
-    <div class="exp-note">Дождётесь конца — +${Math.round(EXPEDITION_FULL_BONUS * 100)}% ко всей добыче. Можно поиграть другим героем, пока этот в пути.</div>
+    <div class="exp-note">Пока герой в пути, можно играть другим персонажем. При досрочном возвращении награда меньше.</div>
     <div class="exp-actions">
       <button type="button" class="exp-btn" onclick="expToCharacterSelect()">К выбору героя</button>
       <button type="button" class="exp-btn" onclick="expResolve(true)">Не ждать</button>
@@ -29962,7 +31116,7 @@ const left = expLeftMsLocal(exp);
 const el = document.getElementById('exp-away-left');
 const fill = document.getElementById('exp-away-fill');
 if (el) el.textContent = left > 0 ? `Вернётся через ${expFormatLeft(left)}` : 'Возвращается…';
-if (fill) fill.style.width = (100 - left / expDurationMs(exp) * 100).toFixed(2) + '%';
+if (fill) fill.style.width = (100 - left / Math.max(1, expReturnMs(exp)) * 100).toFixed(2) + '%';
 if (left <= 0) { clearInterval(__expAwayTimer); __expAwayTimer = null; expResolve(false); }
 }
 function expToCharacterSelect() {
@@ -30021,44 +31175,55 @@ __expResolving = true;
 try {
 clearInterval(__expAwayTimer); __expAwayTimer = null;
 const srv = await expServerNow();
-let elapsed = expElapsedMs(exp, srv);
-let full = elapsed >= expDurationMs(exp) - 1000;
+const elapsed = expElapsedMs(exp, srv);
+const duration = expDurationMs(exp);
+const returnMs = expReturnMs(exp);
+if (!early && elapsed < returnMs - 1000) { expShowAway(); return; }
 const template = ALL_HUNT_MONSTERS.find(t => t.id === exp.monsterId);
-const sim = expSimulate(exp.supplies || [], (exp.kph || 0) * EXPEDITION_RATE / 3600000, elapsed);
-const ranOut = sim.ranOut;
-if (ranOut) { elapsed = sim.ms; full = false; }
-const huntKills = sim.kills;
-const supplyRep = (exp.supplies || []).map(s => {
-const used = Math.min(s.qty || 0, Math.round((s.perKill || 0) * huntKills));
+const supplies = exp.supplies || [];
+const stages = exp.stages || [{
+ms: duration, kph: exp.kph || 0, use: Object.fromEntries(supplies.map(s => [s.id, s.perKill])),
+}];
+const sim = expSimulateTrip(supplies, stages, elapsed >= returnMs - 1000 ? duration : elapsed);
+const full = !sim.ranOut && !sim.pacedOut && sim.ms >= duration - 1000;
+const supplyRep = supplies.map(s => {
+const used = Math.min(s.qty || 0, Math.round(sim.used[s.id] || 0));
 const left = (s.qty || 0) - used;
 expGiveSupply(s.id, left);
 return { name: s.name, used, left };
 }).filter(s => s.used > 0 || s.left > 0);
-const burned = expBurnTimers(elapsed / 1000);
-let killsRaw = huntKills * (full ? 1 + EXPEDITION_FULL_BONUS : 1);
-let kills = Math.floor(killsRaw) + (Math.random() < killsRaw % 1 ? 1 : 0);
-if (!template) kills = 0;
+const burned = expBurnTimers(sim.ms / 1000);
+const kills = template ? Math.floor(sim.kills + 1e-8) : 0;
+const rewardFactor = full ? 1 : 1 / (1 + EXPEDITION_FULL_BONUS);
+const rewardBudget = kills * rewardFactor;
+const rewardRolls = Math.floor(rewardBudget) + (Math.random() < rewardBudget % 1 ? 1 : 0);
 const levelBefore = p.level;
-const luck = { kills: Math.round(sim.luckKills), value: sim.luckValue };
-const loot = template && kills > 0 ? expRollHunt(template, exp.variantId, kills, luck) : { xp: 0, gold: 0, items: [] };
+const luck = { kills: Math.round(sim.luckKills * rewardFactor), value: sim.luckValue };
+const loot = template && rewardRolls > 0 ? expRollHunt(template, exp.variantId, rewardRolls, luck) : { xp: 0, gold: 0, items: [] };
 p.expedition = null;
 p.currentLocation = homeTown();
 p.xp += loot.xp;
 p.gold += loot.gold;
-if (template) { const key = killKey(template.id, exp.variantId); p.monsterKills[key] = (p.monsterKills[key] || 0) + kills; }
+let totalKills = 0;
+if (template) {
+const key = killKey(template.id, exp.variantId);
+if (!p.expeditionKills) p.expeditionKills = {};
+totalKills = p.expeditionKills[key] = (p.expeditionKills[key] || 0) + kills;
+}
 if (!Array.isArray(p.expeditionLoot)) p.expeditionLoot = [];
 loot.items.forEach(e => expPoolAdd(p.expeditionLoot, e.drop, e.qty));
 checkLevelUp();
-if (typeof loreSyncBeasts === 'function') loreSyncBeasts(false);
 const rep = {
-loc: exp.loc, name: exp.name, hours: exp.hours, elapsed, full,
-kills, xp: loot.xp, gold: loot.gold, levels: p.level - levelBefore,
-reason: ranOut ? heroText(EXPEDITION_SUPPLY_OUT_REASON.replace('%name%', ranOut.name)) : (full ? '' : expPickReason(exp.loc)),
+loc: exp.loc, name: exp.name, hours: exp.hours, elapsed: sim.ms, full,
+kills, totalKills, xp: loot.xp, gold: loot.gold, supplyCost: exp.supplyCost, levels: p.level - levelBefore,
+reason: sim.ranOut ? heroText(EXPEDITION_SUPPLY_OUT_REASON.replace('%name%', sim.ranOut.name))
+: sim.pacedOut ? 'Усиления закончились. Для продолжения нужен замер обычной автоохоты.'
+: full ? '' : expPickReason(exp.loc),
 supplies: supplyRep, burned,
 };
 rep.bagLine = expPickBagLine(rep);
 if (typeof annalsFirst === 'function') annalsFirst('expedition.hunt');
-logCombat(`⛺ Экспедиция окончена: ${exp.name} ×${expNum(kills)}, +${expNum(loot.xp)} опыта, +${expNum(loot.gold)} Оболов${full ? ` (+${Math.round(EXPEDITION_FULL_BONUS * 100)}% за полную)` : ''}.`, 'log-entry levelup');
+logCombat(`⛺ Экспедиция окончена: ${exp.name} ×${expNum(kills)}, +${expNum(loot.xp)} опыта, +${expNum(loot.gold)} Оболов.`, 'log-entry levelup');
 updateTopStatus();
 updateCharacterPanel();
 updateMapUI();
@@ -30082,11 +31247,13 @@ if (rep.bagLine) {
 body += `<div class="exp-rep-bag"><div class="exp-rep-bag-ico">🎒</div><div><div class="exp-rep-bag-name">${typeof bagSpeakerName === 'function' ? bagSpeakerName() : 'Заплечник'}</div><div class="exp-rep-bag-line">«${rep.bagLine}»</div></div></div>`;
 }
 body += `<div class="exp-rep-stats">
-      <div><i>Убито</i><b>${expNum(rep.kills)}</b></div>
+      <div><i>Убито в походе</i><b>${expNum(rep.kills)}</b></div>
       <div><i>Опыт</i><b>+${expNum(rep.xp)}</b></div>
-      <div><i>Оболы</i><b>+${expNum(rep.gold)}</b></div>
     </div>`;
-if (rep.full) body += `<div class="exp-rep-bonus">+${Math.round(EXPEDITION_FULL_BONUS * 100)}% за полную экспедицию</div>`;
+const balanceNote = Number.isFinite(rep.supplyCost) ? 'Фактическая закупка припасов у Торговца' : 'Цена закупки для этого похода не записана';
+body += huntBalanceHtml(rep.gold, rep.supplyCost, balanceNote);
+body += `<div class="exp-rep-supplies">Всего в экспедициях на эту цель · ${expNum(rep.totalKills)}</div>`;
+if (rep.full) body += '<div class="exp-rep-bonus">Полная награда за поход</div>';
 if (rep.levels > 0) body += `<div class="exp-rep-bonus">✦ Новый уровень: ${p.level}!</div>`;
 if (rep.supplies && rep.supplies.length) {
 const s = rep.supplies.map(x => `${x.name}: ушло ${expNum(x.used)}${x.left > 0 ? `, вернулось ${expNum(x.left)}` : ''}`).join(' · ');
@@ -30233,7 +31400,7 @@ if (exp) {
 const left = expLeftMsLocal(exp);
 const place = LOCATION_NAMES[exp.loc] || exp.loc;
 if (left > 0) {
-return `<div class="slot-exp" title="Зайдёте раньше — герой вернётся раньше, без бонуса">⛺ В экспедиции · ${place} · осталось ${expFormatLeft(left)}<small>+${Math.round(EXPEDITION_FULL_BONUS * 100)}%, если дождаться</small></div>`;
+return `<div class="slot-exp" title="При досрочном возвращении награда меньше">⛺ В экспедиции · ${place} · осталось ${expFormatLeft(left)}</div>`;
 }
 return `<div class="slot-exp done">⛺ Экспедиция окончена — заходите за добычей</div>`;
 }
@@ -30254,17 +31421,21 @@ if (expPoolCount(p.expeditionLoot) > 0) setTimeout(() => showToast('⛺', 'До�
 }
 (function expInstall() {
 const origStart = startBattle;
-startBattle = function () { const r = origStart.apply(this, arguments); expPaceStamp(); return r; };
+startBattle = function () { expPaceStamp(); const r = origStart.apply(this, arguments); expPaceStamp(); return r; };
 const origDeath = onMonsterDeath;
 onMonsterDeath = function (deadMonster) {
 const m = deadMonster || (typeof getCurrentMonster === 'function' ? getCurrentMonster() : null);
-const fresh = m && !m._deathProcessed;
+if (m && !m._deathProcessed) expPaceKill(m);
 const r = origDeath.apply(this, arguments);
-if (fresh && m._deathProcessed) expPaceKill(m);
+expPaceStamp();
 return r;
 };
 const origClose = closeBattle;
 closeBattle = function () { expPaceStamp(); const r = origClose.apply(this, arguments); __expPace.key = null; return r; };
+const origPlayerDeath = onPlayerDeath;
+onPlayerDeath = function () { const r = origPlayerDeath.apply(this, arguments); expPaceStamp(); return r; };
+const origToggleAuto = toggleAuto;
+toggleAuto = function () { expPaceStamp(); const r = origToggleAuto.apply(this, arguments); expPaceStamp(); return r; };
 const origPotion = checkHealPotion;
 checkHealPotion = function () {
 const eff = state.battle.activeEffects;
@@ -30458,6 +31629,7 @@ updateCharacterPanel();
 updateMapUI();
 switchTab('hunt');
 renderMonsters();
+window.scrollTo(0, 0);
 saveCurrentSlot();
 logCombat('🏰 Ильград открыт. Максимальный уровень теперь 30.', 'log-entry levelup');
 showToast('🏰', 'Ильград открыт · уровень до 30');

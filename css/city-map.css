@@ -235,6 +235,39 @@
   letter-spacing: calc(1 * var(--u));
 }
 
+.city-command-offer:not([hidden]) {
+  display: flex;
+  align-items: center;
+  gap: calc(12 * var(--u));
+  width: min(100%, calc(430 * var(--u)));
+  margin: 0 auto calc(16 * var(--u));
+  padding: calc(8 * var(--u)) calc(12 * var(--u));
+  border: 1px solid var(--gold);
+  border-radius: calc(6 * var(--u));
+  background: linear-gradient(110deg, #24231f, #131418);
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.city-command-offer img {
+  width: calc(48 * var(--u));
+  height: calc(48 * var(--u));
+  object-fit: cover;
+  flex: none;
+  border: 1px solid var(--border);
+  border-radius: calc(4 * var(--u));
+}
+.city-command-copy { display: grid; gap: calc(3 * var(--u)); }
+.city-command-copy > span { color: var(--text-dim); font-size: var(--fs-small); }
+.city-command-copy strong, .city-command-arrow { color: var(--gold-bright); }
+.city-command-arrow { margin-left: auto; font-size: calc(24 * var(--u)); }
+.city-command-offer:hover { border-color: var(--gold-bright); }
+.city-command-offer:focus-visible, .map-card[data-loc="town"]:focus-within {
+  outline: 2px solid var(--gold-bright);
+  outline-offset: -2px;
+}
+
 /* ---------- КОПИ: ЗАГЛУШКА «ПУСТО» ---------- */
 .mine-empty-box {
   text-align: center;
@@ -338,7 +371,10 @@
   justify-content: center;
 }
 .map-card[data-loc="field"] { background-image: var(--map-shade), url('../img/locations/map/field.webp'); }
-.map-card[data-loc="town"]  { background-image: var(--map-shade), url('../img/locations/map/town.webp'); }
+.map-card[data-loc="town"] {
+  --map-town-art: url('../img/locations/map/town-panorama.webp');
+  background-image: var(--map-shade), var(--map-town-art);
+}
 .map-card[data-loc="mine"]  { background-image: var(--map-shade), url('../img/locations/map/mine.webp'); }
 .map-card[data-loc="outskirts"] { background-image: var(--map-shade), url('../img/locations/map/outskirts.webp'); }
 /* v0.36: своей картинки для карты пока нет — вышка на стене с горящим городом */
@@ -365,7 +401,7 @@
   filter: grayscale(1) brightness(0.8);
 }
 .map-card[data-loc="ilgrad"] .map-lock-bg { background-image: linear-gradient(180deg, rgba(10,10,14,0.35), rgba(10,10,14,0.82)), url('../img/city/ilgrad/watchtower.webp'); }
-.map-card[data-loc="town"] .map-lock-bg { background-image: linear-gradient(180deg, rgba(10,10,14,0.35), rgba(10,10,14,0.82)), url('../img/locations/map/town.webp'); }
+.map-card[data-loc="town"] .map-lock-bg { background-image: linear-gradient(180deg, rgba(10,10,14,0.35), rgba(10,10,14,0.82)), var(--map-town-art); }
 .map-lock-fog {
   position: absolute; left: -60%; right: -60%; bottom: -10%; height: 75%;
   background:
@@ -475,6 +511,7 @@
   font-size: calc(12 * var(--u));
   white-space: nowrap;
 }
+.map-travel-btns .map-assembly-btn { min-height: 44px; white-space: normal; }
 .map-walk-btn {
   background: linear-gradient(180deg, #2a2418, #14110b);
   border-color: rgba(184,148,90,0.75);

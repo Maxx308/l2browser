@@ -10,6 +10,8 @@
 // ========================================================
 
 let __loreOpen = null;   // открытая статья (id)
+let __loreSkillFromMentor = false;
+let __loreSkillRank = null;
 
 function loreState() {
   const c = state.player.chronicle;
@@ -30,7 +32,39 @@ function getLoreArticles() {
   Object.values(GUILD_BUFFS).forEach(b => list.push(loreBuffArticle('guild', b)));
   Object.values(TAVERN_BUFFS).forEach(b => list.push(loreBuffArticle('tavern', b)));
   RECIPES.consumables.forEach(r => { if (r.result.type === 'food') list.push(loreFoodArticle(r)); });
+  const known = state.player.chronicle?.lore || {};
+  for (const id of Object.keys(known)) {
+    if (!id.startsWith('skill.')) continue;
+    const article = loreSkillArticle(id);
+    if (article) list.push(article);
+  }
   return list;
+}
+
+function loreSkillArticle(id) {
+  const skill = SKILLS[id.slice('skill.'.length)];
+  if (!skill || !isSkillAvailableForPlayer(skill, state.player)) return null;
+  return {
+    id, cat: 'skills', title: skill.name, kind: getSkillTypeLabel(skill),
+    icon: skill.iconPng, skill, parts: [{ key: id }],
+  };
+}
+
+function unlockViewedSkills(ids) {
+  const c = loreState();
+  if (!c) return;
+  const timestamp = Date.now();
+  let changed = false;
+  for (const skillId of ids) {
+    const key = 'skill.' + skillId;
+    if (c.lore[key] || !loreSkillArticle(key)) continue;
+    c.lore[key] = timestamp;
+    changed = true;
+  }
+  if (!changed) return;
+  updateChronicleDot();
+  if (isChronicleOpen()) renderChronicle();
+  saveCurrentSlotSoon();
 }
 
 // ---- v0.32: Усиления ----
@@ -128,6 +162,7 @@ function unlockLoreActiveBuffs() {
   unlockLoreMany(keys, true);
 }
 function getLoreArticle(id) {
+  if (id.startsWith('skill.')) return loreSkillArticle(id);
   return getLoreArticles().find(a => a.id === id) || null;
 }
 
@@ -207,21 +242,28 @@ function loreArticleIsNew(a) {
   return a.parts.some(p => knowsLore(p.key) && !(c.loreSeen && c.loreSeen[p.key]));
 }
 
-function openLoreArticle(id) {
+function openLoreArticle(id, fromMentor = false) {
   const a = getLoreArticle(id);
   if (!a || !knowsLore(a.parts[0].key)) return;
   __loreOpen = id;
+  __loreSkillFromMentor = fromMentor;
+  __loreSkillRank = null;
   const c = loreState();
   let changed = false;
   a.parts.forEach(p => { if (knowsLore(p.key) && !c.loreSeen[p.key]) { c.loreSeen[p.key] = true; changed = true; } });
   renderChronicle();
+  document.querySelector('.lore-title')?.focus();
   updateChronicleDot();
   // v0.36.4: прочитанное — сразу в сейв, а не «когда-нибудь потом» (перезашёл — «новое» снова горело)
   if (changed && typeof saveCurrentSlotSoon === 'function') saveCurrentSlotSoon();
 }
 function closeLoreArticle() {
+  const previous = __loreOpen;
   __loreOpen = null;
+  __loreSkillFromMentor = false;
+  __loreSkillRank = null;
   renderChronicle();
+  if (previous) document.querySelector(`.lore-item[data-lore-id="${CSS.escape(previous)}"]`)?.focus();
 }
 
 // ---- Отрисовка раздела ----
@@ -230,38 +272,48 @@ function renderEncyclopedia(box) {
   let open = __loreOpen && getLoreArticle(__loreOpen);
   if (open && !knowsLore(open.parts[0].key)) open = null;
 
-  let list = '';
-  LORE_CATEGORIES.forEach(cat => {
+  const list = LORE_CATEGORIES.map(cat => {
     const inCat = arts.filter(a => a.cat === cat.id).sort((x, y) => (x.order || 0) - (y.order || 0));
     const known = inCat.filter(a => knowsLore(a.parts[0].key));
-    list += `<div class="lore-cat">${cat.name} · ${known.length} из ${inCat.length}</div>`;
-    inCat.forEach(a => {
-      if (!knowsLore(a.parts[0].key)) { list += `<div class="lore-item locked">???</div>`; return; }
-      const active = open && open.id === a.id ? ' active' : '';
+    const count = cat.id === 'skills' ? known.length : `${known.length} из ${inCat.length}`;
+    const items = known.map(a => {
+      const active = open?.id === a.id;
       const isNew = loreArticleIsNew(a) ? '<span class="lore-new">новое</span>' : '';
-      list += `<div class="lore-item${active}" onclick="openLoreArticle('${a.id}')">${escChronicle(a.title)}${isNew}</div>`;
-    });
-  });
+      return `<button type="button" class="lore-item${a.skill ? ' lore-skill-item' : ''}${active ? ' active' : ''}" data-lore-id="${a.id}"${active ? ' aria-current="true"' : ''} onclick="openLoreArticle('${a.id}')">
+        <span>${escChronicle(a.title)}</span>${isNew}
+      </button>`;
+    }).join('');
+    const hint = cat.id === 'skills' && !known.length
+      ? '<p class="lore-skill-hint">Откроются при просмотре у Наставника или в Храме.</p>' : '';
+    return `<section class="lore-category">
+      <h3 class="lore-cat">${cat.name}<span>${count}</span></h3>${items}${hint}
+    </section>`;
+  }).join('');
 
   const article = open ? renderLoreArticle(open) : `<div class="lore-empty">Выбери статью из списка.</div>`;
-  box.innerHTML = `<div class="lore${open ? ' has-open' : ''}"><div class="lore-list">${list}</div><div class="lore-article">${article}</div></div>`;
+  box.innerHTML = `<div class="lore${open ? ' has-open' : ''}"><nav class="lore-list" aria-label="Статьи энциклопедии">${list}</nav><article class="lore-article">${article}</article></div>`;
 }
 
 function renderLoreArticle(a) {
   const knownParts = a.parts.filter(p => knowsLore(p.key)).length;
-  let html = `<div class="lore-back" onclick="closeLoreArticle()">← К списку</div>`;
+  const scene = { underwood: 'town', field: 'field', mine: 'mine' }[a.id];
+  let html = `<button type="button" class="lore-back chron-link" onclick="closeLoreArticle()">← К статьям</button>`;
+  if (scene) html += `<div class="lore-scene" data-scene="${scene}"></div>`;
   html += `<div class="lore-head">`;
   if (a.shop && typeof SVG !== 'undefined' && SVG[a.shop.icon]) html += `<div class="lore-icon">${SVG[a.shop.icon]}</div>`;
   if (a.portrait) html += `<div class="lore-portrait"><img src="${a.portrait}" alt=""></div>`;   // v0.31: портрет жителя
   if (a.icon) html += `<div class="lore-icon lore-icon-big"><img src="${a.icon}" alt=""></div>`;   // v0.32: значок бафа / еды
-  html += `<div><div class="lore-title">${escChronicle(a.title)}</div>`;
+  html += '<div>';
   const kind = a.race ? `${a.race} · ${a.kind}` : a.kind;   // v0.31: раса жителя
   html += `<div class="lore-kind">${escChronicle(kind)}${a.parts.length > 1 ? ` · открыто ${knownParts} из ${a.parts.length}` : ''}</div>`;
+  html += `<h2 class="lore-title" tabindex="-1">${escChronicle(a.title)}</h2>`;
   // v0.32: отношения с жителем — словами, без цифр
   if (typeof OWNER_CHATS !== 'undefined' && OWNER_CHATS[a.id] && typeof rapportWord === 'function') {
     html += `<div class="lore-rapport">🤝 ${chronicleTextHtml(rapportWord(a.id))}</div>`;
   }
   html += `</div></div>`;
+
+  if (a.skill) return html + renderLoreSkill(a.skill);
 
   if (a.shop) {
     const it = a.shop;
@@ -287,4 +339,80 @@ function renderLoreArticle(a) {
     if (p.rows) html += `<div class="lore-stats lore-rows">${p.rows.map(r => `<div><span>${r[2] ? `<img class="lore-row-icon" src="${r[2]}" alt="">` : ''}${escChronicle(r[0])}</span>${escChronicle(r[1])}</div>`).join('')}</div>`;
   });
   return html;
+}
+
+function renderLoreSkill(skill) {
+  const rank = Math.min(skill.maxLevel, Math.max(1, __loreSkillRank ?? getSkillLevel(skill.id)));
+  const buttons = Array.from({ length: skill.maxLevel }, (_, index) => {
+    const choice = index + 1;
+    return `<button type="button" class="btn" aria-label="Уровень ${choice}" aria-pressed="${choice === rank}"
+      data-rank="${choice}" onclick="selectLoreSkillRank(this, '${skill.id}')">${choice}</button>`;
+  }).join('');
+  const returnLabel = state.player.currentLocation === 'ilgrad' ? 'В Храм' : 'К Наставнику';
+  return `
+    <p class="lore-skill-effect">${escChronicle(loreSkillEffect(skill, rank))}</p>
+    <div class="lore-skill-ranks" role="group" aria-label="Уровень навыка">
+      <span>Уровень</span>${buttons}
+    </div>
+    <div class="lore-skill-detail" aria-live="polite">${loreSkillDetail(skill, rank)}</div>
+    ${__loreSkillFromMentor && isTownLoc(state.player.currentLocation)
+      ? `<button type="button" class="btn lore-skill-return" onclick="returnToMentorSkill('${skill.id}')">← ${returnLabel}</button>` : ''}
+  `;
+}
+
+function selectLoreSkillRank(button, skillId) {
+  const skill = SKILLS[skillId];
+  const rank = Number(button.dataset.rank);
+  __loreSkillRank = rank;
+  for (const choice of button.parentElement.querySelectorAll('button')) {
+    choice.setAttribute('aria-pressed', String(choice === button));
+  }
+  const article = button.closest('.lore-article');
+  article.querySelector('.lore-skill-effect').textContent = loreSkillEffect(skill, rank);
+  article.querySelector('.lore-skill-detail').innerHTML = loreSkillDetail(skill, rank);
+}
+
+function isBaseFireball(skill) {
+  return skill.id === 'fireball' && !getPlayerSubclass()?.mods?.fireball;
+}
+
+function loreSkillEffect(skill, rank) {
+  if (isBaseFireball(skill)) return `Бьёт огнём и поджигает цель на ${skill.burnTurns} ${loreSkillTurnLabel(skill.burnTurns)}.`;
+  return getSkillBrief(skill, rank, false);
+}
+
+function loreSkillDetail(skill, rank) {
+  const desc = skill.getDesc(rank);
+  const data = skill.levels[rank - 1];
+  const rows = [];
+  const fireball = isBaseFireball(skill);
+  if (fireball) {
+    rows.push(['Удар', `×${SKILL_TEXT_NUMBER.format(data.multiplier)} от магической атаки`]);
+    rows.push(['Поджог', `${data.burnPercent}% магической атаки за ход`]);
+  }
+  if (data.mpCost > 0) rows.push(['Расход', `${data.mpCost} маны`]);
+  if (skill.id === 'tpRadiance') rows.push(['Расход', `${SKILL_TEXT_NUMBER.format(data.mp)} маны за ход`]);
+  if (skill.cooldown > 0) rows.push(['Перезарядка', `${skill.cooldown} ${loreSkillTurnLabel(skill.cooldown)}`]);
+  if (skill.minLevel) rows.push(['Доступен', `С ${skill.minLevel}-го уровня героя`]);
+  const text = desc
+    .replace(/\s*\bMP:\s*(?:<span class="val">)?\d+(?:<\/span>)?\.(?=\s|$)/g, '')
+    .replace(/\s*КД:\s*\d+(?:\s+ATB)?\.(?=\s|$)/g, '')
+    .replace(/\bHP\/сек/g, 'здоровья в секунду')
+    .replace(/\bMP\/сек/g, 'маны в секунду')
+    .replace(/\bMP\s*:/g, 'Расход маны —')
+    .replace(/КД\s*:/g, 'Перезарядка —')
+    .replace(/КД(?=\s)/g, 'перезарядка')
+    .replace(/(\d+)\s+ATB\b/g, (_, turns) => `${turns} ${loreSkillTurnLabel(Number(turns))}`)
+    .replace(/(шкал[аеуы]|шкалой) ATB/gi, '$1 хода')
+    .replace(/сбивает ATB/gi, 'сбивает шкалу хода')
+    .replace(/\bATB\b/g, 'шкала хода')
+    .replace(/\bHP\b/g, 'здоровья')
+    .replace(/\bMP\b/g, 'маны');
+  const details = fireball ? '' : `<div class="lore-text">${text}</div>`;
+  return details + (rows.length ? `<dl class="lore-skill-stats">${rows.map(([label, value]) => `<div><dt>${label}</dt><dd>${value}</dd></div>`).join('')}</dl>` : '');
+}
+
+function loreSkillTurnLabel(turns) {
+  if (turns === 1) return 'ход';
+  return turns >= 2 && turns <= 4 ? 'хода' : 'ходов';
 }

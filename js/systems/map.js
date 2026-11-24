@@ -93,10 +93,10 @@ function tryTravel(loc) {
   if (state.travel.active) return;
   if (loc === p.currentLocation) return;
 
-  // v0.36: закрытое место — слух вместо дороги; Ильград с 20 ур. — прорыв.
+  // Закрытое место — слух вместо дороги; путь в Ильград начинается на Собрании.
   const lock = mapLockInfo(loc);
   if (lock) {
-    if (lock.ready) startIlgradBreakthrough();
+    if (lock.ready) openIlgradAssemblyRoute();
     else showToast('🗣', lock.rumor);
     return;
   }

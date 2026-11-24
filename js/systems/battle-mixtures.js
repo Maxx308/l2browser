@@ -33,6 +33,7 @@ function tickMixtureCharge(n = 1) {
   if (!m) return;
 
   m.chargesLeft -= 1;
+  if (typeof bsessRecordSupplyUse === 'function') bsessRecordSupplyUse(m.id, MIXTURE_EFFECTS[m.id]?.charges);
 
   renderEquipSlots();
   renderEffectsPanel();

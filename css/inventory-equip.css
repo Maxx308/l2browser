@@ -12,6 +12,145 @@
    - адаптив под планшет / телефон
    ======================================================== */
 
+/* ---------- СРАВНЕНИЕ СНАРЯЖЕНИЯ ---------- */
+.equip-compare {
+  position: fixed;
+  inset: 0;
+  margin: auto;
+  width: min(calc(530 * var(--u)), calc(100vw - 20px));
+  max-width: none;
+  max-height: min(86vh, calc(720 * var(--u)));
+  max-height: min(86dvh, calc(720 * var(--u)));
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: calc(9 * var(--u));
+  box-shadow: var(--shadow);
+  background: #161410;
+  color: var(--text);
+  overflow: hidden;
+}
+.equip-compare[open] { display: flex; flex-direction: column; }
+.equip-compare::backdrop { background: rgba(8, 7, 5, 0.72); }
+.equip-compare-header, .equip-compare-actions, .equip-compare-body {
+  padding: calc(12 * var(--u)) calc(16 * var(--u));
+}
+.equip-compare-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: calc(10 * var(--u));
+  border-bottom: 1px solid var(--border);
+}
+.equip-compare-header h2 {
+  font: normal var(--fs-h1)/1.2 var(--font-text);
+  letter-spacing: normal;
+  text-shadow: none;
+}
+.equip-compare-close {
+  width: 40px;
+  height: 40px;
+  flex: none;
+  border: 0;
+  border-radius: calc(4 * var(--u));
+  background: transparent;
+  color: var(--text-dim);
+  font: inherit;
+  font-size: calc(24 * var(--u));
+  cursor: pointer;
+}
+.equip-compare-close:hover { color: var(--gold-bright); }
+.equip-compare-body {
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+.equip-compare-picker {
+  display: flex;
+  align-items: center;
+  gap: calc(8 * var(--u));
+  margin-bottom: calc(10 * var(--u));
+  color: var(--text-dim);
+}
+.equip-compare-picker select {
+  min-width: 0;
+  flex: 1;
+  min-height: 40px;
+  padding: calc(5 * var(--u)) calc(8 * var(--u));
+  border: 1px solid var(--border);
+  border-radius: calc(4 * var(--u));
+  background: #211b13;
+  color: var(--text);
+  font: inherit;
+}
+.equip-compare-items {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: calc(8 * var(--u));
+}
+.equip-compare-item {
+  min-width: 0;
+  padding: calc(9 * var(--u));
+  border: 1px solid var(--border);
+  border-radius: calc(6 * var(--u));
+  background: #201b14;
+}
+.equip-compare-label { color: var(--text-dim); font-size: var(--fs-small); }
+.equip-compare-item-head {
+  display: flex;
+  align-items: center;
+  gap: calc(7 * var(--u));
+  margin-top: calc(6 * var(--u));
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+.equip-compare-icon {
+  width: calc(34 * var(--u));
+  height: calc(34 * var(--u));
+  display: grid;
+  place-items: center;
+  flex: none;
+}
+.equip-compare-icon img, .equip-compare-icon svg { width: 100%; height: 100%; object-fit: contain; }
+.equip-compare-item-head small { display: block; color: var(--text-dim); font-size: var(--fs-tiny); }
+.equip-compare-note, .equip-compare-error { margin-top: calc(10 * var(--u)); }
+.equip-compare-note { color: var(--text-dim); }
+.equip-compare-note strong { color: var(--text); font-weight: normal; }
+.equip-compare-error { color: #ffb59c; }
+.equip-compare-stats {
+  width: 100%;
+  margin-top: calc(10 * var(--u));
+  border-collapse: collapse;
+  font-size: var(--fs-base);
+  font-variant-numeric: tabular-nums;
+}
+.equip-compare-stats th, .equip-compare-stats td {
+  padding: calc(5 * var(--u)) calc(4 * var(--u));
+  border-bottom: 1px solid var(--border);
+  text-align: right;
+  font-weight: normal;
+}
+.equip-compare-stats th:first-child { text-align: left; }
+.equip-compare-stats thead { color: var(--text-dim); font-size: var(--fs-small); }
+.equip-compare-stats td { white-space: nowrap; }
+.equip-compare-stats .gain { color: #b6d995; }
+.equip-compare-stats .loss { color: #ffb59c; }
+.equip-compare-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: calc(8 * var(--u));
+  border-top: 1px solid var(--border);
+}
+.equip-compare-actions .btn { min-height: 44px; }
+.equip-compare button:focus-visible, .equip-compare select:focus-visible {
+  outline: 2px solid var(--gold-bright);
+  outline-offset: 2px;
+}
+@media (max-width: 390px) {
+  .equip-compare-header, .equip-compare-actions, .equip-compare-body { padding-inline: calc(10 * var(--u)); }
+  .equip-compare-stats th, .equip-compare-stats td { padding-inline: calc(3 * var(--u)); }
+  .equip-compare-icon { width: calc(28 * var(--u)); height: calc(28 * var(--u)); }
+}
+
 /* ---------- ПАНЕЛЬ ЭКИПИРОВКИ ---------- */
 .equip-panel {
   background: linear-gradient(180deg, #15151a, #0d0d10);

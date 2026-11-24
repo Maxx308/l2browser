@@ -21,7 +21,7 @@ function buffShopDef(kind) {
   const p = state.player;
   if (kind === 'guild') {
     return {
-      kind, defs: Object.values(GUILD_BUFFS), store: p.guildBuffs,
+      kind, defs: Object.values(GUILD_BUFFS).filter(buff => isGuildBuffSoldInTown(buff, p.currentLocation)), store: p.guildBuffs,
       price: (b) => b.price,
       icon: (b) => b.icon || '',
       emoji: '🔮', listId: 'guild-list', barId: 'guild-setbar',
@@ -52,6 +52,7 @@ function buffShopDefaultInSet(kind, buff) {
   if (!buffShopAllowed(buff)) return false;
   if (buff.id === 'shieldwall' && !getEquippedShield()) return false;
   if (buff.packMode) return false;   // v0.29: стайные бафы — только по выбору игрока
+  if (buff.town === 'ilgrad') return false;   // Печати можно добавить в набор вручную.
   return true;
 }
 
@@ -150,6 +151,7 @@ function buffShopApply(kind, items) {
   const lore = [];   // v0.32: Энциклопедия — статьи наложенных бафов
   items.forEach(({ buff, n }) => {
     if (n <= 0) return;
+    if (kind === 'guild' && !isGuildBuffSoldInTown(buff, p.currentLocation)) return;
     const cost = n * d.price(buff);
     if (p.gold < cost) return;
     if (buff.packRival && d.store[buff.packRival]) d.store[buff.packRival].timer = 0;
@@ -214,6 +216,8 @@ function buffShopEffectsHtml(kind, buff) {
   if (eff.atbPercent) out.push(`<div class="plus">+${eff.atbPercent}% ${buff.id === 'eloquence' ? 'скорость каста' : 'скорость ATB'}</div>`);
   if (eff.accuracyFlat) out.push(`<div class="plus">+${eff.accuracyFlat} к точности</div>`);
   if (eff.blockFlat) out.push(`<div class="plus">+${eff.blockFlat}% к шансу блока</div>`);
+  if (eff.allStatsFlat) out.push(`<div class="plus">+${eff.allStatsFlat} ко всем базовым характеристикам</div>`);
+  if (eff.preserveTurn) out.push('<div class="plus">Защита от оглушения или сбивания шкалы · 1 раз за бой</div>');
   // v0.29: стайные бафы (battle-pack.js)
   if (buff.packMode === 'quiet') {
     out.push(`<div class="plus">Стаи меньше на старте</div>`);

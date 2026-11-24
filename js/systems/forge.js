@@ -45,7 +45,10 @@ function openForge() {
   if (typeof unlockLore === 'function') unlockLore('smith');
   if (typeof updateTalkButtons === 'function') updateTalkButtons();
 }
-function closeForge() { document.getElementById('forge-overlay').classList.remove('active'); }
+function closeForge() {
+  document.getElementById('forge-sources').close();
+  document.getElementById('forge-overlay').classList.remove('active');
+}
 
 function updateForgeGold() {
   const el = document.getElementById('forge-gold');
@@ -425,6 +428,77 @@ function buildGearRecipeCard(r, category, matsHtml, actionHtml) {
 
 function escForge(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;'); }
 
+function addForgeSource(list, name, detail, icon, openSource) {
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.className = 'forge-source';
+  button.innerHTML = `
+    <span class="forge-source-icon" aria-hidden="true">${icon}</span>
+    <span class="forge-source-text"><strong>${escForge(name)}</strong><small>${escForge(detail)}</small></span>
+    <span class="forge-source-arrow" aria-hidden="true">›</span>`;
+  button.onclick = () => openSource(button);
+  list.append(button);
+}
+
+function openForgeMaterialSources(trigger) {
+  const name = trigger.dataset.material;
+  const dialog = document.getElementById('forge-sources');
+  const body = document.getElementById('forge-sources-body');
+  const list = document.getElementById('forge-sources-list');
+  const preview = document.getElementById('forge-source-preview');
+  document.getElementById('forge-sources-material').innerHTML = `${getMatIcon(name)}<span>${escForge(name)}</span>`;
+  list.replaceChildren();
+  list.hidden = false;
+  preview.replaceChildren();
+  preview.hidden = true;
+
+  const unlocked = ilgradOpen();
+  const monsters = ALL_HUNT_MONSTERS.filter(m => m.drops.some(d => d.name === name && d.chance > 0));
+  const recipes = RECIPES.resources.filter(r => r.result.name === name);
+  for (const monster of monsters) {
+    const loc = getMonsterLocation(monster.id);
+    if (loc === 'outskirts' && !unlocked) continue;
+
+    addForgeSource(list, monster.name, LOCATION_NAMES[loc], `<img src="${escForge(monster.art)}" alt="">`, sourceButton => {
+      const nav = document.createElement('div');
+      nav.className = 'forge-source-nav';
+      nav.innerHTML = `<button type="button" class="btn">← К источникам</button><span>${escForge(LOCATION_NAMES[loc])}</span>`;
+      const back = nav.querySelector('button');
+      const scrollTop = body.scrollTop;
+      back.onclick = () => {
+        preview.hidden = true;
+        list.hidden = false;
+        sourceButton.focus({ preventScroll: true });
+        body.scrollTop = scrollTop;
+      };
+      preview.replaceChildren(nav, buildMonsterCard(monster, 'normal', loc === 'mine', { preview: true, highlightDrop: name }));
+      list.hidden = true;
+      preview.hidden = false;
+      body.scrollTop = 0;
+      back.focus({ preventScroll: true });
+    });
+  }
+  for (const recipe of recipes) {
+    if (recipe.requiresIlgrad && !unlocked) continue;
+
+    addForgeSource(list, 'Открыть рецепт', 'Кузница · Ресурсы', getRecipeIconHtml(recipe), () => {
+      dialog.close();
+      switchForgeTab('resources');
+      const card = document.querySelector(`#forge-pane-resources [data-recipe-id="${CSS.escape(recipe.id)}"]`);
+      card.tabIndex = -1;
+      card.focus({ preventScroll: true });
+      card.scrollIntoView({ block: 'center' });
+    });
+  }
+
+  if (!list.childElementCount) {
+    list.textContent = monsters.length || recipes.length ? 'Источник откроется позже.' : 'Источник пока неизвестен.';
+  }
+  trigger.focus({ preventScroll: true });
+  dialog.showModal();
+  body.scrollTop = 0;
+}
+
 function buildRecipeCard(r, category) {
   const can = canCraft(r);
   const price = r.price || 0;
@@ -433,13 +507,20 @@ function buildRecipeCard(r, category) {
 
   const card = document.createElement('div');
   card.className = 'recipe-card' + (canCraftFinal ? ' can-craft' : '');
+  card.dataset.recipeId = r.id;
 
   const matsHtml = r.materials.map(m => {
     const inStore = countMaterialInStorage(m.name);
     const have = countMaterialInInventory(m.name) + inStore;
     const cls = have >= m.qty ? 'have' : 'lack';
     const storeHtml = inStore > 0 ? `<span class="mat-store" title="Из них на складе: ${inStore}">🏦${inStore}</span>` : '';
-    return `<div class="recipe-mat ${cls}">${getMatIcon(m.name)}<span>${m.name}</span>${storeHtml}<span class="mat-count">${have} / ${m.qty}</span></div>`;
+    const name = escForge(m.name);
+    return `<div class="recipe-mat ${cls}">
+      <button type="button" class="recipe-mat-source" data-material="${name}" onclick="openForgeMaterialSources(this)" aria-label="${name} — где добыть" title="Где добыть" aria-haspopup="dialog">
+        ${getMatIcon(m.name)}<span>${name}</span><span class="recipe-mat-arrow" aria-hidden="true">›</span>
+      </button>
+      ${storeHtml}<span class="mat-count">${have} / ${m.qty}</span>
+    </div>`;
   }).join('');
 
   const lines = [];

@@ -127,6 +127,7 @@ function closeDialogue() {
     unlockLore('elder');
     if (typeof annalsFirst === 'function') annalsFirst('elder');   // v0.32: летопись
   }
+  if (npcId === 'commander') renderIlgradCommandOffer();
 }
 
 document.addEventListener('keydown', (e) => {

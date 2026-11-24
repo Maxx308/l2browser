@@ -33,6 +33,9 @@ function gameLoop() {
 
   flushPendingSlotSave(false);   // v0.36.2: отложенное сохранение после убийств (slots.js)
 
+  if (state.player.expedition) return;   // Время в пути списывается при возвращении героя.
+
+  let huntEffectsChanged = false;
   // ---- ЕДА (сытность) ----
   if (state.player.foodTimer > 0) {
     state.player.foodTimer -= dt;
@@ -41,6 +44,7 @@ function gameLoop() {
       state.player.foodTimer = 0;
       state.player.foodTickAccum = 0;
       state.player.foodKind = null;
+      huntEffectsChanged = true;
       logCombat(`${k.icon} Действие сытности («${k.name}») закончилось.`, 'log-entry food');
     }
   }
@@ -74,6 +78,7 @@ function gameLoop() {
     if (state.player.dish.timer <= 0) {
       const d = DISHES[state.player.dish.id];
       state.player.dish = null;
+      huntEffectsChanged = true;
       if (d) logCombat(`${d.icon} Действие блюда «${d.name}» закончилось.`, 'log-entry food');
       recalcStats();
       updateCharacterPanel();
@@ -95,10 +100,13 @@ function gameLoop() {
       }
     });
     if (needRecalc) {
+      huntEffectsChanged = true;
       recalcStats();
       updateCharacterPanel();
     }
   }
+
+  if (huntEffectsChanged && typeof expPaceStamp === 'function') expPaceStamp();
 
   // ---- Баффы таверны ----
   if (state.player.tavernBuffs) {

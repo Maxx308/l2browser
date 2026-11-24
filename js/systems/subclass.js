@@ -454,9 +454,9 @@ function subclassApplyPassives(p) {
   if (scIsOrc()) { orcApplyPassives(p); return; }
   if (p.subclass === 'human_wallguard') {
     const mLvl = p.learnedSkills.wgShieldMastery || 0;
-    if (mLvl > 0 && getEquippedShield()) {
+    const sh = getEquippedShield(p);
+    if (mLvl > 0 && sh) {
       const d = SKILLS.wgShieldMastery.levels[mLvl - 1];
-      const sh = getEquippedShield();
       const addDef = Math.round((getItemStat(sh, 'pDef') || 0) * d.shieldPct / 100);
       const addAbs = ((sh.stats && sh.stats.flatDamageReduce) || 0) * d.shieldPct / 100;
       p.blockChance += d.block;
@@ -1205,8 +1205,8 @@ function scHpPct() {
   const p = state.player;
   return p.maxHp > 0 ? p.hp / p.maxHp * 100 : 100;
 }
-function scTwoHanded() {
-  return typeof isTwoHandGripWeapon === 'function' && isTwoHandGripWeapon(state.player.equipment.weapon);
+function scTwoHanded(p = state.player) {
+  return typeof isTwoHandGripWeapon === 'function' && isTwoHandGripWeapon(p.equipment.weapon);
 }
 function scTotems() { return (typeof alliesList === 'function' ? alliesList() : []).filter(a => a.totem); }
 
@@ -1295,7 +1295,7 @@ function subclassRegen() {
 function orcApplyPassives(p) {
   if (p.subclass === 'orc_berserker') {
     const d = scSkillData('bkTwoHand');
-    if (d && scTwoHanded()) {
+    if (d && scTwoHanded(p)) {
       p.evasionBonus += TWO_HAND_EVASION_PENALTY / 2;
       p.skillBonuses.push(`Двуручник (ур.${scSkillLvl('bkTwoHand')}): +${d.dmg}% урона, +${d.crit}% урона крита, штраф уворота вдвое меньше`);
     } else if (d) p.skillBonuses.push(`Двуручник: не действует — нужно двуручное оружие`);
@@ -1310,7 +1310,7 @@ function orcApplyPassives(p) {
     }
   } else if (p.subclass === 'orc_rock') {
     const h = scSkillData('rkHide');
-    if (h) p.skillBonuses.push(`Шкура вместо щита (ур.${scSkillLvl('rkHide')}): ${h.chance}% принять удар на шкуру (−50%)${getEquippedShield() ? ' — не действует со щитом' : ''}`);
+    if (h) p.skillBonuses.push(`Шкура вместо щита (ур.${scSkillLvl('rkHide')}): ${h.chance}% принять удар на шкуру (−50%)${getEquippedShield(p) ? ' — не действует со щитом' : ''}`);
   }
 }
 
@@ -1868,8 +1868,8 @@ function subclassEvasionBonus() {
   const s = getDebuff('player', 'song');
   return s ? s.level * SONG_EVA : 0;
 }
-function subclassAccuracyBonus() {
-  if (scIsDrow()) return drowAccuracyBonus();
+function subclassAccuracyBonus(p = state.player) {
+  if (scIsDrow()) return drowAccuracyBonus(p);
   if (!hasSubclass('elf_pathfinder')) return 0;
   const d = scSkillData('pfHawk');
   return d ? d.acc : 0;
@@ -2628,7 +2628,7 @@ function drowAtbMult() {
 function drowApplyPassives(p) {
   if (p.subclass === 'drow_assassin') {
     const d = scSkillData('asDual');
-    const off = getOffhandWeapon();
+    const off = getOffhandWeapon(p);
     if (d && off) {
       p.offhandPAtk = Math.floor(getItemStat(off, 'pAtk') * d.off / 100);
       p.skillBonuses.push(`Парные клинки (ур.${scSkillLvl('asDual')}): вторая рука ${d.off}% (+${p.offhandPAtk}), без штрафа точности`);
@@ -2641,8 +2641,8 @@ function drowApplyPassives(p) {
     if (g) p.skillBonuses.push(`Заземление (ур.${scSkillLvl('sgGround')}): маг. урон по вам −${g.magic}%`);
   }
 }
-function drowAccuracyBonus() {
-  if (hasSubclass('drow_assassin') && scSkillData('asDual') && getOffhandWeapon()) return DUAL_WIELD_ACCURACY_PENALTY;
+function drowAccuracyBonus(p = state.player) {
+  if (hasSubclass('drow_assassin') && scSkillData('asDual') && getOffhandWeapon(p)) return DUAL_WIELD_ACCURACY_PENALTY;
   return 0;
 }
 

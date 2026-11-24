@@ -464,7 +464,7 @@ SUBCLASSES.human_priest.mods = {
   iceArrow: {
     name: 'Оковы света', weakTurns: 3, weakPct: 20,
     levels: scMap(SC_ICE_LEVELS, (x, i) => ({ stun: [25, 27, 30, 32, 35, 37, 40][i] })),
-    getDesc: (lvl) => { const s = SKILLS.iceArrow, d = s.levels[lvl-1]; return `Свет на ${scX(d.multiplier)}. Шанс ${scV(d.stun + '%')} оглушить; цель ${s.weakTurns} хода бьёт на ${scV('20%')} слабее. MP: ${scV(d.mpCost)}. КД: ${s.cooldown} ATB.`; },
+    getDesc: (lvl) => { const s = SKILLS.iceArrow, d = s.levels[lvl-1], mod = SUBCLASSES.human_priest.mods.iceArrow; return `Свет на ${scX(d.multiplier)}. Шанс ${scV(d.stun + '%')} оглушить; цель ${mod.weakTurns} хода бьёт на ${scV(mod.weakPct + '%')} слабее. MP: ${scV(d.mpCost)}. КД: ${s.cooldown} ATB.`; },
     getNextDesc: (lvl) => scNext(SKILLS.iceArrow, lvl, n => `×${n.multiplier.toFixed(2)}, оглушение ${n.stun}%`),
   },
   elementalVolley: {
@@ -496,7 +496,7 @@ SUBCLASSES.human_necromancer.mods = {
   iceArrow: {
     name: 'Проклятие слабости', weakTurns: 3,
     levels: scMap(SC_ICE_LEVELS, (x, i) => ({ weak: [15, 17, 18, 20, 22, 23, 25][i] })),
-    getDesc: (lvl) => { const s = SKILLS.iceArrow, d = s.levels[lvl-1]; return `Проклятие Смерти на ${scX(d.multiplier)}: цель ${s.weakTurns} хода бьёт на ${scV(d.weak + '%')} слабее. MP: ${scV(d.mpCost)}. КД: ${s.cooldown} ATB.`; },
+    getDesc: (lvl) => { const s = SKILLS.iceArrow, d = s.levels[lvl-1], mod = SUBCLASSES.human_necromancer.mods.iceArrow; return `Проклятие Смерти на ${scX(d.multiplier)}: цель ${mod.weakTurns} хода бьёт на ${scV(d.weak + '%')} слабее. MP: ${scV(d.mpCost)}. КД: ${s.cooldown} ATB.`; },
     getNextDesc: (lvl) => scNext(SKILLS.iceArrow, lvl, n => `×${n.multiplier.toFixed(2)}, ослабление ${n.weak}%`),
   },
   elementalVolley: {

@@ -493,7 +493,7 @@ const MONSTER_TITLE_ICONS = {
 const KILL_REVEAL_STEPS = [KILL_THRESHOLDS.atk, KILL_THRESHOLDS.drop, KILL_THRESHOLDS.gold, KILL_THRESHOLDS.title];
 
 // ---------- КАРТОЧКА МОНСТРА ----------
-function buildMonsterCard(template, variantId, fromMine = false) {
+function buildMonsterCard(template, variantId, fromMine = false, { preview = false, highlightDrop } = {}) {
   const monster = buildMonsterInstance(template, variantId);
   const variant = MONSTER_VARIANTS[variantId];
 
@@ -502,7 +502,7 @@ function buildMonsterCard(template, variantId, fromMine = false) {
     (monster.attackType === 'magic' ? ' magic-type' : '');
   card.dataset.id = template.id;
   card.dataset.variant = variantId;
-  card.onclick = () => selectMonster(template, variantId, fromMine);
+  if (!preview) card.onclick = () => selectMonster(template, variantId, fromMine);
 
   const kills = getMonsterKills(template.id, variantId);
   const unlockedHp    = isStatUnlocked(template.id, variantId, 'hp');
@@ -528,7 +528,8 @@ function buildMonsterCard(template, variantId, fromMine = false) {
 
   monster.drops.forEach(d => {
     const iconHtml = getDropIconHtml(d);
-    dropRows += `<div class="row">${iconHtml}<span>${d.name}</span>${chanceHtml(d.chance, unlockedDrop)}</div>`;
+    const rowClass = d.name === highlightDrop ? 'row drop-highlight' : 'row';
+    dropRows += `<div class="${rowClass}">${iconHtml}<span>${d.name}</span>${chanceHtml(d.chance, unlockedDrop)}</div>`;
   });
 
   // ---- СТАТЫ: значок сверху, число снизу ----
@@ -554,7 +555,10 @@ function buildMonsterCard(template, variantId, fromMine = false) {
   // ---- ТИТУЛ: значок в левом нижнем углу, виден и на задних карточках стопки ----
   const titleDef = MONSTER_TITLE_ICONS[getMonsterTitle(template.id, variantId)];
   // v0.36.4: нажатие на значок — окно титула (на телефоне подсказок нет)
-  const titleHtml = titleDef ? `<button type="button" class="monster-hunter ${titleDef.css}" title="${titleDef.name} — нажмите, что это даёт" data-title-info><img src="img/tags/${titleDef.img}.webp" alt="${titleDef.name}"></button>` : '';
+  const titleIcon = titleDef ? `<img src="img/tags/${titleDef.img}.webp" alt="${titleDef.name}">` : '';
+  const titleHtml = !titleDef ? '' : preview
+    ? `<span class="monster-hunter ${titleDef.css}" title="${titleDef.name}">${titleIcon}</span>`
+    : `<button type="button" class="monster-hunter ${titleDef.css}" title="${titleDef.name} — нажмите, что это даёт" data-title-info>${titleIcon}</button>`;
 
   // ---- Счётчик: череп и «убито / до следующего открытия» ----
   const nextGoal = KILL_REVEAL_STEPS.find(n => kills < n);
@@ -563,7 +567,7 @@ function buildMonsterCard(template, variantId, fromMine = false) {
   const metaHtml = (variant.name ? `<span class="monster-variant-word">${variant.name}</span>` : '') +
     (typeof primeTimeLineHtml === 'function' ? primeTimeLineHtml(template) : '');
   // v0.36.4: на пути к «Охотнику» рядом со счётом — бледная корона, по нажатию — окно титула
-  const toTitle = nextGoal === KILL_THRESHOLDS.title;
+  const toTitle = !preview && nextGoal === KILL_THRESHOLDS.title;
   const killsHtml = `<div class="monster-kills${toTitle ? ' to-title' : ''}"${toTitle ? ' data-title-info' : ''} title="${toTitle ? `До титула «Охотник» — ${KILL_THRESHOLDS.title} убийств. Нажмите, что он даёт` : 'Убито. Следующая цифра — сколько нужно, чтобы узнать о твари больше'}"><img class="kills-ico" src="img/tags/kills.webp" alt=""><span>${killsText}</span>${toTitle ? '<img class="kills-title-ico" src="img/tags/hunter.webp" alt="">' : ''}</div>`;
 
   card.innerHTML = `

@@ -2,12 +2,11 @@
 //  СИСТЕМЫ: ИЛЬГРАД — второй город (v0.36, в разработке)
 //  Город людей в осаде нежити. Локация 'ilgrad' (как 'town' у Андервуда):
 //  безопасная зона с лавками, проверки «герой в городе» — isTownLoc (helpers.js).
-//  + Открыт ли — state.player.ilgradOpen. Пока открывается только чит-меню
-//    (потом — прорывом к воротам, 10 волн по 10).
+//  + Открыт ли — state.player.ilgradOpen. По сюжету открывается после Собрания и прорыва к воротам.
 //  + Пути — TRAVEL_TIMES / travelTime (config.js); в закрытый Ильград пути нет.
 //  + Экран города — #city-grid-ilgrad (index.html), рамка .city-card-stone (city-map.css).
 //  + Места подключены к готовым лавкам:
-//      Комендатура — заглушка (поручения позже) · Арсенал — Торговец · Кузница — ковка и подгонка
+//      Комендатура — Комендант и его поручения · Арсенал — Торговец · Кузница — ковка и подгонка
 //      Казармы — Наставник · Храм — бафы (как Таверна) · Башня магов — Гильдия
 //      Снабжение — Склад · Лазарет — Алхимик · Стена — выход на Окраины (локация 'outskirts', монстры — monsters.js)
 //  + Владельцы мест ещё не написаны (сюжет решается) — кнопки «Поговорить» в Ильграде спрятаны,
@@ -19,8 +18,8 @@ function ilgradOpen() {
 }
 
 // ---- Закрытые места на карте ----
-// До 20 ур. Ильград — серая карточка «В осаде» со слухами; с 20 ур. — цветная, кнопка прорыва.
-// Заготовка: p.underwoodFallen — такая же серая карточка у Андервуда (пока нигде не ставится).
+// До 20 ур. Ильград — серая карточка «В осаде» со слухами; после зова Старейшины — путь на Собрание.
+// После падения Андервуда его карточка на карте становится серой.
 const ILGRAD_MIN_LEVEL = 20;
 
 function ilgradRumor() {
@@ -30,15 +29,22 @@ function ilgradRumor() {
   return 'Большой город, неделя пути. Торговец возит туда добычу.';
 }
 
-// Что с местом на карте: null — обычное; { ready } — можно на прорыв; иначе закрыто (штамп, подпись, слух).
+// Что с местом на карте: null — обычное; { ready } — доступно Собрание; иначе закрыто.
 function mapLockInfo(loc) {
   const p = state.player;
   if (!p || loc === p.currentLocation) return null;
   if (loc === 'ilgrad' && !ilgradOpen()) {
-    if ((p.level || 1) >= ILGRAD_MIN_LEVEL) {
-      return { ready: true, desc: 'Город в кольце нежити. К воротам можно только пробиться.', meta: '⚔ Дорога — через орду' };
+    if (typeof fallReady === 'function' && fallReady()) {
+      const inTown = p.currentLocation === 'town';
+      return {
+        ready: true,
+        desc: inTown ? 'Город в кольце нежити. Старейшина созывает Собрание.' : 'Собрание у Старейшины пройдёт в Андервуде.',
+        meta: '⚔ Дорога — через орду',
+        button: inTown ? 'На Собрание к Старейшине' : 'К дороге в Андервуд',
+      };
     }
-    return { stamp: 'В осаде', desc: 'Дороги нет. Нежить держит все подступы.', meta: `🔒 с ${ILGRAD_MIN_LEVEL} уровня`, rumor: ilgradRumor() };
+    const meta = p.level >= ILGRAD_MIN_LEVEL ? '🔒 Дорога закрыта' : `🔒 с ${ILGRAD_MIN_LEVEL} уровня`;
+    return { stamp: 'В осаде', desc: 'Дороги нет. Нежить держит все подступы.', meta, rumor: ilgradRumor() };
   }
   if (loc === 'town' && p.underwoodFallen) {
     return { stamp: 'Пал', desc: 'Там теперь хозяйничают мёртвые.', meta: '🔒 Пути нет', rumor: 'Из Андервуда больше никто не приходит.' };
@@ -91,17 +97,22 @@ function renderMapLocks() {
     if (meta && lock) meta.innerHTML = `<span class="map-meta-line">${lock.meta}</span>`;
     const slot = document.getElementById(MAP_TRAVEL_SLOTS[loc]);
     if (slot && lock && lock.ready) {
-      slot.innerHTML = `<div class="map-travel-btns"><button class="map-travel-btn" onclick="event.stopPropagation(); startIlgradBreakthrough()">⚔ Прорваться</button></div>`;
+      slot.innerHTML = `<div class="map-travel-btns"><button type="button" class="map-travel-btn map-assembly-btn" onclick="openIlgradAssemblyRoute()">${lock.button}</button></div>`;
     }
   });
 }
 
-// Сам прорыв начинается после Собрания у Старейшины (js/systems/underwood-fall.js).
-function startIlgradBreakthrough() {
-  if ((state.player.level || 1) < ILGRAD_MIN_LEVEL) return;
-  showSoon('ПРОРЫВ', window.FALL_LINES
-    ? 'Одному к воротам не пробиться. Старейшина собирает всех в Андервуде: поговори с ним.'
-    : 'Нежить стоит у самых ворот, и пробиться к ним пока нельзя. Скоро.');
+function openIlgradAssemblyRoute() {
+  if (state.travel.active || state.battle.active || !mapLockInfo('ilgrad')?.ready) return;
+  if (state.player.currentLocation === 'town') {
+    switchTab('hunt');
+    window.scrollTo(0, 0);
+    openElder();
+    return;
+  }
+  const walk = document.querySelector('#map-travel-slot-town .map-walk-btn');
+  walk?.focus({ preventScroll: true });
+  walk?.closest('.map-card').scrollIntoView({ block: 'center' });
 }
 
 // Шапка города и какая сетка карточек видна.
@@ -122,6 +133,7 @@ function renderCityView() {
     const g = document.getElementById('city-grid-' + id);
     if (g) g.style.display = id === loc ? '' : 'none';
   });
+  renderIlgradCommandOffer();
   applyTownWindowTitles();
 }
 
@@ -171,7 +183,33 @@ function applyTownWindowTitles() {
 
 // ---- Места, у которых нет своей лавки ----
 
-// Комендатура — поручения Ильграда появятся позже.
+const ILGRAD_COMMAND_OFFERS = [
+  { quest: 'ilgradCount', topic: 'map' },
+  { quest: 'ilgradArmor', topic: 'armor' },
+  { quest: 'ilgradScouts', topic: 'scouts' },
+];
+
+function ilgradCommandOffer() {
+  const p = state.player;
+  if (p.currentLocation !== 'ilgrad' || !p.underwoodFallen || !ilgradOpen() || !DIALOGUES.commander) return null;
+  const topics = ownerTopics('commander');
+  return ILGRAD_COMMAND_OFFERS.find(({ quest, topic }) =>
+    !isQuestStarted(quest) && topics.some(t => t.id === topic)) || null;
+}
+
+function renderIlgradCommandOffer() {
+  const button = document.getElementById('ilgrad-command-offer');
+  const offer = ilgradCommandOffer();
+  button.hidden = !offer;
+  if (offer) document.getElementById('ilgrad-command-quest').textContent = QUESTS[offer.quest].name;
+}
+
+function openIlgradCommandOffer() {
+  const offer = ilgradCommandOffer();
+  if (offer) openDialogue('commander', 't_' + offer.topic);
+}
+
+// Обычный вход в Комендатуру открывает полный разговор.
 function openIlgradCommand() {
   if (state.player.currentLocation !== 'ilgrad') return;
   if (state.player.underwoodFallen && OWNER_CHATS.commander) { talkToOwner('commander'); return; }

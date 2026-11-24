@@ -18,6 +18,7 @@ let selectedStartSlot = null;
 // ========================================================
 
 function showStartScreen() {
+  if (document.getElementById('equip-compare')?.open) closeEquipmentComparison();
   document.getElementById('start-screen').classList.add('active');
   if (typeof slotsClaimForAccount === 'function') slotsClaimForAccount();   // v0.36.4: чужих героев не показываем
   renderSlots();
@@ -357,8 +358,7 @@ function loadSlotAndStart(slotIndex, opts) {
     if (typeof checkLevelUp === 'function') checkLevelUp();
   }
 
-  // v0.33: требование уровня у брони и оружия — снятое не по уровню уходит в сумку
-  if (state.player.classId && typeof unequipUnderLevel === 'function') unequipUnderLevel();
+  const equipmentRepaired = state.player.classId && repairEquippedItemsOnLoad();
 
   if (!state.player.classId) {
     openCreateScreen(slotIndex);
@@ -367,6 +367,7 @@ function loadSlotAndStart(slotIndex, opts) {
 
   hideStartScreen();
   initGame();
+  if (equipmentRepaired) saveCurrentSlotSoon();
 
   // v0.33: зашли героем из экспедиции — он вернулся (раньше или как раз к концу), окно с добычей
   if (typeof expOnEnterGame === 'function') expOnEnterGame();
@@ -715,6 +716,7 @@ function resetStateToFresh() {
   state.player.quests = {};
   state.player.expedition = null;
   state.player.expeditionLoot = [];
+  state.player.expeditionKills = {};
   state.player.huntPace = {};
   state.player.huntVariant = {};
   state.player.breakthroughResult = 0;

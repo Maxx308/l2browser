@@ -43,7 +43,46 @@ function openMentor() {
   if (typeof updateTalkButtons === 'function') updateTalkButtons();
 }
 
-function closeMentor() { document.getElementById('mentor-overlay').classList.remove('active'); }
+let mentorSkillObserver = null;
+
+function closeMentor() {
+  mentorSkillObserver?.disconnect();
+  document.getElementById('mentor-overlay').classList.remove('active');
+}
+
+function watchMentorSkills(list) {
+  const overlay = document.getElementById('mentor-overlay');
+  if (!overlay.classList.contains('active')) return;
+  const cards = Array.from(list.children).filter(card => !knowsLore('skill.' + card.dataset.skillId));
+  if (!cards.length) return;
+  if (typeof IntersectionObserver !== 'function') {
+    unlockViewedSkills(cards.map(card => card.dataset.skillId));
+    return;
+  }
+  mentorSkillObserver = new IntersectionObserver((entries, observer) => {
+    if (!overlay.classList.contains('active') || !list.isConnected) return;
+    const viewed = entries.filter(entry => entry.intersectionRatio >= 0.35);
+    viewed.forEach(entry => observer.unobserve(entry.target));
+    unlockViewedSkills(viewed.map(entry => entry.target.dataset.skillId));
+  }, { root: overlay.querySelector('.window-content'), threshold: 0.35 });
+  cards.forEach(card => mentorSkillObserver.observe(card));
+}
+
+function openMentorSkillArticle(skillId) {
+  unlockViewedSkills([skillId]);
+  closeMentor();
+  switchTab('chronicle');
+  switchChronicleSection('lore');
+  openLoreArticle('skill.' + skillId, true);
+  document.querySelector('.lore-skill-ranks .btn[aria-pressed="true"]')?.focus();
+}
+
+function returnToMentorSkill(skillId) {
+  if (!isTownLoc(state.player.currentLocation)) return;
+  switchTab('hunt');
+  openMentor();
+  document.querySelector(`.skill-card[data-skill-id="${skillId}"] .skill-card-guide`)?.focus();
+}
 
 // ---- СБРОС НАВЫКОВ ----
 function resetSkills() {
@@ -104,6 +143,7 @@ function resetSkills() {
 
 // ---- РЕНДЕР ----
 function renderMentorSkills() {
+  mentorSkillObserver?.disconnect();
   const cont = document.getElementById('mentor-pane-skills');
   const p = state.player;
   
@@ -142,6 +182,7 @@ function renderMentorSkills() {
     
     const card = document.createElement('div');
     card.className = 'skill-card' + (isMaxed ? ' maxed' : (isLearned ? ' learned' : ''));
+    card.dataset.skillId = skill.id;
     
     let actionHtml;
     if (isMaxed) actionHtml = `<div class="skill-maxed-badge">МАКС</div>`;
@@ -154,18 +195,19 @@ function renderMentorSkills() {
       : `<button class="btn" disabled>Нужно 1 очко</button>`;
       
     const currentLevel = lvl > 0 ? lvl : 1;
-    const descHtml = skill.getDesc(currentLevel);
-    const nextHtml = isLearned && !isMaxed ? skill.getNextDesc(lvl) : (!isLearned ? skill.getNextDesc(0) : '');
+    const brief = getSkillBrief(skill, currentLevel);
     const levelBadge = isLearned ? `<div class="skill-card-level-badge">Ур. ${lvl}/${skill.maxLevel}</div>` : '';
     
     card.innerHTML = `
       <div class="skill-card-icon">${skill.icon || ''}${levelBadge}</div>
       <div class="skill-card-body">
         <div class="skill-card-name">${skill.name}</div>
-        <div class="skill-card-type ${skill.type === 'active' ? 'active-skill' : 'passive-skill'}">${skill.type === 'active' ? 'Активный' : 'Пассивный'} · Ур. ${lvl} / ${skill.maxLevel}</div>
-        <div class="skill-card-desc">${descHtml}</div>
-        ${nextHtml ? `<div class="skill-card-next">${nextHtml}</div>` : ''}
-        <div class="skill-card-action">${actionHtml}</div>
+        <div class="skill-card-type ${skill.type === 'active' ? 'active-skill' : 'passive-skill'}">${getSkillTypeLabel(skill)} · Ур. ${lvl} / ${skill.maxLevel}</div>
+        <div class="skill-card-desc">${brief}</div>
+        <div class="skill-card-action">
+          ${actionHtml}
+          <button type="button" class="skill-card-guide" onclick="openMentorSkillArticle('${skill.id}')">О навыке</button>
+        </div>
       </div>
     `;
     list.appendChild(card);
@@ -173,6 +215,7 @@ function renderMentorSkills() {
   
   cont.innerHTML = header;
   cont.appendChild(list);
+  watchMentorSkills(list);
 }
 
 function upgradeSkill(skillId) {

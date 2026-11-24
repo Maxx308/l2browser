@@ -23,6 +23,14 @@ const BAG_DESC = 'Потёртая, латаная, пахнет пылью и �
 // Год появления героя. Новая эра — от исчезновения Воича (в игре это не объясняем).
 const CHRONICLE_START_YEAR = 213;
 
+const ANNALS_MILESTONES = {
+  elder: { title: 'Встреча со Старейшиной' },
+  kill: { title: 'Первая победа', useFirstSentence: true },
+  'loc.field': { title: 'За воротами Андервуда', scene: 'field' },
+  'loc.mine': { title: 'Спуск в Копи', scene: 'mine' },
+  'loc.outskirts': { title: 'На Окраинах Ильграда', scene: 'outskirts' },
+};
+
 // Факты о мире. В тексте записи «{{ключ}}»: пока герой не узнал — unknown, узнал — known.
 // Старые записи переписываются сами, когда герой узнаёт правду.
 // loc — локация, чьё имя в подписи записи тоже прячется до этого факта.
@@ -149,7 +157,7 @@ function annalsFirst(key, vars, opts) {
   if (c.firsts[key]) return;
   c.firsts[key] = Date.now();
   const text = ANNALS_FIRSTS[key].replace(/%(\w+)%/g, (m, k) => (vars && vars[k] != null ? vars[k] : ''));
-  addChronicleEntry(text, opts);
+  addChronicleEntry(text, ANNALS_MILESTONES[key] ? Object.assign({}, opts, { firstKey: key }) : opts);
 }
 
 // ---- Факты: что герой уже узнал ----
@@ -173,7 +181,7 @@ function bumpChronicleCounter(key, by) {
   c.counters[key] = (c.counters[key] || 0) + (by === undefined ? 1 : by);
 }
 
-// Новая запись. opts: { speaker: 'bag' | 'hero', title?, lvl?, loc?, ask: { options: [{ text, reply?, trust? }], answer? } }
+// Новая запись. opts: { speaker: 'bag' | 'hero', title?, lvl?, loc?, firstKey?, ask: { options: [{ text, reply?, trust? }], answer? } }
 // lvl/loc — если запись «задним числом» (по умолчанию — текущие уровень и место).
 // ask.answer — если вопрос уже отвечен в диалоге (тогда запись просто хранит выбор; доверие считает диалог).
 function addChronicleEntry(text, opts) {
@@ -190,6 +198,7 @@ function addChronicleEntry(text, opts) {
     text,
   };
   if (o.title) entry.title = o.title;
+  if (o.firstKey) entry.firstKey = o.firstKey;
   if (o.ask && o.ask.options && o.ask.options.length) {
     entry.ask = { options: o.ask.options.map(x => ({ text: x.text, reply: x.reply || '', trust: x.trust || 0 })), answer: null };
     if (typeof o.ask.answer === 'number') { entry.ask.answer = o.ask.answer; entry.ask.answeredAt = entry.at; }
@@ -312,7 +321,11 @@ function chronicleWhere(e) {
 }
 
 function renderChronicle() {
-  document.querySelectorAll('.chron-sub').forEach(b => b.classList.toggle('active', b.dataset.sec === __chronicleSection));
+  document.querySelectorAll('.chron-sub').forEach(b => {
+    const active = b.dataset.sec === __chronicleSection;
+    b.classList.toggle('active', active);
+    b.setAttribute('aria-pressed', String(active));
+  });
   const box = document.getElementById('chronicle-body');
   if (!box) return;
 
@@ -326,31 +339,77 @@ function renderChronicle() {
     return;
   }
 
-  const c = state.player.chronicle;
-  if (!c || !c.entries.length) {
-    box.innerHTML = `<div class="chron-soon">Летопись пока пуста.</div>`;
-    return;
-  }
+  const entries = state.player.chronicle?.entries || [];
+  const ordered = entries.slice().reverse().map(entry => ({ entry, milestone: chronicleMilestone(entry) }));
+  const pending = ordered.filter(({ entry }) => entry.ask?.answer === null);
+  const history = ordered.filter(({ entry }) => entry.ask?.answer !== null);
+  const featuredIndex = history.findIndex(({ milestone }) => milestone?.scene);
+  const featured = featuredIndex < 0 ? null : history.splice(featuredIndex, 1)[0];
+  const timeline = history.map(({ entry, milestone }) => `<li>${renderAnnalsEntry(entry, milestone)}</li>`).join('');
+  box.innerHTML = `
+    ${renderChronicleBagCall()}
+    ${pending.map(({ entry, milestone }) => renderAnnalsEntry(entry, milestone)).join('')}
+    <h2 class="chron-section-title">Путь героя</h2>
+    ${featured ? renderAnnalsEntry(featured.entry, featured.milestone, featured.milestone.scene) : ''}
+    ${timeline ? `<ol class="chron-timeline">${timeline}</ol>` : ''}
+    ${!entries.length ? '<p class="chron-soon">Летопись пока пуста.</p>' : ''}
+  `;
+}
 
-  box.innerHTML = c.entries.slice().reverse().map(e => {
-    const where = chronicleWhere(e);
-    const pending = e.ask && e.ask.answer === null;
-    let html = `<div class="chron-entry${e.speaker === 'bag' ? ' bag' : ''}${pending ? ' pending' : ''}">`;
-    const who = e.speaker === 'bag' ? `<span class="chron-who">${escChronicle(bagSpeakerName())}</span> · ` : '';
-    html += `<div class="chron-meta">${who}${escChronicle(where)}${where ? ' · ' : ''}${e.lvl} ур.${pending ? ' · <b>не отвечено</b>' : ''}</div>`;
-    if (e.title) html += `<div class="chron-title">${chronicleTextHtml(e.title)}</div>`;
-    html += `<div class="chron-text">${e.speaker === 'bag' ? chronicleSpeechHtml(e.text) : chronicleTextHtml(e.text)}</div>`;
-    if (e.ask) {
-      if (pending) {
-        html += `<div class="chron-answers">${e.ask.options.map((o, i) => `<button class="chron-answer" onclick="answerChronicle(${e.id}, ${i})">${chronicleTextHtml(o.text)}</button>`).join('')}</div>`;
-      } else {
-        const o = e.ask.options[e.ask.answer];
-        html += `<div class="chron-reply">${chronicleAnswerHtml(o.text)}</div>`;
-        if (o.reply) html += `<div class="chron-text">${chronicleSpeechHtml(o.reply)}</div>`;
-      }
+function chronicleMilestone(entry) {
+  if (entry.firstKey) return ANNALS_MILESTONES[entry.firstKey];
+  // В старых сохранениях есть только текст записи.
+  const key = Object.keys(ANNALS_MILESTONES).find(id => {
+    const original = ANNALS_FIRSTS[id];
+    if (id === 'kill') return entry.text.startsWith(original.split('%monster%')[0]);
+    return entry.text === original;
+  });
+  return ANNALS_MILESTONES[key];
+}
+
+function renderChronicleBagCall() {
+  const { status, q } = bagQuestState();
+  if (status !== 'offer' && status !== 'ready') return '';
+  const heading = status === 'offer' ? 'Заплечник хочет поговорить' : 'Заплечник ждёт вас';
+  const text = status === 'offer' ? chronicleSpeechHtml(q.ask.split('\n\n')[0]) : chronicleTextHtml(q.name);
+  return `<aside class="chron-bag-call">
+    <img src="${bagLookImg()}" alt="" width="58" height="58">
+    <div>
+      <div class="chron-meta chron-attention">${heading}</div>
+      <p class="chron-text">${text}</p>
+      <button type="button" class="chron-link" onclick="openBagTalk()">Поговорить</button>
+    </div>
+  </aside>`;
+}
+
+function renderAnnalsEntry(entry, milestone, scene) {
+  const where = chronicleWhere(entry);
+  const bag = entry.speaker === 'bag';
+  const pending = entry.ask?.answer === null;
+  const meta = [bag && bagSpeakerName(), where, `${entry.lvl} ур.`].filter(Boolean).join(' · ');
+  let title = entry.title || milestone?.title;
+  let text = entry.text;
+  if (!entry.title && milestone?.useFirstSentence) {
+    const stop = text.indexOf('. ');
+    if (stop > 0) {
+      title = text.slice(0, stop);
+      text = text.slice(stop + 2);
     }
-    return html + `</div>`;
-  }).join('');
+  }
+  let html = `<article class="chron-entry${bag ? ' bag' : ''}${pending ? ' pending' : ''}${scene ? ' chron-feature' : ''}"${scene ? ` data-scene="${scene}"` : ''}>`;
+  html += `<div class="chron-meta">${escChronicle(meta)}${pending ? ' · <b>Ждёт ответа</b>' : ''}</div>`;
+  if (title) html += `<h3 class="chron-title">${chronicleTextHtml(title)}</h3>`;
+  html += `<div class="chron-text">${bag ? chronicleSpeechHtml(text) : chronicleTextHtml(text)}</div>`;
+  if (pending) {
+    html += `<div class="chron-answers">${entry.ask.options.map((option, i) => `<button type="button" class="chron-link" onclick="answerChronicle(${entry.id}, ${i})">${chronicleTextHtml(option.text)}</button>`).join('')}</div>`;
+  } else if (entry.ask) {
+    const option = entry.ask.options[entry.ask.answer];
+    if (option) {
+      html += `<div class="chron-reply">${chronicleAnswerHtml(option.text)}</div>`;
+      if (option.reply) html += `<div class="chron-text">${chronicleSpeechHtml(option.reply)}</div>`;
+    }
+  }
+  return html + '</article>';
 }
 
 // Открыли вкладку — новые записи прочитаны.

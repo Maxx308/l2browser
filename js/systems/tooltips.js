@@ -281,14 +281,10 @@ function showItemTooltip(e, item) {
 // ---------- ТУЛТИП НАВЫКА ----------
 function showSkillTooltip(e, skill) {
   const tt = document.getElementById('item-tooltip');
-  const lvl = getSkillLevel(skill.id);
-  const data = skill.levels[lvl - 1];
-  const isMaxed = lvl >= skill.maxLevel;
+  const lvl = Math.max(1, getSkillLevel(skill.id));
   let lines = `<div class="tt-name">${skill.name}</div>`;
-  lines += `<div class="tt-line stat">${skill.type === 'active' ? `Активный · MP: ${data.mpCost} · КД ${skill.cooldown}` : 'Пассивный'} · Ур. ${lvl}/${skill.maxLevel}</div>`;
-  lines += `<div class="tt-line effect">${skill.getDesc(lvl).replace(/<[^>]*>/g, '')}</div>`;
-  if (!isMaxed) lines += `<div class="tt-line next">Следующий ур.: ${skill.getNextDesc(lvl).replace(/<[^>]*>/g, '')}</div>`;
-  else lines += `<div class="tt-line maxed">МАКСИМАЛЬНЫЙ УРОВЕНЬ</div>`;
+  lines += `<div class="tt-line stat">${getSkillTypeLabel(skill)} · Ур. ${lvl}/${skill.maxLevel}</div>`;
+  lines += `<div class="tt-line effect">${getSkillBrief(skill, lvl)}</div>`;
   tt.innerHTML = lines;
   tt.style.display = 'block';
   tt.style.left = Math.min(window.innerWidth - 340, e.clientX + 15) + 'px';

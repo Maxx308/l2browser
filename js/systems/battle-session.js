@@ -30,6 +30,8 @@ const BSESS = {
   kills: 0,
   xp: 0,
   gold: 0,
+  supplyCost: 0,
+  stolenGold: 0,
   lost: 0,           // предметов потеряно (инвентарь полон)
   items: new Map(),  // ключ name|rarity → { name, icon, rarity, count, type }
   collecting: false, // true — сейчас идёт onMonsterDeath, добычу считаем
@@ -73,6 +75,35 @@ function bsessPerHour(value) {
   return value / sec * 3600;
 }
 
+const HUNT_BALANCE_NUMBER = new Intl.NumberFormat('ru-RU', { maximumFractionDigits: 2 });
+
+function huntBalanceHtml(earned, spent, note, forecast = false) {
+  const cost = Number.isFinite(spent) ? Math.round(spent * 100) / 100 : null;
+  const gold = forecast ? Math.round(earned) : earned;
+  const net = cost === null ? null : gold - cost;
+  const format = (n, approx = false) => n === null ? '—' :
+    (approx ? '≈ ' : '') + HUNT_BALANCE_NUMBER.format(n).replace(/^-/, '−');
+  return `<div class="hunt-balance">
+    <div class="hunt-balance-title">${forecast ? 'Прогноз · Оболы' : 'Оболы'}</div>
+    <dl class="hunt-balance-rows">
+      <div><dt>Добыто</dt><dd>${format(gold, forecast)}</dd></div>
+      <div><dt>Потрачено</dt><dd>${format(cost)}</dd></div>
+      <div class="hunt-balance-net${net < 0 ? ' loss' : ''}"><dt>Осталось</dt><dd>${format(net, forecast)}</dd></div>
+    </dl>
+    <p class="hunt-balance-note">${note}</p>
+  </div>`;
+}
+
+function bsessRecordSupplyUse(shopId, charges = 1) {
+  if (!BSESS.active) return;
+  const price = SHOP_ITEMS.find(item => item.id === shopId)?.price;
+  if (price > 0 && charges > 0) BSESS.supplyCost += price / charges;
+}
+
+function bsessRecordGoldLoss(amount) {
+  if (BSESS.active) BSESS.stolenGold += amount;
+}
+
 // Записать добычу в сессию (только то, что выпало при убийстве).
 // v0.33: камни душ кладутся в сумку мимо addToInventory (addSoulGems) — зовут это напрямую.
 function bsessNoteLoot(drop, n, ok) {
@@ -100,6 +131,8 @@ function bsessReset() {
   BSESS.kills = 0;
   BSESS.xp = 0;
   BSESS.gold = 0;
+  BSESS.supplyCost = 0;
+  BSESS.stolenGold = 0;
   BSESS.lost = 0;
   BSESS.items = new Map();
   bsessUpdateBag();
@@ -280,12 +313,14 @@ function bsessUpdatePanelStats() {
     toLevel = `<div class="bxs-note">До ${p.level + 1} уровня ≈ ${txt}</div>`;
   }
 
+  const costsNote = 'Зелья и заряды микстур по ценам лавки' + (BSESS.stolenGold > 0 ? ' · потери от краж' : '');
   box.innerHTML = `
     <div class="bxs-stat"><span>⏱</span><b>${bsessTime(bsessElapsedSec())}</b><i>время</i></div>
     <div class="bxs-stat"><span>💀</span><b>${BSESS.kills}</b><i>убито</i></div>
     <div class="bxs-stat"><span>✨</span><b>${bsessNum(BSESS.xp)}</b><i>опыт</i>${rate(xpH)}</div>
-    <div class="bxs-stat"><span>🪙</span><b>${bsessNum(BSESS.gold)}</b><i>Оболы</i>${rate(goldH)}</div>
-    ${toLevel}`;
+    <div class="bxs-stat"><span>🪙</span><b>${goldH === null ? '—' : bsessNum(goldH)}</b><i>Оболов / ч</i></div>
+    ${toLevel}
+    ${huntBalanceHtml(BSESS.gold, BSESS.supplyCost + BSESS.stolenGold, costsNote)}`;
 }
 
 function renderSessionPanel() {
@@ -395,10 +430,10 @@ function updatePeekBar() {
   startBattle = function () {
     const win = document.getElementById('battle-window');
     const wasOpen = !!(win && win.classList.contains('active'));
+    // Удача тратит первый заряд уже внутри старта боя.
+    if (!wasOpen || !BSESS.active) bsessReset();
     const r = origStart.apply(this, arguments);
-    const nowOpen = !!(win && win.classList.contains('active'));
-    if ((!wasOpen && nowOpen) || (nowOpen && !BSESS.active)) bsessReset();
-    else bsessUpdateBag();
+    bsessUpdateBag();
     return r;
   };
 

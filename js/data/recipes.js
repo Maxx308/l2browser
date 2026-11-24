@@ -40,13 +40,12 @@ const SETS = {
   // campHpRegen / campMpRegen — только на привале у костра (battle-rest.js — restCampBonus)
   novice: { name: 'Новичок', bonus: { maxHpFlat: 30, maxMpFlat: 30, campHpRegen: 1, campMpRegen: 1 }, bonusText: '+30 HP и +30 MP; у костра +1 HP/сек и +1 MP/сек',
     pieces: ['Кольцо Новичка', 'Серьга Новичка', 'Ожерелье Новичка'],
-    isFullSetEquipped: function() {
-      const p = state.player;
-      return p.equipment.ring1?.name === 'Кольцо Новичка' &&
-             p.equipment.ring2?.name === 'Кольцо Новичка' &&
-             p.equipment.earring1?.name === 'Серьга Новичка' &&
-             p.equipment.earring2?.name === 'Серьга Новичка' &&
-             p.equipment.necklace?.name === 'Ожерелье Новичка';
+    isFullSetEquipped: function(e = state.player.equipment) {
+      return e.ring1?.name === 'Кольцо Новичка' &&
+             e.ring2?.name === 'Кольцо Новичка' &&
+             e.earring1?.name === 'Серьга Новичка' &&
+             e.earring2?.name === 'Серьга Новичка' &&
+             e.necklace?.name === 'Ожерелье Новичка';
     }
   },
   // ---- v0.21: ТИР 3 — броня из ресурсов Копей. Две ступени бонуса:
@@ -64,8 +63,7 @@ const SETS = {
   // ---- v0.25: ТИР 3 — бижутерия из ресурсов Копей (2 кольца, 2 серьги, ожерелье) ----
   malachite: { name: 'Малахитовые обереги', bonus: { hpRegenOutBonus: 1, mpRegenOutBonus: 1 }, bonusText: '+1 HP/сек и +1 MP/сек вне боя',
     pieces: ['Малахитовое кольцо', 'Малахитовая серьга', 'Малахитовое ожерелье'],
-    isFullSetEquipped: function() {
-      const e = state.player.equipment;
+    isFullSetEquipped: function(e = state.player.equipment) {
       return e.ring1?.name === 'Малахитовое кольцо' && e.ring2?.name === 'Малахитовое кольцо' &&
              e.earring1?.name === 'Малахитовая серьга' && e.earring2?.name === 'Малахитовая серьга' &&
              e.necklace?.name === 'Малахитовое ожерелье';
@@ -594,8 +592,7 @@ const T4_JEWELRY = [
 T4_JEWELRY.forEach(j => {
   SETS[j.id] = {
     name: j.name, bonus: j.bonus, bonusText: j.bonusText, pieces: [j.pieces.ring, j.pieces.earring, j.pieces.necklace],
-    isFullSetEquipped: function () {
-      const e = state.player.equipment;
+    isFullSetEquipped: function (e = state.player.equipment) {
       return e.ring1?.name === j.pieces.ring && e.ring2?.name === j.pieces.ring &&
              e.earring1?.name === j.pieces.earring && e.earring2?.name === j.pieces.earring &&
              e.necklace?.name === j.pieces.necklace;

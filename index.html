@@ -86,37 +86,37 @@ applyTextFont(getSavedTextFont());
 <!-- v0.36.2: библиотека облака (Supabase, 213 КБ) переехала вниз, к остальным скриптам:
      в шапке она задерживала показ страницы, пока не скачается целиком. -->
 
-<link rel="stylesheet" href="css/base.css?v=0.39">
-<link rel="stylesheet" href="css/effects.css?v=0.39">
-<link rel="stylesheet" href="css/monsters.css?v=0.39">
-<link rel="stylesheet" href="css/city-map.css?v=0.39">
-<link rel="stylesheet" href="css/battle.css?v=0.39">
-<link rel="stylesheet" href="css/debuffs.css?v=0.39">
-<link rel="stylesheet" href="css/battle-autostop.css?v=0.39">
-<link rel="stylesheet" href="css/battle-arena.css?v=0.39">
-<link rel="stylesheet" href="css/underwood-fall.css?v=0.39">
-<link rel="stylesheet" href="css/battle-session.css?v=0.39">
-<link rel="stylesheet" href="css/battle-rest.css?v=0.39">
-<link rel="stylesheet" href="css/inventory.css?v=0.39">
-<link rel="stylesheet" href="css/inventory-equip.css?v=0.39">
-<link rel="stylesheet" href="css/inventory-slots.css?v=0.39">
-<link rel="stylesheet" href="css/windows.css?v=0.39">
-<link rel="stylesheet" href="css/screens.css?v=0.39">
-<link rel="stylesheet" href="css/patches.css?v=0.39">
-<link rel="stylesheet" href="css/settings.css?v=0.39">
-<link rel="stylesheet" href="css/cheat.css?v=0.39">
-<link rel="stylesheet" href="css/overlays.css?v=0.39">
-<link rel="stylesheet" href="css/dialogue.css?v=0.39">
-<link rel="stylesheet" href="css/storage.css?v=0.39">
-<link rel="stylesheet" href="css/refine.css?v=0.39">
-<link rel="stylesheet" href="css/alchemist.css?v=0.39">
-<link rel="stylesheet" href="css/leaderboard.css?v=0.39">
-<link rel="stylesheet" href="css/hero-inspect.css?v=0.39">
-<link rel="stylesheet" href="css/chronicle.css?v=0.39">
-<link rel="stylesheet" href="css/daynight.css?v=0.39">
-<link rel="stylesheet" href="css/expeditions.css?v=0.39">
-<link rel="stylesheet" href="css/subclass.css?v=0.39">
-<link rel="stylesheet" href="css/tutorial.css?v=0.39">
+<link rel="stylesheet" href="css/base.css?v=0.40">
+<link rel="stylesheet" href="css/effects.css?v=0.40">
+<link rel="stylesheet" href="css/monsters.css?v=0.40">
+<link rel="stylesheet" href="css/city-map.css?v=0.40">
+<link rel="stylesheet" href="css/battle.css?v=0.40">
+<link rel="stylesheet" href="css/debuffs.css?v=0.40">
+<link rel="stylesheet" href="css/battle-autostop.css?v=0.40">
+<link rel="stylesheet" href="css/battle-arena.css?v=0.40">
+<link rel="stylesheet" href="css/underwood-fall.css?v=0.40">
+<link rel="stylesheet" href="css/battle-session.css?v=0.40">
+<link rel="stylesheet" href="css/battle-rest.css?v=0.40">
+<link rel="stylesheet" href="css/inventory.css?v=0.40">
+<link rel="stylesheet" href="css/inventory-equip.css?v=0.40">
+<link rel="stylesheet" href="css/inventory-slots.css?v=0.40">
+<link rel="stylesheet" href="css/windows.css?v=0.40">
+<link rel="stylesheet" href="css/screens.css?v=0.40">
+<link rel="stylesheet" href="css/patches.css?v=0.40">
+<link rel="stylesheet" href="css/settings.css?v=0.40">
+<link rel="stylesheet" href="css/cheat.css?v=0.40">
+<link rel="stylesheet" href="css/overlays.css?v=0.40">
+<link rel="stylesheet" href="css/dialogue.css?v=0.40">
+<link rel="stylesheet" href="css/storage.css?v=0.40">
+<link rel="stylesheet" href="css/refine.css?v=0.40">
+<link rel="stylesheet" href="css/alchemist.css?v=0.40">
+<link rel="stylesheet" href="css/leaderboard.css?v=0.40">
+<link rel="stylesheet" href="css/hero-inspect.css?v=0.40">
+<link rel="stylesheet" href="css/chronicle.css?v=0.40">
+<link rel="stylesheet" href="css/daynight.css?v=0.40">
+<link rel="stylesheet" href="css/expeditions.css?v=0.40">
+<link rel="stylesheet" href="css/subclass.css?v=0.40">
+<link rel="stylesheet" href="css/tutorial.css?v=0.40">
 </head>
 <body>
 
@@ -316,6 +316,14 @@ applyTextFont(getSavedTextFont());
         <div class="city-title" id="city-title">АНДЕРВУД</div>
         <div class="city-subtitle" id="city-subtitle">Последний оплот живых на краю земель</div>
       </div>
+      <button class="city-command-offer" id="ilgrad-command-offer" type="button" onclick="openIlgradCommandOffer()" hidden>
+        <img src="img/npc/commander.webp" alt="">
+        <span class="city-command-copy">
+          <span>Поручение Коменданта</span>
+          <strong id="ilgrad-command-quest"></strong>
+        </span>
+        <span class="city-command-arrow" aria-hidden="true">›</span>
+      </button>
       <div class="city-grid" id="city-grid-town">
 
         <!-- v0.31: картинки Андервуда без текста (img/city/underwood), подпись — кодом.
@@ -643,12 +651,14 @@ applyTextFont(getSavedTextFont());
 
   <!-- v0.30: Хроники — Летопись · Поручения · Энциклопедия (js/systems/chronicle.js) -->
   <div class="panel" id="panel-chronicle">
-    <div class="panel-title">ХРОНИКИ</div>
-    <div class="chron-subs">
-      <div class="chron-sub active" data-sec="annals" onclick="switchChronicleSection('annals')">ЛЕТОПИСЬ</div>
-      <div class="chron-sub" data-sec="quests" onclick="switchChronicleSection('quests')">ПОРУЧЕНИЯ</div>
-      <div class="chron-sub" data-sec="lore" onclick="switchChronicleSection('lore')">ЭНЦИКЛОПЕДИЯ</div>
-    </div>
+    <header class="chron-cover">
+      <h1 class="chron-heading">Хроники</h1>
+      <nav class="chron-subs" aria-label="Разделы хроник">
+        <button type="button" class="chron-sub active" data-sec="annals" aria-pressed="true" onclick="switchChronicleSection('annals')">Летопись</button>
+        <button type="button" class="chron-sub" data-sec="quests" aria-pressed="false" onclick="switchChronicleSection('quests')">Поручения</button>
+        <button type="button" class="chron-sub" data-sec="lore" aria-pressed="false" onclick="switchChronicleSection('lore')">Энциклопедия</button>
+      </nav>
+    </header>
     <!-- v0.36.4: одним нажатием — всё «новое» в Хрониках прочитано (видна, только когда есть что отмечать) -->
     <div class="chron-readall-row"><button type="button" class="chron-readall" id="chron-readall" onclick="markAllChronicleRead()" style="display:none">✓ Отметить всё прочитанным</button></div>
     <div class="chron-body" id="chronicle-body"></div>
@@ -1030,6 +1040,20 @@ applyTextFont(getSavedTextFont());
   </div>
 </div>
 
+<dialog class="forge-sources" id="forge-sources" aria-labelledby="forge-sources-title">
+  <header class="forge-sources-header">
+    <div>
+      <h2 id="forge-sources-title">Где добыть</h2>
+      <p class="forge-sources-material" id="forge-sources-material"></p>
+    </div>
+    <button type="button" class="btn" aria-label="Закрыть" onclick="this.closest('dialog').close()" autofocus>×</button>
+  </header>
+  <div class="forge-sources-body" id="forge-sources-body">
+    <div class="forge-sources-list" id="forge-sources-list"></div>
+    <div id="forge-source-preview" hidden></div>
+  </div>
+</dialog>
+
 <div class="mentor-overlay overlay-base" id="mentor-overlay">
   <div class="mentor-window window-base">
     <div class="window-header">
@@ -1408,6 +1432,18 @@ applyTextFont(getSavedTextFont());
   </div>
 </div>
 
+<dialog class="equip-compare" id="equip-compare" aria-labelledby="equip-compare-title" oncancel="closeEquipmentComparison()">
+  <header class="equip-compare-header">
+    <h2 id="equip-compare-title">Сравнение снаряжения</h2>
+    <button type="button" class="equip-compare-close" aria-label="Закрыть" onclick="closeEquipmentComparison()" autofocus>×</button>
+  </header>
+  <div class="equip-compare-body" id="equip-compare-body"></div>
+  <footer class="equip-compare-actions">
+    <button type="button" class="btn" onclick="closeEquipmentComparison()">Отмена</button>
+    <button type="button" class="btn success" id="equip-compare-confirm" onclick="confirmEquipmentComparison()">Надеть</button>
+  </footer>
+</dialog>
+
 <div class="slot-picker" id="slot-picker">
   <div class="slot-picker-header">
     <span id="slot-picker-title">ВЫБЕРИТЕ</span>
@@ -1447,7 +1483,7 @@ applyTextFont(getSavedTextFont());
      v0.36.2: подключается здесь, а не в шапке (должна стоять раньше js/systems/cloud.js). -->
 <script src="js/vendor/supabase-2.118.0.js" defer></script>
 
-<script src="js/app.bundle.js?v=0.39" defer></script>
+<script src="js/app.bundle.js?v=0.40" defer></script>
 
 </body>
 </html>

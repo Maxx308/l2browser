@@ -161,6 +161,7 @@ function monsterTagOnHit(m) {
   if (!monsterHasTagFlag(m, 'thief') || p.gold <= 0 || Math.random() * 100 >= MONSTER_THIEF_CHANCE) return;
   const n = Math.min(p.gold, m.level * 6);
   p.gold -= n;
+  if (typeof bsessRecordGoldLoss === 'function') bsessRecordGoldLoss(n);
   m.stolen = (m.stolen || 0) + n;
   logCombat(`🫳 ${m.name} стащил ${n} Оболов!`, 'log-entry loss');
   updateTopStatus();
@@ -342,6 +343,15 @@ function monsterKitHitAllies(m, skill, dmg) {
   if (mult) allies[0].hp -= Math.max(1, Math.floor(dmg * mult));
 }
 
+// Защита действует один раз за бой. Обе помехи расходуют один и тот же заряд.
+function tryUseSteadfastSeal(message) {
+  const b = state.battle;
+  if (!b.active || b.activeEffects.steadfastSealUsed || !(state.player.guildBuffs.steadfastSeal?.timer > 0)) return false;
+  b.activeEffects.steadfastSealUsed = true;
+  logCombat(`✦ Печать выдержки ${message}.`, 'log-entry potion');
+  return true;
+}
+
 // После всех ударов навыка: отдача, похищение, сбитая шкала.
 function monsterKitAfterSkill(m, skill, landed) {
   if (m.hp <= 0 || state.player.hp <= 0 || !state.battle.active) return;
@@ -359,9 +369,13 @@ function monsterKitAfterSkill(m, skill, landed) {
       logCombat(`🩸 ${m.name} восстанавливает ${heal} HP.`, 'log-entry monster');
     }
   }
-  if (skill.atbCut && landed > 0) {
-    if (!(typeof subclassPlayerUnmovable === 'function' && subclassPlayerUnmovable())) state.battle.playerATB = Math.max(0, (state.battle.playerATB || 0) - skill.atbCut);   // v0.38: Несдвигаемый
-    logCombat(`⚡ ${m.name} сбивает вашу шкалу хода на ${Math.round(skill.atbCut * 100)}%.`, 'log-entry monster');
+  const b = state.battle;
+  if (skill.atbCut && landed > 0 && b.playerATB > 0) {
+    if (typeof subclassPlayerUnmovable === 'function' && subclassPlayerUnmovable()) return;
+    if (tryUseSteadfastSeal('сохранила шкалу хода')) return;
+    const lost = Math.min(b.playerATB, skill.atbCut);
+    b.playerATB -= lost;
+    logCombat(`⚡ ${m.name} сбивает вашу шкалу хода на ${Math.round(lost * 100)}%.`, 'log-entry monster');
   }
 }
 

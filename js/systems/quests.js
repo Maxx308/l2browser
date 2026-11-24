@@ -283,42 +283,59 @@ function renderQuestJournal(box) {
     return;
   }
 
-  const head = q => `<div class="quest-head"><span class="quest-name">${esc(q.name)}</span><span class="quest-giver">${esc(q.giver)} · ${esc(q.place)}</span></div>`;
+  const head = q => `<header class="quest-head"><div class="quest-giver">${esc(q.giver)} · ${esc(q.place)}</div><h3 class="quest-name">${esc(q.name)}</h3></header>`;
+  const oldGroups = new Map(Array.from(box.querySelectorAll('.quest-group-fold'), group => [group.dataset.group, group.open]));
+  const openStories = new Set(Array.from(box.querySelectorAll('.quest-story[open]'), story => story.dataset.quest));
+  const group = (id, title, cards, open = false) => `<details class="quest-group-fold" data-group="${id}"${(oldGroups.get(id) ?? open) ? ' open' : ''}>
+    <summary>${title}</summary>${cards.join('')}
+  </details>`;
   let html = '';
 
   if (active.length) {
-    html += `<div class="quest-group">Текущие</div>`;
+    html += '<h2 class="chron-section-title">В работе</h2>';
     active.forEach(q => {
-      const cur = q.stages.indexOf(getQuestProgress(q.id).stage);
-      html += `<div class="quest-card">${head(q)}<div class="quest-text">${esc(heroText(q.journal))}</div><div class="quest-steps">`;
-      q.steps.forEach(s => {
-        const i = q.stages.indexOf(s.stage);
-        const fin = i < cur || (s.done ? s.done() : false);   // v0.32: шаг «принеси» готов, когда собрано
-        const cls = fin ? 'done' : i === cur ? 'now' : 'later';
-        const mark = fin ? '✓' : i === cur ? '▸' : '·';
-        const text = typeof s.text === 'function' ? s.text() : s.text;
-        html += `<div class="quest-step ${cls}"><span class="quest-mark">${mark}</span>${esc(heroText(text))}</div>`;
+      const stage = getQuestProgress(q.id).stage;
+      const cur = q.stages.indexOf(stage);
+      const steps = q.steps.map(step => ({
+        step,
+        done: q.stages.indexOf(step.stage) < cur || Boolean(step.done?.()),
+      }));
+      const gathering = q.needs && steps.some(({ step, done }) => step.stage === stage && step.done && !done);
+      const current = [];
+      const other = [];
+      steps.forEach(({ step, done }) => {
+        const text = esc(heroText(typeof step.text === 'function' ? step.text() : step.text));
+        if (step.stage === stage && !done && (!gathering || step.done)) current.push(text);
+        else other.push(`<li class="quest-step ${done ? 'done' : 'later'}"><span class="quest-mark" aria-label="${done ? 'Выполнено' : 'Предстоит'}">${done ? '✓' : '○'}</span>${text}</li>`);
       });
-      html += `</div><div class="quest-reward"><span>Награда</span>${esc(q.reward)}</div></div>`;
+      const portrait = q.bag ? bagLookImg()
+        : Object.values(LORE_ARTICLES).find(a => a.cat === 'people' && a.title === q.giver && a.kind === q.place)?.portrait;
+      html += `<article class="quest-card quest-active">
+        <div class="quest-identity">${portrait ? `<img class="quest-portrait" src="${portrait}" alt="" width="58" height="66">` : ''}${head(q)}</div>
+        ${current.length ? `<div class="quest-current">
+          <div class="chron-meta chron-attention">${current.length > 1 ? 'Что сделать сейчас' : 'Следующий шаг'}</div>
+          <ul>${current.map(text => `<li>${text}</li>`).join('')}</ul>
+        </div>` : ''}
+        ${other.length ? `<ol class="quest-steps">${other.join('')}</ol>` : ''}
+        <div class="quest-reward"><span>Награда</span>${esc(q.reward)}</div>
+        <details class="quest-story" data-quest="${q.id}"${openStories.has(q.id) ? ' open' : ''}><summary>О поручении</summary><p class="quest-text">${esc(heroText(q.journal))}</p></details>
+      </article>`;
     });
   }
 
   if (offered.length) {
-    html += `<div class="quest-group">Можно взять</div>`;
-    offered.forEach(q => { html += `<div class="quest-card offered">${head(q)}<div class="quest-text">${esc(heroText(q.offer))}</div></div>`; });
+    html += group('offered', 'Можно взять', offered.map(q => `<article class="quest-card offered">${head(q)}<p class="quest-text">${esc(heroText(q.offer))}</p></article>`), true);
   }
 
   if (lost.length) {
-    html += `<div class="quest-group">Не успели</div>`;
-    lost.forEach(q => { html += `<div class="quest-card lost">${head(q)}<div class="quest-text">${esc(heroText(q.journal))}</div><div class="quest-lost-note">Андервуда больше нет.</div></div>`; });
+    html += group('lost', 'Не успели', lost.map(q => `<article class="quest-card lost">${head(q)}<p class="quest-text">${esc(heroText(q.journal))}</p><p class="quest-lost-note">Андервуда больше нет.</p></article>`));
   }
 
   if (done.length) {
-    html += `<div class="quest-group">Выполненные</div>`;
-    // v0.32: у поручений жителей шаги со счётчиками — для выполненного пишем то, что было в журнале
-    // v0.35.1: у поручений Заплечника «убей» шаги — функции; пишем журнал
-    // v0.37: и у любых других, где шаги — функции (счётчики убийств/находок)
-    done.forEach(q => { html += `<div class="quest-card done">${head(q)}<div class="quest-text">✓ ${esc(heroText((q.needs || q.bag || q.steps.some(s => typeof s.text === 'function')) ? q.journal : q.steps.map(s => s.text).join(' · ')))}</div></div>`; });
+    html += group('done', 'Завершённые', done.map(q => {
+      const text = q.needs || q.bag || q.steps.some(s => typeof s.text === 'function') ? q.journal : q.steps.map(s => s.text).join(' · ');
+      return `<article class="quest-card done">${head(q)}<p class="quest-text">${esc(heroText(text))}</p></article>`;
+    }));
   }
 
   box.innerHTML = html;

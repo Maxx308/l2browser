@@ -128,9 +128,9 @@ function isTwoHandGripWeapon(item) {
 }
 
 // % к урону физических навыков (0, если хвата нет).
-function getTwoHandGripBonus() {
-  if (typeof isMage === 'function' && isMage()) return 0;
-  return isTwoHandGripWeapon(state.player.equipment.weapon) ? TWO_HAND_GRIP_SKILL_BONUS : 0;
+function getTwoHandGripBonus(p = state.player) {
+  if (p.classId === 'mage') return 0;
+  return isTwoHandGripWeapon(p.equipment.weapon) ? TWO_HAND_GRIP_SKILL_BONUS : 0;
 }
 
 // ========================================================
@@ -164,9 +164,8 @@ const DUAL_WIELD_EVASION_PENALTY = 4;
 // Ниша уворотчика: сильнее щита против магии и яда (по симуляции).
 const FREE_HAND_EVASION_BONUS = 8;
 
-function hasFreeHandStyle() {
-  const p = state.player;
-  if (typeof isMage === 'function' && isMage()) return false;
+function hasFreeHandStyle(p = state.player) {
+  if (p.classId === 'mage') return false;
   const w = p.equipment.weapon;
   return !!(w && !w.twoHanded && !p.equipment.shield);
 }
@@ -177,20 +176,20 @@ function canDualWield(item) {
     DUAL_WIELD_CATEGORIES.includes(getWeaponCategory(item.name)));
 }
 
-function getEquippedShield() {
-  const s = state.player.equipment.shield;
+function getEquippedShield(p = state.player) {
+  const s = p.equipment.shield;
   return s && s.type === 'shield' ? s : null;
 }
 
-function getOffhandWeapon() {
-  const s = state.player.equipment.shield;
+function getOffhandWeapon(p = state.player) {
+  const s = p.equipment.shield;
   return s && s.type === 'weapon' ? s : null;
 }
 
 // Атака второй руки, которая добавляется к обычному удару.
-function getOffhandPAtk() {
-  const off = getOffhandWeapon();
-  if (!off || (typeof isMage === 'function' && isMage())) return 0;
+function getOffhandPAtk(p = state.player) {
+  const off = getOffhandWeapon(p);
+  if (!off || p.classId === 'mage') return 0;
   return Math.floor(getItemStat(off, 'pAtk') * DUAL_WIELD_OFFHAND_PERCENT / 100);
 }
 

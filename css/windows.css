@@ -307,12 +307,31 @@
   margin-bottom: calc(8 * var(--u));
 }
 .recipe-mat { display: flex; align-items: center; gap: calc(6 * var(--u)); }
-.recipe-mat.have { color: #a0d080; }
-.recipe-mat.lack { color: #d06060; }
+.recipe-mat.have .mat-count { color: #a0d080; }
+.recipe-mat.lack .mat-count { color: #e48686; }
+.recipe-mat-source {
+  display: inline-flex;
+  align-items: center;
+  gap: calc(6 * var(--u));
+  min-width: 0;
+  min-height: max(28px, calc(26 * var(--u)));
+  padding: 2px 0;
+  border: 0;
+  border-radius: 3px;
+  background: none;
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.recipe-mat-source > svg, .recipe-mat-source > img { flex: none; }
+.recipe-mat-source:hover { color: var(--gold-bright); }
+.recipe-mat-arrow { color: var(--gold-bright); font-size: 1.25em; }
 .recipe-mat .mat-count {
   margin-left: auto;
   font-family: 'Cinzel', serif;
   font-size: var(--fs-small);
+  white-space: nowrap;
 }
 /* v0.25: сколько материала лежит на складе */
 .recipe-mat .mat-store {
@@ -326,6 +345,109 @@
 .recipe-mat svg {
   width: calc(16 * var(--u));
   height: calc(16 * var(--u));
+}
+
+.forge-sources {
+  position: fixed;
+  inset: 0;
+  margin: auto;
+  width: min(calc(400 * var(--u)), calc(100vw - 20px));
+  max-width: none;
+  max-height: 86vh;
+  max-height: 86dvh;
+  border: 1px solid var(--border);
+  border-radius: calc(9 * var(--u));
+  box-shadow: var(--shadow);
+  background: #161410;
+  color: var(--text);
+  overflow: hidden;
+}
+.forge-sources[open] { display: flex; flex-direction: column; }
+.forge-sources::backdrop { background: rgba(8, 7, 5, .72); }
+.forge-sources-header, .forge-sources-body { padding: calc(12 * var(--u)); }
+.forge-sources-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: calc(8 * var(--u));
+  border-bottom: 1px solid var(--border);
+}
+.forge-sources-header h2 { font: normal var(--fs-h1)/1.2 var(--font-text); }
+.forge-sources-header .btn {
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0;
+  font-size: calc(24 * var(--u));
+}
+.forge-sources-material {
+  display: flex;
+  align-items: center;
+  gap: calc(6 * var(--u));
+  margin-top: calc(4 * var(--u));
+  color: var(--gold-bright);
+}
+.forge-sources-material svg, .forge-sources-material img {
+  width: calc(18 * var(--u));
+  height: calc(18 * var(--u));
+  object-fit: contain;
+  flex: none;
+}
+.forge-sources-body { overflow: auto; overscroll-behavior: contain; }
+.forge-sources-list:not([hidden]) { display: grid; gap: calc(6 * var(--u)); }
+.forge-source {
+  display: flex;
+  align-items: center;
+  gap: calc(10 * var(--u));
+  min-height: 52px;
+  padding: calc(6 * var(--u)) calc(8 * var(--u));
+  border: 1px solid var(--border);
+  border-radius: calc(5 * var(--u));
+  background: var(--bg-1);
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.forge-source:hover { border-color: var(--gold); }
+.forge-source-icon {
+  width: max(38px, calc(38 * var(--u)));
+  aspect-ratio: 1;
+  flex: none;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: calc(4 * var(--u));
+}
+.forge-source-icon img, .forge-source-icon svg { width: 100%; height: 100%; object-fit: cover; }
+.forge-source-text { display: grid; gap: calc(2 * var(--u)); }
+.forge-source-text strong { color: var(--gold-bright); }
+.forge-source-text small { font-size: var(--fs-small); color: var(--text-dim); }
+.forge-source-arrow { margin-left: auto; color: var(--gold-bright); font-size: calc(20 * var(--u)); }
+.forge-source-nav {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: calc(8 * var(--u));
+  margin-bottom: calc(8 * var(--u));
+  color: var(--text-dim);
+}
+.forge-source-nav .btn { min-height: 44px; }
+.forge-sources .monster-card { width: 100%; cursor: default; }
+.forge-sources .monster-card .monster-portrait-img { height: auto; aspect-ratio: 2 / 1; }
+.forge-sources .monster-card .monster-head .monster-name { white-space: normal; }
+.forge-sources .monster-card .drop-list { font-size: max(12px, var(--fs-small)); line-height: 1.55; }
+.forge-sources .drop-list .row { padding: 2px 6px; }
+.forge-sources .drop-highlight {
+  border-radius: 3px;
+  background: rgba(224, 190, 122, .12);
+  color: var(--gold-bright);
+}
+.recipe-card[data-recipe-id]:focus { outline: 1px solid var(--gold-bright); outline-offset: -2px; }
+.recipe-mat-source:focus-visible, .forge-sources button:focus-visible {
+  outline: 2px solid var(--gold-bright);
+  outline-offset: -2px;
+}
+@media (pointer: coarse) {
+  .recipe-mat-source { min-height: 32px; }
 }
 
 .recipe-action {
@@ -522,6 +644,20 @@
   gap: calc(8 * var(--u));
   flex-wrap: wrap;
 }
+
+.skill-card-guide {
+  border: 0;
+  padding: calc(6 * var(--u)) calc(2 * var(--u));
+  background: none;
+  color: var(--gold-bright);
+  font: inherit;
+  font-size: var(--fs-small);
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.skill-card-guide:hover { color: var(--text); }
 
 .skill-maxed-badge {
   font-family: 'Cinzel', serif;

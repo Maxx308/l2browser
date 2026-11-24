@@ -42,7 +42,7 @@ const INVENTORY_PAGE_SIZE = 30;
 function invMaxSlots() {
   return INVENTORY_MAX_SLOTS + (typeof bagSlotBonus === 'function' ? bagSlotBonus() : 0);
 }
-function invPages() { return Math.ceil(invMaxSlots() / INVENTORY_PAGE_SIZE); }
+function invPages() { return Math.ceil(Math.max(invMaxSlots(), state.player.inventory.length) / INVENTORY_PAGE_SIZE); }
 
 // ---------- ХЕЛПЕР: суффикс подгонки для имени ----------
 function getInvRefineSuffix(item) {
@@ -358,7 +358,7 @@ function renderInventory() {
         if (slot._skipClick) { slot._skipClick = false; return; }   // это было перетаскивание
         if (item.type === 'food') useFood(item);
         else if (isConsumable) useConsumableFromBag(item);
-        else equipItem(item);
+        else openEquipmentComparison(item);
       };
 
       // ---- v0.29: ПКМ больше не удаляет; меню браузера при удержании тоже не нужно ----
@@ -463,6 +463,7 @@ function useFood(item) {
   if (lostMin >= 5 && !confirm(`Сейчас действует «${FOOD_KINDS[had].name}» — ещё ${buffShopDur(Math.floor(p.foodTimer))}.\n\n«${kind.name}» заменит её, остаток пропадёт. Съесть?`)) return;
   p.foodTimer = same ? addBuffTime(p.foodTimer, duration) : duration;
   p.foodKind = kindId;
+  if (!same && typeof expPaceStamp === 'function') expPaceStamp();
 
   const idx = p.inventory.indexOf(item);
   item.qty--;
@@ -495,6 +496,7 @@ function eatDish(item) {
   }
   const replaced = p.dish && p.dish.timer > 0 && !same ? DISHES[p.dish.id] : null;
   p.dish = { id, timer: same ? p.dish.timer + dur : dur };
+  if (!same && typeof expPaceStamp === 'function') expPaceStamp();
 
   const idx = p.inventory.indexOf(item);
   item.qty--;

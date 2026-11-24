@@ -93,6 +93,7 @@ function fallOpenCity() {
   updateMapUI();
   switchTab('hunt');
   renderMonsters();
+  window.scrollTo(0, 0);
   saveCurrentSlot();
   logCombat('🏰 Ильград открыт. Максимальный уровень теперь 30.', 'log-entry levelup');
   showToast('🏰', 'Ильград открыт · уровень до 30');
