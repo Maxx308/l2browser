@@ -1,4 +1,4 @@
-// L2 BROWSER — СБОРКА v0.40 (build.js; правки — в js/**, а не сюда). Файлов: 104
+// L2 BROWSER — СБОРКА v0.41 (build.js; правки — в js/**, а не сюда). Файлов: 105
 // ==== ФАЙЛ js/data/config.js ====
 const CHEAT_MULTIPLIER = 10;
 const MP_COST_PER_ATTACK = 5;
@@ -2372,6 +2372,158 @@ SUBCLASSES[id].id = id;
 SUBCLASSES[id].portrait = `img/subclasses/${id}.webp`;
 if (!SUBCLASSES[id].mods) SUBCLASSES[id].mods = {};
 });
+const SUBCLASS_GUIDES = {
+human_wallguard: {
+play: 'Принимайте удары на щит и отвечайте, когда противник открывается.',
+strength: 'Блоки, оглушение щитом и запасной шанс пережить смертельный удар.',
+limit: 'Без щита теряете часть защиты и ответных ударов.',
+},
+human_huntsman: {
+play: 'Набирайте Азарт критическими ударами и тратьте его на добивание.',
+strength: 'Много быстрых попаданий и сильный удар по ослабленной цели.',
+limit: 'Добивание требует зарядов. Часть бонусов работает с луком, арбалетом или кинжалом.',
+},
+human_templar: {
+play: 'Чередуйте удары оружием и магию Света, чтобы лечиться прямо в бою.',
+strength: 'Свет полезен против нежити и бьёт сразу по нескольким врагам.',
+limit: 'Сияние тратит ману каждый ход и набирает силу постепенно.',
+},
+human_elementalist: {
+play: 'Чередуйте огонь, лёд и молнию. Заморозьте врага, затем расколите его Огненным шаром.',
+strength: 'Сочетания стихий усиливают урон, а Стихийный залп даёт бесплатное заклинание.',
+limit: 'Особые эффекты зависят от того, в каком порядке вы применяете заклинания.',
+},
+human_priest: {
+play: 'Лечитесь светом и превращайте лишнее лечение в защитный барьер.',
+strength: 'Лечение снимает вредные эффекты, а свет особенно силён против нежити.',
+limit: 'Чтобы собрать барьер, нужно получить больше лечения, чем сейчас требуется.',
+},
+human_necromancer: {
+play: 'Поднимайте павших врагов и сражайтесь вместе с тремя слугами.',
+strength: 'Костяное копьё может бесплатно поднять слугу, а «Костяная плата» переносит на него сильный удар.',
+limit: 'Вид слуги зависит от павшего врага. После боя слуг нужно призвать заново.',
+},
+orc_rock: {
+play: 'Переживайте тяжёлые удары и восстанавливайтесь в бою, особенно на низком здоровье.',
+strength: 'Здоровье усиливает таран, а Ярость возвращает часть урона лечением.',
+limit: 'Часть защиты раскрывается только без щита, восстановлению нужно время.',
+},
+orc_berserker: {
+play: 'Тратьте здоровье на мощные удары и добивайте врагов, чтобы вернуть часть потерь.',
+strength: 'Двуручное оружие пробивает защиту, а убийство даёт удар по следующему врагу.',
+limit: 'Навыки расходуют здоровье. Во время Неистовства входящий урон растёт.',
+},
+orc_chieftain: {
+play: 'Зовите духа предка и сочетайте оружие с магией Смерти.',
+strength: 'Дух даёт усиление атаки или защиты, а убийства возвращают здоровье и ману.',
+limit: 'Усиление духа временное, а отдача Ярости расходует здоровье.',
+},
+orc_hexer: {
+play: 'Накладывайте разные проклятия и копите Гниение на цели.',
+strength: 'Каждое новое проклятие усиливает урон. Когда враг гибнет, проклятия могут задеть соседей.',
+limit: 'Чтобы раскрыть силу на одной цели, нужно успеть накопить несколько эффектов.',
+},
+orc_healer: {
+play: 'Ослабляйте врагов и лечитесь за счёт магии Смерти и Гниения.',
+strength: 'Гнев лечит без отдачи, а Гниение помогает восстанавливаться против стаи.',
+limit: 'Часть восстановления приходит постепенно, пока Гниение наносит урон.',
+},
+orc_shaman: {
+play: 'Призывайте тотемы и усиливайте заклинания, пока они стоят рядом.',
+strength: 'Камень прикрывает, Ярость стреляет, Духи возвращают здоровье и ману.',
+limit: 'Тип тотема случаен. Четвёртый призыв заменяет самый старый тотем.',
+},
+elf_thornguard: {
+play: 'Опутывайте врагов корнями и превращайте часть сильного удара в постепенный урон.',
+strength: 'Часть отложенного урона исчезает, а опутанные враги атакуют реже.',
+limit: 'Оставшийся урон всё равно поступает позже. Его важно пережить.',
+},
+elf_pathfinder: {
+play: 'Сейте терновые семена ударами и раскрывайте их в подходящий момент.',
+strength: 'Точные попадания, пробивание защиты и возможность сразу раскрыть семена.',
+limit: 'Семенам нужно время, если не раскрыть их специальным приёмом.',
+},
+elf_bladesinger: {
+play: 'Чередуйте удары клинком и магию Жизни, чтобы лечиться во время атаки.',
+strength: 'Урон магией Жизни восстанавливает здоровье, а лишнее лечение может ранить врага.',
+limit: 'Часть силы зависит от ритма ударов. «Песнь ветра» помогает сохранить Песнь.',
+},
+elf_stargazer: {
+play: 'Сосредоточьтесь на одной цели и обрушивайте на неё звёзды.',
+strength: 'Повторные заклинания по одной цели усиливают урон, а «Звёздный луч» ускоряет падение звезды.',
+limit: 'Звезда падает с задержкой, а при смене цели нужно снова набирать усиление.',
+},
+elf_grovekeeper: {
+play: 'Заранее накладывайте лечение и поддерживайте здоровье на протяжении боя.',
+strength: 'Лечение продолжается между ходами и может возвращать ману.',
+limit: 'Часть лечения приходит постепенно. Его нужно начать до опасного удара.',
+},
+elf_druid: {
+play: 'Призывайте духа-зверя и охотьтесь вместе с ним. Повторный призыв отдаёт приказ атаковать.',
+strength: 'Рысь сильнее бьёт, Олень лечит, а Филин даёт ману. Живой дух остаётся между боями.',
+limit: 'Какой дух придёт, решает случай. Если он погибнет, накопленный рост пропадёт.',
+},
+drow_stormguard: {
+play: 'Принимайте удары и копите на врагах Статику для ответных разрядов.',
+strength: 'Молния задерживает ход врага. Защита помогает пережить магические атаки.',
+limit: 'Для ответных разрядов и части эффектов нужны удары по вам.',
+},
+drow_assassin: {
+play: 'Используйте быстрые ходы и бейте до того, как враг накопит ход.',
+strength: 'Парное оружие усиливает атаки, яд накапливается, а убийство приближает ваш следующий ход.',
+limit: 'Часть бонусов требует оружия в обеих руках, а сильный удар зависит от шкалы врага.',
+},
+drow_shadowweaver: {
+play: 'Заряжайте оружие молнией и призывайте двойника, который повторяет удары.',
+strength: 'Двойник добавляет урон, а паралич может вызвать его или продлить его действие.',
+limit: 'Двойник временный. Продление зависит от того, удастся ли парализовать врага.',
+},
+drow_stormcaller: {
+play: 'Бейте молниями подряд, копите Напряжение и пускайте цепь по стае.',
+strength: 'Цепная молния поражает несколько врагов, а накопленное Напряжение усиливает разряд.',
+limit: 'До усиленного удара нужно набрать серию молний.',
+},
+drow_dreamweaver: {
+play: 'Усыпляйте часть стаи и разбирайтесь с остальными врагами по очереди.',
+strength: 'Спящие враги дают время восстановить здоровье и подготовить сильный удар.',
+limit: 'Урон будит спящих. Важен порядок, в котором вы выбираете цели.',
+},
+drow_spiderlord: {
+play: 'Призывайте матку и давайте выводку время вырасти. Паралич зовёт всех пауков в атаку.',
+strength: 'Укусы замедляют цели паутиной и накапливают яд.',
+limit: 'Матке нужно время, чтобы вывести паучат. Укусы после Разряда требуют паралича.',
+},
+dwarf_steelwall: {
+play: 'Переживайте серии ударов и наращивайте поглощение урона по ходу боя.',
+strength: 'Сильная защита под частыми атаками и устойчивость к оглушению.',
+limit: 'Часть защиты набирается от полученных ударов, а «Гномья сталь» требует подходящей брони.',
+},
+dwarf_hammerer: {
+play: 'Пробивайте защиту врага тяжёлым оружием и используйте заморозку для сильных ударов.',
+strength: 'Проломы усиливают удары по крепкой цели. Раскол хорошо работает по замороженным врагам.',
+limit: 'Часть бонусов требует молота, дубины или топора. Для самого сильного удара нужны три Пролома.',
+},
+dwarf_prospector: {
+play: 'Накладывайте Метки Жадности перед добиванием и собирайте больше добычи с охоты.',
+strength: 'Метки, дополнительные попытки добычи и повышенный шанс полезных материалов.',
+limit: 'Для части бонусов враг должен прожить достаточно долго, чтобы накопить метки.',
+},
+dwarf_forgemaster: {
+play: 'Разогревайте врагов огнём и используйте накопленный Жар перед бураном.',
+strength: 'Жар усиливает связку заклинаний. В кузнице проще получить более редкую вещь или сберечь материалы.',
+limit: 'Связка требует подготовить цель. Часть навыков даёт пользу только в кузнице.',
+},
+dwarf_runemaster: {
+play: 'Наносите руны на себя и ставьте взрывную руну на врага перед его ударом.',
+strength: 'Руны дают защиту и лечение, а подгонка снаряжения обходится выгоднее.',
+limit: 'Взрывная руна ждёт действия врага. Часть преимуществ относится только к подгонке.',
+},
+dwarf_stonecaller: {
+play: 'Собирайте элементалей Камня, Огня и Жилы, затем объединяйте их в Великого.',
+strength: 'Камень прикрывает, Огонь поджигает, Жила задевает второго врага и помогает с добычей.',
+limit: 'До слияния надо собрать все три стихии и сохранить их в бою.',
+},
+};
 function scX(v) { return `<span class="val">×${v.toFixed(2)}</span>`; }
 function scV(v) { return `<span class="val">${v}</span>`; }
 function scNext(skill, lvl, fmt) {
@@ -2389,7 +2541,7 @@ levels: [
 { mpCost: 15, multiplier: 3.0 }, { mpCost: 16, multiplier: 3.25 },
 { mpCost: 17, multiplier: 3.5 },
 ],
-getDesc: (lvl) => { const d = SKILLS.powerStrike.levels[lvl-1]; return `Со щитом: (атака + защита щита ×${WALLGUARD_SHIELD_DEF_MULT}) × ${scX(d.multiplier)}. Без щита — обычный сильный удар на ${scX(d.multiplier)}. <b>Цикл мастера:</b> убийство — КД «Меча и щита» −1. MP: ${scV(d.mpCost)}. КД: ${SKILLS.powerStrike.cooldown} ATB.`; },
+getDesc: (lvl, skill = SKILLS.powerStrike) => { const d = skill.levels[lvl-1]; return `Со щитом: (атака + защита щита ×${WALLGUARD_SHIELD_DEF_MULT}) × ${scX(d.multiplier)}. Без щита — обычный сильный удар на ${scX(d.multiplier)}. <b>Цикл мастера:</b> убийство — КД «Меча и щита» −1. MP: ${scV(d.mpCost)}. КД: ${skill.cooldown} ATB.`; },
 getNextDesc: (lvl) => scNext(SKILLS.powerStrike, lvl, n => `×${n.multiplier.toFixed(2)}, MP ${n.mpCost}`),
 },
 doubleStrike: {
@@ -2401,7 +2553,7 @@ levels: [
 { mpCost: 15, multiplier: 1.10 }, { mpCost: 16, multiplier: 1.15 },
 { mpCost: 17, multiplier: 1.20 },
 ],
-getDesc: (lvl) => { const d = SKILLS.doubleStrike.levels[lvl-1]; return `Два удара по ${scX(d.multiplier)}. Со щитом второй удар — щитом: к атаке прибавляется защита щита ×${WALLGUARD_SHIELD_DEF_MULT}, шанс ${scV(SKILLS.doubleStrike.stunChance + '%')} оглушить. <b>Цикл мастера:</b> убийство — КД «Кругового вызова» −1. MP: ${scV(d.mpCost)}. КД: ${SKILLS.doubleStrike.cooldown} ATB.`; },
+getDesc: (lvl, skill = SKILLS.doubleStrike) => { const d = skill.levels[lvl-1]; return `Два удара по ${scX(d.multiplier)}. Со щитом второй удар — щитом: к атаке прибавляется защита щита ×${WALLGUARD_SHIELD_DEF_MULT}, шанс ${scV(skill.stunChance + '%')} оглушить. <b>Цикл мастера:</b> убийство — КД «Кругового вызова» −1. MP: ${scV(d.mpCost)}. КД: ${skill.cooldown} ATB.`; },
 getNextDesc: (lvl) => scNext(SKILLS.doubleStrike, lvl, n => `×${n.multiplier.toFixed(2)} каждый удар, MP ${n.mpCost}`),
 },
 whirlwind: {
@@ -2413,7 +2565,7 @@ levels: [
 { mpCost: 18, multiplier: 1.20, targets: 4 }, { mpCost: 19, multiplier: 1.27, targets: 4 },
 { mpCost: 20, multiplier: 1.35, targets: 4 },
 ],
-getDesc: (lvl) => { const w = SKILLS.whirlwind; const d = w.levels[lvl-1]; return `Удар по кругу: до ${scV(d.targets)} врагов на ${scX(d.multiplier)}. <b>Вызов:</b> задетые ${w.challengeTurns} хода бьют только героя и получают ${scV('+' + w.challengePct + '%')} урона от всех. <b>Цикл мастера:</b> убил хоть одного — КД «Удара щитом» −1. MP: ${scV(d.mpCost)}. КД: ${w.cooldown}.`; },
+getDesc: (lvl, skill = SKILLS.whirlwind) => { const w = skill; const d = w.levels[lvl-1]; return `Удар по кругу: до ${scV(d.targets)} врагов на ${scX(d.multiplier)}. <b>Вызов:</b> задетые ${w.challengeTurns} хода бьют только героя и получают ${scV('+' + w.challengePct + '%')} урона от всех. <b>Цикл мастера:</b> убил хоть одного — КД «Удара щитом» −1. MP: ${scV(d.mpCost)}. КД: ${w.cooldown}.`; },
 getNextDesc: (lvl) => scNext(SKILLS.whirlwind, lvl, n => `${n.targets} цели, ×${n.multiplier.toFixed(2)}, MP ${n.mpCost}`),
 },
 };
@@ -2472,7 +2624,7 @@ levels: [
 { mpCost: 0, multiplier: 1.6 }, { mpCost: 0, multiplier: 1.7 }, { mpCost: 0, multiplier: 1.8 },
 { mpCost: 0, multiplier: 1.9 },
 ],
-getDesc: (lvl) => { const s = SKILLS.powerStrike, mod = SUBCLASSES.human_huntsman.mods.powerStrike, d = s.levels[lvl-1];
+getDesc: (lvl, skill = SKILLS.powerStrike) => { const s = skill, mod = SUBCLASSES.human_huntsman.mods.powerStrike, d = s.levels[lvl-1];
 const full = d.multiplier + mod.perCharge * JAEGER_ZEAL_MAX;
 return `Тратит весь Азарт: ${scX(d.multiplier)} + ${scV('×' + mod.perCharge.toFixed(1))} за каждый заряд (${scX(full)} на ${JAEGER_ZEAL_MAX}). Цель ниже ${mod.lowHpPct}% HP — ещё ${scV('+' + mod.lowHpBonus + '%')}. Нужно от ${mod.minZeal} зарядов. Без маны. <b>Цикл мастера:</b> убийство — КД Шквала −1. КД: ${s.cooldown} ATB.`; },
 getNextDesc: (lvl) => scNext(SKILLS.powerStrike, lvl, n => `база ×${n.multiplier.toFixed(2)}`),
@@ -2485,7 +2637,7 @@ levels: [
 { mpCost: 9, multiplier: 0.70 }, { mpCost: 9, multiplier: 0.73 }, { mpCost: 10, multiplier: 0.77 },
 { mpCost: 11, multiplier: 0.80 },
 ],
-getDesc: (lvl) => { const s = SKILLS.doubleStrike, d = s.levels[lvl-1]; return `Три быстрых удара по ${scX(d.multiplier)}. Крит — отдельно на каждый, и каждый крит — заряд Азарта. <b>Цикл мастера:</b> убийство — КД Веера −1. MP: ${scV(d.mpCost)}. КД: ${s.cooldown} ATB.`; },
+getDesc: (lvl, skill = SKILLS.doubleStrike) => { const s = skill, d = s.levels[lvl-1]; return `Три быстрых удара по ${scX(d.multiplier)}. Крит — отдельно на каждый, и каждый крит — заряд Азарта. <b>Цикл мастера:</b> убийство — КД Веера −1. MP: ${scV(d.mpCost)}. КД: ${s.cooldown} ATB.`; },
 getNextDesc: (lvl) => scNext(SKILLS.doubleStrike, lvl, n => `×${n.multiplier.toFixed(2)} каждый удар, MP ${n.mpCost}`),
 },
 whirlwind: {
@@ -2496,7 +2648,7 @@ levels: [
 { mpCost: 18, multiplier: 1.20, targets: 4 }, { mpCost: 19, multiplier: 1.27, targets: 4 },
 { mpCost: 20, multiplier: 1.35, targets: 4 },
 ],
-getDesc: (lvl) => { const s = SKILLS.whirlwind, d = s.levels[lvl-1]; return `Веер ударов или стрел: до ${scV(d.targets)} врагов на ${scX(d.multiplier)}. Каждый крит — заряд Азарта. <b>Цикл мастера:</b> убил хоть одного — КД Добивания −1. MP: ${scV(d.mpCost)}. КД: ${s.cooldown}.`; },
+getDesc: (lvl, skill = SKILLS.whirlwind) => { const s = skill, d = s.levels[lvl-1]; return `Веер ударов или стрел: до ${scV(d.targets)} врагов на ${scX(d.multiplier)}. Каждый крит — заряд Азарта. <b>Цикл мастера:</b> убил хоть одного — КД Добивания −1. MP: ${scV(d.mpCost)}. КД: ${s.cooldown}.`; },
 getNextDesc: (lvl) => scNext(SKILLS.whirlwind, lvl, n => `${n.targets} цели, ×${n.multiplier.toFixed(2)}, MP ${n.mpCost}`),
 },
 };
@@ -2510,7 +2662,7 @@ levels: [
 { mpCost: 15, multiplier: 3.0 }, { mpCost: 16, multiplier: 3.25 },
 { mpCost: 17, multiplier: 3.5 },
 ],
-getDesc: (lvl) => { const s = SKILLS.powerStrike, mod = SUBCLASSES.human_templar.mods.powerStrike, d = s.levels[lvl-1]; return `Удар светом: (атака + маг. атака ×${mod.magPart}) × ${scX(d.multiplier)}. Нежить оглушает с шансом ${scV(mod.stunUndead + '%')}. <b>Цикл мастера:</b> убийство — КД Удара с молитвой −1. MP: ${scV(d.mpCost)}. КД: ${s.cooldown} ATB.`; },
+getDesc: (lvl, skill = SKILLS.powerStrike) => { const s = skill, mod = SUBCLASSES.human_templar.mods.powerStrike, d = s.levels[lvl-1]; return `Удар светом: (атака + маг. атака ×${mod.magPart}) × ${scX(d.multiplier)}. Нежить оглушает с шансом ${scV(mod.stunUndead + '%')}. <b>Цикл мастера:</b> убийство — КД Удара с молитвой −1. MP: ${scV(d.mpCost)}. КД: ${s.cooldown} ATB.`; },
 getNextDesc: (lvl) => scNext(SKILLS.powerStrike, lvl, n => `×${n.multiplier.toFixed(2)}, MP ${n.mpCost}`),
 },
 doubleStrike: {
@@ -2521,7 +2673,7 @@ levels: [
 { mpCost: 15, multiplier: 1.10, heal: 17 }, { mpCost: 16, multiplier: 1.15, heal: 18 },
 { mpCost: 17, multiplier: 1.20, heal: 20 },
 ],
-getDesc: (lvl) => { const s = SKILLS.doubleStrike, d = s.levels[lvl-1]; return `Два удара по ${scX(d.multiplier)}, каждый лечит ${scV(d.heal + '%')} нанесённого. <b>Цикл мастера:</b> убийство — КД Волны света −1. MP: ${scV(d.mpCost)}. КД: ${s.cooldown} ATB.`; },
+getDesc: (lvl, skill = SKILLS.doubleStrike) => { const s = skill, d = s.levels[lvl-1]; return `Два удара по ${scX(d.multiplier)}, каждый лечит ${scV(d.heal + '%')} нанесённого. <b>Цикл мастера:</b> убийство — КД Волны света −1. MP: ${scV(d.mpCost)}. КД: ${s.cooldown} ATB.`; },
 getNextDesc: (lvl) => scNext(SKILLS.doubleStrike, lvl, n => `×${n.multiplier.toFixed(2)}, лечение ${n.heal}%, MP ${n.mpCost}`),
 },
 whirlwind: {
@@ -2533,7 +2685,7 @@ levels: [
 { mpCost: 18, multiplier: 1.20, targets: 4, heal: 3.3 }, { mpCost: 19, multiplier: 1.27, targets: 4, heal: 3.7 },
 { mpCost: 20, multiplier: 1.35, targets: 4, heal: 4 },
 ],
-getDesc: (lvl) => { const s = SKILLS.whirlwind, mod = SUBCLASSES.human_templar.mods.whirlwind, d = s.levels[lvl-1]; return `Волна по кругу: до ${scV(d.targets)} врагов — удар на ${scX(d.multiplier)} и свет на ${scX(d.multiplier * mod.magPart)} от маг. атаки. За каждого задетого лечит ${scV(d.heal + '%')} макс. HP. <b>Цикл мастера:</b> убил хоть одного — КД Карающего удара −1. MP: ${scV(d.mpCost)}. КД: ${s.cooldown}.`; },
+getDesc: (lvl, skill = SKILLS.whirlwind) => { const s = skill, mod = SUBCLASSES.human_templar.mods.whirlwind, d = s.levels[lvl-1]; return `Волна по кругу: до ${scV(d.targets)} врагов — удар на ${scX(d.multiplier)} и свет на ${scX(d.multiplier * mod.magPart)} от маг. атаки. За каждого задетого лечит ${scV(d.heal + '%')} макс. HP. <b>Цикл мастера:</b> убил хоть одного — КД Карающего удара −1. MP: ${scV(d.mpCost)}. КД: ${s.cooldown}.`; },
 getNextDesc: (lvl) => scNext(SKILLS.whirlwind, lvl, n => `${n.targets} цели, ×${n.multiplier.toFixed(2)}, лечение ${n.heal}%`),
 },
 };
@@ -2626,19 +2778,19 @@ SUBCLASSES.human_elementalist.mods = {
 fireball: {
 name: 'Огненный шар', shatterMult: 1.5,
 levels: SC_FIREBALL_LEVELS,
-getDesc: (lvl) => { const s = SKILLS.fireball, d = s.levels[lvl-1]; return `Огненный удар на ${scX(d.multiplier)}, поджог на ${s.burnTurns} хода по ${scV(d.burnPercent + '%')} маг. атаки. <b>Раскол:</b> по замороженной — ${scX(1.5)}, заморозка спадает. MP: ${scV(d.mpCost)}.`; },
+getDesc: (lvl, skill = SKILLS.fireball) => { const s = skill, d = s.levels[lvl-1]; return `Огненный удар на ${scX(d.multiplier)}, поджог на ${s.burnTurns} хода по ${scV(d.burnPercent + '%')} маг. атаки. <b>Раскол:</b> по замороженной — ${scX(1.5)}, заморозка спадает. MP: ${scV(d.mpCost)}.`; },
 getNextDesc: (lvl) => scNext(SKILLS.fireball, lvl, n => `×${n.multiplier.toFixed(2)}, поджог ${n.burnPercent}%, MP ${n.mpCost}`),
 },
 iceArrow: {
 name: 'Ледяная стрела', freezeChance: 35,
 levels: SC_ICE_LEVELS,
-getDesc: (lvl) => { const s = SKILLS.iceArrow, d = s.levels[lvl-1]; return `Ледяной удар на ${scX(d.multiplier)}. Шанс ${scV(s.freezeChance + '%')} заморозить (пропуск удара); замороженную Огненный шар раскалывает. MP: ${scV(d.mpCost)}. КД: ${s.cooldown} ATB.`; },
+getDesc: (lvl, skill = SKILLS.iceArrow) => { const s = skill, d = s.levels[lvl-1]; return `Ледяной удар на ${scX(d.multiplier)}. Шанс ${scV(s.freezeChance + '%')} заморозить (пропуск удара); замороженную Огненный шар раскалывает. MP: ${scV(d.mpCost)}. КД: ${s.cooldown} ATB.`; },
 getNextDesc: (lvl) => scNext(SKILLS.iceArrow, lvl, n => `×${n.multiplier.toFixed(2)}, MP ${n.mpCost}`),
 },
 elementalVolley: {
 name: 'Буря стихий',
 levels: SC_VOLLEY_LEVELS,
-getDesc: (lvl) => { const s = SKILLS.elementalVolley, d = s.levels[lvl-1]; return `${scV(d.shots)} снаряда по ${scX(d.multiplier)} — огонь, лёд и молния <b>гарантированно</b> все три. Шанс ${scV(d.effectChance + '%')} эффекта стихии. Резонанс — каждый раз: следующий Шар или Стрела без маны. MP: ${scV(d.mpCost)}. КД: ${s.cooldown}.`; },
+getDesc: (lvl, skill = SKILLS.elementalVolley) => { const s = skill, d = s.levels[lvl-1]; return `${scV(d.shots)} снаряда по ${scX(d.multiplier)} — огонь, лёд и молния <b>гарантированно</b> все три. Шанс ${scV(d.effectChance + '%')} эффекта стихии. Резонанс — каждый раз: следующий Шар или Стрела без маны. MP: ${scV(d.mpCost)}. КД: ${s.cooldown}.`; },
 getNextDesc: (lvl) => scNext(SKILLS.elementalVolley, lvl, n => `${n.shots} снаряда, ×${n.multiplier.toFixed(2)}, эффект ${n.effectChance}%`),
 },
 };
@@ -2646,19 +2798,19 @@ SUBCLASSES.human_priest.mods = {
 fireball: {
 name: 'Кара', undeadMult: 1.5, healPct: 20,
 levels: SC_FIREBALL_LEVELS,
-getDesc: (lvl) => { const s = SKILLS.fireball, d = s.levels[lvl-1]; return `Удар светом на ${scX(d.multiplier)}, нежить — ${scX(1.5)}. Лечит ${scV('20%')} нанесённого. Усиливается и качает Жизнь. MP: ${scV(d.mpCost)}.`; },
+getDesc: (lvl, skill = SKILLS.fireball) => { const s = skill, d = s.levels[lvl-1]; return `Удар светом на ${scX(d.multiplier)}, нежить — ${scX(1.5)}. Лечит ${scV('20%')} нанесённого. Усиливается и качает Жизнь. MP: ${scV(d.mpCost)}.`; },
 getNextDesc: (lvl) => scNext(SKILLS.fireball, lvl, n => `×${n.multiplier.toFixed(2)}, MP ${n.mpCost}`),
 },
 iceArrow: {
 name: 'Оковы света', weakTurns: 3, weakPct: 20,
 levels: scMap(SC_ICE_LEVELS, (x, i) => ({ stun: [25, 27, 30, 32, 35, 37, 40][i] })),
-getDesc: (lvl) => { const s = SKILLS.iceArrow, d = s.levels[lvl-1], mod = SUBCLASSES.human_priest.mods.iceArrow; return `Свет на ${scX(d.multiplier)}. Шанс ${scV(d.stun + '%')} оглушить; цель ${mod.weakTurns} хода бьёт на ${scV(mod.weakPct + '%')} слабее. MP: ${scV(d.mpCost)}. КД: ${s.cooldown} ATB.`; },
+getDesc: (lvl, skill = SKILLS.iceArrow) => { const s = skill, d = s.levels[lvl-1], mod = SUBCLASSES.human_priest.mods.iceArrow; return `Свет на ${scX(d.multiplier)}. Шанс ${scV(d.stun + '%')} оглушить; цель ${mod.weakTurns} хода бьёт на ${scV(mod.weakPct + '%')} слабее. MP: ${scV(d.mpCost)}. КД: ${s.cooldown} ATB.`; },
 getNextDesc: (lvl) => scNext(SKILLS.iceArrow, lvl, n => `×${n.multiplier.toFixed(2)}, оглушение ${n.stun}%`),
 },
 elementalVolley: {
 name: 'Благодатный дождь',
 levels: scMap(SC_VOLLEY_LEVELS, (x, i) => ({ heal: [2, 2.2, 2.5, 2.7, 3, 3.2, 3.5][i] })),
-getDesc: (lvl) => { const s = SKILLS.elementalVolley, d = s.levels[lvl-1]; return `${scV(d.shots)} капли света по ${scX(d.multiplier)} в случайных врагов, каждое попадание лечит ${scV(d.heal + '%')} макс. HP. Качает Жизнь. MP: ${scV(d.mpCost)}. КД: ${s.cooldown}.`; },
+getDesc: (lvl, skill = SKILLS.elementalVolley) => { const s = skill, d = s.levels[lvl-1]; return `${scV(d.shots)} капли света по ${scX(d.multiplier)} в случайных врагов, каждое попадание лечит ${scV(d.heal + '%')} макс. HP. Качает Жизнь. MP: ${scV(d.mpCost)}. КД: ${s.cooldown}.`; },
 getNextDesc: (lvl) => scNext(SKILLS.elementalVolley, lvl, n => `${n.shots} капли, ×${n.multiplier.toFixed(2)}, лечение ${n.heal}%`),
 },
 };
@@ -2672,19 +2824,19 @@ SUBCLASSES.human_necromancer.mods = {
 fireball: {
 name: 'Костяное копьё',
 levels: SC_FIREBALL_LEVELS,
-getDesc: (lvl) => { const s = SKILLS.fireball, d = s.levels[lvl-1]; return `Копьё Смерти на ${scX(d.multiplier)}. Убило — павший встаёт бесплатно, если есть место (до ${NECRO_ALLY_MAX} слуг). Усиливается и качает Смерть. MP: ${scV(d.mpCost)}.`; },
+getDesc: (lvl, skill = SKILLS.fireball) => { const s = skill, d = s.levels[lvl-1]; return `Копьё Смерти на ${scX(d.multiplier)}. Убило — павший встаёт бесплатно, если есть место (до ${NECRO_ALLY_MAX} слуг). Усиливается и качает Смерть. MP: ${scV(d.mpCost)}.`; },
 getNextDesc: (lvl) => scNext(SKILLS.fireball, lvl, n => `×${n.multiplier.toFixed(2)}, MP ${n.mpCost}`),
 },
 iceArrow: {
 name: 'Проклятие слабости', weakTurns: 3,
 levels: scMap(SC_ICE_LEVELS, (x, i) => ({ weak: [15, 17, 18, 20, 22, 23, 25][i] })),
-getDesc: (lvl) => { const s = SKILLS.iceArrow, d = s.levels[lvl-1], mod = SUBCLASSES.human_necromancer.mods.iceArrow; return `Проклятие Смерти на ${scX(d.multiplier)}: цель ${mod.weakTurns} хода бьёт на ${scV(d.weak + '%')} слабее. MP: ${scV(d.mpCost)}. КД: ${s.cooldown} ATB.`; },
+getDesc: (lvl, skill = SKILLS.iceArrow) => { const s = skill, d = s.levels[lvl-1], mod = SUBCLASSES.human_necromancer.mods.iceArrow; return `Проклятие Смерти на ${scX(d.multiplier)}: цель ${mod.weakTurns} хода бьёт на ${scV(d.weak + '%')} слабее. MP: ${scV(d.mpCost)}. КД: ${s.cooldown} ATB.`; },
 getNextDesc: (lvl) => scNext(SKILLS.iceArrow, lvl, n => `×${n.multiplier.toFixed(2)}, ослабление ${n.weak}%`),
 },
 elementalVolley: {
 name: 'Зов могил',
 levels: scMap(SC_VOLLEY_LEVELS, x => ({ targets: x.shots })),
-getDesc: (lvl) => { const s = SKILLS.elementalVolley, d = s.levels[lvl-1]; return `Смерть бьёт до ${scV(d.targets)} врагов на ${scX(d.multiplier)} каждого. Убитые встают слугами, пока есть место. MP: ${scV(d.mpCost)}. КД: ${s.cooldown}.`; },
+getDesc: (lvl, skill = SKILLS.elementalVolley) => { const s = skill, d = s.levels[lvl-1]; return `Смерть бьёт до ${scV(d.targets)} врагов на ${scX(d.multiplier)} каждого. Убитые встают слугами, пока есть место. MP: ${scV(d.mpCost)}. КД: ${s.cooldown}.`; },
 getNextDesc: (lvl) => scNext(SKILLS.elementalVolley, lvl, n => `${n.targets} цели, ×${n.multiplier.toFixed(2)}`),
 },
 };
@@ -2762,6 +2914,7 @@ getNextDesc: (lvl) => scNext(SKILLS.prCleanse, lvl, n => `каждые ${n.step}
 },
 nmRaise: {
 id: 'nmRaise', subclassId: 'human_necromancer', name: 'Поднять павшего', type: 'active', freeTurn: true,
+fxAnim: 'summon',
 iconPng: 'img/skills/subclass/nmRaise.webp',
 maxLevel: 5, cooldown: 3,
 levels: [ { mpCost: 14, power: 40 }, { mpCost: 15, power: 45 }, { mpCost: 16, power: 50 }, { mpCost: 17, power: 55 }, { mpCost: 18, power: 60 } ],
@@ -2828,19 +2981,19 @@ SUBCLASSES.orc_rock.mods = {
 powerStrike: {
 name: 'Таран', stun: 15,
 levels: scMap(SC_WAR_PS_LEVELS, (x, i) => ({ hpPct: [5, 5.5, 6, 6.5, 7, 7.5, 8][i] })),
-getDesc: (lvl) => { const s = SKILLS.powerStrike, d = s.levels[lvl-1]; return `Таран на ${scX(d.multiplier)} и ещё ${scV(d.hpPct + '%')} вашего макс. HP. Шанс ${scV('15%')} оглушить. MP: ${scV(d.mpCost)}. КД: ${s.cooldown} ATB.`; },
+getDesc: (lvl, skill = SKILLS.powerStrike) => { const s = skill, d = s.levels[lvl-1]; return `Таран на ${scX(d.multiplier)} и ещё ${scV(d.hpPct + '%')} вашего макс. HP. Шанс ${scV('15%')} оглушить. MP: ${scV(d.mpCost)}. КД: ${s.cooldown} ATB.`; },
 getNextDesc: (lvl) => scNext(SKILLS.powerStrike, lvl, n => `×${n.multiplier.toFixed(2)} + ${n.hpPct}% HP`),
 },
 orcRage: {
 name: 'Ответная ярость', minHpPercent: 0, lifePct: 30,
 levels: scMap(SC_RAGE_LEVELS, () => ({ recoilPercent: 0 })),
-getDesc: (lvl) => { const s = SKILLS.orcRage, d = s.levels[lvl-1]; return `Удар на ${scX(d.multiplier)}, при любом HP и без отдачи. Чем меньше у вас HP, тем сильнее — до ${scX(2)} на последнем издыхании. ${scV('30%')} урона возвращается здоровьем. Убийство: КД Жатвы −${scV(d.harvestCdCut)}. Качает Смерть. КД: ${s.cooldown} ATB.`; },
+getDesc: (lvl, skill = SKILLS.orcRage) => { const s = skill, d = s.levels[lvl-1]; return `Удар на ${scX(d.multiplier)}, при любом HP и без отдачи. Чем меньше у вас HP, тем сильнее — до ${scX(2)} на последнем издыхании. ${scV('30%')} урона возвращается здоровьем. Убийство: КД Жатвы −${scV(d.harvestCdCut)}. Качает Смерть. КД: ${s.cooldown} ATB.`; },
 getNextDesc: (lvl) => scNext(SKILLS.orcRage, lvl, n => `×${n.multiplier.toFixed(2)}`),
 },
 bloodHarvest: {
 name: 'Жатва с рыком', roarTurns: 3, roarPct: 15,
 levels: SC_HARVEST_LEVELS,
-getDesc: (lvl) => { const s = SKILLS.bloodHarvest, d = s.levels[lvl-1]; return `Широкий удар по всем (до ${scV(d.targets)}) на ${scX(d.multiplier)}. <b>Рык:</b> задетые 3 хода бьют только вас и на ${scV('15%')} слабее. За каждого убитого — ${scV(d.healPercent + '%')} макс. HP. MP: ${scV(d.mpCost)}. КД: ${s.cooldown}.`; },
+getDesc: (lvl, skill = SKILLS.bloodHarvest) => { const s = skill, d = s.levels[lvl-1]; return `Широкий удар по всем (до ${scV(d.targets)}) на ${scX(d.multiplier)}. <b>Рык:</b> задетые 3 хода бьют только вас и на ${scV('15%')} слабее. За каждого убитого — ${scV(d.healPercent + '%')} макс. HP. MP: ${scV(d.mpCost)}. КД: ${s.cooldown}.`; },
 getNextDesc: (lvl) => scNext(SKILLS.bloodHarvest, lvl, n => `×${n.multiplier.toFixed(2)}, лечение ${n.healPercent}%`),
 },
 };
@@ -2851,19 +3004,19 @@ SUBCLASSES.orc_berserker.mods = {
 powerStrike: {
 name: 'Сокрушить',
 levels: scMap(SC_WAR_PS_LEVELS, (x, i) => ({ mpCost: 0, pierce: [30, 33, 37, 40, 43, 47, 50][i] })),
-getDesc: (lvl) => { const s = SKILLS.powerStrike, d = s.levels[lvl-1]; return `Сокрушающий удар на ${scX(d.multiplier)}. С двуручным пробивает ${scV(d.pierce + '%')} защиты (против Толстокожих). <b>Кровавая цена:</b> ${BERSERK_HP_COST}% HP вместо маны, убийство возвращает заплаченное. КД: ${s.cooldown} ATB.`; },
+getDesc: (lvl, skill = SKILLS.powerStrike) => { const s = skill, d = s.levels[lvl-1]; return `Сокрушающий удар на ${scX(d.multiplier)}. С двуручным пробивает ${scV(d.pierce + '%')} защиты (против Толстокожих). <b>Кровавая цена:</b> ${BERSERK_HP_COST}% HP вместо маны, убийство возвращает заплаченное. КД: ${s.cooldown} ATB.`; },
 getNextDesc: (lvl) => scNext(SKILLS.powerStrike, lvl, n => `×${n.multiplier.toFixed(2)}, пробой ${n.pierce}%`),
 },
 orcRage: {
 name: 'Безумная ярость', minHpPercent: 0, maxBonus: 60, noRecoilBelow: 30,
 levels: SC_RAGE_LEVELS,
-getDesc: (lvl) => { const s = SKILLS.orcRage, d = s.levels[lvl-1]; return `Удар на ${scX(d.multiplier)} при любом HP: ${scV('+1%')} урона за каждый 1% потерянного HP (до ${scV('+60%')}). Отдача ${scV(d.recoilPercent + '%')} HP, ниже 30% HP — без отдачи. Убийство: КД Размаха −${scV(d.harvestCdCut)}. КД: ${s.cooldown} ATB.`; },
+getDesc: (lvl, skill = SKILLS.orcRage) => { const s = skill, d = s.levels[lvl-1]; return `Удар на ${scX(d.multiplier)} при любом HP: ${scV('+1%')} урона за каждый 1% потерянного HP (до ${scV('+60%')}). Отдача ${scV(d.recoilPercent + '%')} HP, ниже 30% HP — без отдачи. Убийство: КД Размаха −${scV(d.harvestCdCut)}. КД: ${s.cooldown} ATB.`; },
 getNextDesc: (lvl) => scNext(SKILLS.orcRage, lvl, n => `×${n.multiplier.toFixed(2)}`),
 },
 bloodHarvest: {
 name: 'Кровавый размах', twoHandTargets: 1, twoHandMult: 1.0,
 levels: scMap(SC_HARVEST_LEVELS, () => ({ mpCost: 0 })),
-getDesc: (lvl) => { const s = SKILLS.bloodHarvest, d = s.levels[lvl-1]; return `Широкий удар по всем (до ${scV(d.targets)}) на ${scX(d.multiplier)}; с двуручным — ещё одна цель. За каждого убитого — ${scV(d.healPercent + '%')} макс. HP. <b>Кровавая цена:</b> ${BERSERK_HP_COST}% HP, убийство возвращает заплаченное. КД: ${s.cooldown}.`; },
+getDesc: (lvl, skill = SKILLS.bloodHarvest) => { const s = skill, d = s.levels[lvl-1]; return `Широкий удар по всем (до ${scV(d.targets)}) на ${scX(d.multiplier)}; с двуручным — ещё одна цель. За каждого убитого — ${scV(d.healPercent + '%')} макс. HP. <b>Кровавая цена:</b> ${BERSERK_HP_COST}% HP, убийство возвращает заплаченное. КД: ${s.cooldown}.`; },
 getNextDesc: (lvl) => scNext(SKILLS.bloodHarvest, lvl, n => `×${n.multiplier.toFixed(2)}, лечение ${n.healPercent}%`),
 },
 };
@@ -2871,19 +3024,19 @@ SUBCLASSES.orc_chieftain.mods = {
 powerStrike: {
 name: 'Удар предков', magPart: 0.5, enemyHpPct: 2,
 levels: SC_WAR_PS_LEVELS,
-getDesc: (lvl) => { const s = SKILLS.powerStrike, d = s.levels[lvl-1]; return `(атака + маг. атака ×0.5) × ${scX(d.multiplier)} и ещё ${scV('2%')} от макс. HP врага. Сила предков — Смерть. MP: ${scV(d.mpCost)}. КД: ${s.cooldown} ATB.`; },
+getDesc: (lvl, skill = SKILLS.powerStrike) => { const s = skill, d = s.levels[lvl-1]; return `(атака + маг. атака ×0.5) × ${scX(d.multiplier)} и ещё ${scV('2%')} от макс. HP врага. Сила предков — Смерть. MP: ${scV(d.mpCost)}. КД: ${s.cooldown} ATB.`; },
 getNextDesc: (lvl) => scNext(SKILLS.powerStrike, lvl, n => `×${n.multiplier.toFixed(2)}`),
 },
 orcRage: {
 name: 'Клинок духов',
 levels: SC_RAGE_LEVELS,
-getDesc: (lvl) => { const s = SKILLS.orcRage, d = s.levels[lvl-1]; return `Удар на ${scX(d.multiplier)}, половина урона — магия Смерти: защиту режет наполовину физ., наполовину маг. Без маны, отдача ${scV(d.recoilPercent + '%')} HP, только при HP от 50%. Убийство: КД Жатвы −${scV(d.harvestCdCut)}. КД: ${s.cooldown} ATB.`; },
+getDesc: (lvl, skill = SKILLS.orcRage) => { const s = skill, d = s.levels[lvl-1]; return `Удар на ${scX(d.multiplier)}, половина урона — магия Смерти: защиту режет наполовину физ., наполовину маг. Без маны, отдача ${scV(d.recoilPercent + '%')} HP, только при HP от 50%. Убийство: КД Жатвы −${scV(d.harvestCdCut)}. КД: ${s.cooldown} ATB.`; },
 getNextDesc: (lvl) => scNext(SKILLS.orcRage, lvl, n => `×${n.multiplier.toFixed(2)}`),
 },
 bloodHarvest: {
 name: 'Жатва предков', rotPct: 15,
 levels: scMap(SC_HARVEST_LEVELS, (x, i) => ({ rotTurns: i < 3 ? 2 : 3 })),
-getDesc: (lvl) => { const s = SKILLS.bloodHarvest, d = s.levels[lvl-1]; return `Широкий удар по всем (до ${scV(d.targets)}) на ${scX(d.multiplier)}, задетые гниют ${scV(d.rotTurns)} хода (${scV('15%')} маг. атаки за ход). За каждого убитого — ${scV(d.healPercent + '%')} макс. HP. MP: ${scV(d.mpCost)}. КД: ${s.cooldown}.`; },
+getDesc: (lvl, skill = SKILLS.bloodHarvest) => { const s = skill, d = s.levels[lvl-1]; return `Широкий удар по всем (до ${scV(d.targets)}) на ${scX(d.multiplier)}, задетые гниют ${scV(d.rotTurns)} хода (${scV('15%')} маг. атаки за ход). За каждого убитого — ${scV(d.healPercent + '%')} макс. HP. MP: ${scV(d.mpCost)}. КД: ${s.cooldown}.`; },
 getNextDesc: (lvl) => scNext(SKILLS.bloodHarvest, lvl, n => `×${n.multiplier.toFixed(2)}, гниение ${n.rotTurns} хода`),
 },
 };
@@ -2891,19 +3044,19 @@ SUBCLASSES.orc_hexer.mods = {
 fireball: {
 name: 'Трупный огонь', rotPct: 15, rotTurns: 3,
 levels: SC_FIREBALL_LEVELS,
-getDesc: (lvl) => { const s = SKILLS.fireball, d = s.levels[lvl-1]; return `Огонь на ${scX(d.multiplier)}: поджог по ${scV(d.burnPercent + '%')} маг. атаки и слой Гниения (${scV('15%')} маг. атаки, 3 хода). MP: ${scV(d.mpCost)}.`; },
+getDesc: (lvl, skill = SKILLS.fireball) => { const s = skill, d = s.levels[lvl-1]; return `Огонь на ${scX(d.multiplier)}: поджог по ${scV(d.burnPercent + '%')} маг. атаки и слой Гниения (${scV('15%')} маг. атаки, 3 хода). MP: ${scV(d.mpCost)}.`; },
 getNextDesc: (lvl) => scNext(SKILLS.fireball, lvl, n => `×${n.multiplier.toFixed(2)}, MP ${n.mpCost}`),
 },
 spiritWrath: {
 name: 'Гнев',
 levels: SC_WRATH_LEVELS,
-getDesc: (lvl) => { const s = SKILLS.spiritWrath, d = s.levels[lvl-1]; return `Гнев духов на ${scX(d.multiplier)} и ${scV(DEATH_MAGIC_MAX_HP_PERCENT + '%')} макс. HP врага. ${scV('+10%')} за каждое разное проклятие на цели и ${scV('+5%')} за слой Гниения. Отдача ${scV(d.recoilPercent + '%')}, только при HP от 50%. КД: ${s.cooldown} ATB.`; },
+getDesc: (lvl, skill = SKILLS.spiritWrath) => { const s = skill, d = s.levels[lvl-1]; return `Гнев духов на ${scX(d.multiplier)} и ${scV(DEATH_MAGIC_MAX_HP_PERCENT + '%')} макс. HP врага. ${scV('+10%')} за каждое разное проклятие на цели и ${scV('+5%')} за слой Гниения. Отдача ${scV(d.recoilPercent + '%')}, только при HP от 50%. КД: ${s.cooldown} ATB.`; },
 getNextDesc: (lvl) => scNext(SKILLS.spiritWrath, lvl, n => `×${n.multiplier.toFixed(2)}`),
 },
 pestilence: {
 name: 'Мор', rotMaxLayers: 4,
 levels: SC_PEST_LEVELS,
-getDesc: (lvl) => { const s = SKILLS.pestilence, d = s.levels[lvl-1]; return `Гниение на ${scV(d.targets)} врагов: ${scV(d.dotPercent + '%')} маг. атаки и ${scV(DEATH_MAGIC_MAX_HP_PERCENT + '%')} макс. HP за ход, ${scV(d.turns)} хода. До <b>4 слоёв</b>. Перескакивает при смерти. MP: ${scV(d.mpCost)}. КД: ${s.cooldown}.`; },
+getDesc: (lvl, skill = SKILLS.pestilence) => { const s = skill, d = s.levels[lvl-1]; return `Гниение на ${scV(d.targets)} врагов: ${scV(d.dotPercent + '%')} маг. атаки и ${scV(DEATH_MAGIC_MAX_HP_PERCENT + '%')} макс. HP за ход, ${scV(d.turns)} хода. До <b>4 слоёв</b>. Перескакивает при смерти. MP: ${scV(d.mpCost)}. КД: ${s.cooldown}.`; },
 getNextDesc: (lvl) => scNext(SKILLS.pestilence, lvl, n => `${n.targets} цели, ${n.dotPercent}%, ${n.turns} хода`),
 },
 };
@@ -2911,19 +3064,19 @@ SUBCLASSES.orc_healer.mods = {
 fireball: {
 name: 'Порча', weakTurns: 3,
 levels: scMap(SC_FIREBALL_LEVELS, (x, i) => ({ weak: [15, 17, 18, 20, 22, 23, 25][i] })),
-getDesc: (lvl) => { const s = SKILLS.fireball, d = s.levels[lvl-1]; return `Порча Смертью на ${scX(d.multiplier)}: цель 3 хода бьёт на ${scV(d.weak + '%')} слабее. MP: ${scV(d.mpCost)}.`; },
+getDesc: (lvl, skill = SKILLS.fireball) => { const s = skill, d = s.levels[lvl-1]; return `Порча Смертью на ${scX(d.multiplier)}: цель 3 хода бьёт на ${scV(d.weak + '%')} слабее. MP: ${scV(d.mpCost)}.`; },
 getNextDesc: (lvl) => scNext(SKILLS.fireball, lvl, n => `×${n.multiplier.toFixed(2)}, ослабление ${n.weak}%`),
 },
 spiritWrath: {
 name: 'Кровопуск', minHpPercent: 0,
 levels: scMap(SC_WRATH_LEVELS, (x, i) => ({ recoilPercent: 0, heal: [20, 22, 25, 27, 30, 32, 35][i] })),
-getDesc: (lvl) => { const s = SKILLS.spiritWrath, d = s.levels[lvl-1]; return `Гнев на ${scX(d.multiplier)} и ${scV(DEATH_MAGIC_MAX_HP_PERCENT + '%')} макс. HP врага — без отдачи и при любом HP: ${scV(d.heal + '%')} урона лечит вас. КД: ${s.cooldown} ATB.`; },
+getDesc: (lvl, skill = SKILLS.spiritWrath) => { const s = skill, d = s.levels[lvl-1]; return `Гнев на ${scX(d.multiplier)} и ${scV(DEATH_MAGIC_MAX_HP_PERCENT + '%')} макс. HP врага — без отдачи и при любом HP: ${scV(d.heal + '%')} урона лечит вас. КД: ${s.cooldown} ATB.`; },
 getNextDesc: (lvl) => scNext(SKILLS.spiritWrath, lvl, n => `×${n.multiplier.toFixed(2)}, лечение ${n.heal}%`),
 },
 pestilence: {
 name: 'Иссушение',
 levels: scMap(SC_PEST_LEVELS, (x, i) => ({ heal: [20, 22, 25, 27, 30, 32, 35][i] })),
-getDesc: (lvl) => { const s = SKILLS.pestilence, d = s.levels[lvl-1]; return `Гниение на ${scV(d.targets)} врагов: ${scV(d.dotPercent + '%')} маг. атаки за ход, ${scV(d.turns)} хода. Каждый тик Гниения лечит вас на ${scV(d.heal + '%')} нанесённого. MP: ${scV(d.mpCost)}. КД: ${s.cooldown}.`; },
+getDesc: (lvl, skill = SKILLS.pestilence) => { const s = skill, d = s.levels[lvl-1]; return `Гниение на ${scV(d.targets)} врагов: ${scV(d.dotPercent + '%')} маг. атаки за ход, ${scV(d.turns)} хода. Каждый тик Гниения лечит вас на ${scV(d.heal + '%')} нанесённого. MP: ${scV(d.mpCost)}. КД: ${s.cooldown}.`; },
 getNextDesc: (lvl) => scNext(SKILLS.pestilence, lvl, n => `${n.dotPercent}%, лечение ${n.heal}%`),
 },
 };
@@ -2936,19 +3089,19 @@ SUBCLASSES.orc_shaman.mods = {
 fireball: {
 name: 'Искра предков', perTotem: 15,
 levels: SC_FIREBALL_LEVELS,
-getDesc: (lvl) => { const s = SKILLS.fireball, d = s.levels[lvl-1]; return `Огонь предков на ${scX(d.multiplier)}, поджог по ${scV(d.burnPercent + '%')} маг. атаки. ${scV('+15%')} урона за каждый стоящий тотем. MP: ${scV(d.mpCost)}.`; },
+getDesc: (lvl, skill = SKILLS.fireball) => { const s = skill, d = s.levels[lvl-1]; return `Огонь предков на ${scX(d.multiplier)}, поджог по ${scV(d.burnPercent + '%')} маг. атаки. ${scV('+15%')} урона за каждый стоящий тотем. MP: ${scV(d.mpCost)}.`; },
 getNextDesc: (lvl) => scNext(SKILLS.fireball, lvl, n => `×${n.multiplier.toFixed(2)}, MP ${n.mpCost}`),
 },
 spiritWrath: {
 name: 'Гнев',
 levels: SC_WRATH_LEVELS,
-getDesc: (lvl) => { const s = SKILLS.spiritWrath, d = s.levels[lvl-1]; return `Гнев духов на ${scX(d.multiplier)} и ${scV(DEATH_MAGIC_MAX_HP_PERCENT + '%')} макс. HP врага. Отдачу ${scV(d.recoilPercent + '%')} принимает тотем, если он стоит. Только при HP от 50%. КД: ${s.cooldown} ATB.`; },
+getDesc: (lvl, skill = SKILLS.spiritWrath) => { const s = skill, d = s.levels[lvl-1]; return `Гнев духов на ${scX(d.multiplier)} и ${scV(DEATH_MAGIC_MAX_HP_PERCENT + '%')} макс. HP врага. Отдачу ${scV(d.recoilPercent + '%')} принимает тотем, если он стоит. Только при HP от 50%. КД: ${s.cooldown} ATB.`; },
 getNextDesc: (lvl) => scNext(SKILLS.spiritWrath, lvl, n => `×${n.multiplier.toFixed(2)}`),
 },
 pestilence: {
 name: 'Круг гнили', perTotem: 20,
 levels: SC_PEST_LEVELS,
-getDesc: (lvl) => { const s = SKILLS.pestilence, d = s.levels[lvl-1]; return `Гниение на ${scV(d.targets)} врагов: ${scV(d.dotPercent + '%')} маг. атаки за ход, ${scV(d.turns)} хода; ${scV('+20%')} урона за каждый тотем в круге. MP: ${scV(d.mpCost)}. КД: ${s.cooldown}.`; },
+getDesc: (lvl, skill = SKILLS.pestilence) => { const s = skill, d = s.levels[lvl-1]; return `Гниение на ${scV(d.targets)} врагов: ${scV(d.dotPercent + '%')} маг. атаки за ход, ${scV(d.turns)} хода; ${scV('+20%')} урона за каждый тотем в круге. MP: ${scV(d.mpCost)}. КД: ${s.cooldown}.`; },
 getNextDesc: (lvl) => scNext(SKILLS.pestilence, lvl, n => `${n.targets} цели, ${n.dotPercent}%`),
 },
 };
@@ -3119,6 +3272,7 @@ getNextDesc: (lvl) => scNext(SKILLS.hlBrews, lvl, n => `${n.pct}%`),
 },
 smTotem: {
 id: 'smTotem', subclassId: 'orc_shaman', name: 'Призыв тотема', type: 'active', freeTurn: 0.15,
+fxAnim: 'summon',
 iconPng: 'img/allies/totem_spirit.webp',
 maxLevel: 5, cooldown: 1,
 levels: [ { mpCost: 8, power: 60 }, { mpCost: 9, power: 70 }, { mpCost: 10, power: 80 }, { mpCost: 11, power: 90 }, { mpCost: 12, power: 100 } ],
@@ -3171,19 +3325,19 @@ SUBCLASSES.elf_thornguard.mods = {
 powerStrike: {
 name: 'Подсечка', slowTurns: 2, slowPct: 30,
 levels: SC_WAR_PS_LEVELS,
-getDesc: (lvl) => { const s = SKILLS.powerStrike, d = s.levels[lvl-1]; return `Подсечка на ${scX(d.multiplier)}: цель опутана на 2 хода — её шкала хода растёт на ${scV('30%')} медленнее. MP: ${scV(d.mpCost)}. КД: ${s.cooldown} ATB.`; },
+getDesc: (lvl, skill = SKILLS.powerStrike) => { const s = skill, d = s.levels[lvl-1]; return `Подсечка на ${scX(d.multiplier)}: цель опутана на 2 хода — её шкала хода растёт на ${scV('30%')} медленнее. MP: ${scV(d.mpCost)}. КД: ${s.cooldown} ATB.`; },
 getNextDesc: (lvl) => scNext(SKILLS.powerStrike, lvl, n => `×${n.multiplier.toFixed(2)}`),
 },
 natureHeal: {
 name: 'Кора', barkTurns: 3,
 levels: scMap(SC_NHEAL_LEVELS, (x, i) => ({ bark: [10, 11, 12, 14, 15, 17, 20][i] })),
-getDesc: (lvl) => { const s = SKILLS.natureHeal, d = s.levels[lvl-1]; return `Лечение на ${scX(d.multiplier)} от маг. атаки, и 3 хода кора: входящий урон ${scV('−' + d.bark + '%')}. MP: ${scV(d.mpCost)}. КД: ${s.cooldown} ATB.`; },
+getDesc: (lvl, skill = SKILLS.natureHeal) => { const s = skill, d = s.levels[lvl-1]; return `Лечение на ${scX(d.multiplier)} от маг. атаки, и 3 хода кора: входящий урон ${scV('−' + d.bark + '%')}. MP: ${scV(d.mpCost)}. КД: ${s.cooldown} ATB.`; },
 getNextDesc: (lvl) => scNext(SKILLS.natureHeal, lvl, n => `×${n.multiplier.toFixed(2)}, кора −${n.bark}%`),
 },
 thornWhirl: {
 name: 'Терновый вызов', slowPct: 30, extraTargets: 1,
 levels: SC_THORN_LEVELS,
-getDesc: (lvl) => { const s = SKILLS.thornWhirl, d = s.levels[lvl-1]; return `Бьёт ${scV(d.targets + 1)} врагов на ${scX(d.multiplier)} и опутывает на ${d.turns} хода: шкала хода опутанных растёт на ${scV('30%')} медленнее, и они бьют только вас. MP: ${scV(d.mpCost)}. КД: ${s.cooldown}.`; },
+getDesc: (lvl, skill = SKILLS.thornWhirl) => { const s = skill, d = s.levels[lvl-1]; return `Бьёт ${scV(d.targets + 1)} врагов на ${scX(d.multiplier)} и опутывает на ${d.turns} хода: шкала хода опутанных растёт на ${scV('30%')} медленнее, и они бьют только вас. MP: ${scV(d.mpCost)}. КД: ${s.cooldown}.`; },
 getNextDesc: (lvl) => scNext(SKILLS.thornWhirl, lvl, n => `${n.targets + 1} цели, ×${n.multiplier.toFixed(2)}`),
 },
 };
@@ -3192,20 +3346,20 @@ SUBCLASSES.elf_pathfinder.mods = {
 powerStrike: {
 name: 'Прицельный выстрел', seeds: 2,
 levels: scMap(SC_WAR_PS_LEVELS, (x, i) => ({ pierce: [20, 23, 27, 30, 33, 37, 40][i] })),
-getDesc: (lvl) => { const s = SKILLS.powerStrike, d = s.levels[lvl-1]; return `Выстрел на ${scX(d.multiplier)}: <b>не промахивается</b>, пробивает ${scV(d.pierce + '%')} защиты и сажает ${scV('2')} семени терна. MP: ${scV(d.mpCost)}. КД: ${s.cooldown} ATB.`; },
+getDesc: (lvl, skill = SKILLS.powerStrike) => { const s = skill, d = s.levels[lvl-1]; return `Выстрел на ${scX(d.multiplier)}: <b>не промахивается</b>, пробивает ${scV(d.pierce + '%')} защиты и сажает ${scV('2')} семени терна. MP: ${scV(d.mpCost)}. КД: ${s.cooldown} ATB.`; },
 getNextDesc: (lvl) => scNext(SKILLS.powerStrike, lvl, n => `×${n.multiplier.toFixed(2)}, пробой ${n.pierce}%`),
 },
 natureHeal: {
 name: 'Цветение', isHeal: false, bloomMult: 1.5, lifePct: 30,
 levels: SC_NHEAL_LEVELS.map(x => ({ mpCost: x.mpCost })),
-getDesc: (lvl) => { const s = SKILLS.natureHeal, d = s.levels[lvl-1]; return `Все семена на цели распускаются сразу и на ${scX(1.5)}; ${scV('30%')} урона лечит вас. Нужно хоть одно семя. MP: ${scV(d.mpCost)}. КД: ${s.cooldown} ATB.`; },
+getDesc: (lvl, skill = SKILLS.natureHeal) => { const s = skill, d = s.levels[lvl-1]; return `Все семена на цели распускаются сразу и на ${scX(1.5)}; ${scV('30%')} урона лечит вас. Нужно хоть одно семя. MP: ${scV(d.mpCost)}. КД: ${s.cooldown} ATB.`; },
 getNextDesc: (lvl) => scNext(SKILLS.natureHeal, lvl, n => `MP ${n.mpCost}`),
 useCheck: () => (pathfinderSeeds(getCurrentMonster()).length ? '' : 'на цели нет семян'),
 },
 thornWhirl: {
 name: 'Терновый залп', fixedTargets: 3,
 levels: SC_THORN_LEVELS,
-getDesc: (lvl) => { const s = SKILLS.thornWhirl, d = s.levels[lvl-1]; return `Залп по ${scV('3')} врагам на ${scX(d.multiplier)}: каждому семя терна, опутывание (точность −${scV(d.accReduction + '%')}). MP: ${scV(d.mpCost)}. КД: ${s.cooldown}.`; },
+getDesc: (lvl, skill = SKILLS.thornWhirl) => { const s = skill, d = s.levels[lvl-1]; return `Залп по ${scV('3')} врагам на ${scX(d.multiplier)}: каждому семя терна, опутывание (точность −${scV(d.accReduction + '%')}). MP: ${scV(d.mpCost)}. КД: ${s.cooldown}.`; },
 getNextDesc: (lvl) => scNext(SKILLS.thornWhirl, lvl, n => `×${n.multiplier.toFixed(2)}`),
 },
 };
@@ -3216,19 +3370,19 @@ SUBCLASSES.elf_bladesinger.mods = {
 powerStrike: {
 name: 'Поющий клинок', magPart: 0.5,
 levels: SC_WAR_PS_LEVELS,
-getDesc: (lvl) => { const s = SKILLS.powerStrike, d = s.levels[lvl-1]; return `(атака + маг. атака ×0.5) × ${scX(d.multiplier)}, Жизнь. MP: ${scV(d.mpCost)}. КД: ${s.cooldown} ATB.`; },
+getDesc: (lvl, skill = SKILLS.powerStrike) => { const s = skill, d = s.levels[lvl-1]; return `(атака + маг. атака ×0.5) × ${scX(d.multiplier)}, Жизнь. MP: ${scV(d.mpCost)}. КД: ${s.cooldown} ATB.`; },
 getNextDesc: (lvl) => scNext(SKILLS.powerStrike, lvl, n => `×${n.multiplier.toFixed(2)}`),
 },
 natureHeal: {
 name: 'Дыхание природы', edgeHits: 2, edgePct: 40,
 levels: SC_NHEAL_LEVELS,
-getDesc: (lvl) => { const s = SKILLS.natureHeal, d = s.levels[lvl-1]; return `Лечение на ${scX(d.multiplier)} от маг. атаки, и 2 следующих удара оружием добавляют ${scV('40%')} маг. атаки Жизнью. MP: ${scV(d.mpCost)}. КД: ${s.cooldown} ATB.`; },
+getDesc: (lvl, skill = SKILLS.natureHeal) => { const s = skill, d = s.levels[lvl-1]; return `Лечение на ${scX(d.multiplier)} от маг. атаки, и 2 следующих удара оружием добавляют ${scV('40%')} маг. атаки Жизнью. MP: ${scV(d.mpCost)}. КД: ${s.cooldown} ATB.`; },
 getNextDesc: (lvl) => scNext(SKILLS.natureHeal, lvl, n => `×${n.multiplier.toFixed(2)}`),
 },
 thornWhirl: {
 name: 'Вихрь лепестков',
 levels: scMap(SC_THORN_LEVELS, (x, i) => ({ heal: [2, 2.3, 2.7, 3, 3.3, 3.7, 4][i] })),
-getDesc: (lvl) => { const s = SKILLS.thornWhirl, d = s.levels[lvl-1]; return `Бьёт ${scV(d.targets)} врагов на ${scX(d.multiplier)}, опутывает (точность −${scV(d.accReduction + '%')}), за каждого задетого лечит ${scV(d.heal + '%')} макс. HP. MP: ${scV(d.mpCost)}. КД: ${s.cooldown}.`; },
+getDesc: (lvl, skill = SKILLS.thornWhirl) => { const s = skill, d = s.levels[lvl-1]; return `Бьёт ${scV(d.targets)} врагов на ${scX(d.multiplier)}, опутывает (точность −${scV(d.accReduction + '%')}), за каждого задетого лечит ${scV(d.heal + '%')} макс. HP. MP: ${scV(d.mpCost)}. КД: ${s.cooldown}.`; },
 getNextDesc: (lvl) => scNext(SKILLS.thornWhirl, lvl, n => `${n.targets} цели, лечение ${n.heal}%`),
 },
 };
@@ -3236,19 +3390,19 @@ SUBCLASSES.elf_stargazer.mods = {
 fireball: {
 name: 'Падающая звезда', delay: 2,
 levels: scMap(SC_FIREBALL_LEVELS, (x, i) => ({ starMult: [3.5, 3.75, 4.0, 4.25, 4.5, 4.75, 5.0][i] })),
-getDesc: (lvl) => { const s = SKILLS.fireball, d = s.levels[lvl-1]; return `Звезда падает на цель <b>через 2 хода</b> и бьёт на ${scX(d.starMult)}. Цель погибла раньше — звезда упадёт на соседа. MP: ${scV(d.mpCost)}.`; },
+getDesc: (lvl, skill = SKILLS.fireball) => { const s = skill, d = s.levels[lvl-1]; return `Звезда падает на цель <b>через 2 хода</b> и бьёт на ${scX(d.starMult)}. Цель погибла раньше — звезда упадёт на соседа. MP: ${scV(d.mpCost)}.`; },
 getNextDesc: (lvl) => scNext(SKILLS.fireball, lvl, n => `×${n.starMult.toFixed(2)}`),
 },
 heal: {
 name: 'Исцеление',
 levels: SC_NHEAL_LEVELS,
-getDesc: (lvl) => { const s = SKILLS.heal, d = s.levels[lvl-1]; return `Исцеление на ${scX(d.multiplier)} от маг. атаки. При здоровье от 70% — <b>ранит любую тварь</b> с той же силой. MP: ${scV(d.mpCost)}. КД: ${s.cooldown} ATB.`; },
+getDesc: (lvl, skill = SKILLS.heal) => { const s = skill, d = s.levels[lvl-1]; return `Исцеление на ${scX(d.multiplier)} от маг. атаки. При здоровье от 70% — <b>ранит любую тварь</b> с той же силой. MP: ${scV(d.mpCost)}. КД: ${s.cooldown} ATB.`; },
 getNextDesc: (lvl) => scNext(SKILLS.heal, lvl, n => `×${n.multiplier.toFixed(2)}`),
 },
 lifeDrain: {
 name: 'Звездопад',
 levels: SC_DRAIN_LEVELS,
-getDesc: (lvl) => { const s = SKILLS.lifeDrain, d = s.levels[lvl-1]; return `Звёзды падают на ${scV(d.targets)} врагов, каждому ${scX(d.multiplier * 0.7)} — без ослабления по цепочке. ${scV(Math.round(d.healPercent / 2) + '%')} урона лечат. MP: ${scV(d.mpCost)}. КД: ${s.cooldown}.`; },
+getDesc: (lvl, skill = SKILLS.lifeDrain) => { const s = skill, d = s.levels[lvl-1]; return `Звёзды падают на ${scV(d.targets)} врагов, каждому ${scX(d.multiplier * 0.7)} — без ослабления по цепочке. ${scV(Math.round(d.healPercent / 2) + '%')} урона лечат. MP: ${scV(d.mpCost)}. КД: ${s.cooldown}.`; },
 getNextDesc: (lvl) => scNext(SKILLS.lifeDrain, lvl, n => `${n.targets} цели, ×${(n.multiplier * 0.7).toFixed(2)}`),
 },
 };
@@ -3256,19 +3410,19 @@ SUBCLASSES.elf_grovekeeper.mods = {
 fireball: {
 name: 'Колючая лоза', hotPct: 15, hotTurns: 3, dmgMult: 1.2,
 levels: SC_FIREBALL_LEVELS,
-getDesc: (lvl) => { const s = SKILLS.fireball, d = s.levels[lvl-1]; return `Лоза Жизни на ${scX(d.multiplier * 1.2)}; ${scV('15%')} урона возвращается вам лечением за 3 хода. MP: ${scV(d.mpCost)}.`; },
+getDesc: (lvl, skill = SKILLS.fireball) => { const s = skill, d = s.levels[lvl-1]; return `Лоза Жизни на ${scX(d.multiplier * 1.2)}; ${scV('15%')} урона возвращается вам лечением за 3 хода. MP: ${scV(d.mpCost)}.`; },
 getNextDesc: (lvl) => scNext(SKILLS.fireball, lvl, n => `×${n.multiplier.toFixed(2)}`),
 },
 heal: {
 name: 'Росток', hotTurns: 4, hotBonus: 1.5,
 levels: SC_NHEAL_LEVELS,
-getDesc: (lvl) => { const s = SKILLS.heal, d = s.levels[lvl-1]; return `Росток лечит за 4 хода на ${scX(d.multiplier * 1.5)} от маг. атаки (в полтора раза больше обычного Исцеления, но не сразу). MP: ${scV(d.mpCost)}. КД: ${s.cooldown} ATB.`; },
+getDesc: (lvl, skill = SKILLS.heal) => { const s = skill, d = s.levels[lvl-1]; return `Росток лечит за 4 хода на ${scX(d.multiplier * 1.5)} от маг. атаки (в полтора раза больше обычного Исцеления, но не сразу). MP: ${scV(d.mpCost)}. КД: ${s.cooldown} ATB.`; },
 getNextDesc: (lvl) => scNext(SKILLS.heal, lvl, n => `×${(n.multiplier * 1.5).toFixed(2)} за 4 хода`),
 },
 lifeDrain: {
 name: 'Дыхание рощи', hotBonus: 1.5, hotTurns: 3,
 levels: SC_DRAIN_LEVELS,
-getDesc: (lvl) => { const s = SKILLS.lifeDrain, d = s.levels[lvl-1]; return `Цепь Жизни по ${scV(d.targets)} врагам: ${scX(d.multiplier)} первому, дальше слабее. Вместо мгновенного лечения — ${scV(Math.round(d.healPercent * 1.5) + '%')} урона лечением за 3 хода. MP: ${scV(d.mpCost)}. КД: ${s.cooldown}.`; },
+getDesc: (lvl, skill = SKILLS.lifeDrain) => { const s = skill, d = s.levels[lvl-1]; return `Цепь Жизни по ${scV(d.targets)} врагам: ${scX(d.multiplier)} первому, дальше слабее. Вместо мгновенного лечения — ${scV(Math.round(d.healPercent * 1.5) + '%')} урона лечением за 3 хода. MP: ${scV(d.mpCost)}. КД: ${s.cooldown}.`; },
 getNextDesc: (lvl) => scNext(SKILLS.lifeDrain, lvl, n => `${n.targets} цели, ×${n.multiplier.toFixed(2)}`),
 },
 };
@@ -3281,19 +3435,19 @@ SUBCLASSES.elf_druid.mods = {
 fireball: {
 name: 'Зов когтей', spiritPct: 50,
 levels: SC_FIREBALL_LEVELS,
-getDesc: (lvl) => { const s = SKILLS.fireball, d = s.levels[lvl-1]; return `Огонь на ${scX(d.multiplier)}, поджог по ${scV(d.burnPercent + '%')} маг. атаки — и дух-зверь сразу бьёт ту же цель на ${scV('50%')} своей силы. MP: ${scV(d.mpCost)}.`; },
+getDesc: (lvl, skill = SKILLS.fireball) => { const s = skill, d = s.levels[lvl-1]; return `Огонь на ${scX(d.multiplier)}, поджог по ${scV(d.burnPercent + '%')} маг. атаки — и дух-зверь сразу бьёт ту же цель на ${scV('50%')} своей силы. MP: ${scV(d.mpCost)}.`; },
 getNextDesc: (lvl) => scNext(SKILLS.fireball, lvl, n => `×${n.multiplier.toFixed(2)}`),
 },
 heal: {
 name: 'Исцеление',
 levels: SC_NHEAL_LEVELS,
-getDesc: (lvl) => { const s = SKILLS.heal, d = s.levels[lvl-1]; return `Исцеление на ${scX(d.multiplier)} от маг. атаки — лечит и вас, и духа-зверя на ту же силу. При здоровье от 70% ранит мёртвых. MP: ${scV(d.mpCost)}. КД: ${s.cooldown} ATB.`; },
+getDesc: (lvl, skill = SKILLS.heal) => { const s = skill, d = s.levels[lvl-1]; return `Исцеление на ${scX(d.multiplier)} от маг. атаки — лечит и вас, и духа-зверя на ту же силу. При здоровье от 70% ранит мёртвых. MP: ${scV(d.mpCost)}. КД: ${s.cooldown} ATB.`; },
 getNextDesc: (lvl) => scNext(SKILLS.heal, lvl, n => `×${n.multiplier.toFixed(2)}`),
 },
 lifeDrain: {
 name: 'Похищение жизни',
 levels: SC_DRAIN_LEVELS,
-getDesc: (lvl) => { const s = SKILLS.lifeDrain, d = s.levels[lvl-1]; return `Цепь Жизни по ${scV(d.targets)} врагам: ${scX(d.multiplier)} первому, дальше слабее. ${scV(d.healPercent + '%')} урона лечат вас, столько же — духа. MP: ${scV(d.mpCost)}. КД: ${s.cooldown}.`; },
+getDesc: (lvl, skill = SKILLS.lifeDrain) => { const s = skill, d = s.levels[lvl-1]; return `Цепь Жизни по ${scV(d.targets)} врагам: ${scX(d.multiplier)} первому, дальше слабее. ${scV(d.healPercent + '%')} урона лечат вас, столько же — духа. MP: ${scV(d.mpCost)}. КД: ${s.cooldown}.`; },
 getNextDesc: (lvl) => scNext(SKILLS.lifeDrain, lvl, n => `${n.targets} цели, ×${n.multiplier.toFixed(2)}`),
 },
 };
@@ -3460,6 +3614,7 @@ getNextDesc: (lvl) => scNext(SKILLS.gkCycle, lvl, n => `${n.pct}%`),
 },
 drSpirit: {
 id: 'drSpirit', subclassId: 'elf_druid', name: 'Дух-зверь', type: 'active',
+fxAnim: 'summon',
 iconPng: 'img/allies/druid_lynx.webp',
 maxLevel: 5, cooldown: 3,
 levels: [ { mpCost: 14, power: 60, rage: 1.6 }, { mpCost: 15, power: 70, rage: 1.75 }, { mpCost: 16, power: 80, rage: 1.9 }, { mpCost: 17, power: 90, rage: 2.05 }, { mpCost: 18, power: 100, rage: 2.2 } ],
@@ -3515,19 +3670,19 @@ SUBCLASSES.drow_stormguard.mods = {
 powerStrike: {
 name: 'Громовой удар', atbCut: 30,
 levels: SC_WAR_PS_LEVELS,
-getDesc: (lvl) => { const s = SKILLS.powerStrike, d = s.levels[lvl-1]; return `Громовой удар на ${scX(d.multiplier)}, шкала хода цели ${scV('−30%')}. MP: ${scV(d.mpCost)}. КД: ${s.cooldown} ATB.`; },
+getDesc: (lvl, skill = SKILLS.powerStrike) => { const s = skill, d = s.levels[lvl-1]; return `Громовой удар на ${scX(d.multiplier)}, шкала хода цели ${scV('−30%')}. MP: ${scV(d.mpCost)}. КД: ${s.cooldown} ATB.`; },
 getNextDesc: (lvl) => scNext(SKILLS.powerStrike, lvl, n => `×${n.multiplier.toFixed(2)}`),
 },
 discharge: {
 name: 'Разряд',
 levels: SC_DISCHARGE_LEVELS,
-getDesc: (lvl) => SC_DISCHARGE_DESC(SKILLS.discharge, SKILLS.discharge.levels[lvl-1], 'По цели со Статикой <b>паралич гарантирован</b> (невосприимчивость после паралича остаётся).'),
+getDesc: (lvl, skill = SKILLS.discharge) => SC_DISCHARGE_DESC(skill, skill.levels[lvl-1], 'По цели со Статикой <b>паралич гарантирован</b> (невосприимчивость после паралича остаётся).'),
 getNextDesc: (lvl) => scNext(SKILLS.discharge, lvl, n => `×${n.multiplier.toFixed(2)}, ATB −${n.atbReduction}%`),
 },
 sparkSlash: {
 name: 'Искровой вызов', fixedTargets: 3,
 levels: SC_SPARK_LEVELS,
-getDesc: (lvl) => { const s = SKILLS.sparkSlash, d = s.levels[lvl-1]; return `Разрез по ${scV('3')} врагам на ${scX(d.multiplier)}, шкала стаи ${scV('−' + d.atbCut + '%')}. Каждому — заряд Статики, и задетые бьют только вас. MP: ${scV(d.mpCost)}. КД: ${s.cooldown}.`; },
+getDesc: (lvl, skill = SKILLS.sparkSlash) => { const s = skill, d = s.levels[lvl-1]; return `Разрез по ${scV('3')} врагам на ${scX(d.multiplier)}, шкала стаи ${scV('−' + d.atbCut + '%')}. Каждому — заряд Статики, и задетые бьют только вас. MP: ${scV(d.mpCost)}. КД: ${s.cooldown}.`; },
 getNextDesc: (lvl) => scNext(SKILLS.sparkSlash, lvl, n => `×${n.multiplier.toFixed(2)}`),
 },
 };
@@ -3535,19 +3690,19 @@ SUBCLASSES.drow_assassin.mods = {
 powerStrike: {
 name: 'Удар в спину', backMult: 1.5, backAtb: 50,
 levels: SC_WAR_PS_LEVELS,
-getDesc: (lvl) => { const s = SKILLS.powerStrike, d = s.levels[lvl-1]; return `Удар на ${scX(d.multiplier)}; если цель не готова к удару (её шкала хода ниже половины) — ещё ${scX(1.5)}. MP: ${scV(d.mpCost)}. КД: ${s.cooldown} ATB.`; },
+getDesc: (lvl, skill = SKILLS.powerStrike) => { const s = skill, d = s.levels[lvl-1]; return `Удар на ${scX(d.multiplier)}; если цель не готова к удару (её шкала хода ниже половины) — ещё ${scX(1.5)}. MP: ${scV(d.mpCost)}. КД: ${s.cooldown} ATB.`; },
 getNextDesc: (lvl) => scNext(SKILLS.powerStrike, lvl, n => `×${n.multiplier.toFixed(2)}`),
 },
 discharge: {
 name: 'Искра в клинке', selfAtb: 30,
 levels: scMap(SC_DISCHARGE_LEVELS, x => ({ mpCost: Math.ceil(x.mpCost * 0.6) })),
-getDesc: (lvl) => SC_DISCHARGE_DESC(SKILLS.discharge, SKILLS.discharge.levels[lvl-1], `Дешевле обычного, и после — ваша шкала хода ${scV('+30%')}.`),
+getDesc: (lvl, skill = SKILLS.discharge) => SC_DISCHARGE_DESC(skill, skill.levels[lvl-1], `Дешевле обычного, и после — ваша шкала хода ${scV('+30%')}.`),
 getNextDesc: (lvl) => scNext(SKILLS.discharge, lvl, n => `×${n.multiplier.toFixed(2)}, MP ${n.mpCost}`),
 },
 sparkSlash: {
 name: 'Искровой разрез', fixedTargets: 3,
 levels: SC_SPARK_LEVELS,
-getDesc: (lvl) => { const s = SKILLS.sparkSlash, d = s.levels[lvl-1]; return `Разрез по ${scV('3')} врагам на ${scX(d.multiplier)}, шкала стаи ${scV('−' + d.atbCut + '%')}. MP: ${scV(d.mpCost)}. КД: ${s.cooldown}.`; },
+getDesc: (lvl, skill = SKILLS.sparkSlash) => { const s = skill, d = s.levels[lvl-1]; return `Разрез по ${scV('3')} врагам на ${scX(d.multiplier)}, шкала стаи ${scV('−' + d.atbCut + '%')}. MP: ${scV(d.mpCost)}. КД: ${s.cooldown}.`; },
 getNextDesc: (lvl) => scNext(SKILLS.sparkSlash, lvl, n => `×${n.multiplier.toFixed(2)}`),
 },
 };
@@ -3555,19 +3710,19 @@ SUBCLASSES.drow_shadowweaver.mods = {
 powerStrike: {
 name: 'Сумеречный удар', magPart: 0.5, atbCut: 20,
 levels: SC_WAR_PS_LEVELS,
-getDesc: (lvl) => { const s = SKILLS.powerStrike, d = s.levels[lvl-1]; return `(атака + маг. атака ×0.5) × ${scX(d.multiplier)}, молния, шкала хода цели ${scV('−20%')}. MP: ${scV(d.mpCost)}. КД: ${s.cooldown} ATB.`; },
+getDesc: (lvl, skill = SKILLS.powerStrike) => { const s = skill, d = s.levels[lvl-1]; return `(атака + маг. атака ×0.5) × ${scX(d.multiplier)}, молния, шкала хода цели ${scV('−20%')}. MP: ${scV(d.mpCost)}. КД: ${s.cooldown} ATB.`; },
 getNextDesc: (lvl) => scNext(SKILLS.powerStrike, lvl, n => `×${n.multiplier.toFixed(2)}`),
 },
 discharge: {
 name: 'Разряд',
 levels: SC_DISCHARGE_LEVELS,
-getDesc: (lvl) => SC_DISCHARGE_DESC(SKILLS.discharge, SKILLS.discharge.levels[lvl-1], 'Паралич — Теневой двойник держится на 2 хода дольше, а если его нет — появляется на 2 хода.'),
+getDesc: (lvl, skill = SKILLS.discharge) => SC_DISCHARGE_DESC(skill, skill.levels[lvl-1], 'Паралич — Теневой двойник держится на 2 хода дольше, а если его нет — появляется на 2 хода.'),
 getNextDesc: (lvl) => scNext(SKILLS.discharge, lvl, n => `×${n.multiplier.toFixed(2)}, ATB −${n.atbReduction}%`),
 },
 sparkSlash: {
 name: 'Теневой разрез', extraTargets: 1,
 levels: SC_SPARK_LEVELS,
-getDesc: (lvl) => { const s = SKILLS.sparkSlash, d = s.levels[lvl-1]; return `Разрез по ${scV(d.targets + 1)} врагам на ${scX(d.multiplier)}, шкала стаи ${scV('−' + d.atbCut + '%')}; двойник режет вместе с вами. MP: ${scV(d.mpCost)}. КД: ${s.cooldown}.`; },
+getDesc: (lvl, skill = SKILLS.sparkSlash) => { const s = skill, d = s.levels[lvl-1]; return `Разрез по ${scV(d.targets + 1)} врагам на ${scX(d.multiplier)}, шкала стаи ${scV('−' + d.atbCut + '%')}; двойник режет вместе с вами. MP: ${scV(d.mpCost)}. КД: ${s.cooldown}.`; },
 getNextDesc: (lvl) => scNext(SKILLS.sparkSlash, lvl, n => `×${n.multiplier.toFixed(2)}`),
 },
 };
@@ -3576,19 +3731,19 @@ SUBCLASSES.drow_stormcaller.mods = {
 fireball: {
 name: 'Шаровая молния', splash: 50,
 levels: SC_FIREBALL_LEVELS,
-getDesc: (lvl) => { const s = SKILLS.fireball, d = s.levels[lvl-1]; return `Шаровая молния на ${scX(d.multiplier)}; отскакивает в соседа на ${scV('50%')}. Молния — копит Напряжение. MP: ${scV(d.mpCost)}.`; },
+getDesc: (lvl, skill = SKILLS.fireball) => { const s = skill, d = s.levels[lvl-1]; return `Шаровая молния на ${scX(d.multiplier)}; отскакивает в соседа на ${scV('50%')}. Молния — копит Напряжение. MP: ${scV(d.mpCost)}.`; },
 getNextDesc: (lvl) => scNext(SKILLS.fireball, lvl, n => `×${n.multiplier.toFixed(2)}`),
 },
 discharge: {
 name: 'Разряд',
 levels: SC_DISCHARGE_LEVELS,
-getDesc: (lvl) => SC_DISCHARGE_DESC(SKILLS.discharge, SKILLS.discharge.levels[lvl-1], 'Копит Напряжение.'),
+getDesc: (lvl, skill = SKILLS.discharge) => SC_DISCHARGE_DESC(skill, skill.levels[lvl-1], 'Копит Напряжение.'),
 getNextDesc: (lvl) => scNext(SKILLS.discharge, lvl, n => `×${n.multiplier.toFixed(2)}, ATB −${n.atbReduction}%`),
 },
 chainLightning: {
 name: 'Цепная молния',
 levels: SC_CHAIN_LEVELS,
-getDesc: (lvl) => { const s = SKILLS.chainLightning, d = s.levels[lvl-1]; return `Молния прыгает по ${scV(d.targets)} врагам: ${scX(d.multiplier)} первому, каждый прыжок −30% (через парализованного — не слабеет). Копит Напряжение. MP: ${scV(d.mpCost)}. КД: ${s.cooldown}.`; },
+getDesc: (lvl, skill = SKILLS.chainLightning) => { const s = skill, d = s.levels[lvl-1]; return `Молния прыгает по ${scV(d.targets)} врагам: ${scX(d.multiplier)} первому, каждый прыжок −30% (через парализованного — не слабеет). Копит Напряжение. MP: ${scV(d.mpCost)}. КД: ${s.cooldown}.`; },
 getNextDesc: (lvl) => scNext(SKILLS.chainLightning, lvl, n => `${n.targets} цели, ×${n.multiplier.toFixed(2)}`),
 },
 };
@@ -3596,19 +3751,19 @@ SUBCLASSES.drow_dreamweaver.mods = {
 fireball: {
 name: 'Сон', sleepTurns: 3,
 levels: SC_FIREBALL_LEVELS,
-getDesc: (lvl) => { const s = SKILLS.fireball, d = s.levels[lvl-1]; return `Усыпляет тварь на 3 хода — до первого удара по ней. В стае выбирает <b>лишнюю</b>: не текущую цель. Усыплять некого — <b>Кошмар</b>: молния по текущей цели на ${scX(d.multiplier)}. MP: ${scV(d.mpCost)}.`; },
+getDesc: (lvl, skill = SKILLS.fireball) => { const s = skill, d = s.levels[lvl-1]; return `Усыпляет тварь на 3 хода — до первого удара по ней. В стае выбирает <b>лишнюю</b>: не текущую цель. Усыплять некого — <b>Кошмар</b>: молния по текущей цели на ${scX(d.multiplier)}. MP: ${scV(d.mpCost)}.`; },
 getNextDesc: (lvl) => scNext(SKILLS.fireball, lvl, n => `×${n.multiplier.toFixed(2)}`),
 },
 discharge: {
 name: 'Живая искра', selfAtb: 30, dmgPart: 0.6,
 levels: SC_DISCHARGE_LEVELS,
-getDesc: (lvl) => { const s = SKILLS.discharge, d = s.levels[lvl-1]; return `Искра на ${scX(d.multiplier * 0.6)} и лечение на ${scX(d.multiplier)} от маг. атаки; ваша шкала хода ${scV('+30%')}. MP: ${scV(d.mpCost)}. КД: ${s.cooldown} ATB.`; },
+getDesc: (lvl, skill = SKILLS.discharge) => { const s = skill, d = s.levels[lvl-1]; return `Искра на ${scX(d.multiplier * 0.6)} и лечение на ${scX(d.multiplier)} от маг. атаки; ваша шкала хода ${scV('+30%')}. MP: ${scV(d.mpCost)}. КД: ${s.cooldown} ATB.`; },
 getNextDesc: (lvl) => scNext(SKILLS.discharge, lvl, n => `×${n.multiplier.toFixed(2)}`),
 },
 chainLightning: {
 name: 'Цепь сна', sleepTurns: 2,
 levels: SC_CHAIN_LEVELS,
-getDesc: (lvl) => { const s = SKILLS.chainLightning, d = s.levels[lvl-1]; return `Молния по ${scV(d.targets)} врагам (${scX(d.multiplier)} первому, дальше слабее); все задетые, кроме текущей цели, засыпают на 2 хода. MP: ${scV(d.mpCost)}. КД: ${s.cooldown}.`; },
+getDesc: (lvl, skill = SKILLS.chainLightning) => { const s = skill, d = s.levels[lvl-1]; return `Молния по ${scV(d.targets)} врагам (${scX(d.multiplier)} первому, дальше слабее); все задетые, кроме текущей цели, засыпают на 2 хода. MP: ${scV(d.mpCost)}. КД: ${s.cooldown}.`; },
 getNextDesc: (lvl) => scNext(SKILLS.chainLightning, lvl, n => `${n.targets} цели, ×${n.multiplier.toFixed(2)}`),
 },
 };
@@ -3620,19 +3775,19 @@ SUBCLASSES.drow_spiderlord.mods = {
 fireball: {
 name: 'Ядовитый плевок',
 levels: SC_FIREBALL_LEVELS,
-getDesc: (lvl) => { const s = SKILLS.fireball, d = s.levels[lvl-1]; return `Плевок ядом на ${scX(d.multiplier)} и 2 слоя яда. MP: ${scV(d.mpCost)}.`; },
+getDesc: (lvl, skill = SKILLS.fireball) => { const s = skill, d = s.levels[lvl-1]; return `Плевок ядом на ${scX(d.multiplier)} и 2 слоя яда. MP: ${scV(d.mpCost)}.`; },
 getNextDesc: (lvl) => scNext(SKILLS.fireball, lvl, n => `×${n.multiplier.toFixed(2)}`),
 },
 discharge: {
 name: 'Разряд',
 levels: SC_DISCHARGE_LEVELS,
-getDesc: (lvl) => SC_DISCHARGE_DESC(SKILLS.discharge, SKILLS.discharge.levels[lvl-1], 'Паралич — все пауки бросаются на цель.'),
+getDesc: (lvl, skill = SKILLS.discharge) => SC_DISCHARGE_DESC(skill, skill.levels[lvl-1], 'Паралич — все пауки бросаются на цель.'),
 getNextDesc: (lvl) => scNext(SKILLS.discharge, lvl, n => `×${n.multiplier.toFixed(2)}, ATB −${n.atbReduction}%`),
 },
 chainLightning: {
 name: 'Цепная молния',
 levels: SC_CHAIN_LEVELS,
-getDesc: (lvl) => { const s = SKILLS.chainLightning, d = s.levels[lvl-1]; return `Молния по ${scV(d.targets)} врагам и ещё по одному за каждого паука (прыгает через паутину). MP: ${scV(d.mpCost)}. КД: ${s.cooldown}.`; },
+getDesc: (lvl, skill = SKILLS.chainLightning) => { const s = skill, d = s.levels[lvl-1]; return `Молния по ${scV(d.targets)} врагам и ещё по одному за каждого паука (прыгает через паутину). MP: ${scV(d.mpCost)}. КД: ${s.cooldown}.`; },
 getNextDesc: (lvl) => scNext(SKILLS.chainLightning, lvl, n => `${n.targets} цели, ×${n.multiplier.toFixed(2)}`),
 },
 };
@@ -3799,10 +3954,11 @@ getNextDesc: (lvl) => scNext(SKILLS.dwNightmare, lvl, n => `+${n.pct}%`),
 },
 slMother: {
 id: 'slMother', subclassId: 'drow_spiderlord', name: 'Паучиха-матка', type: 'active', freeTurn: 0.7,
+fxAnim: 'summon',
 iconPng: 'img/allies/spider_mother.webp',
 maxLevel: 5, cooldown: 3, layEvery: 2,
 levels: [ { mpCost: 14, power: 60 }, { mpCost: 15, power: 70 }, { mpCost: 16, power: 80 }, { mpCost: 17, power: 90 }, { mpCost: 18, power: 100 } ],
-getDesc: (lvl) => { const d = SKILLS.slMother.levels[lvl-1]; return `Быстрый: ${scV('70%')} хода сразу возвращается. Нет матки — призывает её на весь бой (сила ${scV(d.power + '%')}). Каждые 2 хода она откладывает паучонка (до 2, всего 3 паука). Матка уже есть — она сразу откладывает паучонка. Укусы опутывают паутиной: шкала хода твари медленнее. MP: ${scV(d.mpCost)}. КД: ${SKILLS.slMother.cooldown}.`; },
+getDesc: (lvl) => { const d = SKILLS.slMother.levels[lvl-1]; return `Быстрый: ${scV('70%')} хода сразу возвращается. Нет матки — призывает её на весь бой (сила ${scV(d.power + '%')}). Каждые 2 хода она откладывает паучонка (до 2, всего 3 паука). Повторное применение сразу добавляет паучонка. Если выводок полный, матка сразу кусает цель. Укусы опутывают паутиной: шкала хода твари медленнее. MP: ${scV(d.mpCost)}. КД: ${SKILLS.slMother.cooldown}.`; },
 getNextDesc: (lvl) => scNext(SKILLS.slMother, lvl, n => `сила ${n.power}%`),
 },
 slVenom: {
@@ -3861,19 +4017,19 @@ SUBCLASSES.dwarf_steelwall.mods = {
 powerStrike: {
 name: 'Удар-наковальня', defPart: 0.6,
 levels: SC_WAR_PS_LEVELS,
-getDesc: (lvl) => { const s = SKILLS.powerStrike, d = s.levels[lvl-1]; return `(атака + ${scV('60%')} физ. защиты) × ${scX(d.multiplier)}. MP: ${scV(d.mpCost)}. КД: ${s.cooldown} ATB.`; },
+getDesc: (lvl, skill = SKILLS.powerStrike) => { const s = skill, d = s.levels[lvl-1]; return `(атака + ${scV('60%')} физ. защиты) × ${scX(d.multiplier)}. MP: ${scV(d.mpCost)}. КД: ${s.cooldown} ATB.`; },
 getNextDesc: (lvl) => scNext(SKILLS.powerStrike, lvl, n => `×${n.multiplier.toFixed(2)}`),
 },
 dwarfGreed: {
 name: 'Жадность',
 levels: SC_GREED_W_LEVELS,
-getDesc: (lvl) => { const s = SKILLS.dwarfGreed, d = s.levels[lvl-1]; return `Удар на ${scX(d.multiplier)} и Метка Жадности на ${scV(d.markTurns)} хода (до 5). Каждая метка: +25% добычи и +10% опыта при убийстве — и ${scV('−4%')} к ударам этой твари по вам. MP: ${scV(d.mpCost)}. КД: ${s.cooldown} ATB.`; },
+getDesc: (lvl, skill = SKILLS.dwarfGreed) => { const s = skill, d = s.levels[lvl-1]; return `Удар на ${scX(d.multiplier)} и Метка Жадности на ${scV(d.markTurns)} хода (до 5). Каждая метка: +25% добычи и +10% опыта при убийстве — и ${scV('−4%')} к ударам этой твари по вам. MP: ${scV(d.mpCost)}. КД: ${s.cooldown} ATB.`; },
 getNextDesc: (lvl) => scNext(SKILLS.dwarfGreed, lvl, n => `×${n.multiplier.toFixed(2)}, метка ${n.markTurns} хода`),
 },
 frostQuake: {
 name: 'Ледяной вызов',
 levels: SC_QUAKE_LEVELS,
-getDesc: (lvl) => { const s = SKILLS.frostQuake, d = s.levels[lvl-1]; return `Лёд бьёт всех (до ${scV(d.targets)}) на ${scX(d.multiplier)}, заморозка ${scV(d.freezeChance + '%')}; задетые бьют только вас. Разносит Метки Жадности. MP: ${scV(d.mpCost)}. КД: ${s.cooldown}.`; },
+getDesc: (lvl, skill = SKILLS.frostQuake) => { const s = skill, d = s.levels[lvl-1]; return `Лёд бьёт всех (до ${scV(d.targets)}) на ${scX(d.multiplier)}, заморозка ${scV(d.freezeChance + '%')}; задетые бьют только вас. Разносит Метки Жадности. MP: ${scV(d.mpCost)}. КД: ${s.cooldown}.`; },
 getNextDesc: (lvl) => scNext(SKILLS.frostQuake, lvl, n => `×${n.multiplier.toFixed(2)}, заморозка ${n.freezeChance}%`),
 },
 };
@@ -3881,19 +4037,19 @@ SUBCLASSES.dwarf_hammerer.mods = {
 powerStrike: {
 name: 'Сокрушающий молот',
 levels: SC_WAR_PS_LEVELS,
-getDesc: (lvl) => { const s = SKILLS.powerStrike, d = s.levels[lvl-1]; return `Удар на ${scX(d.multiplier)} и <b>Пролом</b>: защита цели ${scV('−' + BREACH_PCT + '%')} до конца боя (до ${BREACH_MAX}). MP: ${scV(d.mpCost)}. КД: ${s.cooldown} ATB.`; },
+getDesc: (lvl, skill = SKILLS.powerStrike) => { const s = skill, d = s.levels[lvl-1]; return `Удар на ${scX(d.multiplier)} и <b>Пролом</b>: защита цели ${scV('−' + BREACH_PCT + '%')} до конца боя (до ${BREACH_MAX}). MP: ${scV(d.mpCost)}. КД: ${s.cooldown} ATB.`; },
 getNextDesc: (lvl) => scNext(SKILLS.powerStrike, lvl, n => `×${n.multiplier.toFixed(2)}`),
 },
 dwarfGreed: {
 name: 'Жадность',
 levels: SC_GREED_W_LEVELS,
-getDesc: (lvl) => { const s = SKILLS.dwarfGreed, d = s.levels[lvl-1]; return `Удар на ${scX(d.multiplier)} и Метка Жадности на ${scV(d.markTurns)} хода; по замороженной — ${scV('2')} метки. MP: ${scV(d.mpCost)}. КД: ${s.cooldown} ATB.`; },
+getDesc: (lvl, skill = SKILLS.dwarfGreed) => { const s = skill, d = s.levels[lvl-1]; return `Удар на ${scX(d.multiplier)} и Метка Жадности на ${scV(d.markTurns)} хода; по замороженной — ${scV('2')} метки. MP: ${scV(d.mpCost)}. КД: ${s.cooldown} ATB.`; },
 getNextDesc: (lvl) => scNext(SKILLS.dwarfGreed, lvl, n => `×${n.multiplier.toFixed(2)}`),
 },
 frostQuake: {
 name: 'Раскол',
 levels: SC_QUAKE_LEVELS,
-getDesc: (lvl) => { const s = SKILLS.frostQuake, d = s.levels[lvl-1]; return `Лёд бьёт всех (до ${scV(d.targets)}) на ${scX(d.multiplier)}, заморозка ${scV(d.freezeChance + '%')}. Уже замороженные получают ${scX(2)} и оттаивают. MP: ${scV(d.mpCost)}. КД: ${s.cooldown}.`; },
+getDesc: (lvl, skill = SKILLS.frostQuake) => { const s = skill, d = s.levels[lvl-1]; return `Лёд бьёт всех (до ${scV(d.targets)}) на ${scX(d.multiplier)}, заморозка ${scV(d.freezeChance + '%')}. Уже замороженные получают ${scX(2)} и оттаивают. MP: ${scV(d.mpCost)}. КД: ${s.cooldown}.`; },
 getNextDesc: (lvl) => scNext(SKILLS.frostQuake, lvl, n => `×${n.multiplier.toFixed(2)}`),
 },
 };
@@ -3903,19 +4059,19 @@ SUBCLASSES.dwarf_prospector.mods = {
 powerStrike: {
 name: 'Удар кайлом',
 levels: SC_WAR_PS_LEVELS,
-getDesc: (lvl) => { const s = SKILLS.powerStrike, d = s.levels[lvl-1]; return `Удар на ${scX(d.multiplier)}; убил — лишний бросок добычи. MP: ${scV(d.mpCost)}. КД: ${s.cooldown} ATB.`; },
+getDesc: (lvl, skill = SKILLS.powerStrike) => { const s = skill, d = s.levels[lvl-1]; return `Удар на ${scX(d.multiplier)}; убил — лишний бросок добычи. MP: ${scV(d.mpCost)}. КД: ${s.cooldown} ATB.`; },
 getNextDesc: (lvl) => scNext(SKILLS.powerStrike, lvl, n => `×${n.multiplier.toFixed(2)}`),
 },
 dwarfGreed: {
 name: 'Жадность',
 levels: SC_GREED_W_LEVELS,
-getDesc: (lvl) => { const s = SKILLS.dwarfGreed, d = s.levels[lvl-1]; return `Удар на ${scX(d.multiplier)} и Метка Жадности на ${scV(d.markTurns)} хода — до ${scV(PROSPECTOR_GREED_MAX)} меток, каждая ${scV('+' + PROSPECTOR_GREED_PER + '%')} добычи. MP: ${scV(d.mpCost)}. КД: ${s.cooldown} ATB.`; },
+getDesc: (lvl, skill = SKILLS.dwarfGreed) => { const s = skill, d = s.levels[lvl-1]; return `Удар на ${scX(d.multiplier)} и Метка Жадности на ${scV(d.markTurns)} хода — до ${scV(PROSPECTOR_GREED_MAX)} меток, каждая ${scV('+' + PROSPECTOR_GREED_PER + '%')} добычи. MP: ${scV(d.mpCost)}. КД: ${s.cooldown} ATB.`; },
 getNextDesc: (lvl) => scNext(SKILLS.dwarfGreed, lvl, n => `×${n.multiplier.toFixed(2)}`),
 },
 frostQuake: {
 name: 'Ледяной раскол',
 levels: SC_QUAKE_LEVELS,
-getDesc: (lvl) => { const s = SKILLS.frostQuake, d = s.levels[lvl-1]; return `Лёд бьёт всех (до ${scV(d.targets)}) на ${scX(d.multiplier)}, заморозка ${scV(d.freezeChance + '%')}, разносит Метки Жадности. Убитая с метками может выронить руду (10% за метку). MP: ${scV(d.mpCost)}. КД: ${s.cooldown}.`; },
+getDesc: (lvl, skill = SKILLS.frostQuake) => { const s = skill, d = s.levels[lvl-1]; return `Лёд бьёт всех (до ${scV(d.targets)}) на ${scX(d.multiplier)}, заморозка ${scV(d.freezeChance + '%')}, разносит Метки Жадности. Убитая с метками может выронить руду (10% за метку). MP: ${scV(d.mpCost)}. КД: ${s.cooldown}.`; },
 getNextDesc: (lvl) => scNext(SKILLS.frostQuake, lvl, n => `×${n.multiplier.toFixed(2)}`),
 },
 };
@@ -3923,19 +4079,19 @@ SUBCLASSES.dwarf_forgemaster.mods = {
 fireball: {
 name: 'Огненный шар',
 levels: SC_FIREBALL_LEVELS,
-getDesc: (lvl) => { const s = SKILLS.fireball, d = s.levels[lvl-1]; return `Огонь на ${scX(d.multiplier)}, поджог по ${scV(d.burnPercent + '%')} маг. атаки и ${scV('+1 Жар')} цели (до ${HEAT_MAX}; каждая единица — ${scV('−5%')} защиты твари). MP: ${scV(d.mpCost)}.`; },
+getDesc: (lvl, skill = SKILLS.fireball) => { const s = skill, d = s.levels[lvl-1]; return `Огонь на ${scX(d.multiplier)}, поджог по ${scV(d.burnPercent + '%')} маг. атаки и ${scV('+1 Жар')} цели (до ${HEAT_MAX}; каждая единица — ${scV('−5%')} защиты твари). MP: ${scV(d.mpCost)}.`; },
 getNextDesc: (lvl) => scNext(SKILLS.fireball, lvl, n => `×${n.multiplier.toFixed(2)}`),
 },
 dwarfGreedMagic: {
 name: 'Жадность',
 levels: SC_GREED_M_LEVELS,
-getDesc: (lvl) => { const s = SKILLS.dwarfGreedMagic, d = s.levels[lvl-1]; return `Удар на ${scX(d.multiplier)} и Метка Жадности (+25% Оболов). Раскалённая (с Жаром) тварь с меткой роняет руду. MP: ${scV(d.mpCost)}. КД: ${s.cooldown} ATB.`; },
+getDesc: (lvl, skill = SKILLS.dwarfGreedMagic) => { const s = skill, d = s.levels[lvl-1]; return `Удар на ${scX(d.multiplier)} и Метка Жадности (+25% Оболов). Раскалённая (с Жаром) тварь с меткой роняет руду. MP: ${scV(d.mpCost)}. КД: ${s.cooldown} ATB.`; },
 getNextDesc: (lvl) => scNext(SKILLS.dwarfGreedMagic, lvl, n => `×${n.multiplier.toFixed(2)}`),
 },
 blizzardRune: {
 name: 'Руна закалки', temperMult: 1.8,
 levels: SC_RUNE_LEVELS,
-getDesc: (lvl) => { const s = SKILLS.blizzardRune, d = s.levels[lvl-1]; return `Руна, на следующий ход буран: ${scV(d.targets)} врагов по ${scX(d.multiplier)}, шкала стаи −${scV(d.atbCut + '%')}. По раскалённым — <b>Закалка</b>: ${scX(1.8)}, Жар сгорает и оставляет Пролом (защита −15%). MP: ${scV(d.mpCost)}. КД: ${s.cooldown}.`; },
+getDesc: (lvl, skill = SKILLS.blizzardRune) => { const s = skill, d = s.levels[lvl-1]; return `Руна, на следующий ход буран: ${scV(d.targets)} врагов по ${scX(d.multiplier)}, шкала стаи −${scV(d.atbCut + '%')}. По раскалённым — <b>Закалка</b>: ${scX(1.8)}, Жар сгорает и оставляет Пролом (защита −15%). MP: ${scV(d.mpCost)}. КД: ${s.cooldown}.`; },
 getNextDesc: (lvl) => scNext(SKILLS.blizzardRune, lvl, n => `${n.targets} цели, ×${n.multiplier.toFixed(2)}`),
 },
 };
@@ -3943,45 +4099,45 @@ SUBCLASSES.dwarf_runemaster.mods = {
 fireball: {
 name: 'Руна-ловушка', nowMult: 0.6, trapMult: 1.2,
 levels: SC_FIREBALL_LEVELS,
-getDesc: (lvl) => { const s = SKILLS.fireball, d = s.levels[lvl-1]; return `Огонь на ${scX(d.multiplier * 0.6)} сразу и руна-ловушка: она взрывается на ${scX(d.multiplier * 1.2)}, когда тварь сама соберётся ударить. Ловушка на твари уже есть — старая взрывается сразу. MP: ${scV(d.mpCost)}.`; },
+getDesc: (lvl, skill = SKILLS.fireball) => { const s = skill, d = s.levels[lvl-1]; return `Огонь на ${scX(d.multiplier * 0.6)} сразу и руна-ловушка: она взрывается на ${scX(d.multiplier * 1.2)}, когда тварь сама соберётся ударить. Ловушка на твари уже есть — старая взрывается сразу. MP: ${scV(d.mpCost)}.`; },
 getNextDesc: (lvl) => scNext(SKILLS.fireball, lvl, n => `×${(n.multiplier * 0.6).toFixed(2)} + ×${(n.multiplier * 1.2).toFixed(2)}`),
 },
 dwarfGreedMagic: {
 name: 'Жадность', mpBack: 3,
 levels: SC_GREED_M_LEVELS,
-getDesc: (lvl) => { const s = SKILLS.dwarfGreedMagic, d = s.levels[lvl-1]; return `Удар на ${scX(d.multiplier)} и Метка Жадности (+25% Оболов). Убийство твари с меткой — ${scV('3%')} макс. MP. MP: ${scV(d.mpCost)}. КД: ${s.cooldown} ATB.`; },
+getDesc: (lvl, skill = SKILLS.dwarfGreedMagic) => { const s = skill, d = s.levels[lvl-1]; return `Удар на ${scX(d.multiplier)} и Метка Жадности (+25% Оболов). Убийство твари с меткой — ${scV('3%')} макс. MP. MP: ${scV(d.mpCost)}. КД: ${s.cooldown} ATB.`; },
 getNextDesc: (lvl) => scNext(SKILLS.dwarfGreedMagic, lvl, n => `×${n.multiplier.toFixed(2)}`),
 },
 blizzardRune: {
 name: 'Руна вьюги', guardTurns: 3, guardCut: 15,
 levels: SC_RUNE_LEVELS,
-getDesc: (lvl) => { const s = SKILLS.blizzardRune, d = s.levels[lvl-1]; return `Руна, на следующий ход буран: ${scV(d.targets)} врагов по ${scX(d.multiplier)}, шкала стаи −${scV(d.atbCut + '%')}. После бурана 3 хода урон по вам ${scV('−15%')}. MP: ${scV(d.mpCost)}. КД: ${s.cooldown}.`; },
+getDesc: (lvl, skill = SKILLS.blizzardRune) => { const s = skill, d = s.levels[lvl-1]; return `Руна, на следующий ход буран: ${scV(d.targets)} врагов по ${scX(d.multiplier)}, шкала стаи −${scV(d.atbCut + '%')}. После бурана 3 хода урон по вам ${scV('−15%')}. MP: ${scV(d.mpCost)}. КД: ${s.cooldown}.`; },
 getNextDesc: (lvl) => scNext(SKILLS.blizzardRune, lvl, n => `${n.targets} цели, ×${n.multiplier.toFixed(2)}`),
 },
 };
 const ELEMENTAL_KINDS = {
 stone: { name: 'Элементаль камня', img: 'img/allies/elemental_stone.webp', hp: 0.6, atk: 0.3, taunt: true, desc: 'принимает удары' },
 fire:  { name: 'Элементаль огня',  img: 'img/allies/elemental_fire.webp',  hp: 0.3, atk: 0.5, burn: true, desc: 'поджигает' },
-vein:  { name: 'Элементаль жилы',  img: 'img/allies/elemental_vein.webp',  hp: 0.35, atk: 0.4, vein: true, desc: 'кристаллы по двум целям, убитые им дают добычу' },
+vein:  { name: 'Элементаль жилы',  img: 'img/allies/elemental_vein.webp',  hp: 0.35, atk: 0.4, vein: true, desc: 'задевает ещё одного врага и даёт дополнительный шанс добычи с задетых целей' },
 };
 const ELEMENTAL_ORDER = ['stone', 'fire', 'vein'];
 SUBCLASSES.dwarf_stonecaller.mods = {
 fireball: {
 name: 'Огненный шар',
 levels: SC_FIREBALL_LEVELS,
-getDesc: (lvl) => { const s = SKILLS.fireball, d = s.levels[lvl-1]; return `Огонь на ${scX(d.multiplier)}, поджог по ${scV(d.burnPercent + '%')} маг. атаки. Элементали разгораются: каждый сразу бьёт ещё раз на ${scV('50%')}. MP: ${scV(d.mpCost)}.`; },
+getDesc: (lvl, skill = SKILLS.fireball) => { const s = skill, d = s.levels[lvl-1]; return `Огонь на ${scX(d.multiplier)}, поджог по ${scV(d.burnPercent + '%')} маг. атаки. Элементали разгораются: каждый сразу бьёт ещё раз на ${scV('50%')}. MP: ${scV(d.mpCost)}.`; },
 getNextDesc: (lvl) => scNext(SKILLS.fireball, lvl, n => `×${n.multiplier.toFixed(2)}`),
 },
 dwarfGreedMagic: {
 name: 'Жадность',
 levels: SC_GREED_M_LEVELS,
-getDesc: (lvl) => { const s = SKILLS.dwarfGreedMagic, d = s.levels[lvl-1]; return `Удар на ${scX(d.multiplier)} и Метка Жадности (+25% Оболов). Удары элементалей тоже ставят метки. MP: ${scV(d.mpCost)}. КД: ${s.cooldown} ATB.`; },
+getDesc: (lvl, skill = SKILLS.dwarfGreedMagic) => { const s = skill, d = s.levels[lvl-1]; return `Удар на ${scX(d.multiplier)} и Метка Жадности (+25% Оболов). Удары элементалей тоже ставят метки. MP: ${scV(d.mpCost)}. КД: ${s.cooldown} ATB.`; },
 getNextDesc: (lvl) => scNext(SKILLS.dwarfGreedMagic, lvl, n => `×${n.multiplier.toFixed(2)}`),
 },
 blizzardRune: {
 name: 'Руна вьюги',
 levels: SC_RUNE_LEVELS,
-getDesc: (lvl) => { const s = SKILLS.blizzardRune, d = s.levels[lvl-1]; return `Руна, на следующий ход буран: ${scV(d.targets)} врагов по ${scX(d.multiplier)}, шкала стаи −${scV(d.atbCut + '%')} — и из бурана бесплатно выходит элементаль. MP: ${scV(d.mpCost)}. КД: ${s.cooldown}.`; },
+getDesc: (lvl, skill = SKILLS.blizzardRune) => { const s = skill, d = s.levels[lvl-1]; return `Руна, на следующий ход буран: ${scV(d.targets)} врагов по ${scX(d.multiplier)}, шкала стаи −${scV(d.atbCut + '%')} — и из бурана бесплатно выходит элементаль. MP: ${scV(d.mpCost)}. КД: ${s.cooldown}.`; },
 getNextDesc: (lvl) => scNext(SKILLS.blizzardRune, lvl, n => `${n.targets} цели, ×${n.multiplier.toFixed(2)}`),
 },
 };
@@ -4149,11 +4305,13 @@ getNextDesc: (lvl) => scNext(SKILLS.rmWeave, lvl, n => `${n.chance}%`),
 },
 scSummon: {
 id: 'scSummon', subclassId: 'dwarf_stonecaller', name: 'Призвать элементаля', type: 'active', freeTurn: 0.3,
+fxAnim: 'summon',
 iconPng: 'img/allies/elemental_stone.webp',
 maxLevel: 5, cooldown: 2,
 levels: [ { mpCost: 12, power: 60 }, { mpCost: 13, power: 70 }, { mpCost: 14, power: 80 }, { mpCost: 15, power: 90 }, { mpCost: 16, power: 100 } ],
-getDesc: (lvl) => { const d = SKILLS.scSummon.levels[lvl-1]; return `Быстрый: ${scV('30%')} хода сразу возвращается. Призывает следующего по порядку элементаля (сила ${scV(d.power + '%')}): <b>Камня</b> — принимает удары, <b>Огня</b> — поджигает, <b>Жилы</b> — кристаллы по двум целям, убитые им дают добычу. Когда стоят все трое — <b>Слияние</b> в одного Великого (сумма ×1.2, все способности). MP: ${scV(d.mpCost)}. КД: ${SKILLS.scSummon.cooldown}.`; },
+getDesc: (lvl) => { const d = SKILLS.scSummon.levels[lvl-1]; return `Сразу возвращает ${scV('30%')} шкалы хода. Призывает элементалей по очереди (сила ${scV(d.power + '%')}), пропуская тех, кто уже в бою. <b>Камень</b> принимает удары, <b>Огонь</b> поджигает, <b>Жила</b> задевает ещё одного врага и оставляет ему хотя бы 1 единицу здоровья. Задетые Жилой враги дают дополнительный шанс на добычу. Если все три стихии в бою, следующее применение сливает их в <b>Великого элементаля</b> (сумма ×1.2, все способности). Пока он жив, призыв недоступен. Тратит ${scV(d.mpCost)} маны. Перезарядка занимает ${SKILLS.scSummon.cooldown} хода.`; },
 getNextDesc: (lvl) => scNext(SKILLS.scSummon, lvl, n => `сила ${n.power}%`),
+useCheck: () => stonecallerSummonBlockReason(),
 },
 scShards: {
 id: 'scShards', subclassId: 'dwarf_stonecaller', name: 'Осколки', type: 'active', semiPassive: true,
@@ -4295,7 +4453,7 @@ gkGift: 'До конца боя лечит каждый ход, усиливае
 gkBud: 'Ниже 40% здоровья восстанавливает {total}% его запаса за 3 хода.',
 gkDew: 'Лечение, которое действует несколько ходов, с шансом {chance}% длится на ход дольше.',
 gkCycle: 'Лечение в бою возвращает ману: {pct}% от вылеченного.',
-drSpirit: 'Призывает духа зверя. Повторный призыв усиливает следующую атаку духа.',
+drSpirit: 'Призывает духа-зверя. При повторном применении дух сразу наносит усиленный удар.',
 drHunt: 'Заклинание может вызвать дополнительный удар духа по той же цели.',
 drBonds: 'Дух получает часть вашей магической атаки и здоровья.',
 drGrowing: 'За каждое убийство дух становится на {per}% сильнее, до +{cap}%.',
@@ -4319,7 +4477,7 @@ dwHaste: 'На 5 ходов шкала хода заполняется на {atb
 dwMist: 'Ниже 40% здоровья усыпляет всех врагов на ход или до первого удара.',
 dwLullaby: 'Пока враг спит, здоровье восстанавливается быстрее, а лечение сильнее на {heal}%.',
 dwNightmare: 'Удар, разбудивший врага, наносит на {pct}% больше урона.',
-slMother: 'Призывает паучиху и её выводок. Повторный призыв ускоряет появление паучат.',
+slMother: 'Призывает матку. Повторное применение добавляет паучонка, а при полном выводке матка кусает цель.',
 slVenom: 'Укусы пауков отравляют врагов. До пяти слоёв яда на цель.',
 slBrood: 'У паучат на {pct}% больше здоровья и урона.',
 slSilk: 'Паутина замедляет шкалу хода врага на {slow}%.',
@@ -4343,7 +4501,7 @@ rmInscribe: 'До конца боя усиливает ваш урон и защ
 rmWard: 'Ниже 35% здоровья даёт барьер на {shield}% его запаса.',
 rmSteady: 'Подгонка успешнее на {chance}%. При неудаче платите половину цены.',
 rmWeave: 'С шансом {chance}% подгонка выбирает лучший из двух случайных бонусов.',
-scSummon: 'По очереди зовёт элементалей Камня, Огня и Жилы. Вместе они сливаются в одного.',
+scSummon: 'Зовёт элементаля стихии, которой ещё нет в бою. Если все трое уже здесь, сливает их в Великого.',
 scShards: 'Разбитый элементаль взрывается и ранит всех врагов своей стихией.',
 scStoneblood: 'Элементали наследуют ваше поглощение урона и {atk}% магической атаки.',
 scFusion: 'Усиливает Великого элементаля при слиянии.',
@@ -4508,11 +4666,11 @@ const min = damage(attack - variance);
 const max = damage(attack + Math.max(0, variance - 1));
 return min === max ? SKILL_TEXT_NUMBER.format(min) : `${SKILL_TEXT_NUMBER.format(min)}–${SKILL_TEXT_NUMBER.format(max)}`;
 }
-function getSkillBrief(skill, rank, withMana = true) {
+function getSkillBrief(skill, rank, withMana = true, subclassId = state.player.subclass) {
 const p = state.player;
 rank = Math.min(rank, skill.maxLevel);
 const data = skill.levels[rank - 1];
-const text = SUBCLASS_SKILL_BRIEFS[p.subclass]?.[skill.id] || SKILL_BRIEFS[skill.id] || 'Подробности в Энциклопедии.';
+const text = SUBCLASS_SKILL_BRIEFS[subclassId]?.[skill.id] || SKILL_BRIEFS[skill.id] || 'Подробности в Энциклопедии.';
 const effect = text.replace(/\{(\w+)\}/g, (_, field) => {
 if (field === 'fireDamage') return formatSkillDamageRange(p.mAtk, data.multiplier, getElementDamageBonus('fire'));
 if (field === 'iceDamage') return formatSkillDamageRange(p.mAtk, data.multiplier, getElementDamageBonus('ice'));
@@ -5276,6 +5434,22 @@ return Math.min(50, total);
 
 // ==== ФАЙЛ js/data/changelog.js ====
 const CHANGELOG = [
+{
+version: 'v0.41',
+date: '25.11.2026',
+title: 'Живые образы и союзники',
+changes: [
+{ icon: '✦', text: 'Пробный VIP действует 30 дней. Чтобы получить ещё 30 дней, зайдите в игру в любые 15 дней одного 30-дневного периода. Первый вход за день засчитывается автоматически, а прогресс виден по кнопке VIP' },
+{ icon: '🖼', text: 'В гардеробе 23 анимированных образа. Воин и маг каждой расы получили мужской и женский варианты. У человека-воина три образа, у Стальной стены два дополнительных' },
+{ icon: '✨', text: 'После победы у портрета героя вспыхивает эффект в цветах выбранного VIP-образа' },
+{ icon: '🏆', text: 'В окне VIP можно выбрать рамку визитки и подпись из заработанных титулов. Визитка с живым портретом видна при осмотре героя из рейтинга' },
+{ icon: '📜', text: 'За первое продление VIP выдаётся памятная печать. Выберите запись в Летописи, которую хотите отметить. Печать останется на ней после окончания VIP' },
+{ icon: '✧', text: 'Перед посвящением в Храме Ильграда можно открыть предпросмотр подкласса. В нём показаны стиль игры, сильные стороны, ограничения и навыки с подробностями по рангам' },
+{ icon: '🛡', text: 'Рейтинг и окно осмотра показывают название подкласса рядом с базовым классом' },
+{ icon: '🐾', text: 'Союзники заметнее на арене. У призыва своя анимация, попадания по помощникам видны на их карточках, а снаряды и вспышки тотемов показывают атаки и восстановление здоровья или маны' },
+{ icon: '🗿', text: 'Заклинатель камня призывает недостающую стихию. Когда все три элементаля в бою, следующий призыв объединяет их в Великого. В ручном бою видно, почему призыв сейчас недоступен' },
+],
+},
 {
 version: 'v0.40',
 date: '24.11.2026',
@@ -8187,6 +8361,9 @@ stackCap: 3,
 learnedSkills: {},
 skillPoints: 0,
 subclass: null,
+vipLook: null,
+vipFrame: 'bronze',
+vipTitle: null,
 skillPts26: 0,
 skillSlots: [null, null, null],
 currentLocation: 'town',
@@ -9264,6 +9441,9 @@ soulHuntCap: 0,
 hideProfile: false,
 repeatPref: true,
 subclass: null,
+vipLook: null,
+vipFrame: 'bronze',
+vipTitle: null,
 skillPts26: 0,
 tutorial: null,
 };
@@ -9375,6 +9555,7 @@ classId: data.player && data.player.classId,
 raceId: data.player && data.player.raceId,
 level: data.player && data.player.level,
 subclass: (data.player && data.player.subclass) || null,
+vipLook: data.player?.vipLook || null,
 updatedAt: data.updatedAt || null,
 };
 }
@@ -9569,7 +9750,7 @@ if (force || performance.now() - slotSaveLast >= SLOT_SAVE_MIN_GAP_MS) saveCurre
 }
 document.addEventListener('visibilitychange', () => { if (document.hidden) flushPendingSlotSave(true); });
 window.addEventListener('pagehide', () => flushPendingSlotSave(true));
-function saveCurrentSlot() {
+function saveCurrentSlot(forceLeaderboard = false) {
 slotSavePending = false;
 if (state.activeSlotIndex === null || state.activeSlotIndex === undefined) return;
 slotSaveLast = performance.now();
@@ -9594,7 +9775,7 @@ console.warn('[cloud] saveSlot exception:', err);
 }
 }
 if (typeof cloudPushLeaderboard === 'function') {
-cloudPushLeaderboard(false);
+cloudPushLeaderboard(forceLeaderboard === true);
 }
 }
 
@@ -10546,6 +10727,544 @@ return 'слотов';
 
 ;
 
+// ==== ФАЙЛ js/systems/vip.js ====
+const VIP_DAY = 24 * 60 * 60 * 1000;
+const VIP_MOSCOW_OFFSET = 3 * 60 * 60 * 1000;
+const VIP_PERIOD_DAYS = 30;
+const VIP_VISIT_GOAL = 15;
+const VIP_TRIAL_KEY = 'l2browser_vip_trial_';
+const VIP_GUEST_ATTENDANCE_KEY = 'l2browser_vip_attendance_guest';
+const VIP_SEAL_KEY = 'l2browser_vip_seal_';
+const VIP_FRAMES = { bronze: 'Бронза', silver: 'Серебро', amethyst: 'Аметист' };
+const VIP_TITLES = {
+hunter: ['Охотник', 'Охотница'],
+glorious: ['Прославленный охотник', 'Прославленная охотница'],
+magnificent: ['Великолепный охотник', 'Великолепная охотница'],
+};
+const VIP_VICTORY_STYLES = {
+'warrior-dawn': ['#ffb64f', '#fff0bd', 'spark'],
+'warrior-moon': ['#729adc', '#d2e7ff', 'spark'],
+'warrior-crimson': ['#f47f39', '#ffe4ac', 'spark'],
+'mage-astrarium': ['#708cfc', '#f7d186', 'rune'],
+'mage-rose': ['#d66da4', '#f8c7e4', 'petal'],
+'dwarf-warrior-storm': ['#74bcca', '#c8f4ff', 'spark'],
+'dwarf-warrior-vein': ['#94a9bb', '#f2dcc2', 'spark'],
+'steelwall-forge': ['#ef8b50', '#fff0b0', 'spark'],
+'steelwall-sapphire': ['#3d8cff', '#b4e8ff', 'spark'],
+'dwarf-mage-rune': ['#eb9157', '#ffcf90', 'rune'],
+'dwarf-mage-crystal': ['#4ec7c0', '#ccfafa', 'rune'],
+'orc-warrior-ashes': ['#b95636', '#f7b478', 'spark'],
+'orc-warrior-wind': ['#72b0a7', '#c8e8d2', 'spark'],
+'orc-mage-storm': ['#8b6aff', '#d5c7ff', 'rune'],
+'orc-mage-spirit': ['#dba04e', '#e6efb9', 'petal'],
+'elf-warrior-grove': ['#c5a14f', '#e0edaf', 'petal'],
+'elf-warrior-river': ['#6bafdb', '#e1ecff', 'petal'],
+'elf-mage-frost': ['#5bb6ed', '#cef6ff', 'rune'],
+'elf-mage-fern': ['#88bb4c', '#d2f3a5', 'petal'],
+'drow-warrior-gate': ['#d16b40', '#ffc49a', 'spark'],
+'drow-warrior-dusk': ['#8962c5', '#cab3f4', 'spark'],
+'drow-mage-seal': ['#a064e5', '#e8b8ff', 'rune'],
+'drow-mage-sphere': ['#8d5be9', '#dcc0ff', 'rune'],
+};
+const vipCalendarDate = new Intl.DateTimeFormat('ru-RU', { day: 'numeric', month: 'long', timeZone: 'UTC' });
+const VIP_LOOKS = [
+{ id: 'warrior-dawn', raceId: 'human', classId: 'warrior', name: 'Клятва рассвета', art: 'img/vip/human-warrior-dawn.webp', motion: 'img/vip/human-warrior-dawn-motion.webp' },
+{ id: 'warrior-moon', raceId: 'human', classId: 'warrior', name: 'Ночной дозор', art: 'img/vip/human-warrior-moon.webp', motion: 'img/vip/human-warrior-moon-motion.webp' },
+{ id: 'warrior-crimson', raceId: 'human', classId: 'warrior', name: 'Багряная сталь', art: 'img/vip/human-warrior-crimson.webp', motion: 'img/vip/human-warrior-crimson-motion.webp' },
+{ id: 'mage-astrarium', raceId: 'human', classId: 'mage', name: 'Хранитель астролябии', art: 'img/vip/human-mage-astrarium.webp', motion: 'img/vip/human-mage-astrarium-motion.webp' },
+{ id: 'mage-rose', raceId: 'human', classId: 'mage', name: 'Роза сумерек', art: 'img/vip/human-mage-rose.webp', motion: 'img/vip/human-mage-rose-motion.webp' },
+{ id: 'dwarf-warrior-storm', raceId: 'dwarf', classId: 'warrior', name: 'Гром перевала', art: 'img/vip/dwarf-warrior-storm.webp', motion: 'img/vip/dwarf-warrior-storm-motion.webp' },
+{ id: 'dwarf-warrior-vein', raceId: 'dwarf', classId: 'warrior', name: 'Серебряная жила', art: 'img/vip/dwarf-warrior-vein.webp', motion: 'img/vip/dwarf-warrior-vein-motion.webp' },
+{ id: 'steelwall-forge', raceId: 'dwarf', classId: 'warrior', subclassId: 'dwarf_steelwall', name: 'Щит горна', art: 'img/vip/dwarf-steelwall-forge.webp', motion: 'img/vip/dwarf-steelwall-forge-motion.webp' },
+{ id: 'steelwall-sapphire', raceId: 'dwarf', classId: 'warrior', subclassId: 'dwarf_steelwall', name: 'Сапфировый оплот', art: 'img/vip/dwarf-steelwall-sapphire.webp', motion: 'img/vip/dwarf-steelwall-sapphire-motion.webp' },
+{ id: 'dwarf-mage-rune', raceId: 'dwarf', classId: 'mage', name: 'Каменное слово', art: 'img/vip/dwarf-mage-rune.webp', motion: 'img/vip/dwarf-mage-rune-motion.webp' },
+{ id: 'dwarf-mage-crystal', raceId: 'dwarf', classId: 'mage', name: 'Песня кристаллов', art: 'img/vip/dwarf-mage-crystal.webp', motion: 'img/vip/dwarf-mage-crystal-motion.webp' },
+{ id: 'orc-warrior-ashes', raceId: 'orc', classId: 'warrior', name: 'Пепельный вождь', art: 'img/vip/orc-warrior-ashes.webp', motion: 'img/vip/orc-warrior-ashes-motion.webp' },
+{ id: 'orc-warrior-wind', raceId: 'orc', classId: 'warrior', name: 'Клятва ветра', art: 'img/vip/orc-warrior-wind.webp', motion: 'img/vip/orc-warrior-wind-motion.webp' },
+{ id: 'orc-mage-storm', raceId: 'orc', classId: 'mage', name: 'Грозовой пророк', art: 'img/vip/orc-mage-storm.webp', motion: 'img/vip/orc-mage-storm-motion.webp' },
+{ id: 'orc-mage-spirit', raceId: 'orc', classId: 'mage', name: 'Проводница духов', art: 'img/vip/orc-mage-spirit.webp', motion: 'img/vip/orc-mage-spirit-motion.webp' },
+{ id: 'elf-warrior-grove', raceId: 'elf', classId: 'warrior', name: 'Страж древней рощи', art: 'img/vip/elf-warrior-grove.webp', motion: 'img/vip/elf-warrior-grove-motion.webp' },
+{ id: 'elf-warrior-river', raceId: 'elf', classId: 'warrior', name: 'Серебро лунной реки', art: 'img/vip/elf-warrior-river.webp', motion: 'img/vip/elf-warrior-river-motion.webp' },
+{ id: 'elf-mage-frost', raceId: 'elf', classId: 'mage', name: 'Хранитель перевала', art: 'img/vip/elf-mage-frost.webp', motion: 'img/vip/elf-mage-frost-motion.webp' },
+{ id: 'elf-mage-fern', raceId: 'elf', classId: 'mage', name: 'Шёпот папоротника', art: 'img/vip/elf-mage-fern.webp', motion: 'img/vip/elf-mage-fern-motion.webp' },
+{ id: 'drow-warrior-gate', raceId: 'drow', classId: 'warrior', name: 'Страж обсидиановых врат', art: 'img/vip/drow-warrior-gate.webp', motion: 'img/vip/drow-warrior-gate-motion.webp' },
+{ id: 'drow-warrior-dusk', raceId: 'drow', classId: 'warrior', name: 'Лезвие полумрака', art: 'img/vip/drow-warrior-dusk.webp', motion: 'img/vip/drow-warrior-dusk-motion.webp' },
+{ id: 'drow-mage-seal', raceId: 'drow', classId: 'mage', name: 'Аметистовая печать', art: 'img/vip/drow-mage-seal.webp', motion: 'img/vip/drow-mage-seal-motion.webp' },
+{ id: 'drow-mage-sphere', raceId: 'drow', classId: 'mage', name: 'Сердце сумерек', art: 'img/vip/drow-mage-sphere.webp', motion: 'img/vip/drow-mage-sphere-motion.webp' },
+];
+let vipOwner = null;
+let vipUntil = 0;
+let vipAttendance = null;
+let vipGuestAttendance = null;
+let vipSeal = null;
+let vipPickingSeal = false;
+let vipSealWrite = null;
+let vipSealReadVersion = 0;
+let vipRequest = null;
+let vipSyncedDay = null;
+let vipPendingVisitDay = null;
+let vipLegacyServer = false;
+let vipRetryAfter = 0;
+let vipRetryTimer = null;
+let vipTimer = null;
+const vipReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+function vipDaysLeft() {
+return Math.max(0, Math.ceil((vipUntil - Date.now()) / VIP_DAY));
+}
+function vipTimeLabel(days) {
+const tens = days % 100;
+const ones = days % 10;
+const unit = tens >= 11 && tens <= 14 ? 'дней' : ones === 1 ? 'день' : ones >= 2 && ones <= 4 ? 'дня' : 'дней';
+return days ? `Осталось ${days} ${unit}` : 'Срок VIP истёк';
+}
+function vipSaveExpiry(owner, expiry) {
+try { localStorage.setItem(VIP_TRIAL_KEY + owner, String(expiry)); } catch {}
+}
+function vipMoscowDay(time = Date.now()) {
+return Math.floor((time + VIP_MOSCOW_OFFSET) / VIP_DAY);
+}
+function vipSealCanPlace() {
+return vipSeal?.earned && !vipSeal.placement && Number.isInteger(state.activeSlotIndex);
+}
+function vipSealMatches(entry) {
+const seal = vipSeal?.placement;
+return !!seal && seal.slot === state.activeSlotIndex && seal.entry === entry.id && seal.at === entry.at;
+}
+function vipReadCachedSeal(owner) {
+try { return JSON.parse(localStorage.getItem(VIP_SEAL_KEY + owner)); } catch { return null; }
+}
+function vipUpdateSeal(data) {
+if (typeof data?.earned !== 'boolean') return;
+const placement = data.placement || null;
+if (vipSeal?.placement && !placement) return;
+if (vipSeal?.earned === data.earned && vipSeal?.placement?.slot === placement?.slot &&
+vipSeal?.placement?.entry === placement?.entry && vipSeal?.placement?.at === placement?.at) return;
+vipSeal = { earned: data.earned, placement };
+if (placement) vipPickingSeal = false;
+try { localStorage.setItem(VIP_SEAL_KEY + vipOwner, JSON.stringify(vipSeal)); } catch {}
+if (vipDialog.open) vipRenderDialog();
+if (typeof isChronicleOpen === 'function' && isChronicleOpen()) renderChronicle();
+}
+async function vipRefreshSeal() {
+const owner = vipOwner;
+if (!owner || !cloudIsReady() || owner !== slotOwnerId()) return;
+const version = ++vipSealReadVersion;
+try {
+const { data, error } = await supabaseClient.rpc('sync_vip_seal');
+if (!error && version === vipSealReadVersion && owner === vipOwner && owner === slotOwnerId()) vipUpdateSeal(data);
+} catch {}
+}
+async function vipPlaceSeal(entryId) {
+if (!vipPickingSeal || !vipSealCanPlace() || vipSealWrite || vipOwner !== slotOwnerId()) return;
+const entry = state.player.chronicle?.entries.find(row => row.id === entryId);
+if (!entry || !Number.isSafeInteger(entry.at) || entry.at < 1) return;
+const placement = { slot: state.activeSlotIndex, entry: entry.id, at: entry.at };
+const owner = vipOwner;
+const request = {};
+vipSealWrite = request;
+renderChronicle();
+try {
+let data = { earned: true, placement };
+if (owner !== 'guest') {
+const result = await supabaseClient.rpc('sync_vip_seal', {
+slot_index: placement.slot, entry_id: placement.entry, entry_time: placement.at
+});
+if (result.error) throw result.error;
+data = result.data;
+} else {
+const saved = vipReadCachedSeal('guest');
+if (saved?.placement) data = saved;
+}
+if (vipSealWrite !== request || slotOwnerId() !== owner) return;
+vipUpdateSeal(data);
+const saved = vipSeal?.placement;
+if (!saved) { showToast('✦', 'Печать пока недоступна'); return; }
+showToast('✦', saved.slot === placement.slot && saved.entry === placement.entry && saved.at === placement.at
+? 'Печать поставлена' : 'Печать уже стоит на другой записи');
+} catch {
+if (vipSealWrite === request) showToast('✦', 'Не удалось сохранить печать. Попробуй ещё раз.');
+} finally {
+if (vipSealWrite === request) {
+vipSealWrite = null;
+if (isChronicleOpen()) renderChronicle();
+}
+}
+}
+function vipGuestCheckIn(checkIn) {
+const now = Date.now();
+const today = vipMoscowDay(now);
+let guest = vipGuestAttendance;
+try {
+const saved = JSON.parse(localStorage.getItem(VIP_GUEST_ATTENDANCE_KEY));
+if (saved && Number.isSafeInteger(saved.started) && Number.isSafeInteger(saved.expiry) &&
+Number.isInteger(saved.days) && saved.days >= 0 && saved.days <= VIP_VISIT_GOAL &&
+(saved.lastVisit === null || Number.isInteger(saved.lastVisit))) guest = saved;
+} catch {}
+const isNew = !guest;
+if (isNew) {
+const expiry = vipUntil || now + VIP_PERIOD_DAYS * VIP_DAY;
+guest = { started: expiry - VIP_PERIOD_DAYS * VIP_DAY, expiry, days: 0, lastVisit: null };
+}
+const firstDay = vipMoscowDay(guest.started);
+const periodStart = firstDay + Math.floor(Math.max(0, today - firstDay) / VIP_PERIOD_DAYS) * VIP_PERIOD_DAYS;
+let days = guest.lastVisit !== null && guest.lastVisit >= periodStart ? guest.days : 0;
+const counted = checkIn && (guest.lastVisit === null || guest.lastVisit < today);
+if (counted) {
+const renewed = days === VIP_VISIT_GOAL - 1;
+days = Math.min(days + 1, VIP_VISIT_GOAL);
+guest = {
+...guest, days, lastVisit: today,
+expiry: renewed ? Math.max(now, guest.expiry) + VIP_PERIOD_DAYS * VIP_DAY : guest.expiry
+};
+if (renewed) showToast('✦', 'VIP продлён на 30 дней');
+}
+if (isNew || counted) {
+try { localStorage.setItem(VIP_GUEST_ATTENDANCE_KEY, JSON.stringify(guest)); } catch {}
+vipSaveExpiry('guest', guest.expiry);
+}
+vipGuestAttendance = guest;
+vipUntil = guest.expiry;
+vipAttendance = { days, period_end: periodStart + VIP_PERIOD_DAYS - 1, checked_in: guest.lastVisit === today };
+if (!vipSeal?.earned && guest.expiry > guest.started + VIP_PERIOD_DAYS * VIP_DAY) {
+vipUpdateSeal({ earned: true, placement: null });
+}
+}
+function vipScheduleStatus() {
+clearTimeout(vipTimer);
+if (!vipOwner) return;
+const now = Date.now();
+const days = vipDaysLeft();
+const untilNextDay = (vipMoscowDay(now) + 1) * VIP_DAY - VIP_MOSCOW_OFFSET - now;
+const untilStatusChange = days ? vipUntil - now - (days - 1) * VIP_DAY : Infinity;
+vipTimer = setTimeout(() => {
+vipRefreshTrial();
+vipRefreshUi();
+vipScheduleStatus();
+}, Math.max(25, Math.min(untilNextDay, untilStatusChange) + 25));
+}
+function vipRefreshTrial(checkIn = false) {
+const owner = slotOwnerId();
+if (owner !== vipOwner) {
+if (vipDialog.open) vipDialog.close();
+vipOwner = owner;
+vipUntil = 0;
+vipAttendance = null;
+vipGuestAttendance = null;
+vipSeal = owner ? vipReadCachedSeal(owner) : null;
+vipPickingSeal = false;
+vipSealWrite = null;
+vipSealReadVersion++;
+vipRequest = null;
+vipSyncedDay = null;
+vipPendingVisitDay = null;
+vipLegacyServer = false;
+vipRetryAfter = 0;
+clearTimeout(vipRetryTimer);
+if (owner) {
+try {
+const cached = Number(localStorage.getItem(VIP_TRIAL_KEY + owner));
+if (Number.isSafeInteger(cached) && cached > 0) vipUntil = cached;
+} catch {}
+}
+vipScheduleStatus();
+}
+if (owner === 'guest') {
+const previousExpiry = vipUntil;
+vipGuestCheckIn(checkIn);
+if (vipUntil !== previousExpiry) vipScheduleStatus();
+return;
+}
+if (!cloudIsReady()) return;
+const day = vipMoscowDay();
+if (vipPendingVisitDay !== day) vipPendingVisitDay = null;
+const syncedToday = vipSyncedDay === day;
+if (checkIn && !(syncedToday && (vipAttendance?.checked_in || vipLegacyServer))) vipPendingVisitDay = day;
+if (vipRequest || Date.now() < vipRetryAfter || (syncedToday && vipPendingVisitDay === null)) return;
+const request = {};
+vipRequest = request;
+const visit = vipPendingVisitDay === day;
+const isCurrent = () => vipRequest === request && slotOwnerId() === owner;
+setTimeout(async () => {
+if (!isCurrent()) return;
+let updated = false;
+let renewed = false;
+let expiryChanged = false;
+try {
+const { data, error } = await supabaseClient.rpc('sync_vip', { check_in: visit });
+if (!isCurrent()) return;
+const legacy = error?.code === 'PGRST202' || error?.code === '42883';
+let expiry = Number(data?.expiry);
+if (legacy) {
+const trial = await supabaseClient.rpc('claim_vip_trial');
+if (!isCurrent()) return;
+if (trial.error) throw trial.error;
+expiry = Number(trial.data);
+} else {
+if (error) throw error;
+if (!Number.isInteger(data?.days) || data.days < 0 || data.days > VIP_VISIT_GOAL ||
+!Number.isInteger(data.period_end) || typeof data.checked_in !== 'boolean') {
+throw new Error('Invalid VIP attendance');
+}
+}
+if (!Number.isSafeInteger(expiry) || expiry < 1) throw new Error('Invalid VIP expiry');
+vipSyncedDay = day;
+vipLegacyServer = legacy;
+vipAttendance = legacy ? null : data;
+if (vipPendingVisitDay === day && (visit || legacy || data.checked_in)) vipPendingVisitDay = null;
+expiryChanged = expiry !== vipUntil;
+vipUntil = expiry;
+vipSaveExpiry(owner, expiry);
+vipRetryAfter = 0;
+clearTimeout(vipRetryTimer);
+updated = true;
+renewed = !legacy && data.renewed === true;
+} catch {
+if (!isCurrent()) return;
+const delay = 60_000;
+vipRetryAfter = Date.now() + delay;
+clearTimeout(vipRetryTimer);
+vipRetryTimer = setTimeout(() => vipRefreshTrial(), delay);
+} finally {
+if (vipRequest === request) vipRequest = null;
+}
+if (updated) {
+if (renewed) showToast('✦', 'VIP продлён на 30 дней');
+vipScheduleStatus();
+if (vipPendingVisitDay === vipMoscowDay()) vipRefreshTrial();
+if (!vipLegacyServer) vipRefreshSeal();
+if (expiryChanged && state.player.classId && Number.isInteger(state.activeSlotIndex) &&
+!document.getElementById('start-screen').classList.contains('active')) cloudPushLeaderboard(true);
+}
+vipRefreshUi();
+}, 0);
+}
+function vipLooksFor(player) {
+const raceId = player.raceId || 'human';
+return VIP_LOOKS.filter(look =>
+look.raceId === raceId &&
+look.classId === player.classId &&
+(!look.subclassId || look.subclassId === player.subclass));
+}
+function vipLookFor(player) {
+if (!vipDaysLeft() || !player.vipLook) return null;
+return vipLooksFor(player).find(look => look.id === player.vipLook) || null;
+}
+function vipHeroPortrait(player, animated = false) {
+const look = vipLookFor(player);
+if (look) return animated && !vipReducedMotion.matches ? look.motion : look.art;
+return getHeroPortrait(player.raceId || 'human', player.classId, player.subclass);
+}
+function vipPlayVictoryEffect() {
+const look = vipLookFor(state.player);
+const style = look && VIP_VICTORY_STYLES[look.id];
+if (!style || vipReducedMotion.matches || state.player.hp <= 0 ||
+!document.getElementById('battle-window').classList.contains('active')) return;
+const card = document.getElementById('bx-hero-card');
+card.querySelector('.vip-victory')?.remove();
+const effect = document.createElement('span');
+const [color, highlight, shape] = style;
+effect.className = 'vip-victory';
+effect.dataset.shape = shape;
+effect.setAttribute('aria-hidden', 'true');
+effect.style.setProperty('--vip-effect', color);
+effect.style.setProperty('--vip-highlight', highlight);
+for (let i = 0; i < 16; i++) {
+const spark = document.createElement('i');
+const angle = i * Math.PI / 8;
+const x = Math.cos(angle), y = Math.sin(angle);
+const edge = Math.max(Math.abs(x), Math.abs(y));
+spark.style.cssText = `--x:${50 + 49 * x / edge}%;--y:${50 + 49 * y / edge}%;` +
+`--dx:${x * (9 + i % 4 * 3)}px;--dy:${y * (8 + i % 3 * 5) - 6}px;` +
+`--angle:${i * 22.5}deg;--delay:${i % 5 * 30}ms;--length:${5 + i % 4 * 2}px`;
+effect.append(spark);
+}
+card.append(effect);
+setTimeout(() => effect.remove(), 1000);
+}
+function vipEarnedTitles() {
+let best = -1;
+for (const monster of ALL_HUNT_MONSTERS) {
+for (const variant of ALL_VARIANTS) {
+if (getMonsterKills(monster.id, variant) < KILL_THRESHOLDS.title) continue;
+best = Math.max(best, TITLE_LADDER.indexOf(getMonsterTitle(monster.id, variant)));
+if (best === TITLE_LADDER.length - 1) return TITLE_LADDER;
+}
+}
+return TITLE_LADDER.slice(0, best + 1);
+}
+function vipFrameId(frame) {
+return hasOwnKey(VIP_FRAMES, frame) ? frame : 'bronze';
+}
+function vipProfileSnapshot(player) {
+if (!vipDaysLeft()) return null;
+return {
+until: vipUntil,
+look: vipLookFor(player)?.id || null,
+frame: vipFrameId(player.vipFrame),
+title: player.vipTitle && vipEarnedTitles().includes(player.vipTitle) ? player.vipTitle : null,
+female: player.gender === 'f',
+};
+}
+function vipPublicProfile(raw, raceId, classId, subclass) {
+if (!Number.isSafeInteger(raw?.until) || raw.until <= Date.now()) return null;
+const look = vipLooksFor({ raceId, classId, subclass }).find(item => item.id === raw.look);
+const title = hasOwnKey(VIP_TITLES, raw.title) ? VIP_TITLES[raw.title][raw.female === true ? 1 : 0] : '';
+return { look, frame: vipFrameId(raw.frame), title };
+}
+function vipRefreshUi() {
+if (document.getElementById('start-screen').classList.contains('active')) renderSlots();
+if (state.player.classId) {
+updateCharacterPanel();
+updatePlayerAvatar();
+}
+if (vipDialog.open) vipRenderDialog();
+}
+function vipRenderCharacter() {
+const days = vipDaysLeft();
+const hasVip = state.player.classId && days > 0;
+const badge = document.getElementById('vip-character-badge');
+const actions = document.getElementById('vip-character-actions');
+badge.hidden = !state.player.classId || !vipOwner;
+const expired = vipUntil > 0 && !days;
+badge.textContent = expired ? 'Вернуть VIP' : 'VIP';
+badge.setAttribute('aria-label', expired ? 'Вернуть VIP' : 'VIP — статус и образы');
+actions.hidden = !hasVip;
+if (hasVip) actions.querySelector('.vip-duration').textContent = vipTimeLabel(days);
+document.getElementById('cs-portrait').classList.toggle('vip-portrait-equipped', !!vipLookFor(state.player));
+}
+function vipOpenWardrobe() {
+vipRefreshTrial();
+if (!state.player.classId || !vipOwner || vipDialog.open) return;
+vipWardrobe.hidden = true;
+vipRenderDialog();
+vipDialog.showModal();
+}
+function vipRenderDialog() {
+const hasVip = vipDaysLeft() > 0;
+const expiryLabel = hasVip ? `Действует до ${vipCalendarDate.format(vipMoscowDay(vipUntil) * VIP_DAY)}`
+: vipUntil ? 'Срок VIP истёк' : 'Проверяем статус';
+vipDialog.querySelector('.vip-duration').textContent = expiryLabel;
+const activity = vipAttendance;
+const days = activity?.days;
+const count = document.getElementById('vip-renewal-count');
+count.textContent = `${days ?? '—'} из ${VIP_VISIT_GOAL} дней`;
+if (activity) vipRenewalMeter.setAttribute('aria-valuenow', days);
+else vipRenewalMeter.removeAttribute('aria-valuenow');
+for (const [index, mark] of vipRenewalMarks.entries()) {
+mark.classList.toggle('filled', index < days);
+}
+document.getElementById('vip-renewal-rule').textContent = activity
+? `Заходи в игру в любые 15 дней по ${vipCalendarDate.format(activity.period_end * VIP_DAY)} включительно (МСК).`
+: 'Заходи в игру в любые 15 дней из 30.';
+const confirmedToday = activity?.checked_in && (vipOwner === 'guest' || vipSyncedDay === vipMoscowDay());
+const reachedGoal = days === VIP_VISIT_GOAL;
+const status = document.getElementById('vip-renewal-status');
+status.classList.toggle('counted', reachedGoal || !!confirmedToday);
+const statusText = reachedGoal ? '✓ VIP продлён на 30 дней'
+: confirmedToday ? '✓ Сегодняшний вход засчитан'
+: vipLegacyServer ? 'Прогресс пока недоступен'
+: vipRetryAfter > Date.now() ? 'Проверим вход, когда восстановится связь'
+: !activity || vipPendingVisitDay !== null || vipRequest ? 'Проверяем сегодняшний вход…'
+: 'Войди за героя, чтобы зачесть день';
+if (status.textContent !== statusText) status.textContent = statusText;
+document.getElementById('vip-open-seal').hidden = !vipSealCanPlace();
+if (hasVip && vipWardrobe.hidden) vipFillWardrobe();
+if (!hasVip && !vipWardrobe.hidden) vipPreview.querySelector('img').removeAttribute('src');
+vipWardrobe.hidden = !hasVip;
+}
+function vipFillWardrobe() {
+const looks = vipLooksFor(state.player);
+const blank = document.getElementById('vip-empty');
+blank.hidden = looks.length > 0;
+const selection = document.getElementById('vip-wardrobe-choices');
+selection.innerHTML = looks.map(look => `<button type="button" class="btn" data-look="${look.id}">${look.name}</button>`).join('');
+selection.hidden = !looks.length;
+document.getElementById('vip-wardrobe-preview').hidden = !looks.length;
+if (looks.length) vipPreviewLook(vipLookFor(state.player) || looks[0], !vipReducedMotion.matches);
+const player = state.player;
+document.getElementById('vip-profile-frame').value = vipFrameId(player.vipFrame);
+const title = document.getElementById('vip-profile-title');
+const female = player.gender === 'f' ? 1 : 0;
+title.replaceChildren(new Option('Без подписи', ''),
+...vipEarnedTitles().map(id => new Option(VIP_TITLES[id][female], id)));
+title.value = Array.from(title.options).some(option => option.value === player.vipTitle) ? player.vipTitle : '';
+}
+function vipPreviewLook(look, playing) {
+const preview = document.getElementById('vip-wardrobe-preview');
+preview.dataset.look = look.id;
+preview.dataset.playing = String(playing);
+const portrait = preview.querySelector('img');
+const source = playing ? look.motion : look.art;
+if (portrait.getAttribute('src') !== source) portrait.src = source;
+portrait.alt = look.name;
+document.getElementById('vip-look-name').textContent = look.name;
+document.getElementById('vip-motion').textContent = playing ? 'Пауза' : 'Включить движение';
+const equipped = state.player.vipLook === look.id;
+document.getElementById('vip-look-status').textContent = equipped ? 'Образ на герое' : '';
+document.getElementById('vip-equip').textContent = equipped ? 'Снять образ' : 'Надеть образ';
+document.querySelectorAll('#vip-wardrobe-choices button').forEach(button => {
+button.setAttribute('aria-pressed', String(button.dataset.look === look.id));
+});
+}
+const vipDialog = document.getElementById('vip-dialog');
+const vipWardrobe = document.getElementById('vip-wardrobe');
+const vipPreview = document.getElementById('vip-wardrobe-preview');
+const vipRenewalMeter = document.getElementById('vip-renewal-meter');
+const vipRenewalMarks = Array.from({ length: VIP_VISIT_GOAL }, () => document.createElement('i'));
+vipRenewalMeter.append(...vipRenewalMarks);
+vipDialog.addEventListener('click', event => {
+const button = event.target.closest('button');
+if (!button) return;
+if (button.id === 'vip-close') { vipDialog.close(); return; }
+if (button.id === 'vip-open-seal' && vipSealCanPlace()) {
+vipDialog.close();
+switchTab('chronicle');
+switchChronicleSection('annals');
+return;
+}
+const look = vipLooksFor(state.player).find(item => item.id === (button.dataset.look || vipPreview.dataset.look));
+if (!look || !vipDaysLeft()) return;
+const playing = vipPreview.dataset.playing === 'true';
+if (button.dataset.look) vipPreviewLook(look, playing);
+else if (button.id === 'vip-motion') vipPreviewLook(look, !playing);
+else if (button.id === 'vip-equip') {
+state.player.vipLook = state.player.vipLook === look.id ? null : look.id;
+vipPreviewLook(look, playing);
+vipRefreshUi();
+saveCurrentSlot(true);
+}
+});
+vipDialog.addEventListener('change', event => {
+if (!vipDaysLeft()) return;
+const { id, value } = event.target;
+if (id === 'vip-profile-frame') state.player.vipFrame = vipFrameId(value);
+else if (id === 'vip-profile-title' && (!value || vipEarnedTitles().includes(value))) state.player.vipTitle = value || null;
+else return;
+saveCurrentSlot(true);
+});
+vipDialog.addEventListener('close', () => {
+if (!vipDialog.open) vipPreview.querySelector('img').removeAttribute('src');
+});
+vipReducedMotion.addEventListener('change', () => {
+vipRefreshUi();
+if (!vipDialog.open || !vipReducedMotion.matches) return;
+const look = vipLooksFor(state.player).find(item => item.id === vipPreview.dataset.look);
+if (look) vipPreviewLook(look, false);
+});
+document.addEventListener('visibilitychange', () => {
+if (document.hidden) return;
+vipRefreshTrial();
+vipScheduleStatus();
+vipRefreshUi();
+});
+window.addEventListener('online', () => {
+vipRetryAfter = 0;
+vipRefreshTrial();
+vipRefreshSeal();
+});
+
+;
+
 // ==== ФАЙЛ js/systems/leaderboard.js ====
 let __lbSortBy = 'level';
 let __lbLastPushAt = 0;
@@ -10845,7 +11564,7 @@ const raceId = hasOwnKey(RACES, row.race_id) ? row.race_id : 'human';
 const classId = hasOwnKey(CLASSES, row.class_id) ? row.class_id : 'warrior';
 const icon = lbRowPortrait(row, raceId, classId);
 const raceName = RACES[raceId].name;
-const className = CLASSES[classId].name;
+const className = lbRowClassLabel(row, raceId, classId);
 const level = Math.max(1, Math.floor(Number(row.level)) || 1);
 const name = escapeHtml(row.character_name || 'Безымянный');
 return `
@@ -10862,10 +11581,19 @@ return `
     </div>
   `;
 }
+function lbRowSubclassId(row, raceId, classId) {
+const id = row?.isMe ? state.player.subclass : row?.sc;
+if (typeof SUBCLASSES === 'undefined' || !hasOwnKey(SUBCLASSES, id)) return null;
+const subclass = SUBCLASSES[id];
+return subclass.race === raceId && subclass.cls === classId ? id : null;
+}
+function lbRowClassLabel(row, raceId, classId) {
+const name = CLASSES[classId].name;
+const id = lbRowSubclassId(row, raceId, classId);
+return id ? `${name} · ${SUBCLASSES[id].name}` : name;
+}
 function lbRowPortrait(row, raceId, classId) {
-let sc = row && row.isMe ? state.player.subclass : row && row.sc;
-if (typeof SUBCLASSES === 'undefined' || !hasOwnKey(SUBCLASSES, sc)) sc = null;
-if (typeof getHeroPortrait === 'function') return getHeroPortrait(raceId, classId, sc);
+if (typeof getHeroPortrait === 'function') return getHeroPortrait(raceId, classId, lbRowSubclassId(row, raceId, classId));
 if (typeof getRaceIcon === 'function') return getRaceIcon(raceId, classId);
 return `img/races/${raceId}.webp`;
 }
@@ -10942,7 +11670,8 @@ return out;
 }
 function buildHeroProfile(forceShow) {
 const p = state.player;
-if (p.hideProfile && !forceShow) return { v: HERO_PROFILE_VERSION, hidden: true, sc: p.subclass || null };
+const vip = vipProfileSnapshot(p);
+if (p.hideProfile && !forceShow) return { v: HERO_PROFILE_VERSION, hidden: true, sc: p.subclass || null, vip };
 const eq = {};
 INSPECT_SLOTS.forEach(({ key }) => {
 const it = p.equipment[key];
@@ -10977,6 +11706,7 @@ dr: p.flatDamageReduce || 0, bl: p.blockChance || 0,
 },
 sk, ws, el,
 sc: p.subclass || null,
+vip,
 };
 }
 let __inspectCatalog = null;
@@ -11065,15 +11795,22 @@ el: pick(raw.el, ELEMENTS, ELEMENT_MAX_LEVEL),
 };
 }
 let __inspectItems = {};
+let inspectRequest = 0;
 async function openHeroInspect(row) {
 if (!row) return;
 const overlay = document.getElementById('inspect-overlay');
 if (!overlay) return;
+const request = ++inspectRequest;
 overlay.classList.add('active');
 renderInspectHeader(row);
 const body = document.getElementById('inspect-body');
 if (row.isBot) { body.innerHTML = inspectNote('🛡', 'Наёмник гильдии', 'Снаряжение скрыто.'); return; }
-if (row.isMe) { renderInspectBody(inspectSafeProfile(buildHeroProfile(true))); return; }
+if (row.isMe) {
+const raw = buildHeroProfile(true);
+renderInspectHeader(row, raw.vip);
+renderInspectBody(inspectSafeProfile(raw));
+return;
+}
 body.innerHTML = `<div class="inspect-loading">Загружаем героя…</div>`;
 let raw = null;
 try {
@@ -11083,32 +11820,43 @@ const { data, error } = await supabaseClient
 if (error) throw error;
 raw = imgPathsToWebp(data && data.profile);
 } catch (e) {
+if (request !== inspectRequest) return;
 console.warn('[inspect]', e);
 body.innerHTML = inspectNote('⚠', 'Не удалось загрузить', 'Проверьте интернет и попробуйте ещё раз.');
 return;
 }
-if (!overlay.classList.contains('active')) return;
+if (request !== inspectRequest || !overlay.classList.contains('active')) return;
+if (raw) renderInspectHeader({ ...row, sc: raw.sc === undefined ? row.sc : raw.sc }, raw.vip);
 const profile = inspectSafeProfile(raw);
 if (!profile) { body.innerHTML = inspectNote('⏳', 'Профиль ещё не обновлён', 'Герой не заходил в игру с новой версией.'); return; }
 renderInspectBody(profile);
 }
 function closeHeroInspect() {
+inspectRequest++;
 document.getElementById('inspect-overlay')?.classList.remove('active');
 if (typeof hideTooltip === 'function') hideTooltip();
 }
 function inspectNote(icon, title, text) {
 return `<div class="inspect-note"><div class="inspect-note-ico">${icon}</div><b>${title}</b><span>${text}</span></div>`;
 }
-function renderInspectHeader(row) {
+function renderInspectHeader(row, rawVip = null) {
 const head = document.getElementById('inspect-head');
 if (!head) return;
 const raceId = hasOwnKey(RACES, row.race_id) ? row.race_id : 'human';
 const classId = hasOwnKey(CLASSES, row.class_id) ? row.class_id : 'warrior';
+const vip = vipPublicProfile(rawVip, raceId, classId, lbRowSubclassId(row, raceId, classId));
+const portraitUrl = lbRowPortrait(row, raceId, classId);
+const portrait = vip?.look
+? `<picture><source media="(prefers-reduced-motion: reduce)" srcset="${vip.look.art}"><img src="${vip.look.motion}" alt="${vip.look.name}"></picture>`
+: '';
+head.closest('.inspect-head-row').classList.toggle('inspect-has-vip', !!vip);
 head.innerHTML = `
-    <div class="inspect-portrait" style="background-image:url('${lbRowPortrait(row, raceId, classId)}')"></div>
+    <div class="inspect-portrait" style="background-image:url('${portraitUrl}')"${vip ? ` data-frame="${vip.frame}"` : ''}>${portrait}</div>
     <div class="inspect-title">
-      <div class="inspect-name">${escapeHtml(row.character_name || 'Безымянный')}</div>
-      <div class="inspect-sub">${RACES[raceId].name} · ${CLASSES[classId].name} · ур. ${inspectInt(row.level, 1, 999)}</div>
+      <div class="inspect-name-row"><div class="inspect-name">${escapeHtml(row.character_name || 'Безымянный')}</div>${vip ? '<span class="vip-chip">VIP</span>' : ''}</div>
+      ${vip?.title ? `<div class="inspect-signature">${vip.title}</div>` : ''}
+      <div class="inspect-sub">${RACES[raceId].name} · ${lbRowClassLabel(row, raceId, classId)} · ур. ${inspectInt(row.level, 1, 999)}</div>
+      ${vip?.look ? `<div class="inspect-sub dim">${vip.look.name}</div>` : ''}
       <div class="inspect-sub dim">💀 ${formatNumber(row.kills || 0)} · 🪙 ${formatNumber(row.gold || 0)}</div>
     </div>`;
 }
@@ -11238,6 +11986,7 @@ updateLeaderboardButtonVisibility();
 }
 }
 function updateCloudAccessGate() {
+vipRefreshTrial();
 const start = document.getElementById('start-screen');
 const allowed = typeof cloudIsAllowedToPlay !== 'function' || cloudIsAllowedToPlay();
 start.classList.toggle('launcher', !allowed);
@@ -11283,6 +12032,7 @@ start.querySelectorAll('dialog[open]').forEach(dialog => dialog.close());
 start.classList.remove('active');
 }
 function renderSlots() {
+vipRefreshTrial();
 const grid = document.getElementById('slots-grid');
 const active = document.activeElement;
 const focusedSlot = grid.contains(active) ? active.closest('[data-slot]')?.dataset.slot : null;
@@ -11302,7 +12052,9 @@ const name = meta.name || 'Безымянный';
 const safeName = escapeHtml(name);
 const race = RACES[meta.raceId] || RACES.human;
 const cls = CLASSES[meta.classId];
-const portrait = getHeroPortrait(race.id, meta.classId, meta.subclass);
+const portrait = vipHeroPortrait(meta);
+const vipMotion = vipLookFor(meta)?.motion;
+const vipBadge = vipDaysLeft() ? '<span class="vip-chip">VIP</span>' : '';
 const subclass = SUBCLASSES[meta.subclass];
 const role = subclass?.race === race.id && subclass.cls === meta.classId ? subclass.name : cls?.name;
 let badge = '';
@@ -11323,9 +12075,9 @@ card.className = 'slot-card filled';
 card.dataset.slot = i;
 card.innerHTML = `
       <button type="button" class="slot-select" data-slot-action="select" aria-pressed="false">
-        <img class="slot-portrait" src="${portrait}" alt="">
+        <img class="slot-portrait" src="${portrait}" alt=""${vipMotion ? ` data-vip-still="${portrait}" data-vip-motion="${vipMotion}"` : ''}>
         <span class="slot-info">
-          <span class="slot-name">${safeName}</span>
+          <span class="slot-name${vipBadge ? ' vip-name-row' : ''}"><span>${safeName}</span>${vipBadge}</span>
           <span class="slot-class">${race.name} · ${role || '—'} · Ур. ${Number(meta.level) || 1}</span>
         </span>
       </button>
@@ -11365,6 +12117,11 @@ const selected = Number(card.dataset.slot) === index;
 card.classList.toggle('selected', selected);
 card.querySelector('.slot-select').setAttribute('aria-pressed', selected);
 card.querySelector('.slot-play').hidden = !selected;
+const image = card.querySelector('[data-vip-motion]');
+if (image) {
+const source = selected && !vipReducedMotion.matches ? image.dataset.vipMotion : image.dataset.vipStill;
+if (image.getAttribute('src') !== source) image.src = source;
+}
 });
 }
 let __slotClickBusy = false;
@@ -11752,6 +12509,9 @@ state.player.stackCap = 3;
 state.player.learnedSkills = {};
 state.player.skillPoints = 0;
 state.player.subclass = null;
+state.player.vipLook = null;
+state.player.vipFrame = 'bronze';
+state.player.vipTitle = null;
 state.player.skillPts26 = 0;
 state.player.skillSlots = [null, null, null];
 state.player.currentLocation = 'town';
@@ -14065,12 +14825,10 @@ if (!p.classId) {
 slot.innerHTML = '';
 return;
 }
-const raceId = p.raceId || 'human';
-const imgSrc = (typeof getHeroPortrait === 'function')
-? getHeroPortrait(raceId, p.classId, p.subclass)
-: `img/races/${raceId}.webp`;
+const imgSrc = vipHeroPortrait(p, document.getElementById('battle-window').classList.contains('active'));
 if (p.classId === 'warrior') slot.classList.add('class-warrior');
 if (p.classId === 'mage')    slot.classList.add('class-mage');
+if (slot.querySelector('img')?.getAttribute('src') === imgSrc) return;
 const imgHtml = `<img class="fighter-avatar-img" src="${imgSrc}" alt=""
     onerror="playerAvatarFallback()">`;
 slot.innerHTML = imgHtml;
@@ -18820,7 +19578,10 @@ entry.ask = { options: o.ask.options.map(x => ({ text: x.text, reply: x.reply ||
 if (typeof o.ask.answer === 'number') { entry.ask.answer = o.ask.answer; entry.ask.answeredAt = entry.at; }
 }
 c.entries.push(entry);
-if (c.entries.length > CHRONICLE_MAX_ENTRIES) c.entries.splice(0, c.entries.length - CHRONICLE_MAX_ENTRIES);
+while (c.entries.length > CHRONICLE_MAX_ENTRIES) {
+const oldestUnsealed = c.entries.findIndex(row => !vipSealMatches(row));
+c.entries.splice(oldestUnsealed, 1);
+}
 updateChronicleDot();
 if (isChronicleOpen()) renderChronicle();
 return entry;
@@ -18890,6 +19651,7 @@ return !!(panel && panel.classList.contains('active'));
 let __chronicleSection = 'annals';
 function switchChronicleSection(id) {
 __chronicleSection = id;
+if (id !== 'annals') vipPickingSeal = false;
 renderChronicle();
 }
 function escChronicle(s) {
@@ -18944,11 +19706,32 @@ box.innerHTML = `
     ${renderChronicleBagCall()}
     ${pending.map(({ entry, milestone }) => renderAnnalsEntry(entry, milestone)).join('')}
     <h2 class="chron-section-title">Путь героя</h2>
+    ${vipSealCanPlace() && history.length + (featured ? 1 : 0) > 0 ? renderChronicleSealOffer() : ''}
     ${featured ? renderAnnalsEntry(featured.entry, featured.milestone, featured.milestone.scene) : ''}
     ${timeline ? `<ol class="chron-timeline">${timeline}</ol>` : ''}
     ${!entries.length ? '<p class="chron-soon">Летопись пока пуста.</p>' : ''}
   `;
 }
+function renderChronicleSealOffer() {
+return `<aside class="chron-seal-offer">
+    <div><strong>Памятная печать</strong>
+      <p>${vipPickingSeal ? 'Выбери запись, которую отметит печать.' : 'Награда за первое продление VIP.'}</p>
+    </div>
+    <button class="btn" type="button" data-seal-action="pick"${vipSealWrite ? ' disabled' : ''}>
+      ${vipPickingSeal ? 'Отмена' : 'Выбрать запись'}
+    </button>
+  </aside>`;
+}
+document.getElementById('chronicle-body').addEventListener('click', event => {
+const btn = event.target.closest('button');
+if (!btn || __chronicleSection !== 'annals' || !vipSealCanPlace() || vipSealWrite) return;
+if (btn.dataset.sealAction === 'pick') {
+vipPickingSeal = !vipPickingSeal;
+renderChronicle();
+const next = vipPickingSeal ? '[data-seal-entry]' : '[data-seal-action="pick"]';
+document.getElementById('chronicle-body').querySelector(next)?.focus({ preventScroll: true });
+} else if (btn.dataset.sealEntry) vipPlaceSeal(Number(btn.dataset.sealEntry));
+});
 function chronicleMilestone(entry) {
 if (entry.firstKey) return ANNALS_MILESTONES[entry.firstKey];
 const key = Object.keys(ANNALS_MILESTONES).find(id => {
@@ -18976,6 +19759,7 @@ function renderAnnalsEntry(entry, milestone, scene) {
 const where = chronicleWhere(entry);
 const bag = entry.speaker === 'bag';
 const pending = entry.ask?.answer === null;
+const sealed = vipSealMatches(entry);
 const meta = [bag && bagSpeakerName(), where, `${entry.lvl} ур.`].filter(Boolean).join(' · ');
 let title = entry.title || milestone?.title;
 let text = entry.text;
@@ -18986,7 +19770,8 @@ title = text.slice(0, stop);
 text = text.slice(stop + 2);
 }
 }
-let html = `<article class="chron-entry${bag ? ' bag' : ''}${pending ? ' pending' : ''}${scene ? ' chron-feature' : ''}"${scene ? ` data-scene="${scene}"` : ''}>`;
+let html = `<article class="chron-entry${bag ? ' bag' : ''}${pending ? ' pending' : ''}${scene ? ' chron-feature' : ''}${sealed ? ' chron-sealed' : ''}"${scene ? ` data-scene="${scene}"` : ''}>`;
+if (sealed) html += '<span class="chron-seal-wax" aria-hidden="true"><span>✦</span></span>';
 html += `<div class="chron-meta">${escChronicle(meta)}${pending ? ' · <b>Ждёт ответа</b>' : ''}</div>`;
 if (title) html += `<h3 class="chron-title">${chronicleTextHtml(title)}</h3>`;
 html += `<div class="chron-text">${bag ? chronicleSpeechHtml(text) : chronicleTextHtml(text)}</div>`;
@@ -18999,6 +19784,10 @@ html += `<div class="chron-reply">${chronicleAnswerHtml(option.text)}</div>`;
 if (option.reply) html += `<div class="chron-text">${chronicleSpeechHtml(option.reply)}</div>`;
 }
 }
+if (sealed) html += '<div class="chron-seal-caption">Печать первого продления VIP</div>';
+if (!pending && vipPickingSeal && vipSealCanPlace() && Number.isSafeInteger(entry.id) && Number.isSafeInteger(entry.at)) {
+html += `<button class="chron-link chron-seal-place" type="button" data-seal-entry="${entry.id}"${vipSealWrite ? ' disabled' : ''}>Поставить печать сюда</button>`;
+}
 return html + '</article>';
 }
 function openChroniclePanel() {
@@ -19009,6 +19798,7 @@ c.seen = lastId;
 if (typeof saveCurrentSlotSoon === 'function') saveCurrentSlotSoon();
 }
 renderChronicle();
+vipRefreshSeal();
 updateChronicleDot();
 }
 const BAG_SLOT_IMG = 'img/bags/bag01_worn.webp';
@@ -20542,18 +21332,18 @@ const article = button.closest('.lore-article');
 article.querySelector('.lore-skill-effect').textContent = loreSkillEffect(skill, rank);
 article.querySelector('.lore-skill-detail').innerHTML = loreSkillDetail(skill, rank);
 }
-function isBaseFireball(skill) {
-return skill.id === 'fireball' && !getPlayerSubclass()?.mods?.fireball;
+function isBaseFireball(skill, subclass = getPlayerSubclass()) {
+return skill.id === 'fireball' && !subclass?.mods?.fireball;
 }
 function loreSkillEffect(skill, rank) {
 if (isBaseFireball(skill)) return `Бьёт огнём и поджигает цель на ${skill.burnTurns} ${loreSkillTurnLabel(skill.burnTurns)}.`;
 return getSkillBrief(skill, rank, false);
 }
-function loreSkillDetail(skill, rank) {
-const desc = skill.getDesc(rank);
+function loreSkillDetail(skill, rank, subclass) {
+const desc = skill.getDesc(rank, skill);
 const data = skill.levels[rank - 1];
 const rows = [];
-const fireball = isBaseFireball(skill);
+const fireball = isBaseFireball(skill, subclass);
 if (fireball) {
 rows.push(['Удар', `×${SKILL_TEXT_NUMBER.format(data.multiplier)} от магической атаки`]);
 rows.push(['Поджог', `${data.burnPercent}% магической атаки за ход`]);
@@ -22256,7 +23046,7 @@ if (h.miss) {
 spawnFloatDamage('fighter-monster', 0, 'miss', { mon: h.m, fx: h.fx });
 return;
 }
-spawnFloatDamage('fighter-monster', h.dmg, h.type || 'dmg', { mon: h.m, fx: h.fx });
+spawnFloatDamage('fighter-monster', h.dmg, h.type || 'dmg', { mon: h.m, fx: h.fx, sourceAlly: h.sourceAlly });
 pending.set(h.m, (pending.get(h.m) || 0) + h.dmg);
 });
 const lethal = [];
@@ -22292,11 +23082,11 @@ if (e === 'life') addLifeXP(); else addElementXP(e);
 if (tryBonusProficiencyXP()) { addElementXP(e); logCombat(`🍺 Бонусный опыт стихии!`, 'log-entry levelup'); }
 });
 }
-function aoeHeal(amount) {
+function aoeHeal(amount, opts) {
 const p = state.player;
 const want = Math.max(0, Math.floor(amount));
 const heal = Math.min(want, p.maxHp - p.hp);
-if (heal > 0) { p.hp += heal; spawnFloatDamage('fighter-player', heal, 'heal'); }
+if (heal > 0) { p.hp += heal; spawnFloatDamage('fighter-player', heal, 'heal', opts); }
 if (typeof subclassOnHeroHeal === 'function') subclassOnHeroHeal(Math.max(0, heal), want - Math.max(0, heal));
 if (p.hp > p.maxHp) p.hp = p.maxHp;
 return Math.max(0, heal);
@@ -22771,6 +23561,7 @@ a.maxHp = Math.max(1, Math.floor(a.maxHp || a.hp));
 a.atk = a.atk > 0 ? Math.max(1, Math.floor(a.atk)) : 0;
 state.battle.allies.push(a);
 alliesRender(true);
+bxShowAllyArrival(a);
 return a;
 }
 function alliesClear() {
@@ -22799,10 +23590,17 @@ const hits = [];
 const parts = [];
 const p = state.player;
 list.filter(a => a.healHp || a.healMp).forEach(a => {
-const hp = a.healHp ? aoeHeal(p.maxHp * a.healHp / 100) : 0;
+const source = a.totem ? { sourceAlly: a.uid } : undefined;
+const hp = a.healHp ? aoeHeal(p.maxHp * a.healHp / 100, source) : 0;
 const mp = a.healMp ? Math.min(Math.floor(p.maxMp * a.healMp / 100), p.maxMp - p.mp) : 0;
 if (mp > 0) p.mp += mp;
-if (hp > 0 || mp > 0) logCombat(`✚ ${a.name}: ${hp > 0 ? `+${hp} HP` : ''}${hp > 0 && mp > 0 ? ', ' : ''}${mp > 0 ? `+${mp} MP` : ''}`, 'log-entry potion');
+if (hp > 0 || mp > 0) {
+if (a.totem) {
+bxShowAllySupport(a.uid);
+if (mp > 0) spawnFloatDamage('fighter-player', mp, 'mana', { ...source, fx: 'mana-restore' });
+}
+logCombat(`✚ ${a.name}: ${hp > 0 ? `+${hp} HP` : ''}${hp > 0 && mp > 0 ? ', ' : ''}${mp > 0 ? `+${mp} MP` : ''}`, 'log-entry potion');
+}
 });
 list.forEach(a => {
 if (!a.atk) return;
@@ -22812,7 +23610,8 @@ if (!m || m.hp <= 0) return;
 const variance = Math.floor(a.atk * 0.2);
 const raw = a.atk + Math.floor(Math.random() * variance * 2) - variance;
 const dmg = monsterTagDmg(m, Math.max(1, Math.floor(raw - (m.pDef || 0) * ALLY_PDEF_FACTOR)), ['physical']);
-hits.push({ m, miss: false, dmg, type: 'dmg', fx: 'slash' });
+const rage = a.totem && a.kind === 'rage';
+hits.push({ m, miss: false, dmg, type: 'dmg', fx: rage ? 'proj:fire' : 'slash', sourceAlly: rage ? a.uid : null });
 parts.push(dmg);
 if (typeof subclassOnAllyHit === 'function') subclassOnAllyHit(a, m);
 });
@@ -22844,6 +23643,7 @@ if (typeof monsterKitRaw === 'function') raw = monsterKitRaw(m, skill, raw);
 const mult = typeof subclassMonsterWeakMult === 'function' ? subclassMonsterWeakMult(m) : 1;
 const dmg = Math.max(1, Math.floor(raw * mult) - (a.absorb || 0));
 a.hp -= dmg;
+bxNoteAllyHit(a.uid, m, dmg);
 logCombat(`🩸 ${m.name} бьёт ${a.name}: ${dmg}`, 'log-entry monster', a.hp > 0 ? `осталось ${Math.max(0, Math.floor(a.hp))}/${a.maxHp}` : '');
 alliesReap();
 alliesRender();
@@ -22877,14 +23677,24 @@ force = true;
 const sig = list.map(a => `${a.uid}:${Math.max(0, Math.floor(a.hp))}/${a.maxHp}`).join('|');
 if (!force && sig === ALLY_SIG) return;
 ALLY_SIG = sig;
-box.innerHTML = list.map(a => {
+const cards = new Map(Array.from(box.children, card => [Number(card.dataset.allyUid), card]));
+list.forEach(a => {
+let card = cards.get(a.uid);
+cards.delete(a.uid);
+if (!card) {
+card = document.createElement('div');
+card.className = a.totem ? 'bx-ally bx-ally-totem' : 'bx-ally';
+card.dataset.allyUid = a.uid;
+card.innerHTML = '<img alt=""><div class="bx-ally-hp"><i></i></div>';
+card.firstElementChild.src = a.img;
+box.appendChild(card);
+}
 const pct = Math.max(0, Math.min(100, a.hp / a.maxHp * 100));
 const role = a.atk ? ` · удар ${a.atk}` : (a.healHp ? ' · лечит' : (a.taunt ? ' · принимает удары' : ''));
-return `<div class="bx-ally" title="${a.name} · ${Math.max(0, Math.floor(a.hp))}/${a.maxHp} HP${role}${a.slow ? ' · медленный' : ''}${a.dodge ? ` · уворот ${a.dodge}%` : ''}">
-      <img src="${a.img}" alt="">
-      <div class="bx-ally-hp"><i style="width:${pct.toFixed(1)}%"></i></div>
-    </div>`;
-}).join('');
+card.title = `${a.name} · ${Math.max(0, Math.floor(a.hp))}/${a.maxHp} HP${role}${a.slow ? ' · медленный' : ''}${a.dodge ? ` · уворот ${a.dodge}%` : ''}`;
+card.querySelector('.bx-ally-hp i').style.width = `${pct.toFixed(1)}%`;
+});
+cards.forEach(card => card.remove());
 }
 
 ;
@@ -22959,6 +23769,8 @@ applySubclassSkills();
 }
 let scPicked = null;
 let scJustDedicated = null;
+let scListScroll = 0;
+let scTempleTrigger = null;
 function ensureSubclassOverlay() {
 let ov = document.getElementById('sc-overlay');
 if (ov) return ov;
@@ -22966,14 +23778,30 @@ ov = document.createElement('div');
 ov.className = 'sc-overlay overlay-base';
 ov.id = 'sc-overlay';
 ov.innerHTML = `
-    <div class="sc-window window-base">
+    <div class="sc-window window-base" role="dialog" aria-modal="true" aria-labelledby="sc-window-title">
       <div class="window-header">
-        <div class="window-title">✦ ХРАМ · ПОСВЯЩЕНИЕ</div>
-        <div class="window-header-actions"><button class="btn danger" onclick="closeSubclassTemple()">Закрыть</button></div>
+        <div class="window-title" id="sc-window-title">✦ ХРАМ · ПОСВЯЩЕНИЕ</div>
+        <div class="window-header-actions"><button type="button" class="btn danger" onclick="closeSubclassTemple()">Закрыть</button></div>
       </div>
       <div class="window-content"><div class="sc-pane" id="sc-pane"></div></div>
+      <div class="sc-preview-actions" id="sc-preview-actions" hidden></div>
     </div>`;
 ov.addEventListener('click', e => { if (e.target === ov) closeSubclassTemple(); });
+ov.addEventListener('keydown', e => {
+if (e.key === 'Escape') {
+e.preventDefault();
+e.stopPropagation();
+if (scPicked && !scJustDedicated) scPick(null);
+else closeSubclassTemple();
+}
+if (e.key !== 'Tab') return;
+const buttons = Array.from(ov.querySelectorAll('button:not(:disabled), summary')).filter(el => el.getClientRects().length);
+const first = buttons[0], last = buttons[buttons.length - 1];
+if (e.shiftKey ? document.activeElement === first : document.activeElement === last) {
+e.preventDefault();
+(e.shiftKey ? last : first).focus();
+}
+});
 document.body.appendChild(ov);
 return ov;
 }
@@ -22982,35 +23810,108 @@ if (state.player.currentLocation !== 'ilgrad') return;
 if (typeof cancelWaitingForResume === 'function') cancelWaitingForResume('открыт храм');
 scPicked = null;
 scJustDedicated = null;
-ensureSubclassOverlay().classList.add('active');
+scListScroll = 0;
+scTempleTrigger = document.activeElement;
+const ov = ensureSubclassOverlay();
+ov.classList.add('active');
 renderSubclassTemple();
+ov.querySelector('.window-content').scrollTop = 0;
+ov.querySelector('.window-header button').focus({ preventScroll: true });
 }
 function closeSubclassTemple() {
 const ov = document.getElementById('sc-overlay');
-if (ov) ov.classList.remove('active');
+if (!ov || !ov.classList.contains('active')) return;
+ov.classList.remove('active');
+if (scTempleTrigger?.isConnected) scTempleTrigger.focus({ preventScroll: true });
+scTempleTrigger = null;
 }
-function scCardHtml(sc, mode) {
+function scCardHtml(sc) {
 const role = SUBCLASS_ROLES[sc.role] || { name: '', icon: '' };
-const p = state.player;
-const mine = p.subclass === sc.id;
-let action = '';
-if (mode === 'locked') action = '';
-else if (!sc.ready) action = `<button class="btn" disabled>Путь ещё не открыт</button>`;
-else if (mine) action = `<div class="sc-mine">✦ Твой путь</div>`;
-else if (p.subclass) action = `<button class="btn" onclick="scPick('${sc.id}')">Просить иного знака — ${SUBCLASS_CHANGE_PRICE.toLocaleString('ru-RU')} 🪙</button>`;
-else action = `<button class="btn success" onclick="scPick('${sc.id}')">Смотреть на эту свечу</button>`;
-const cls = 'sc-card' + (mine ? ' sc-card-mine' : '') + (!sc.ready ? ' sc-card-closed' : '') + (scPicked === sc.id ? ' sc-card-picked' : '');
+const mine = state.player.subclass === sc.id;
+const action = sc.ready
+? `<button type="button" class="btn" data-sc-preview="${sc.id}" onclick="scPick('${sc.id}')">Подробнее<span class="sc-sr-only"> · ${sc.name}</span></button>`
+: '<button type="button" class="btn" disabled>Путь ещё не открыт</button>';
+const cls = 'sc-card' + (mine ? ' sc-card-mine' : '') + (!sc.ready ? ' sc-card-closed' : '');
 return `<div class="${cls}">
     <div class="sc-portrait"><img src="${sc.portrait}" alt="" loading="lazy"><div class="sc-candle"></div></div>
-    <div class="sc-role">${role.icon} ${role.name}</div>
+    <div class="sc-role">${role.icon} ${role.name}${mine ? ' · Твой путь' : ''}</div>
     <div class="sc-name">${sc.name}</div>
-    <div class="sc-blurb">${sc.blurb}</div>
+    <div class="sc-blurb">${sc.preview}</div>
     <div class="sc-action">${action}</div>
   </div>`;
+}
+function scPreviewSkillHtml(skill, sc, baseName) {
+const rank = 1;
+const type = getSkillTypeLabel(skill);
+const brief = getSkillBrief(skill, rank, false, sc.id);
+const oldName = baseName && baseName !== skill.name ? ` · Было «${escChronicle(baseName)}»` : '';
+return `<details class="sc-preview-skill">
+    <summary>
+      <img src="${skill.iconPng}" alt="" loading="lazy">
+      <span class="sc-skill-copy">
+        <strong>${escChronicle(skill.name)}</strong>
+        <small>${type}${oldName}</small>
+        <span class="sc-skill-brief">${escChronicle(brief)}</span>
+      </span>
+    </summary>
+    <div class="sc-skill-detail">${loreSkillDetail(skill, rank, sc)}</div>
+  </details>`;
+}
+function scPreviewHtml(sc, current) {
+const role = SUBCLASS_ROLES[sc.role];
+const guide = SUBCLASS_GUIDES[sc.id];
+const added = Object.values(SUBCLASS_SKILLS).filter(skill => skill.subclassId === sc.id)
+.map(skill => scPreviewSkillHtml(skill, sc));
+const changed = Object.entries(sc.mods).map(([id, mod]) => {
+const live = SKILLS[id];
+const base = SC_BASE[id] || live;
+const skill = { ...live, ...base, ...mod };
+skill.maxLevel = skill.levels.length;
+return scPreviewSkillHtml(skill, sc, base.name);
+});
+return `
+    <button type="button" class="btn sc-preview-back" onclick="scPick(null)">← К списку подклассов</button>
+    <section class="sc-preview-hero" aria-labelledby="sc-preview-heading">
+      <div class="sc-preview-art"><img src="${sc.portrait}" alt=""></div>
+      <div class="sc-preview-copy">
+        <div class="sc-role">${role.icon} ${role.name}${current ? ' · Твой путь' : ''}</div>
+        <h2 id="sc-preview-heading" tabindex="-1">${sc.name}</h2>
+        <p>${guide.play}</p>
+        <dl class="sc-preview-traits">
+          <div class="sc-trait-strength"><dt>Сильные стороны</dt><dd>${guide.strength}</dd></div>
+          <div class="sc-trait-limit"><dt>Ограничения</dt><dd>${guide.limit}</dd></div>
+        </dl>
+      </div>
+    </section>
+    <section class="sc-preview-skills" aria-labelledby="sc-skills-heading">
+      <div class="sc-skills-head">
+        <h3 id="sc-skills-heading">Навыки</h3>
+        <span>На 1-м уровне навыка</span>
+      </div>
+      <div class="sc-skill-groups">
+        <section><h4>Новые навыки</h4>${added.join('')}</section>
+        <section><h4>Изменённые навыки</h4>${changed.join('')}</section>
+      </div>
+    </section>`;
+}
+function scPreviewActions(p) {
+const price = SUBCLASS_CHANGE_PRICE.toLocaleString('ru-RU');
+let unavailable = '';
+if (p.level < SUBCLASS_MIN_LEVEL) unavailable = `Доступно с ${SUBCLASS_MIN_LEVEL}-го уровня`;
+else if (state.battle.active) unavailable = 'Доступно после боя';
+else if (p.subclass && p.gold < SUBCLASS_CHANGE_PRICE) unavailable = 'Не хватает Оболов';
+const terms = p.subclass
+? `<strong>${price} Оболов</strong><span>Очки прежнего пути вернутся</span>`
+: '<strong>Первое посвящение бесплатно</strong>';
+return `<div class="sc-terms">${terms}${unavailable ? `<span class="sc-unavailable">${unavailable}</span>` : ''}</div>
+    <button type="button" class="btn success" onclick="scAccept()"${unavailable ? ' disabled' : ''}>Принять знак</button>`;
 }
 function renderSubclassTemple() {
 const pane = document.getElementById('sc-pane');
 if (!pane) return;
+const actions = document.getElementById('sc-preview-actions');
+actions.hidden = true;
+actions.replaceChildren();
 const p = state.player;
 const list = subclassesForPlayer();
 const cur = getPlayerSubclass();
@@ -23020,7 +23921,7 @@ pane.innerHTML = `
       <div class="sc-dedicated">
         <div class="sc-portrait sc-portrait-big"><img src="${sc.portrait}" alt=""><div class="sc-candle sc-candle-lit"></div></div>
         <div class="sc-dedicated-text">
-          <div class="sc-name">${sc.name}</div>
+          <div class="sc-name" role="heading" aria-level="2" tabindex="-1">${sc.name}</div>
           <p>*Свеча у образа горит ровно и ярко. Мать Исмера касается твоего плеча.*</p>
           <p>— Боги сказали своё слово. Отныне ты — <b>${sc.name}</b>. Таинство откроет тебе новые приёмы.</p>
           <p class="sc-hint">Изменились три приёма класса (теперь до 7 уровня), открылись новые навыки подкласса. Очки — в Таинстве.</p>
@@ -23032,42 +23933,40 @@ pane.innerHTML = `
       </div>`;
 return;
 }
-let intro, mode = '';
+if (scPicked) {
+const sc = SUBCLASSES[scPicked];
+const current = cur?.id === sc.id;
+pane.innerHTML = scPreviewHtml(sc, current);
+if (!current) {
+actions.innerHTML = scPreviewActions(p);
+actions.hidden = false;
+}
+return;
+}
+let intro;
 if (p.level < SUBCLASS_MIN_LEVEL) {
-mode = 'locked';
 intro = `*У алтаря три свечи — каждая у своего образа. Ни одна не горит.*<br>Мать Исмера качает головой: — Рано. Боги говорят с теми, кто прошёл долгий путь. Приходи, когда окрепнешь. <span class="sc-req">С ${SUBCLASS_MIN_LEVEL} уровня</span>`;
 } else if (!cur) {
 intro = `*У алтаря три свечи — каждая у своего образа.*<br>Мать Исмера: — Встань и смотри. Боги сами укажут тебе путь — та свеча, что вспыхнет, и есть твой знак.`;
 } else {
 intro = `*Свеча у образа «${cur.name}» горит ровно.*<br>Мать Исмера: — Знак тебе уже дан. Но боги милостивы — если сердце просит иного, принеси дар храму, и мы спросим снова.`;
 }
-let confirmHtml = '';
-if (scPicked && SUBCLASSES[scPicked]) {
-const sc = SUBCLASSES[scPicked];
-const price = cur ? SUBCLASS_CHANGE_PRICE : 0;
-const priceTxt = price ? ` Дар храму — <b>${price.toLocaleString('ru-RU')} 🪙</b>. Вложенные в прежний путь очки вернутся.` : '';
-confirmHtml = `<div class="sc-confirm">
-      <p>*Свеча у образа «${sc.name}» вспыхивает ярче остальных.*${priceTxt}</p>
-      <div class="sc-buttons">
-        <button class="btn success" onclick="scAccept()">✦ Принять знак</button>
-        <button class="btn" onclick="scPick(null)">Отвести взгляд</button>
-      </div>
-    </div>`;
-}
 pane.innerHTML = `
     <div class="sc-intro">${intro}</div>
-    <div class="sc-grid">${list.map(sc => scCardHtml(sc, mode)).join('')}</div>
-    ${confirmHtml}
+    <div class="sc-grid">${list.map(scCardHtml).join('')}</div>
     <div class="sc-foot">Пока игра в бете, путь можно сменить: ${SUBCLASS_CHANGE_PRICE.toLocaleString('ru-RU')} 🪙, вложенные очки возвращаются.</div>`;
-if (confirmHtml) {
-const c = pane.querySelector('.sc-confirm');
-if (c && c.scrollIntoView) c.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
-}
 }
 function scPick(id) {
-if (id && (!SUBCLASSES[id] || !SUBCLASSES[id].ready)) return;
+if (id && !subclassesForPlayer().some(sc => sc.id === id && sc.ready)) return;
+const pane = document.getElementById('sc-pane');
+const content = pane.parentElement;
+const previous = scPicked;
+if (id && !previous) scListScroll = content.scrollTop;
 scPicked = id;
 renderSubclassTemple();
+content.scrollTop = id ? 0 : scListScroll;
+const focus = id ? pane.querySelector('#sc-preview-heading') : pane.querySelector(`[data-sc-preview="${previous}"]`);
+focus?.focus({ preventScroll: true });
 }
 function subclassRefund(oldId) {
 const p = state.player;
@@ -23130,6 +24029,11 @@ setTimeout(() => showToast('🎒', `${bagSpeakerName()}: «Знал я когд�
 scPicked = null;
 scJustDedicated = id;
 renderSubclassTemple();
+const dedicated = document.querySelector('#sc-pane .sc-dedicated');
+if (dedicated) {
+dedicated.closest('.window-content').scrollTop = 0;
+dedicated.querySelector('.sc-name').focus({ preventScroll: true });
+}
 saveCurrentSlot();
 }
 DEBUFF_DEFS.challenged = { icon: '📣', name: 'Вызов', cssClass: 'debuff-confused',
@@ -25958,34 +26862,48 @@ logCombat(`🔰 Охранная руна приняла ${take}.`, 'log-entry p
 return dmg - take;
 }
 function stonecallerElementals() { return (typeof alliesList === 'function' ? alliesList() : []).filter(a => a.elemental); }
+function stonecallerMissingKinds(list) {
+return ELEMENTAL_ORDER.filter(kind => !list.some(e => e.kind === kind));
+}
+function stonecallerSummonBlockReason(list = stonecallerElementals()) {
+if (list.some(e => e.kind === 'great')) return 'Великий уже в бою';
+return !alliesHasRoom() && stonecallerMissingKinds(list).length ? 'Нет места для элементаля' : '';
+}
 function stonecallerSummon(data, why) {
 const p = state.player;
 const b = state.battle;
 const list = stonecallerElementals();
-if (list.length >= 3 && !list.some(e => e.kind === 'great')) {
+const reason = stonecallerSummonBlockReason(list);
+if (reason) { logCombat(`🗿 ${reason}.`, 'log-entry'); return; }
+const missing = stonecallerMissingKinds(list);
+if (!missing.length) {
 const fus = scSkillData('scFusion');
 const k = fus ? fus.mult : 1.2;
 const hp = list.reduce((s, e) => s + e.maxHp, 0) * k;
 const atk = list.reduce((s, e) => s + e.atk, 0) * k;
+const portraits = bxCaptureElementalFusion(list);
 list.forEach(e => { e.hp = 0; e.fused = true; });
 b.allies = (b.allies || []).filter(a => !a.fused);
 const g = alliesAdd({ kind: 'great', elemental: true, name: 'Великий элементаль', img: 'img/allies/elemental_great.webp', hp, maxHp: hp, atk,
 taunt: true, burn: true, vein: true, absorb: list[0].absorb || 0, dodge: 0, slow: false });
-if (g) logCombat(`🗿 Слияние! Великий элементаль: ${g.hp} HP, удар ${g.atk}.`, 'log-entry player-skill');
+if (g) {
+bxPlayElementalFusion(g.uid, portraits);
+logCombat(`🗿 Слияние! Великий элементаль: ${g.hp} HP, удар ${g.atk}.`, 'log-entry player-skill');
+}
 return;
 }
-if (list.some(e => e.kind === 'great')) { logCombat(`🗿 Великий элементаль уже стоит.`, 'log-entry'); return; }
-const kind = ELEMENTAL_ORDER[(b.scNext || 0) % ELEMENTAL_ORDER.length];
-b.scNext = (b.scNext || 0) + 1;
+const next = (b.scNext || 0) % ELEMENTAL_ORDER.length;
+const kind = missing.find(kind => ELEMENTAL_ORDER.indexOf(kind) >= next) || missing[0];
 const K = ELEMENTAL_KINDS[kind];
 const f = data.power / 100;
 const sb = scSkillData('scStoneblood');
 const a = { kind, elemental: true, name: K.name, img: K.img, hp: p.maxHp * K.hp * f, atk: p.mAtk * K.atk * f + (sb ? p.mAtk * sb.atk / 100 : 0),
 taunt: !!K.taunt, burn: !!K.burn, vein: !!K.vein, absorb: sb ? Math.ceil(p.flatDamageReduce || 0) : 0, dodge: 0, slow: false };
 a.maxHp = a.hp;
-if (!alliesHasRoom()) return;
 const added = alliesAdd(a);
-if (added) logCombat(`🗿 ${added.name}${why ? ` (${why})` : ''}: ${K.desc}. ${added.hp} HP, удар ${added.atk}.`, 'log-entry player-skill');
+if (!added) return;
+b.scNext = (ELEMENTAL_ORDER.indexOf(kind) + 1) % ELEMENTAL_ORDER.length;
+logCombat(`🗿 ${added.name}${why ? ` (${why})` : ''}: ${K.desc}. ${added.hp} HP, удар ${added.atk}.`, 'log-entry player-skill');
 addElementXP('ice');
 }
 function stonecallerStrike(e, m, mult, why) {
@@ -26005,9 +26923,10 @@ m._veinTouched = true;
 const other = aoeAlive().find(x => x !== m);
 if (other) {
 const dmg = monsterTagDmg(other, Math.max(1, Math.floor(a.atk * 0.5)), ['physical']);
-other.hp = Math.max(1, other.hp - dmg);
+const dealt = Math.max(0, Math.min(dmg, other.hp - 1));
+other.hp -= dealt;
 other._veinTouched = true;
-spawnFloatDamage('fighter-monster', dmg, 'dmg', { mon: other });
+if (dealt > 0) spawnFloatDamage('fighter-monster', dealt, 'dmg', { mon: other });
 }
 }
 }
@@ -26100,7 +27019,6 @@ return alive.length >= 2 || alive.some(scStrongMonster);
 };
 SKILLS.prVein.autoCheck = function () { return !getDebuff('player', 'veinSense'); };
 SKILLS.fmBellows.autoCheck = function () { return !getDebuff('player', 'bellows'); };
-SKILLS.scSummon.autoCheck = function () { return !stonecallerElementals().some(e => e.kind === 'great'); };
 function subclassForgeRarity() {
 const r1 = rollRarity();
 const d = hasSubclass('dwarf_forgemaster') ? scSkillData('fmSmith') : null;
@@ -26317,7 +27235,7 @@ const skill = SKILLS[id];
 if (!skill || skill.type !== 'active' || !p.learnedSkills[id]) return { ok: false, why: 'не изучен' };
 if (skill.semiPassive) return { ok: false, why: 'срабатывает сам' };
 if (skill.subclassId && p.subclass !== skill.subclassId) return { ok: false, why: 'не твой путь' };
-{ const why = skill.useCheck ? skill.useCheck() : ''; if (why) return { ok: false, why }; }
+{ const why = skill.useCheck ? skill.useCheck() : ''; if (why) return { ok: false, why, blockedBySkill: true }; }
 const cd = state.battle.skillCooldowns[id] || 0;
 if (cd > 0) return { ok: false, why: `перезарядка ${Math.ceil(cd)}`, cd };
 const data = getSkillData(id);
@@ -26419,8 +27337,11 @@ const s = SKILLS[id];
 const data = getSkillData(id);
 const cd = c.cd ? `<span class="bxm-cd">${Math.ceil(c.cd)}</span>` : '';
 const mp = data && data.mpCost ? `<span class="bxm-mp">${data.mpCost}</span>` : '';
-mk('bxm-skill' + (c.ok ? '' : ' bxm-off'), `<span class="bxm-ic">${s.icon || '✦'}</span><span class="bxm-nm">${s.name}</span>${cd}${mp}`,
+const showReason = id === 'scSummon' && c.blockedBySkill;
+const label = showReason ? `<span class="bxm-nm">${c.why}</span>` : `<span class="bxm-nm">${s.name}</span>${cd}${mp}`;
+const btn = mk('bxm-skill' + (c.ok ? '' : ' bxm-off') + (showReason ? ' bxm-summon-blocked' : ''), `<span class="bxm-ic">${s.icon || '✦'}</span>${label}`,
 c.ok ? s.name : `${s.name}: ${c.why}`, waiting && c.ok, () => manualAct({ type: 'skill', id }));
+if (showReason) btn.setAttribute('aria-label', btn.title);
 });
 mk('bxm-guard', '<span class="bxm-ic">🛡</span><span class="bxm-nm">Защита</span>', `Пропустить ход: −${GUARD_DAMAGE_CUT}% урона до следующего хода`, waiting, () => manualAct({ type: 'guard' }));
 const potionLabel = pot.item ? `Зелье ${getPotionThresholdResource(pot.item.id)}` : 'Зелье';
@@ -27181,6 +28102,7 @@ updateBattleUI();
 return;
 }
 if (state.battle.breakthrough && breakthroughOnClear()) return;
+if (countsAsKill) vipPlayVictoryEffect();
 fallOmenOnClear();
 const deadMonsterId = m.id;
 const deadVariantId = m.variantId;
@@ -27622,6 +28544,7 @@ state.battle.skillCooldowns[id] = 0;
 clearAllDebuffs();
 if (typeof subclassOnBattleStart === 'function') subclassOnBattleStart();
 document.getElementById('battle-window').classList.add('active');
+if (state.player.vipLook) updatePlayerAvatar();
 document.getElementById('hunt-hint').style.display = 'none';
 const countSuffix = count > 1 ? ` ×${count}` : '';
 document.getElementById('battle-title-text').textContent = `${state.player.name} vs ${firstMonster.name}${countSuffix}`;
@@ -27711,6 +28634,7 @@ state.battle.packIncoming = 0;
 clearAllDebuffs();
 hideMonsterSearching();
 document.getElementById('battle-window').classList.remove('active');
+if (state.player.vipLook) updatePlayerAvatar();
 document.getElementById('hunt-hint').style.display = 'block';
 document.querySelectorAll('.monster-card').forEach(c => c.classList.remove('selected'));
 renderMonsters();
@@ -28924,6 +29848,7 @@ return true;
 }
 function breakEndWave(timedOut) {
 const b = state.battle, br = b.breakthrough;
+if (!timedOut && br.wave === BREAK_WAVES.length) vipPlayVictoryEffect();
 const leftovers = timedOut ? getAliveMonstersCount() + br.queue.length : 0;
 if (br.down > 0) breakHeroBack();
 b.active = false;
@@ -29078,6 +30003,7 @@ function bxStage() { return document.getElementById('bx-stage'); }
 function bxLayer() { return document.getElementById('bx-fx'); }
 function bxHeroCard() { return document.getElementById('bx-hero-card'); }
 function bxMonCard(m) { const c = m && BX.cards.get(m); return c ? c.card : null; }
+function bxAllyCard(uid) { return document.querySelector(`#bx-allies [data-ally-uid="${uid}"]`); }
 const BX_RECTS = new Map();
 function bxRect(el) {
 let r = BX_RECTS.get(el);
@@ -29126,6 +30052,59 @@ if (!el) return;
 const c = bxCenter(el);
 bxAdd('bx-num ' + (cls || ''), c.x + (Math.random() * 48 - 24), c.y - 20, html, '', 1400);
 }
+function bxShowAllyArrival(ally) {
+if (!bxOn()) return;
+const card = bxAllyCard(ally.uid);
+if (!card) return;
+const label = document.createElement('span');
+label.className = 'bx-ally-name';
+label.textContent = ally.name;
+card.appendChild(label);
+setTimeout(() => label.remove(), 1450);
+}
+function bxCaptureElementalFusion(elementals) {
+if (!bxOn()) return [];
+return elementals.flatMap(ally => {
+const card = bxAllyCard(ally.uid);
+return card ? [{ kind: ally.kind, img: ally.img, bounds: bxRect(card) }] : [];
+});
+}
+function bxPlayElementalFusion(uid, portraits) {
+if (!bxOn() || portraits.length !== ELEMENTAL_ORDER.length) return;
+const card = bxAllyCard(uid);
+if (!card) return;
+bxRetrig(card, 'bx-ally-fusion');
+if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+const target = bxRect(card);
+portraits.forEach(({ kind, img, bounds }) => {
+const copy = document.createElement('span');
+copy.className = 'bx-fusion-source bx-fusion-' + kind;
+copy.setAttribute('aria-hidden', 'true');
+copy.style.backgroundImage = `url("${img}")`;
+copy.style.setProperty('--from-x', `${bounds.left - target.left}px`);
+copy.style.setProperty('--from-y', `${bounds.top - target.top}px`);
+card.appendChild(copy);
+setTimeout(() => copy.remove(), 450);
+});
+}
+function bxShowAllySupport(uid) {
+if (bxOn()) bxRetrig(bxAllyCard(uid), 'bx-ally-support');
+}
+function bxNoteAllyHit(uid, monster, dmg) {
+if (!bxOn()) return;
+const card = bxAllyCard(uid);
+if (!card) return;
+const hit = { uid, position: bxCenter(card), dmg };
+if (BX.ctx && BX.ctx.actor === monster) BX.ctx.allyHits.push(hit);
+else bxShowAllyHit(hit, 0);
+}
+function bxShowAllyHit(hit, index) {
+const card = bxAllyCard(hit.uid);
+const { x, y } = card ? bxCenter(card) : hit.position;
+bxRetrig(card, 'bx-ally-hit');
+bxAdd('bx-ally-impact', x, y, '', '', 450);
+bxAdd('bx-num mob bx-ally-damage', x + index * 12, y - 10, `-${hit.dmg}`, '', 1200);
+}
 const BX_FX_DIR = 'img/fx/';
 const BX_WEAPON_IMG = { swords: 'b_12', axes: 'c_47', maces: 'b_14', daggers: 'b_42', spears: 'c_15', bows: 'b_25', crossbows: 'b_27', staves: 'b_24' };
 const BX_UNARMED_IMG = 'c_34';
@@ -29161,8 +30140,10 @@ keys.forEach(k => { const im = new Image(); im.src = bxFxSrc(k); BX_FX_PRELOADED
 }
 window.addEventListener('load', () => setTimeout(bxPreloadFx, 4000));
 function bxProjectile(kind, fromEl, toEl, ms, flat) {
+return bxProjectileAt(kind, bxCenter(fromEl), bxCenter(toEl), ms, flat);
+}
+function bxProjectileAt(kind, a, b, ms, flat) {
 return new Promise(resolve => {
-const a = bxCenter(fromEl), b = bxCenter(toEl);
 const pi = BX_PROJ_IMG[kind];
 const d = pi
 ? bxAdd('bx-proj img', a.x, a.y, `<img src="${bxFxSrc(pi)}" alt="" style="transform:rotate(${-BX_PROJ_IMG_HEADING}deg)">`, '', ms + 200)
@@ -29422,6 +30403,7 @@ if (typeof alliesRender === 'function') alliesRender();
 }
 function bxPlayerActionLook(skill) {
 const p = state.player;
+if (skill && skill.fxAnim === 'summon') return { mode: 'summon' };
 if (skill && skill.aoe) {
 if (skill.fxAnim === 'melee') return { mode: 'melee', fx: skill.id === 'bloodHarvest' ? 'rage' : null, aoe: true };
 return { mode: 'aoe-cast', aoe: true };
@@ -29512,6 +30494,12 @@ if (look.sparks && isFirst) bxSparks(c.x, c.y, look.sparks, 12);
 function bxEventNumber(cardEl, ev, isHeroSide) {
 const t = ev.type, n = ev.dmg;
 if (ev.text) return bxNum(cardEl, ev.text, (t === 'poison' ? 'poison' : t === 'block' ? 'block' : 'magic') + ' label');
+if (ev.sourceAlly && (t === 'heal' || t === 'mana')) {
+const { x, y } = bxCenter(cardEl);
+const { width, height } = bxRect(cardEl);
+const offset = Math.min(30, width * .24);
+return bxAdd('bx-num bx-ally-recovery ' + t, x + (t === 'heal' ? -offset : offset), y + Math.min(38, height * .32), `+${n}`, '', 1400);
+}
 if (t === 'heal' || t === 'food' || t === 'mana') return bxNum(cardEl, `+${n}`, t);
 if (t === 'block') return bxNum(cardEl, 'БЛОК', 'block');
 if (t === 'miss')  return bxNum(cardEl, 'ПРОМАХ', 'miss');
@@ -29535,7 +30523,13 @@ if (proj) {
 setTimeout(() => {
 if (!bxOn()) return;
 const cardEl = bxMonCard(ev.mon);
-if (cardEl && bxHeroCard()) bxProjectile(proj === 'life' ? 'toxic' : proj, bxHeroCard(), cardEl, 300);
+const source = ev.sourceAlly ? bxAllyCard(ev.sourceAlly) : bxHeroCard();
+if (!cardEl || !source) return;
+if (ev.sourceAlly) {
+bxRetrig(source, 'bx-ally-attack');
+if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+}
+bxProjectile(proj === 'life' ? 'toxic' : proj, source, cardEl, 300);
 }, t0);
 }
 setTimeout(() => {
@@ -29600,6 +30594,7 @@ case 'blizzard':    burst('ice', '#ffffff', 16); bxShake(); break;
 case 'toxic':       burst('toxic', '#b8ff7a', 10); break;
 case 'toxic-small': bxSparks(c.x, c.y, '#9dff7a', 6); break;
 case 'rune':        burst('arcane', '#d8f2ff', 8); break;
+case 'mana-restore': bxAdd('bx-burst arcane', c.x, c.y, '', '', 700); break;
 }
 }
 function bxSilentKills(ctx) {
@@ -29626,7 +30621,7 @@ delay = 130;
 if (look.dual && ctx.events.filter(ev => ev.side === 'mon' && ev.mon === ctx.target).length > 1) {
 setTimeout(() => { if (bxOn() && bxHeroCard()) bxRetrig(bxHeroCard(), 'bx-lunge'); }, look.step);
 }
-} else if (look.mode === 'heal' || look.mode === 'aoe-cast') {
+} else if (look.mode === 'heal' || look.mode === 'aoe-cast' || look.mode === 'summon') {
 bxRetrig(hero, 'bx-cast');
 delay = 150;
 } else if (look.mode === 'bolt') {
@@ -29671,10 +30666,18 @@ if (ev.side === 'hero') ev.fromAction = true;
 else ev.storm = true;
 });
 let delay = 0;
-if (hasHeroHit && attacker) {
+if ((hasHeroHit || ctx.allyHits.length) && attacker) {
 if (look.mode === 'proj') {
 delay = 80 + look.ms;
-setTimeout(() => { if (bxOn()) bxProjectile(look.proj, attacker, hero, look.ms); }, 80);
+setTimeout(() => {
+if (!bxOn() || bxMonCard(m) !== attacker) return;
+if (hasHeroHit) bxProjectile(look.proj, attacker, hero, look.ms);
+if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+ctx.allyHits.forEach(hit => {
+const card = bxAllyCard(hit.uid);
+bxProjectileAt(look.proj, bxCenter(attacker), card ? bxCenter(card) : hit.position, look.ms);
+});
+}, 80);
 } else {
 bxRetrig(attacker, 'bx-lunge');
 delay = 130;
@@ -29683,6 +30686,11 @@ delay = 130;
 const heroEv = ctx.events.filter(ev => ev.side === 'hero');
 const monEv = ctx.events.filter(ev => ev.side !== 'hero');
 bxPlayEvents(heroEv, delay, look, attacker);
+ctx.allyHits.forEach((hit, index) => {
+setTimeout(() => {
+if (bxOn() && bxMonCard(m) === attacker) bxShowAllyHit(hit, index);
+}, delay + index * 140);
+});
 bxPlayEvents(monEv, delay + 220, null, attacker);
 ctx.kills.forEach(k => bxPlayKill(k, delay + 380));
 }
@@ -29779,7 +30787,7 @@ st.appendChild(b);
 setTimeout(() => b.remove(), 2100);
 }
 (function bxInstallHooks() {
-function newCtx(actor, target) { return { actor, target, skill: null, events: [], kills: [], levelUp: false }; }
+function newCtx(actor, target) { return { actor, target, skill: null, events: [], allyHits: [], kills: [], levelUp: false }; }
 const origFloat = spawnFloatDamage;
 spawnFloatDamage = function (elementId, dmg, type, opts) {
 const ours = elementId === 'fighter-player' || elementId === 'fighter-monster';
@@ -29789,7 +30797,11 @@ return;
 }
 const ev = { side: elementId === 'fighter-player' ? 'hero' : 'mon', dmg, type, mon: null };
 if (ev.side === 'mon') ev.mon = (opts && opts.mon) || (BX.ctx && BX.ctx.target) || (typeof getCurrentMonster === 'function' ? getCurrentMonster() : null);
-if (opts) { ev.fx = opts.fx || null; ev.text = opts.text || null; }
+if (opts) {
+ev.fx = opts.fx || null;
+ev.text = opts.text || null;
+ev.sourceAlly = opts.sourceAlly || null;
+}
 if (BX.ctx) BX.ctx.events.push(ev);
 else bxPlayEvents([ev], 0, null, null);
 };
@@ -32928,13 +33940,14 @@ setCsText('cs-class', has ? `${CLASSES[p.classId].name}${race ? ' · ' + race.na
 document.getElementById('cs-level').textContent = p.level;
 const portrait = document.getElementById('cs-portrait');
 if (portrait) {
-const src = has && typeof getHeroPortrait === 'function' ? getHeroPortrait(p.raceId || 'human', p.classId, p.subclass) : '';
+const src = has ? vipHeroPortrait(p) : '';
 if (portrait.dataset.src !== src) {
 portrait.dataset.src = src;
 const fallback = p.classId === 'mage' ? '🧙' : (p.classId === 'warrior' ? '⚔' : '');
 portrait.innerHTML = src ? `<img src="${src}" alt="" onerror="this.parentNode.textContent='${fallback}'">` : fallback;
 }
 }
+vipRenderCharacter();
 const pct = (a, b) => (b > 0 ? Math.max(0, Math.min(100, a / b * 100)) : 0) + '%';
 setCsText('cs-hp', has ? `${Math.floor(p.hp)} / ${p.maxHp}` : '—');
 setCsText('cs-mp', has ? `${Math.floor(p.mp)} / ${p.maxMp}` : '—');
@@ -33018,6 +34031,8 @@ document.getElementById('soon-overlay').classList.add('active');
 }
 function closeSoon() { document.getElementById('soon-overlay').classList.remove('active'); }
 function initGame() {
+vipPickingSeal = false;
+vipRefreshTrial(true);
 recalcStats();
 renderMonsters();
 renderInventory();

@@ -48,6 +48,9 @@ const state = {
     learnedSkills: {},
     skillPoints: 0,
     subclass: null,     // v0.38: подкласс (js/data/subclasses.js), берётся в Храме Ильграда с 25 ур.
+    vipLook: null,
+    vipFrame: 'bronze',
+    vipTitle: null,
     skillPts26: 0,      // v0.38: третье очко навыков за уровни выше 25 — сколько уже выдано
 
     // ---- 3 слота активных навыков ----

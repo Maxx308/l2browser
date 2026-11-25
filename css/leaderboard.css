@@ -217,9 +217,7 @@
   font-size: var(--fs-tiny);
   color: var(--text-dim);
   font-style: italic;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
 }
 
 /* Столбец с числом */

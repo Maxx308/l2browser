@@ -86,37 +86,38 @@ applyTextFont(getSavedTextFont());
 <!-- v0.36.2: библиотека облака (Supabase, 213 КБ) переехала вниз, к остальным скриптам:
      в шапке она задерживала показ страницы, пока не скачается целиком. -->
 
-<link rel="stylesheet" href="css/base.css?v=0.40">
-<link rel="stylesheet" href="css/effects.css?v=0.40">
-<link rel="stylesheet" href="css/monsters.css?v=0.40">
-<link rel="stylesheet" href="css/city-map.css?v=0.40">
-<link rel="stylesheet" href="css/battle.css?v=0.40">
-<link rel="stylesheet" href="css/debuffs.css?v=0.40">
-<link rel="stylesheet" href="css/battle-autostop.css?v=0.40">
-<link rel="stylesheet" href="css/battle-arena.css?v=0.40">
-<link rel="stylesheet" href="css/underwood-fall.css?v=0.40">
-<link rel="stylesheet" href="css/battle-session.css?v=0.40">
-<link rel="stylesheet" href="css/battle-rest.css?v=0.40">
-<link rel="stylesheet" href="css/inventory.css?v=0.40">
-<link rel="stylesheet" href="css/inventory-equip.css?v=0.40">
-<link rel="stylesheet" href="css/inventory-slots.css?v=0.40">
-<link rel="stylesheet" href="css/windows.css?v=0.40">
-<link rel="stylesheet" href="css/screens.css?v=0.40">
-<link rel="stylesheet" href="css/patches.css?v=0.40">
-<link rel="stylesheet" href="css/settings.css?v=0.40">
-<link rel="stylesheet" href="css/cheat.css?v=0.40">
-<link rel="stylesheet" href="css/overlays.css?v=0.40">
-<link rel="stylesheet" href="css/dialogue.css?v=0.40">
-<link rel="stylesheet" href="css/storage.css?v=0.40">
-<link rel="stylesheet" href="css/refine.css?v=0.40">
-<link rel="stylesheet" href="css/alchemist.css?v=0.40">
-<link rel="stylesheet" href="css/leaderboard.css?v=0.40">
-<link rel="stylesheet" href="css/hero-inspect.css?v=0.40">
-<link rel="stylesheet" href="css/chronicle.css?v=0.40">
-<link rel="stylesheet" href="css/daynight.css?v=0.40">
-<link rel="stylesheet" href="css/expeditions.css?v=0.40">
-<link rel="stylesheet" href="css/subclass.css?v=0.40">
-<link rel="stylesheet" href="css/tutorial.css?v=0.40">
+<link rel="stylesheet" href="css/base.css?v=0.41">
+<link rel="stylesheet" href="css/effects.css?v=0.41">
+<link rel="stylesheet" href="css/monsters.css?v=0.41">
+<link rel="stylesheet" href="css/city-map.css?v=0.41">
+<link rel="stylesheet" href="css/battle.css?v=0.41">
+<link rel="stylesheet" href="css/debuffs.css?v=0.41">
+<link rel="stylesheet" href="css/battle-autostop.css?v=0.41">
+<link rel="stylesheet" href="css/battle-arena.css?v=0.41">
+<link rel="stylesheet" href="css/underwood-fall.css?v=0.41">
+<link rel="stylesheet" href="css/battle-session.css?v=0.41">
+<link rel="stylesheet" href="css/battle-rest.css?v=0.41">
+<link rel="stylesheet" href="css/inventory.css?v=0.41">
+<link rel="stylesheet" href="css/inventory-equip.css?v=0.41">
+<link rel="stylesheet" href="css/inventory-slots.css?v=0.41">
+<link rel="stylesheet" href="css/windows.css?v=0.41">
+<link rel="stylesheet" href="css/screens.css?v=0.41">
+<link rel="stylesheet" href="css/patches.css?v=0.41">
+<link rel="stylesheet" href="css/settings.css?v=0.41">
+<link rel="stylesheet" href="css/cheat.css?v=0.41">
+<link rel="stylesheet" href="css/overlays.css?v=0.41">
+<link rel="stylesheet" href="css/dialogue.css?v=0.41">
+<link rel="stylesheet" href="css/storage.css?v=0.41">
+<link rel="stylesheet" href="css/refine.css?v=0.41">
+<link rel="stylesheet" href="css/alchemist.css?v=0.41">
+<link rel="stylesheet" href="css/leaderboard.css?v=0.41">
+<link rel="stylesheet" href="css/hero-inspect.css?v=0.41">
+<link rel="stylesheet" href="css/chronicle.css?v=0.41">
+<link rel="stylesheet" href="css/daynight.css?v=0.41">
+<link rel="stylesheet" href="css/expeditions.css?v=0.41">
+<link rel="stylesheet" href="css/subclass.css?v=0.41">
+<link rel="stylesheet" href="css/vip.css?v=0.41">
+<link rel="stylesheet" href="css/tutorial.css?v=0.41">
 </head>
 <body>
 
@@ -566,8 +567,15 @@ applyTextFont(getSavedTextFont());
         <div class="cs-who">
           <div class="cs-portrait" id="cs-portrait"></div>
           <div>
-            <div class="cs-name" id="cs-name">—</div>
+            <div class="vip-name-row">
+              <div class="cs-name" id="cs-name">—</div>
+              <button type="button" class="vip-chip" id="vip-character-badge" aria-label="VIP — статус и образы" onclick="vipOpenWardrobe()" hidden>VIP</button>
+            </div>
             <div class="cs-meta"><span id="cs-class">—</span> · <b id="cs-level">1</b> ур.</div>
+            <div class="vip-character-actions" id="vip-character-actions" hidden>
+              <span class="vip-duration"></span>
+              <button type="button" class="vip-wardrobe-link" onclick="vipOpenWardrobe()">Образы ›</button>
+            </div>
           </div>
         </div>
         <div class="cs-barlabel"><span>ЗДОРОВЬЕ</span><b id="cs-hp">—</b></div>
@@ -1478,12 +1486,58 @@ applyTextFont(getSavedTextFont());
   <button class="btn bxp-back" onclick="event.stopPropagation(); returnToBattle()">Вернуться в бой</button>
 </div>
 
+<dialog class="vip-dialog" id="vip-dialog" aria-labelledby="vip-title">
+  <div class="vip-head">
+    <div><h2 id="vip-title">VIP</h2><p class="vip-duration"></p></div>
+    <button type="button" class="vip-control vip-close" id="vip-close" aria-label="Закрыть окно VIP">×</button>
+  </div>
+  <div class="vip-body">
+    <section class="vip-renewal" aria-labelledby="vip-renewal-title">
+      <div class="vip-renewal-heading">
+        <h3 id="vip-renewal-title">Ещё 30 дней VIP</h3>
+        <span id="vip-renewal-count"></span>
+      </div>
+      <div id="vip-renewal-meter" role="progressbar" aria-label="Дни входа для продления" aria-valuemin="0" aria-valuemax="15"></div>
+      <p id="vip-renewal-rule"></p>
+      <p id="vip-renewal-status" role="status"></p>
+      <button id="vip-open-seal" class="vip-wardrobe-link" type="button" hidden>Печать в Хрониках ›</button>
+    </section>
+    <section id="vip-wardrobe" aria-labelledby="vip-wardrobe-title" hidden>
+      <h3 id="vip-wardrobe-title">Образы</h3>
+      <div class="vip-choices" id="vip-wardrobe-choices" role="group" aria-label="Образ"></div>
+      <p id="vip-empty" hidden>Образы для этого класса появятся здесь.</p>
+      <div id="vip-wardrobe-preview" hidden>
+        <div class="vip-feature">
+          <img width="352" height="352" alt="">
+          <button type="button" class="vip-control vip-motion" id="vip-motion">Включить движение</button>
+          <h3 id="vip-look-name"></h3>
+        </div>
+        <div class="vip-footer">
+          <span id="vip-look-status" aria-live="polite"></span>
+          <button type="button" class="btn success" id="vip-equip">Надеть образ</button>
+        </div>
+      </div>
+      <details class="vip-profile-prefs">
+        <summary>Визитка героя</summary>
+        <div class="vip-profile-fields">
+          <label>Рамка <select id="vip-profile-frame">
+            <option value="bronze">Бронза</option>
+            <option value="silver">Серебро</option>
+            <option value="amethyst">Аметист</option>
+          </select></label>
+          <label>Подпись <select id="vip-profile-title"><option value="">Без подписи</option></select></label>
+        </div>
+      </details>
+    </section>
+  </div>
+</dialog>
+
 <!-- Supabase (библиотека для облачных сохранений).
      v0.29.1: лежит в игре, а не на CDN — на телефонах jsdelivr не всегда открывается, и форма входа пропадала.
      v0.36.2: подключается здесь, а не в шапке (должна стоять раньше js/systems/cloud.js). -->
 <script src="js/vendor/supabase-2.118.0.js" defer></script>
 
-<script src="js/app.bundle.js?v=0.40" defer></script>
+<script src="js/app.bundle.js?v=0.41" defer></script>
 
 </body>
 </html>

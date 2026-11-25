@@ -60,6 +60,7 @@ function showStartScreen() {
 }
 
 function updateCloudAccessGate() {
+  vipRefreshTrial();
   const start = document.getElementById('start-screen');
   const allowed = typeof cloudIsAllowedToPlay !== 'function' || cloudIsAllowedToPlay();
   start.classList.toggle('launcher', !allowed);
@@ -113,6 +114,7 @@ function hideStartScreen() {
 }
 
 function renderSlots() {
+  vipRefreshTrial();
   const grid = document.getElementById('slots-grid');
   const active = document.activeElement;
   const focusedSlot = grid.contains(active) ? active.closest('[data-slot]')?.dataset.slot : null;
@@ -134,7 +136,9 @@ function renderSlots() {
     const safeName = escapeHtml(name);
     const race = RACES[meta.raceId] || RACES.human;
     const cls = CLASSES[meta.classId];
-    const portrait = getHeroPortrait(race.id, meta.classId, meta.subclass);
+    const portrait = vipHeroPortrait(meta);
+    const vipMotion = vipLookFor(meta)?.motion;
+    const vipBadge = vipDaysLeft() ? '<span class="vip-chip">VIP</span>' : '';
     const subclass = SUBCLASSES[meta.subclass];
     const role = subclass?.race === race.id && subclass.cls === meta.classId ? subclass.name : cls?.name;
 
@@ -158,9 +162,9 @@ function renderSlots() {
     card.dataset.slot = i;
     card.innerHTML = `
       <button type="button" class="slot-select" data-slot-action="select" aria-pressed="false">
-        <img class="slot-portrait" src="${portrait}" alt="">
+        <img class="slot-portrait" src="${portrait}" alt=""${vipMotion ? ` data-vip-still="${portrait}" data-vip-motion="${vipMotion}"` : ''}>
         <span class="slot-info">
-          <span class="slot-name">${safeName}</span>
+          <span class="slot-name${vipBadge ? ' vip-name-row' : ''}"><span>${safeName}</span>${vipBadge}</span>
           <span class="slot-class">${race.name} · ${role || '—'} · Ур. ${Number(meta.level) || 1}</span>
         </span>
       </button>
@@ -204,6 +208,11 @@ function selectStartSlot(index) {
     card.classList.toggle('selected', selected);
     card.querySelector('.slot-select').setAttribute('aria-pressed', selected);
     card.querySelector('.slot-play').hidden = !selected;
+    const image = card.querySelector('[data-vip-motion]');
+    if (image) {
+      const source = selected && !vipReducedMotion.matches ? image.dataset.vipMotion : image.dataset.vipStill;
+      if (image.getAttribute('src') !== source) image.src = source;
+    }
   });
 }
 
@@ -691,6 +700,9 @@ function resetStateToFresh() {
   state.player.learnedSkills = {};
   state.player.skillPoints = 0;
   state.player.subclass = null;   // v0.38: подкласс прошлого героя не переходит новому
+  state.player.vipLook = null;
+  state.player.vipFrame = 'bronze';
+  state.player.vipTitle = null;
   state.player.skillPts26 = 0;
 
   state.player.skillSlots = [null, null, null];

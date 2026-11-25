@@ -95,7 +95,7 @@ function aoeApply(hits) {
       spawnFloatDamage('fighter-monster', 0, 'miss', { mon: h.m, fx: h.fx });
       return;
     }
-    spawnFloatDamage('fighter-monster', h.dmg, h.type || 'dmg', { mon: h.m, fx: h.fx });
+    spawnFloatDamage('fighter-monster', h.dmg, h.type || 'dmg', { mon: h.m, fx: h.fx, sourceAlly: h.sourceAlly });
     pending.set(h.m, (pending.get(h.m) || 0) + h.dmg);
   });
 
@@ -138,11 +138,11 @@ function aoeGiveXp(skill, extraElems) {
   });
 }
 
-function aoeHeal(amount) {
+function aoeHeal(amount, opts) {
   const p = state.player;
   const want = Math.max(0, Math.floor(amount));
   const heal = Math.min(want, p.maxHp - p.hp);
-  if (heal > 0) { p.hp += heal; spawnFloatDamage('fighter-player', heal, 'heal'); }
+  if (heal > 0) { p.hp += heal; spawnFloatDamage('fighter-player', heal, 'heal', opts); }
   // v0.38: пассивки подклассов видят лечение уже после прибавки (Благодать, Очищение, Сок древа, Живучесть…)
   if (typeof subclassOnHeroHeal === 'function') subclassOnHeroHeal(Math.max(0, heal), want - Math.max(0, heal));
   if (p.hp > p.maxHp) p.hp = p.maxHp;

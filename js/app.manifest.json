@@ -45,6 +45,7 @@
     "js/systems/save-migrate.js",
     "js/systems/slots.js",
     "js/systems/cloud.js",
+    "js/systems/vip.js",
     "js/systems/leaderboard.js",
     "js/systems/hero-inspect.js",
     "js/systems/start-screen.js",

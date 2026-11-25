@@ -74,6 +74,7 @@ function readSlotMeta(slotIndex) {
     raceId: data.player && data.player.raceId,
     level: data.player && data.player.level,
     subclass: (data.player && data.player.subclass) || null,   // v0.38: портрет подкласса на карточке
+    vipLook: data.player?.vipLook || null,
     updatedAt: data.updatedAt || null,
   };
 }
@@ -356,7 +357,7 @@ function flushPendingSlotSave(force) {
 document.addEventListener('visibilitychange', () => { if (document.hidden) flushPendingSlotSave(true); });
 window.addEventListener('pagehide', () => flushPendingSlotSave(true));
 
-function saveCurrentSlot() {
+function saveCurrentSlot(forceLeaderboard = false) {
   slotSavePending = false;
   if (state.activeSlotIndex === null || state.activeSlotIndex === undefined) return;
   slotSaveLast = performance.now();
@@ -391,6 +392,6 @@ function saveCurrentSlot() {
 
   // ---- РЕЙТИНГ: пушим свою строку (throttle внутри) ----
   if (typeof cloudPushLeaderboard === 'function') {
-    cloudPushLeaderboard(false);
+    cloudPushLeaderboard(forceLeaderboard === true);
   }
 }

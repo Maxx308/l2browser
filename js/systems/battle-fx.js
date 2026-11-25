@@ -61,6 +61,7 @@ function bxStage() { return document.getElementById('bx-stage'); }
 function bxLayer() { return document.getElementById('bx-fx'); }
 function bxHeroCard() { return document.getElementById('bx-hero-card'); }
 function bxMonCard(m) { const c = m && BX.cards.get(m); return c ? c.card : null; }
+function bxAllyCard(uid) { return document.querySelector(`#bx-allies [data-ally-uid="${uid}"]`); }
 
 // v0.36.2: где стоит карточка, спрашиваем у браузера один раз за «пачку» эффектов.
 // Раньше каждая цифра и вспышка мерила сцену заново — а между замерами на страницу
@@ -113,6 +114,65 @@ function bxNum(el, html, cls) {
   if (!el) return;
   const c = bxCenter(el);
   bxAdd('bx-num ' + (cls || ''), c.x + (Math.random() * 48 - 24), c.y - 20, html, '', 1400);
+}
+
+function bxShowAllyArrival(ally) {
+  if (!bxOn()) return;
+  const card = bxAllyCard(ally.uid);
+  if (!card) return;
+  const label = document.createElement('span');
+  label.className = 'bx-ally-name';
+  label.textContent = ally.name;
+  card.appendChild(label);
+  setTimeout(() => label.remove(), 1450);
+}
+
+function bxCaptureElementalFusion(elementals) {
+  if (!bxOn()) return [];
+  return elementals.flatMap(ally => {
+    const card = bxAllyCard(ally.uid);
+    return card ? [{ kind: ally.kind, img: ally.img, bounds: bxRect(card) }] : [];
+  });
+}
+
+function bxPlayElementalFusion(uid, portraits) {
+  if (!bxOn() || portraits.length !== ELEMENTAL_ORDER.length) return;
+  const card = bxAllyCard(uid);
+  if (!card) return;
+  bxRetrig(card, 'bx-ally-fusion');
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const target = bxRect(card);
+  portraits.forEach(({ kind, img, bounds }) => {
+    const copy = document.createElement('span');
+    copy.className = 'bx-fusion-source bx-fusion-' + kind;
+    copy.setAttribute('aria-hidden', 'true');
+    copy.style.backgroundImage = `url("${img}")`;
+    copy.style.setProperty('--from-x', `${bounds.left - target.left}px`);
+    copy.style.setProperty('--from-y', `${bounds.top - target.top}px`);
+    card.appendChild(copy);
+    setTimeout(() => copy.remove(), 450);
+  });
+}
+
+function bxShowAllySupport(uid) {
+  if (bxOn()) bxRetrig(bxAllyCard(uid), 'bx-ally-support');
+}
+
+function bxNoteAllyHit(uid, monster, dmg) {
+  if (!bxOn()) return;
+  const card = bxAllyCard(uid);
+  if (!card) return;
+  const hit = { uid, position: bxCenter(card), dmg };
+  if (BX.ctx && BX.ctx.actor === monster) BX.ctx.allyHits.push(hit);
+  else bxShowAllyHit(hit, 0);
+}
+
+function bxShowAllyHit(hit, index) {
+  const card = bxAllyCard(hit.uid);
+  const { x, y } = card ? bxCenter(card) : hit.position;
+  bxRetrig(card, 'bx-ally-hit');
+  bxAdd('bx-ally-impact', x, y, '', '', 450);
+  bxAdd('bx-num mob bx-ally-damage', x + index * 12, y - 10, `-${hit.dmg}`, '', 1200);
 }
 // --------------------------------------------------------
 //  v0.30: КАРТИНКИ ЭФФЕКТОВ (img/fx, опись — img/fx/ОПИСЬ.txt)
@@ -171,8 +231,11 @@ window.addEventListener('load', () => setTimeout(bxPreloadFx, 4000));
 // v0.36.4: снаряд поворачивается вдоль своей дуги (на взлёте задран, к цели клюёт носом),
 // а не держит один угол всю дорогу. flat — без дуги, прямой выстрел (арбалетный болт).
 function bxProjectile(kind, fromEl, toEl, ms, flat) {
+  return bxProjectileAt(kind, bxCenter(fromEl), bxCenter(toEl), ms, flat);
+}
+
+function bxProjectileAt(kind, a, b, ms, flat) {
   return new Promise(resolve => {
-    const a = bxCenter(fromEl), b = bxCenter(toEl);
     const pi = BX_PROJ_IMG[kind];
     const d = pi
       ? bxAdd('bx-proj img', a.x, a.y, `<img src="${bxFxSrc(pi)}" alt="" style="transform:rotate(${-BX_PROJ_IMG_HEADING}deg)">`, '', ms + 200)
@@ -487,6 +550,7 @@ function bxSync() {
 // Как выглядит действие игрока: 'melee' (рывок) / 'proj' (снаряд) / 'bolt' / 'heal'.
 function bxPlayerActionLook(skill) {
   const p = state.player;
+  if (skill && skill.fxAnim === 'summon') return { mode: 'summon' };
   // v0.19: массовые — герой только двигается/кастует, эффекты рисуют сами события.
   if (skill && skill.aoe) {
     if (skill.fxAnim === 'melee') return { mode: 'melee', fx: skill.id === 'bloodHarvest' ? 'rage' : null, aoe: true };
@@ -596,6 +660,12 @@ function bxImpact(cardEl, look, isFirst, fromEl) {
 function bxEventNumber(cardEl, ev, isHeroSide) {
   const t = ev.type, n = ev.dmg;
   if (ev.text) return bxNum(cardEl, ev.text, (t === 'poison' ? 'poison' : t === 'block' ? 'block' : 'magic') + ' label');
+  if (ev.sourceAlly && (t === 'heal' || t === 'mana')) {
+    const { x, y } = bxCenter(cardEl);
+    const { width, height } = bxRect(cardEl);
+    const offset = Math.min(30, width * .24);
+    return bxAdd('bx-num bx-ally-recovery ' + t, x + (t === 'heal' ? -offset : offset), y + Math.min(38, height * .32), `+${n}`, '', 1400);
+  }
   if (t === 'heal' || t === 'food' || t === 'mana') return bxNum(cardEl, `+${n}`, t);   // v0.34.1: mana — синие «+N»
   if (t === 'block') return bxNum(cardEl, 'БЛОК', 'block');
   if (t === 'miss')  return bxNum(cardEl, 'ПРОМАХ', 'miss');
@@ -623,7 +693,13 @@ function bxPlayEvents(events, delay, look, attackerCard) {
       setTimeout(() => {
         if (!bxOn()) return;
         const cardEl = bxMonCard(ev.mon);
-        if (cardEl && bxHeroCard()) bxProjectile(proj === 'life' ? 'toxic' : proj, bxHeroCard(), cardEl, 300);
+        const source = ev.sourceAlly ? bxAllyCard(ev.sourceAlly) : bxHeroCard();
+        if (!cardEl || !source) return;
+        if (ev.sourceAlly) {
+          bxRetrig(source, 'bx-ally-attack');
+          if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+        }
+        bxProjectile(proj === 'life' ? 'toxic' : proj, source, cardEl, 300);
       }, t0);
     }
     setTimeout(() => {
@@ -692,6 +768,7 @@ function bxEventFx(cardEl, fx, hit) {
     case 'toxic':       burst('toxic', '#b8ff7a', 10); break;
     case 'toxic-small': bxSparks(c.x, c.y, '#9dff7a', 6); break;
     case 'rune':        burst('arcane', '#d8f2ff', 8); break;
+    case 'mana-restore': bxAdd('bx-burst arcane', c.x, c.y, '', '', 700); break;
   }
 }
 
@@ -730,7 +807,7 @@ function bxPlayPlayerAction(ctx) {
     if (look.dual && ctx.events.filter(ev => ev.side === 'mon' && ev.mon === ctx.target).length > 1) {
       setTimeout(() => { if (bxOn() && bxHeroCard()) bxRetrig(bxHeroCard(), 'bx-lunge'); }, look.step);
     }
-  } else if (look.mode === 'heal' || look.mode === 'aoe-cast') {
+  } else if (look.mode === 'heal' || look.mode === 'aoe-cast' || look.mode === 'summon') {
     bxRetrig(hero, 'bx-cast');
     delay = 150;
   } else if (look.mode === 'bolt') {
@@ -782,10 +859,18 @@ function bxPlayMonsterActionNow(ctx) {
   });
 
   let delay = 0;
-  if (hasHeroHit && attacker) {
+  if ((hasHeroHit || ctx.allyHits.length) && attacker) {
     if (look.mode === 'proj') {
       delay = 80 + look.ms;
-      setTimeout(() => { if (bxOn()) bxProjectile(look.proj, attacker, hero, look.ms); }, 80);
+      setTimeout(() => {
+        if (!bxOn() || bxMonCard(m) !== attacker) return;
+        if (hasHeroHit) bxProjectile(look.proj, attacker, hero, look.ms);
+        if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+        ctx.allyHits.forEach(hit => {
+          const card = bxAllyCard(hit.uid);
+          bxProjectileAt(look.proj, bxCenter(attacker), card ? bxCenter(card) : hit.position, look.ms);
+        });
+      }, 80);
     } else {
       bxRetrig(attacker, 'bx-lunge');
       delay = 130;
@@ -795,6 +880,11 @@ function bxPlayMonsterActionNow(ctx) {
   const heroEv = ctx.events.filter(ev => ev.side === 'hero');
   const monEv = ctx.events.filter(ev => ev.side !== 'hero');
   bxPlayEvents(heroEv, delay, look, attacker);
+  ctx.allyHits.forEach((hit, index) => {
+    setTimeout(() => {
+      if (bxOn() && bxMonCard(m) === attacker) bxShowAllyHit(hit, index);
+    }, delay + index * 140);
+  });
   bxPlayEvents(monEv, delay + 220, null, attacker);
   ctx.kills.forEach(k => bxPlayKill(k, delay + 380));
 }
@@ -903,7 +993,7 @@ function bxPlayDefeat() {
 //  потом рисует эффект.
 // --------------------------------------------------------
 (function bxInstallHooks() {
-  function newCtx(actor, target) { return { actor, target, skill: null, events: [], kills: [], levelUp: false }; }
+  function newCtx(actor, target) { return { actor, target, skill: null, events: [], allyHits: [], kills: [], levelUp: false }; }
 
   // ---- Цифры урона: перехватываем и рисуем на арене ----
   const origFloat = spawnFloatDamage;
@@ -916,7 +1006,11 @@ function bxPlayDefeat() {
     const ev = { side: elementId === 'fighter-player' ? 'hero' : 'mon', dmg, type, mon: null };
     if (ev.side === 'mon') ev.mon = (opts && opts.mon) || (BX.ctx && BX.ctx.target) || (typeof getCurrentMonster === 'function' ? getCurrentMonster() : null);
     // v0.19: массовые навыки передают цель и эффект для каждого попадания.
-    if (opts) { ev.fx = opts.fx || null; ev.text = opts.text || null; }
+    if (opts) {
+      ev.fx = opts.fx || null;
+      ev.text = opts.text || null;
+      ev.sourceAlly = opts.sourceAlly || null;
+    }
     if (BX.ctx) BX.ctx.events.push(ev);
     else bxPlayEvents([ev], 0, null, null);
   };

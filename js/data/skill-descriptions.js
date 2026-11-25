@@ -108,7 +108,7 @@ const SKILL_BRIEFS = {
   gkBud: 'Ниже 40% здоровья восстанавливает {total}% его запаса за 3 хода.',
   gkDew: 'Лечение, которое действует несколько ходов, с шансом {chance}% длится на ход дольше.',
   gkCycle: 'Лечение в бою возвращает ману: {pct}% от вылеченного.',
-  drSpirit: 'Призывает духа зверя. Повторный призыв усиливает следующую атаку духа.',
+  drSpirit: 'Призывает духа-зверя. При повторном применении дух сразу наносит усиленный удар.',
   drHunt: 'Заклинание может вызвать дополнительный удар духа по той же цели.',
   drBonds: 'Дух получает часть вашей магической атаки и здоровья.',
   drGrowing: 'За каждое убийство дух становится на {per}% сильнее, до +{cap}%.',
@@ -132,7 +132,7 @@ const SKILL_BRIEFS = {
   dwMist: 'Ниже 40% здоровья усыпляет всех врагов на ход или до первого удара.',
   dwLullaby: 'Пока враг спит, здоровье восстанавливается быстрее, а лечение сильнее на {heal}%.',
   dwNightmare: 'Удар, разбудивший врага, наносит на {pct}% больше урона.',
-  slMother: 'Призывает паучиху и её выводок. Повторный призыв ускоряет появление паучат.',
+  slMother: 'Призывает матку. Повторное применение добавляет паучонка, а при полном выводке матка кусает цель.',
   slVenom: 'Укусы пауков отравляют врагов. До пяти слоёв яда на цель.',
   slBrood: 'У паучат на {pct}% больше здоровья и урона.',
   slSilk: 'Паутина замедляет шкалу хода врага на {slow}%.',
@@ -156,7 +156,7 @@ const SKILL_BRIEFS = {
   rmWard: 'Ниже 35% здоровья даёт барьер на {shield}% его запаса.',
   rmSteady: 'Подгонка успешнее на {chance}%. При неудаче платите половину цены.',
   rmWeave: 'С шансом {chance}% подгонка выбирает лучший из двух случайных бонусов.',
-  scSummon: 'По очереди зовёт элементалей Камня, Огня и Жилы. Вместе они сливаются в одного.',
+  scSummon: 'Зовёт элементаля стихии, которой ещё нет в бою. Если все трое уже здесь, сливает их в Великого.',
   scShards: 'Разбитый элементаль взрывается и ранит всех врагов своей стихией.',
   scStoneblood: 'Элементали наследуют ваше поглощение урона и {atk}% магической атаки.',
   scFusion: 'Усиливает Великого элементаля при слиянии.',
@@ -327,11 +327,11 @@ function formatSkillDamageRange(attack, multiplier, elementBonus = 0) {
   return min === max ? SKILL_TEXT_NUMBER.format(min) : `${SKILL_TEXT_NUMBER.format(min)}–${SKILL_TEXT_NUMBER.format(max)}`;
 }
 
-function getSkillBrief(skill, rank, withMana = true) {
+function getSkillBrief(skill, rank, withMana = true, subclassId = state.player.subclass) {
   const p = state.player;
   rank = Math.min(rank, skill.maxLevel);
   const data = skill.levels[rank - 1];
-  const text = SUBCLASS_SKILL_BRIEFS[p.subclass]?.[skill.id] || SKILL_BRIEFS[skill.id] || 'Подробности в Энциклопедии.';
+  const text = SUBCLASS_SKILL_BRIEFS[subclassId]?.[skill.id] || SKILL_BRIEFS[skill.id] || 'Подробности в Энциклопедии.';
   const effect = text.replace(/\{(\w+)\}/g, (_, field) => {
     if (field === 'fireDamage') return formatSkillDamageRange(p.mAtk, data.multiplier, getElementDamageBonus('fire'));
     if (field === 'iceDamage') return formatSkillDamageRange(p.mAtk, data.multiplier, getElementDamageBonus('ice'));

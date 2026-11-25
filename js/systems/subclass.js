@@ -92,8 +92,10 @@ function subclassOnLoad() {
 }
 
 // ---------- 2. ХРАМ: ПОСВЯЩЕНИЕ ----------
-let scPicked = null;   // подкласс, на который смотрит игрок (до подтверждения)
+let scPicked = null;   // подкласс в предпросмотре (до подтверждения)
 let scJustDedicated = null;
+let scListScroll = 0;
+let scTempleTrigger = null;
 
 function ensureSubclassOverlay() {
   let ov = document.getElementById('sc-overlay');
@@ -102,14 +104,30 @@ function ensureSubclassOverlay() {
   ov.className = 'sc-overlay overlay-base';
   ov.id = 'sc-overlay';
   ov.innerHTML = `
-    <div class="sc-window window-base">
+    <div class="sc-window window-base" role="dialog" aria-modal="true" aria-labelledby="sc-window-title">
       <div class="window-header">
-        <div class="window-title">✦ ХРАМ · ПОСВЯЩЕНИЕ</div>
-        <div class="window-header-actions"><button class="btn danger" onclick="closeSubclassTemple()">Закрыть</button></div>
+        <div class="window-title" id="sc-window-title">✦ ХРАМ · ПОСВЯЩЕНИЕ</div>
+        <div class="window-header-actions"><button type="button" class="btn danger" onclick="closeSubclassTemple()">Закрыть</button></div>
       </div>
       <div class="window-content"><div class="sc-pane" id="sc-pane"></div></div>
+      <div class="sc-preview-actions" id="sc-preview-actions" hidden></div>
     </div>`;
   ov.addEventListener('click', e => { if (e.target === ov) closeSubclassTemple(); });
+  ov.addEventListener('keydown', e => {
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      e.stopPropagation();
+      if (scPicked && !scJustDedicated) scPick(null);
+      else closeSubclassTemple();
+    }
+    if (e.key !== 'Tab') return;
+    const buttons = Array.from(ov.querySelectorAll('button:not(:disabled), summary')).filter(el => el.getClientRects().length);
+    const first = buttons[0], last = buttons[buttons.length - 1];
+    if (e.shiftKey ? document.activeElement === first : document.activeElement === last) {
+      e.preventDefault();
+      (e.shiftKey ? last : first).focus();
+    }
+  });
   document.body.appendChild(ov);
   return ov;
 }
@@ -119,37 +137,113 @@ function openSubclassTemple() {
   if (typeof cancelWaitingForResume === 'function') cancelWaitingForResume('открыт храм');
   scPicked = null;
   scJustDedicated = null;
-  ensureSubclassOverlay().classList.add('active');
+  scListScroll = 0;
+  scTempleTrigger = document.activeElement;
+  const ov = ensureSubclassOverlay();
+  ov.classList.add('active');
   renderSubclassTemple();
+  ov.querySelector('.window-content').scrollTop = 0;
+  ov.querySelector('.window-header button').focus({ preventScroll: true });
 }
 function closeSubclassTemple() {
   const ov = document.getElementById('sc-overlay');
-  if (ov) ov.classList.remove('active');
+  if (!ov || !ov.classList.contains('active')) return;
+  ov.classList.remove('active');
+  if (scTempleTrigger?.isConnected) scTempleTrigger.focus({ preventScroll: true });
+  scTempleTrigger = null;
 }
 
-function scCardHtml(sc, mode) {
+function scCardHtml(sc) {
   const role = SUBCLASS_ROLES[sc.role] || { name: '', icon: '' };
-  const p = state.player;
-  const mine = p.subclass === sc.id;
-  let action = '';
-  if (mode === 'locked') action = '';
-  else if (!sc.ready) action = `<button class="btn" disabled>Путь ещё не открыт</button>`;
-  else if (mine) action = `<div class="sc-mine">✦ Твой путь</div>`;
-  else if (p.subclass) action = `<button class="btn" onclick="scPick('${sc.id}')">Просить иного знака — ${SUBCLASS_CHANGE_PRICE.toLocaleString('ru-RU')} 🪙</button>`;
-  else action = `<button class="btn success" onclick="scPick('${sc.id}')">Смотреть на эту свечу</button>`;
-  const cls = 'sc-card' + (mine ? ' sc-card-mine' : '') + (!sc.ready ? ' sc-card-closed' : '') + (scPicked === sc.id ? ' sc-card-picked' : '');
+  const mine = state.player.subclass === sc.id;
+  const action = sc.ready
+    ? `<button type="button" class="btn" data-sc-preview="${sc.id}" onclick="scPick('${sc.id}')">Подробнее<span class="sc-sr-only"> · ${sc.name}</span></button>`
+    : '<button type="button" class="btn" disabled>Путь ещё не открыт</button>';
+  const cls = 'sc-card' + (mine ? ' sc-card-mine' : '') + (!sc.ready ? ' sc-card-closed' : '');
   return `<div class="${cls}">
     <div class="sc-portrait"><img src="${sc.portrait}" alt="" loading="lazy"><div class="sc-candle"></div></div>
-    <div class="sc-role">${role.icon} ${role.name}</div>
+    <div class="sc-role">${role.icon} ${role.name}${mine ? ' · Твой путь' : ''}</div>
     <div class="sc-name">${sc.name}</div>
-    <div class="sc-blurb">${sc.blurb}</div>
+    <div class="sc-blurb">${sc.preview}</div>
     <div class="sc-action">${action}</div>
   </div>`;
+}
+
+function scPreviewSkillHtml(skill, sc, baseName) {
+  const rank = 1;
+  const type = getSkillTypeLabel(skill);
+  const brief = getSkillBrief(skill, rank, false, sc.id);
+  const oldName = baseName && baseName !== skill.name ? ` · Было «${escChronicle(baseName)}»` : '';
+  return `<details class="sc-preview-skill">
+    <summary>
+      <img src="${skill.iconPng}" alt="" loading="lazy">
+      <span class="sc-skill-copy">
+        <strong>${escChronicle(skill.name)}</strong>
+        <small>${type}${oldName}</small>
+        <span class="sc-skill-brief">${escChronicle(brief)}</span>
+      </span>
+    </summary>
+    <div class="sc-skill-detail">${loreSkillDetail(skill, rank, sc)}</div>
+  </details>`;
+}
+
+function scPreviewHtml(sc, current) {
+  const role = SUBCLASS_ROLES[sc.role];
+  const guide = SUBCLASS_GUIDES[sc.id];
+  const added = Object.values(SUBCLASS_SKILLS).filter(skill => skill.subclassId === sc.id)
+    .map(skill => scPreviewSkillHtml(skill, sc));
+  const changed = Object.entries(sc.mods).map(([id, mod]) => {
+    const live = SKILLS[id];
+    const base = SC_BASE[id] || live;
+    const skill = { ...live, ...base, ...mod };
+    skill.maxLevel = skill.levels.length;
+    return scPreviewSkillHtml(skill, sc, base.name);
+  });
+  return `
+    <button type="button" class="btn sc-preview-back" onclick="scPick(null)">← К списку подклассов</button>
+    <section class="sc-preview-hero" aria-labelledby="sc-preview-heading">
+      <div class="sc-preview-art"><img src="${sc.portrait}" alt=""></div>
+      <div class="sc-preview-copy">
+        <div class="sc-role">${role.icon} ${role.name}${current ? ' · Твой путь' : ''}</div>
+        <h2 id="sc-preview-heading" tabindex="-1">${sc.name}</h2>
+        <p>${guide.play}</p>
+        <dl class="sc-preview-traits">
+          <div class="sc-trait-strength"><dt>Сильные стороны</dt><dd>${guide.strength}</dd></div>
+          <div class="sc-trait-limit"><dt>Ограничения</dt><dd>${guide.limit}</dd></div>
+        </dl>
+      </div>
+    </section>
+    <section class="sc-preview-skills" aria-labelledby="sc-skills-heading">
+      <div class="sc-skills-head">
+        <h3 id="sc-skills-heading">Навыки</h3>
+        <span>На 1-м уровне навыка</span>
+      </div>
+      <div class="sc-skill-groups">
+        <section><h4>Новые навыки</h4>${added.join('')}</section>
+        <section><h4>Изменённые навыки</h4>${changed.join('')}</section>
+      </div>
+    </section>`;
+}
+
+function scPreviewActions(p) {
+  const price = SUBCLASS_CHANGE_PRICE.toLocaleString('ru-RU');
+  let unavailable = '';
+  if (p.level < SUBCLASS_MIN_LEVEL) unavailable = `Доступно с ${SUBCLASS_MIN_LEVEL}-го уровня`;
+  else if (state.battle.active) unavailable = 'Доступно после боя';
+  else if (p.subclass && p.gold < SUBCLASS_CHANGE_PRICE) unavailable = 'Не хватает Оболов';
+  const terms = p.subclass
+    ? `<strong>${price} Оболов</strong><span>Очки прежнего пути вернутся</span>`
+    : '<strong>Первое посвящение бесплатно</strong>';
+  return `<div class="sc-terms">${terms}${unavailable ? `<span class="sc-unavailable">${unavailable}</span>` : ''}</div>
+    <button type="button" class="btn success" onclick="scAccept()"${unavailable ? ' disabled' : ''}>Принять знак</button>`;
 }
 
 function renderSubclassTemple() {
   const pane = document.getElementById('sc-pane');
   if (!pane) return;
+  const actions = document.getElementById('sc-preview-actions');
+  actions.hidden = true;
+  actions.replaceChildren();
   const p = state.player;
   const list = subclassesForPlayer();
   const cur = getPlayerSubclass();
@@ -161,7 +255,7 @@ function renderSubclassTemple() {
       <div class="sc-dedicated">
         <div class="sc-portrait sc-portrait-big"><img src="${sc.portrait}" alt=""><div class="sc-candle sc-candle-lit"></div></div>
         <div class="sc-dedicated-text">
-          <div class="sc-name">${sc.name}</div>
+          <div class="sc-name" role="heading" aria-level="2" tabindex="-1">${sc.name}</div>
           <p>*Свеча у образа горит ровно и ярко. Мать Исмера касается твоего плеча.*</p>
           <p>— Боги сказали своё слово. Отныне ты — <b>${sc.name}</b>. Таинство откроет тебе новые приёмы.</p>
           <p class="sc-hint">Изменились три приёма класса (теперь до 7 уровня), открылись новые навыки подкласса. Очки — в Таинстве.</p>
@@ -174,9 +268,19 @@ function renderSubclassTemple() {
     return;
   }
 
-  let intro, mode = '';
+  if (scPicked) {
+    const sc = SUBCLASSES[scPicked];
+    const current = cur?.id === sc.id;
+    pane.innerHTML = scPreviewHtml(sc, current);
+    if (!current) {
+      actions.innerHTML = scPreviewActions(p);
+      actions.hidden = false;
+    }
+    return;
+  }
+
+  let intro;
   if (p.level < SUBCLASS_MIN_LEVEL) {
-    mode = 'locked';
     intro = `*У алтаря три свечи — каждая у своего образа. Ни одна не горит.*<br>Мать Исмера качает головой: — Рано. Боги говорят с теми, кто прошёл долгий путь. Приходи, когда окрепнешь. <span class="sc-req">С ${SUBCLASS_MIN_LEVEL} уровня</span>`;
   } else if (!cur) {
     intro = `*У алтаря три свечи — каждая у своего образа.*<br>Мать Исмера: — Встань и смотри. Боги сами укажут тебе путь — та свеча, что вспыхнет, и есть твой знак.`;
@@ -184,35 +288,23 @@ function renderSubclassTemple() {
     intro = `*Свеча у образа «${cur.name}» горит ровно.*<br>Мать Исмера: — Знак тебе уже дан. Но боги милостивы — если сердце просит иного, принеси дар храму, и мы спросим снова.`;
   }
 
-  let confirmHtml = '';
-  if (scPicked && SUBCLASSES[scPicked]) {
-    const sc = SUBCLASSES[scPicked];
-    const price = cur ? SUBCLASS_CHANGE_PRICE : 0;
-    const priceTxt = price ? ` Дар храму — <b>${price.toLocaleString('ru-RU')} 🪙</b>. Вложенные в прежний путь очки вернутся.` : '';
-    confirmHtml = `<div class="sc-confirm">
-      <p>*Свеча у образа «${sc.name}» вспыхивает ярче остальных.*${priceTxt}</p>
-      <div class="sc-buttons">
-        <button class="btn success" onclick="scAccept()">✦ Принять знак</button>
-        <button class="btn" onclick="scPick(null)">Отвести взгляд</button>
-      </div>
-    </div>`;
-  }
-
   pane.innerHTML = `
     <div class="sc-intro">${intro}</div>
-    <div class="sc-grid">${list.map(sc => scCardHtml(sc, mode)).join('')}</div>
-    ${confirmHtml}
+    <div class="sc-grid">${list.map(scCardHtml).join('')}</div>
     <div class="sc-foot">Пока игра в бете, путь можно сменить: ${SUBCLASS_CHANGE_PRICE.toLocaleString('ru-RU')} 🪙, вложенные очки возвращаются.</div>`;
-  if (confirmHtml) {
-    const c = pane.querySelector('.sc-confirm');
-    if (c && c.scrollIntoView) c.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
-  }
 }
 
 function scPick(id) {
-  if (id && (!SUBCLASSES[id] || !SUBCLASSES[id].ready)) return;
+  if (id && !subclassesForPlayer().some(sc => sc.id === id && sc.ready)) return;
+  const pane = document.getElementById('sc-pane');
+  const content = pane.parentElement;
+  const previous = scPicked;
+  if (id && !previous) scListScroll = content.scrollTop;
   scPicked = id;
   renderSubclassTemple();
+  content.scrollTop = id ? 0 : scListScroll;
+  const focus = id ? pane.querySelector('#sc-preview-heading') : pane.querySelector(`[data-sc-preview="${previous}"]`);
+  focus?.focus({ preventScroll: true });
 }
 
 // Вернуть очки, вложенные в навыки прежнего подкласса (вызывать ДО смены p.subclass).
@@ -279,6 +371,11 @@ function scAccept() {
   scPicked = null;
   scJustDedicated = id;
   renderSubclassTemple();
+  const dedicated = document.querySelector('#sc-pane .sc-dedicated');
+  if (dedicated) {
+    dedicated.closest('.window-content').scrollTop = 0;
+    dedicated.querySelector('.sc-name').focus({ preventScroll: true });
+  }
   saveCurrentSlot();
 }
 
@@ -3393,35 +3490,48 @@ function runemasterAbsorb(dmg) {
 
 // ---- Заклинатель камня: элементали ----
 function stonecallerElementals() { return (typeof alliesList === 'function' ? alliesList() : []).filter(a => a.elemental); }
+function stonecallerMissingKinds(list) {
+  return ELEMENTAL_ORDER.filter(kind => !list.some(e => e.kind === kind));
+}
+function stonecallerSummonBlockReason(list = stonecallerElementals()) {
+  if (list.some(e => e.kind === 'great')) return 'Великий уже в бою';
+  return !alliesHasRoom() && stonecallerMissingKinds(list).length ? 'Нет места для элементаля' : '';
+}
 function stonecallerSummon(data, why) {
   const p = state.player;
   const b = state.battle;
   const list = stonecallerElementals();
-  // все трое стоят — Слияние
-  if (list.length >= 3 && !list.some(e => e.kind === 'great')) {
+  const reason = stonecallerSummonBlockReason(list);
+  if (reason) { logCombat(`🗿 ${reason}.`, 'log-entry'); return; }
+  const missing = stonecallerMissingKinds(list);
+  if (!missing.length) {
     const fus = scSkillData('scFusion');
     const k = fus ? fus.mult : 1.2;
     const hp = list.reduce((s, e) => s + e.maxHp, 0) * k;
     const atk = list.reduce((s, e) => s + e.atk, 0) * k;
+    const portraits = bxCaptureElementalFusion(list);
     list.forEach(e => { e.hp = 0; e.fused = true; });
     b.allies = (b.allies || []).filter(a => !a.fused);
     const g = alliesAdd({ kind: 'great', elemental: true, name: 'Великий элементаль', img: 'img/allies/elemental_great.webp', hp, maxHp: hp, atk,
       taunt: true, burn: true, vein: true, absorb: list[0].absorb || 0, dodge: 0, slow: false });
-    if (g) logCombat(`🗿 Слияние! Великий элементаль: ${g.hp} HP, удар ${g.atk}.`, 'log-entry player-skill');
+    if (g) {
+      bxPlayElementalFusion(g.uid, portraits);
+      logCombat(`🗿 Слияние! Великий элементаль: ${g.hp} HP, удар ${g.atk}.`, 'log-entry player-skill');
+    }
     return;
   }
-  if (list.some(e => e.kind === 'great')) { logCombat(`🗿 Великий элементаль уже стоит.`, 'log-entry'); return; }
-  const kind = ELEMENTAL_ORDER[(b.scNext || 0) % ELEMENTAL_ORDER.length];
-  b.scNext = (b.scNext || 0) + 1;
+  const next = (b.scNext || 0) % ELEMENTAL_ORDER.length;
+  const kind = missing.find(kind => ELEMENTAL_ORDER.indexOf(kind) >= next) || missing[0];
   const K = ELEMENTAL_KINDS[kind];
   const f = data.power / 100;
   const sb = scSkillData('scStoneblood');
   const a = { kind, elemental: true, name: K.name, img: K.img, hp: p.maxHp * K.hp * f, atk: p.mAtk * K.atk * f + (sb ? p.mAtk * sb.atk / 100 : 0),
     taunt: !!K.taunt, burn: !!K.burn, vein: !!K.vein, absorb: sb ? Math.ceil(p.flatDamageReduce || 0) : 0, dodge: 0, slow: false };
   a.maxHp = a.hp;
-  if (!alliesHasRoom()) return;
   const added = alliesAdd(a);
-  if (added) logCombat(`🗿 ${added.name}${why ? ` (${why})` : ''}: ${K.desc}. ${added.hp} HP, удар ${added.atk}.`, 'log-entry player-skill');
+  if (!added) return;
+  b.scNext = (ELEMENTAL_ORDER.indexOf(kind) + 1) % ELEMENTAL_ORDER.length;
+  logCombat(`🗿 ${added.name}${why ? ` (${why})` : ''}: ${K.desc}. ${added.hp} HP, удар ${added.atk}.`, 'log-entry player-skill');
   addElementXP('ice');
 }
 function stonecallerStrike(e, m, mult, why) {
@@ -3442,9 +3552,10 @@ function dwarfOnAllyHit(a, m) {
     const other = aoeAlive().find(x => x !== m);
     if (other) {
       const dmg = monsterTagDmg(other, Math.max(1, Math.floor(a.atk * 0.5)), ['physical']);
-      other.hp = Math.max(1, other.hp - dmg);   // кристалл не добивает посреди чужого хода
+      const dealt = Math.max(0, Math.min(dmg, other.hp - 1));   // кристалл не добивает вторую цель
+      other.hp -= dealt;
       other._veinTouched = true;
-      spawnFloatDamage('fighter-monster', dmg, 'dmg', { mon: other });
+      if (dealt > 0) spawnFloatDamage('fighter-monster', dealt, 'dmg', { mon: other });
     }
   }
 }
@@ -3545,7 +3656,6 @@ SKILLS.swlClose.autoCheck = function () {
 };
 SKILLS.prVein.autoCheck = function () { return !getDebuff('player', 'veinSense'); };
 SKILLS.fmBellows.autoCheck = function () { return !getDebuff('player', 'bellows'); };
-SKILLS.scSummon.autoCheck = function () { return !stonecallerElementals().some(e => e.kind === 'great'); };
 
 // ========================================================
 //  ГНОМ: ремесло вне боя — ковка, Переплавка, подгонка

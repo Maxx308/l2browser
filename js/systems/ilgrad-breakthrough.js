@@ -509,6 +509,7 @@ function breakthroughOnClear() {
 
 function breakEndWave(timedOut) {
   const b = state.battle, br = b.breakthrough;
+  if (!timedOut && br.wave === BREAK_WAVES.length) vipPlayVictoryEffect();
   const leftovers = timedOut ? getAliveMonstersCount() + br.queue.length : 0;
   if (br.down > 0) breakHeroBack();
   b.active = false;

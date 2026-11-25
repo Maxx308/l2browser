@@ -98,6 +98,7 @@ function startBattle(template, variantId) {
 
   // ---- Показываем окно боя ----
   document.getElementById('battle-window').classList.add('active');
+  if (state.player.vipLook) updatePlayerAvatar();
   document.getElementById('hunt-hint').style.display = 'none';
 
   // ---- Заголовок: если группа — показываем ×N ----
@@ -215,6 +216,7 @@ function closeBattle() {
   hideMonsterSearching();
 
   document.getElementById('battle-window').classList.remove('active');
+  if (state.player.vipLook) updatePlayerAvatar();
   document.getElementById('hunt-hint').style.display = 'block';
   document.querySelectorAll('.monster-card').forEach(c => c.classList.remove('selected'));
   renderMonsters();

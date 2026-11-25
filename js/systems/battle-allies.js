@@ -31,6 +31,7 @@ function alliesAdd(a) {
   a.atk = a.atk > 0 ? Math.max(1, Math.floor(a.atk)) : 0;   // 0 — не бьёт (тотемы Камня и Духов)
   state.battle.allies.push(a);
   alliesRender(true);
+  bxShowAllyArrival(a);
   return a;
 }
 function alliesClear() {
@@ -64,10 +65,17 @@ function alliesAct() {
   // лечащие (тотем Духов): HP и мана герою
   const p = state.player;
   list.filter(a => a.healHp || a.healMp).forEach(a => {
-    const hp = a.healHp ? aoeHeal(p.maxHp * a.healHp / 100) : 0;
+    const source = a.totem ? { sourceAlly: a.uid } : undefined;
+    const hp = a.healHp ? aoeHeal(p.maxHp * a.healHp / 100, source) : 0;
     const mp = a.healMp ? Math.min(Math.floor(p.maxMp * a.healMp / 100), p.maxMp - p.mp) : 0;
     if (mp > 0) p.mp += mp;
-    if (hp > 0 || mp > 0) logCombat(`✚ ${a.name}: ${hp > 0 ? `+${hp} HP` : ''}${hp > 0 && mp > 0 ? ', ' : ''}${mp > 0 ? `+${mp} MP` : ''}`, 'log-entry potion');
+    if (hp > 0 || mp > 0) {
+      if (a.totem) {
+        bxShowAllySupport(a.uid);
+        if (mp > 0) spawnFloatDamage('fighter-player', mp, 'mana', { ...source, fx: 'mana-restore' });
+      }
+      logCombat(`✚ ${a.name}: ${hp > 0 ? `+${hp} HP` : ''}${hp > 0 && mp > 0 ? ', ' : ''}${mp > 0 ? `+${mp} MP` : ''}`, 'log-entry potion');
+    }
   });
   list.forEach(a => {
     if (!a.atk) return;   // не бьёт (тотем Камня, Духов)
@@ -77,7 +85,8 @@ function alliesAct() {
     const variance = Math.floor(a.atk * 0.2);
     const raw = a.atk + Math.floor(Math.random() * variance * 2) - variance;
     const dmg = monsterTagDmg(m, Math.max(1, Math.floor(raw - (m.pDef || 0) * ALLY_PDEF_FACTOR)), ['physical']);
-    hits.push({ m, miss: false, dmg, type: 'dmg', fx: 'slash' });
+    const rage = a.totem && a.kind === 'rage';
+    hits.push({ m, miss: false, dmg, type: 'dmg', fx: rage ? 'proj:fire' : 'slash', sourceAlly: rage ? a.uid : null });
     parts.push(dmg);
     if (typeof subclassOnAllyHit === 'function') subclassOnAllyHit(a, m);   // v0.38: паутина и яд пауков
   });
@@ -114,6 +123,7 @@ function allyTakeHit(a, m, skill) {
   const mult = typeof subclassMonsterWeakMult === 'function' ? subclassMonsterWeakMult(m) : 1;   // Оковы / Проклятие слабости
   const dmg = Math.max(1, Math.floor(raw * mult) - (a.absorb || 0));   // v0.38: Каменная кровь — элементали держат поглощение героя
   a.hp -= dmg;
+  bxNoteAllyHit(a.uid, m, dmg);
   logCombat(`🩸 ${m.name} бьёт ${a.name}: ${dmg}`, 'log-entry monster', a.hp > 0 ? `осталось ${Math.max(0, Math.floor(a.hp))}/${a.maxHp}` : '');
   alliesReap();
   alliesRender();
@@ -151,12 +161,22 @@ function alliesRender(force) {
   const sig = list.map(a => `${a.uid}:${Math.max(0, Math.floor(a.hp))}/${a.maxHp}`).join('|');
   if (!force && sig === ALLY_SIG) return;
   ALLY_SIG = sig;
-  box.innerHTML = list.map(a => {
+  const cards = new Map(Array.from(box.children, card => [Number(card.dataset.allyUid), card]));
+  list.forEach(a => {
+    let card = cards.get(a.uid);
+    cards.delete(a.uid);
+    if (!card) {
+      card = document.createElement('div');
+      card.className = a.totem ? 'bx-ally bx-ally-totem' : 'bx-ally';
+      card.dataset.allyUid = a.uid;
+      card.innerHTML = '<img alt=""><div class="bx-ally-hp"><i></i></div>';
+      card.firstElementChild.src = a.img;
+      box.appendChild(card);
+    }
     const pct = Math.max(0, Math.min(100, a.hp / a.maxHp * 100));
     const role = a.atk ? ` · удар ${a.atk}` : (a.healHp ? ' · лечит' : (a.taunt ? ' · принимает удары' : ''));
-    return `<div class="bx-ally" title="${a.name} · ${Math.max(0, Math.floor(a.hp))}/${a.maxHp} HP${role}${a.slow ? ' · медленный' : ''}${a.dodge ? ` · уворот ${a.dodge}%` : ''}">
-      <img src="${a.img}" alt="">
-      <div class="bx-ally-hp"><i style="width:${pct.toFixed(1)}%"></i></div>
-    </div>`;
-  }).join('');
+    card.title = `${a.name} · ${Math.max(0, Math.floor(a.hp))}/${a.maxHp} HP${role}${a.slow ? ' · медленный' : ''}${a.dodge ? ` · уворот ${a.dodge}%` : ''}`;
+    card.querySelector('.bx-ally-hp i').style.width = `${pct.toFixed(1)}%`;
+  });
+  cards.forEach(card => card.remove());
 }

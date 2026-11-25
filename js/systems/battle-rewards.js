@@ -303,6 +303,7 @@ function onMonsterDeath(deadMonster) {
   //  ВСЕ МЕРТВЫ — КОНЕЦ БОЯ
   // ========================================================
   if (state.battle.breakthrough && breakthroughOnClear()) return;   // v0.36: волны прорыва
+  if (countsAsKill) vipPlayVictoryEffect();
   fallOmenOnClear();   // приметы 18–19: дрожь земли
 
   const deadMonsterId = m.id;

@@ -372,8 +372,8 @@ function selectLoreSkillRank(button, skillId) {
   article.querySelector('.lore-skill-detail').innerHTML = loreSkillDetail(skill, rank);
 }
 
-function isBaseFireball(skill) {
-  return skill.id === 'fireball' && !getPlayerSubclass()?.mods?.fireball;
+function isBaseFireball(skill, subclass = getPlayerSubclass()) {
+  return skill.id === 'fireball' && !subclass?.mods?.fireball;
 }
 
 function loreSkillEffect(skill, rank) {
@@ -381,11 +381,11 @@ function loreSkillEffect(skill, rank) {
   return getSkillBrief(skill, rank, false);
 }
 
-function loreSkillDetail(skill, rank) {
-  const desc = skill.getDesc(rank);
+function loreSkillDetail(skill, rank, subclass) {
+  const desc = skill.getDesc(rank, skill);
   const data = skill.levels[rank - 1];
   const rows = [];
-  const fireball = isBaseFireball(skill);
+  const fireball = isBaseFireball(skill, subclass);
   if (fireball) {
     rows.push(['Удар', `×${SKILL_TEXT_NUMBER.format(data.multiplier)} от магической атаки`]);
     rows.push(['Поджог', `${data.burnPercent}% магической атаки за ход`]);

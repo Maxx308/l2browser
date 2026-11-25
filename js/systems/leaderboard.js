@@ -272,7 +272,7 @@ async function cloudFetchLeaderboard(sortBy) {
                  : 'level';
 
   try {
-    // 20.11.2026: sc — подкласс из профиля (для портрета). Целый профиль не тянем — он большой.
+    // Подкласс нужен для подписи и портрета. В списке загружаем только его ключ.
     const LB_COLS = 'user_id, slot, character_name, race_id, class_id, level, gold, kills, updated_at';
     const query = (cols) => supabaseClient
       .from('leaderboard')
@@ -281,7 +281,7 @@ async function cloudFetchLeaderboard(sortBy) {
       .limit(LB_TOP_N);
     let { data, error } = await query(LB_COLS + ', sc:profile->>sc');
     if (error) {
-      // база не поняла выборку из профиля — рейтинг важнее портретов
+      // Старый сервер может не поддерживать выборку подкласса из профиля.
       console.warn('[leaderboard] без подклассов:', error.message);
       ({ data, error } = await query(LB_COLS));
     }
@@ -483,7 +483,7 @@ function buildLeaderboardRowHtml(row, rank, idx) {
 
   // Названия расы и класса.
   const raceName = RACES[raceId].name;
-  const className = CLASSES[classId].name;
+  const className = lbRowClassLabel(row, raceId, classId);
   const level = Math.max(1, Math.floor(Number(row.level)) || 1);
 
   const name = escapeHtml(row.character_name || 'Безымянный');
@@ -507,13 +507,24 @@ function buildLeaderboardRowHtml(row, rank, idx) {
 //  ХЕЛПЕРЫ
 // ========================================================
 
-// 20.11.2026: портрет строки рейтинга — с подклассом. Свой герой — по живым данным
+// Подкласс своего героя берём из текущего состояния
 // (подкласс только что сменили, а строка в облаке обновится позже).
 // sc пишет чужой браузер: годится только ключ из справочника SUBCLASSES подходящей расы и класса.
+function lbRowSubclassId(row, raceId, classId) {
+  const id = row?.isMe ? state.player.subclass : row?.sc;
+  if (typeof SUBCLASSES === 'undefined' || !hasOwnKey(SUBCLASSES, id)) return null;
+  const subclass = SUBCLASSES[id];
+  return subclass.race === raceId && subclass.cls === classId ? id : null;
+}
+
+function lbRowClassLabel(row, raceId, classId) {
+  const name = CLASSES[classId].name;
+  const id = lbRowSubclassId(row, raceId, classId);
+  return id ? `${name} · ${SUBCLASSES[id].name}` : name;
+}
+
 function lbRowPortrait(row, raceId, classId) {
-  let sc = row && row.isMe ? state.player.subclass : row && row.sc;
-  if (typeof SUBCLASSES === 'undefined' || !hasOwnKey(SUBCLASSES, sc)) sc = null;
-  if (typeof getHeroPortrait === 'function') return getHeroPortrait(raceId, classId, sc);
+  if (typeof getHeroPortrait === 'function') return getHeroPortrait(raceId, classId, lbRowSubclassId(row, raceId, classId));
   if (typeof getRaceIcon === 'function') return getRaceIcon(raceId, classId);
   return `img/races/${raceId}.webp`;
 }

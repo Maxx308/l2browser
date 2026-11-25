@@ -395,13 +395,14 @@ function updateCharacterPanel() {
 
   const portrait = document.getElementById('cs-portrait');
   if (portrait) {
-    const src = has && typeof getHeroPortrait === 'function' ? getHeroPortrait(p.raceId || 'human', p.classId, p.subclass) : '';   // v0.38: портрет подкласса
+    const src = has ? vipHeroPortrait(p) : '';
     if (portrait.dataset.src !== src) {
       portrait.dataset.src = src;
       const fallback = p.classId === 'mage' ? '🧙' : (p.classId === 'warrior' ? '⚔' : '');
       portrait.innerHTML = src ? `<img src="${src}" alt="" onerror="this.parentNode.textContent='${fallback}'">` : fallback;
     }
   }
+  vipRenderCharacter();
 
   // ---- Шкалы ----
   const pct = (a, b) => (b > 0 ? Math.max(0, Math.min(100, a / b * 100)) : 0) + '%';
@@ -513,6 +514,8 @@ function closeSoon() { document.getElementById('soon-overlay').classList.remove(
 // ========================================================
 
 function initGame() {
+  vipPickingSeal = false;
+  vipRefreshTrial(true);
   recalcStats();
   renderMonsters();
   renderInventory();

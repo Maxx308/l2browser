@@ -19,14 +19,12 @@ function updatePlayerAvatar() {
     return;
   }
 
-  const raceId = p.raceId || 'human';
-  const imgSrc = (typeof getHeroPortrait === 'function')
-    ? getHeroPortrait(raceId, p.classId, p.subclass)   // v0.38: с подклассом — его портрет
-    : `img/races/${raceId}.webp`;
+  const imgSrc = vipHeroPortrait(p, document.getElementById('battle-window').classList.contains('active'));
 
   if (p.classId === 'warrior') slot.classList.add('class-warrior');
   if (p.classId === 'mage')    slot.classList.add('class-mage');
 
+  if (slot.querySelector('img')?.getAttribute('src') === imgSrc) return;
   const imgHtml = `<img class="fighter-avatar-img" src="${imgSrc}" alt=""
     onerror="playerAvatarFallback()">`;
   slot.innerHTML = imgHtml;

@@ -139,6 +139,159 @@ Object.keys(SUBCLASSES).forEach(id => {
   if (!SUBCLASSES[id].mods) SUBCLASSES[id].mods = {};
 });
 
+const SUBCLASS_GUIDES = {
+  human_wallguard: {
+    play: 'Принимайте удары на щит и отвечайте, когда противник открывается.',
+    strength: 'Блоки, оглушение щитом и запасной шанс пережить смертельный удар.',
+    limit: 'Без щита теряете часть защиты и ответных ударов.',
+  },
+  human_huntsman: {
+    play: 'Набирайте Азарт критическими ударами и тратьте его на добивание.',
+    strength: 'Много быстрых попаданий и сильный удар по ослабленной цели.',
+    limit: 'Добивание требует зарядов. Часть бонусов работает с луком, арбалетом или кинжалом.',
+  },
+  human_templar: {
+    play: 'Чередуйте удары оружием и магию Света, чтобы лечиться прямо в бою.',
+    strength: 'Свет полезен против нежити и бьёт сразу по нескольким врагам.',
+    limit: 'Сияние тратит ману каждый ход и набирает силу постепенно.',
+  },
+  human_elementalist: {
+    play: 'Чередуйте огонь, лёд и молнию. Заморозьте врага, затем расколите его Огненным шаром.',
+    strength: 'Сочетания стихий усиливают урон, а Стихийный залп даёт бесплатное заклинание.',
+    limit: 'Особые эффекты зависят от того, в каком порядке вы применяете заклинания.',
+  },
+  human_priest: {
+    play: 'Лечитесь светом и превращайте лишнее лечение в защитный барьер.',
+    strength: 'Лечение снимает вредные эффекты, а свет особенно силён против нежити.',
+    limit: 'Чтобы собрать барьер, нужно получить больше лечения, чем сейчас требуется.',
+  },
+  human_necromancer: {
+    play: 'Поднимайте павших врагов и сражайтесь вместе с тремя слугами.',
+    strength: 'Костяное копьё может бесплатно поднять слугу, а «Костяная плата» переносит на него сильный удар.',
+    limit: 'Вид слуги зависит от павшего врага. После боя слуг нужно призвать заново.',
+  },
+  orc_rock: {
+    play: 'Переживайте тяжёлые удары и восстанавливайтесь в бою, особенно на низком здоровье.',
+    strength: 'Здоровье усиливает таран, а Ярость возвращает часть урона лечением.',
+    limit: 'Часть защиты раскрывается только без щита, восстановлению нужно время.',
+  },
+  orc_berserker: {
+    play: 'Тратьте здоровье на мощные удары и добивайте врагов, чтобы вернуть часть потерь.',
+    strength: 'Двуручное оружие пробивает защиту, а убийство даёт удар по следующему врагу.',
+    limit: 'Навыки расходуют здоровье. Во время Неистовства входящий урон растёт.',
+  },
+  orc_chieftain: {
+    play: 'Зовите духа предка и сочетайте оружие с магией Смерти.',
+    strength: 'Дух даёт усиление атаки или защиты, а убийства возвращают здоровье и ману.',
+    limit: 'Усиление духа временное, а отдача Ярости расходует здоровье.',
+  },
+  orc_hexer: {
+    play: 'Накладывайте разные проклятия и копите Гниение на цели.',
+    strength: 'Каждое новое проклятие усиливает урон. Когда враг гибнет, проклятия могут задеть соседей.',
+    limit: 'Чтобы раскрыть силу на одной цели, нужно успеть накопить несколько эффектов.',
+  },
+  orc_healer: {
+    play: 'Ослабляйте врагов и лечитесь за счёт магии Смерти и Гниения.',
+    strength: 'Гнев лечит без отдачи, а Гниение помогает восстанавливаться против стаи.',
+    limit: 'Часть восстановления приходит постепенно, пока Гниение наносит урон.',
+  },
+  orc_shaman: {
+    play: 'Призывайте тотемы и усиливайте заклинания, пока они стоят рядом.',
+    strength: 'Камень прикрывает, Ярость стреляет, Духи возвращают здоровье и ману.',
+    limit: 'Тип тотема случаен. Четвёртый призыв заменяет самый старый тотем.',
+  },
+  elf_thornguard: {
+    play: 'Опутывайте врагов корнями и превращайте часть сильного удара в постепенный урон.',
+    strength: 'Часть отложенного урона исчезает, а опутанные враги атакуют реже.',
+    limit: 'Оставшийся урон всё равно поступает позже. Его важно пережить.',
+  },
+  elf_pathfinder: {
+    play: 'Сейте терновые семена ударами и раскрывайте их в подходящий момент.',
+    strength: 'Точные попадания, пробивание защиты и возможность сразу раскрыть семена.',
+    limit: 'Семенам нужно время, если не раскрыть их специальным приёмом.',
+  },
+  elf_bladesinger: {
+    play: 'Чередуйте удары клинком и магию Жизни, чтобы лечиться во время атаки.',
+    strength: 'Урон магией Жизни восстанавливает здоровье, а лишнее лечение может ранить врага.',
+    limit: 'Часть силы зависит от ритма ударов. «Песнь ветра» помогает сохранить Песнь.',
+  },
+  elf_stargazer: {
+    play: 'Сосредоточьтесь на одной цели и обрушивайте на неё звёзды.',
+    strength: 'Повторные заклинания по одной цели усиливают урон, а «Звёздный луч» ускоряет падение звезды.',
+    limit: 'Звезда падает с задержкой, а при смене цели нужно снова набирать усиление.',
+  },
+  elf_grovekeeper: {
+    play: 'Заранее накладывайте лечение и поддерживайте здоровье на протяжении боя.',
+    strength: 'Лечение продолжается между ходами и может возвращать ману.',
+    limit: 'Часть лечения приходит постепенно. Его нужно начать до опасного удара.',
+  },
+  elf_druid: {
+    play: 'Призывайте духа-зверя и охотьтесь вместе с ним. Повторный призыв отдаёт приказ атаковать.',
+    strength: 'Рысь сильнее бьёт, Олень лечит, а Филин даёт ману. Живой дух остаётся между боями.',
+    limit: 'Какой дух придёт, решает случай. Если он погибнет, накопленный рост пропадёт.',
+  },
+  drow_stormguard: {
+    play: 'Принимайте удары и копите на врагах Статику для ответных разрядов.',
+    strength: 'Молния задерживает ход врага. Защита помогает пережить магические атаки.',
+    limit: 'Для ответных разрядов и части эффектов нужны удары по вам.',
+  },
+  drow_assassin: {
+    play: 'Используйте быстрые ходы и бейте до того, как враг накопит ход.',
+    strength: 'Парное оружие усиливает атаки, яд накапливается, а убийство приближает ваш следующий ход.',
+    limit: 'Часть бонусов требует оружия в обеих руках, а сильный удар зависит от шкалы врага.',
+  },
+  drow_shadowweaver: {
+    play: 'Заряжайте оружие молнией и призывайте двойника, который повторяет удары.',
+    strength: 'Двойник добавляет урон, а паралич может вызвать его или продлить его действие.',
+    limit: 'Двойник временный. Продление зависит от того, удастся ли парализовать врага.',
+  },
+  drow_stormcaller: {
+    play: 'Бейте молниями подряд, копите Напряжение и пускайте цепь по стае.',
+    strength: 'Цепная молния поражает несколько врагов, а накопленное Напряжение усиливает разряд.',
+    limit: 'До усиленного удара нужно набрать серию молний.',
+  },
+  drow_dreamweaver: {
+    play: 'Усыпляйте часть стаи и разбирайтесь с остальными врагами по очереди.',
+    strength: 'Спящие враги дают время восстановить здоровье и подготовить сильный удар.',
+    limit: 'Урон будит спящих. Важен порядок, в котором вы выбираете цели.',
+  },
+  drow_spiderlord: {
+    play: 'Призывайте матку и давайте выводку время вырасти. Паралич зовёт всех пауков в атаку.',
+    strength: 'Укусы замедляют цели паутиной и накапливают яд.',
+    limit: 'Матке нужно время, чтобы вывести паучат. Укусы после Разряда требуют паралича.',
+  },
+  dwarf_steelwall: {
+    play: 'Переживайте серии ударов и наращивайте поглощение урона по ходу боя.',
+    strength: 'Сильная защита под частыми атаками и устойчивость к оглушению.',
+    limit: 'Часть защиты набирается от полученных ударов, а «Гномья сталь» требует подходящей брони.',
+  },
+  dwarf_hammerer: {
+    play: 'Пробивайте защиту врага тяжёлым оружием и используйте заморозку для сильных ударов.',
+    strength: 'Проломы усиливают удары по крепкой цели. Раскол хорошо работает по замороженным врагам.',
+    limit: 'Часть бонусов требует молота, дубины или топора. Для самого сильного удара нужны три Пролома.',
+  },
+  dwarf_prospector: {
+    play: 'Накладывайте Метки Жадности перед добиванием и собирайте больше добычи с охоты.',
+    strength: 'Метки, дополнительные попытки добычи и повышенный шанс полезных материалов.',
+    limit: 'Для части бонусов враг должен прожить достаточно долго, чтобы накопить метки.',
+  },
+  dwarf_forgemaster: {
+    play: 'Разогревайте врагов огнём и используйте накопленный Жар перед бураном.',
+    strength: 'Жар усиливает связку заклинаний. В кузнице проще получить более редкую вещь или сберечь материалы.',
+    limit: 'Связка требует подготовить цель. Часть навыков даёт пользу только в кузнице.',
+  },
+  dwarf_runemaster: {
+    play: 'Наносите руны на себя и ставьте взрывную руну на врага перед его ударом.',
+    strength: 'Руны дают защиту и лечение, а подгонка снаряжения обходится выгоднее.',
+    limit: 'Взрывная руна ждёт действия врага. Часть преимуществ относится только к подгонке.',
+  },
+  dwarf_stonecaller: {
+    play: 'Собирайте элементалей Камня, Огня и Жилы, затем объединяйте их в Великого.',
+    strength: 'Камень прикрывает, Огонь поджигает, Жила задевает второго врага и помогает с добычей.',
+    limit: 'До слияния надо собрать все три стихии и сохранить их в бою.',
+  },
+};
+
 function scX(v) { return `<span class="val">×${v.toFixed(2)}</span>`; }
 function scV(v) { return `<span class="val">${v}</span>`; }
 function scNext(skill, lvl, fmt) {
@@ -162,7 +315,7 @@ SUBCLASSES.human_wallguard.mods = {
       { mpCost: 15, multiplier: 3.0 }, { mpCost: 16, multiplier: 3.25 },
       { mpCost: 17, multiplier: 3.5 },
     ],
-    getDesc: (lvl) => { const d = SKILLS.powerStrike.levels[lvl-1]; return `Со щитом: (атака + защита щита ×${WALLGUARD_SHIELD_DEF_MULT}) × ${scX(d.multiplier)}. Без щита — обычный сильный удар на ${scX(d.multiplier)}. <b>Цикл мастера:</b> убийство — КД «Меча и щита» −1. MP: ${scV(d.mpCost)}. КД: ${SKILLS.powerStrike.cooldown} ATB.`; },
+    getDesc: (lvl, skill = SKILLS.powerStrike) => { const d = skill.levels[lvl-1]; return `Со щитом: (атака + защита щита ×${WALLGUARD_SHIELD_DEF_MULT}) × ${scX(d.multiplier)}. Без щита — обычный сильный удар на ${scX(d.multiplier)}. <b>Цикл мастера:</b> убийство — КД «Меча и щита» −1. MP: ${scV(d.mpCost)}. КД: ${skill.cooldown} ATB.`; },
     getNextDesc: (lvl) => scNext(SKILLS.powerStrike, lvl, n => `×${n.multiplier.toFixed(2)}, MP ${n.mpCost}`),
   },
   // Двойной удар → Меч и щит
@@ -175,7 +328,7 @@ SUBCLASSES.human_wallguard.mods = {
       { mpCost: 15, multiplier: 1.10 }, { mpCost: 16, multiplier: 1.15 },
       { mpCost: 17, multiplier: 1.20 },
     ],
-    getDesc: (lvl) => { const d = SKILLS.doubleStrike.levels[lvl-1]; return `Два удара по ${scX(d.multiplier)}. Со щитом второй удар — щитом: к атаке прибавляется защита щита ×${WALLGUARD_SHIELD_DEF_MULT}, шанс ${scV(SKILLS.doubleStrike.stunChance + '%')} оглушить. <b>Цикл мастера:</b> убийство — КД «Кругового вызова» −1. MP: ${scV(d.mpCost)}. КД: ${SKILLS.doubleStrike.cooldown} ATB.`; },
+    getDesc: (lvl, skill = SKILLS.doubleStrike) => { const d = skill.levels[lvl-1]; return `Два удара по ${scX(d.multiplier)}. Со щитом второй удар — щитом: к атаке прибавляется защита щита ×${WALLGUARD_SHIELD_DEF_MULT}, шанс ${scV(skill.stunChance + '%')} оглушить. <b>Цикл мастера:</b> убийство — КД «Кругового вызова» −1. MP: ${scV(d.mpCost)}. КД: ${skill.cooldown} ATB.`; },
     getNextDesc: (lvl) => scNext(SKILLS.doubleStrike, lvl, n => `×${n.multiplier.toFixed(2)} каждый удар, MP ${n.mpCost}`),
   },
   // Круговой удар → Круговой вызов
@@ -188,7 +341,7 @@ SUBCLASSES.human_wallguard.mods = {
       { mpCost: 18, multiplier: 1.20, targets: 4 }, { mpCost: 19, multiplier: 1.27, targets: 4 },
       { mpCost: 20, multiplier: 1.35, targets: 4 },
     ],
-    getDesc: (lvl) => { const w = SKILLS.whirlwind; const d = w.levels[lvl-1]; return `Удар по кругу: до ${scV(d.targets)} врагов на ${scX(d.multiplier)}. <b>Вызов:</b> задетые ${w.challengeTurns} хода бьют только героя и получают ${scV('+' + w.challengePct + '%')} урона от всех. <b>Цикл мастера:</b> убил хоть одного — КД «Удара щитом» −1. MP: ${scV(d.mpCost)}. КД: ${w.cooldown}.`; },
+    getDesc: (lvl, skill = SKILLS.whirlwind) => { const w = skill; const d = w.levels[lvl-1]; return `Удар по кругу: до ${scV(d.targets)} врагов на ${scX(d.multiplier)}. <b>Вызов:</b> задетые ${w.challengeTurns} хода бьют только героя и получают ${scV('+' + w.challengePct + '%')} урона от всех. <b>Цикл мастера:</b> убил хоть одного — КД «Удара щитом» −1. MP: ${scV(d.mpCost)}. КД: ${w.cooldown}.`; },
     getNextDesc: (lvl) => scNext(SKILLS.whirlwind, lvl, n => `${n.targets} цели, ×${n.multiplier.toFixed(2)}, MP ${n.mpCost}`),
   },
 };
@@ -259,7 +412,7 @@ SUBCLASSES.human_huntsman.mods = {
       { mpCost: 0, multiplier: 1.6 }, { mpCost: 0, multiplier: 1.7 }, { mpCost: 0, multiplier: 1.8 },
       { mpCost: 0, multiplier: 1.9 },
     ],
-    getDesc: (lvl) => { const s = SKILLS.powerStrike, mod = SUBCLASSES.human_huntsman.mods.powerStrike, d = s.levels[lvl-1];
+    getDesc: (lvl, skill = SKILLS.powerStrike) => { const s = skill, mod = SUBCLASSES.human_huntsman.mods.powerStrike, d = s.levels[lvl-1];
       const full = d.multiplier + mod.perCharge * JAEGER_ZEAL_MAX;
       return `Тратит весь Азарт: ${scX(d.multiplier)} + ${scV('×' + mod.perCharge.toFixed(1))} за каждый заряд (${scX(full)} на ${JAEGER_ZEAL_MAX}). Цель ниже ${mod.lowHpPct}% HP — ещё ${scV('+' + mod.lowHpBonus + '%')}. Нужно от ${mod.minZeal} зарядов. Без маны. <b>Цикл мастера:</b> убийство — КД Шквала −1. КД: ${s.cooldown} ATB.`; },
     getNextDesc: (lvl) => scNext(SKILLS.powerStrike, lvl, n => `база ×${n.multiplier.toFixed(2)}`),
@@ -273,7 +426,7 @@ SUBCLASSES.human_huntsman.mods = {
       { mpCost: 9, multiplier: 0.70 }, { mpCost: 9, multiplier: 0.73 }, { mpCost: 10, multiplier: 0.77 },
       { mpCost: 11, multiplier: 0.80 },
     ],
-    getDesc: (lvl) => { const s = SKILLS.doubleStrike, d = s.levels[lvl-1]; return `Три быстрых удара по ${scX(d.multiplier)}. Крит — отдельно на каждый, и каждый крит — заряд Азарта. <b>Цикл мастера:</b> убийство — КД Веера −1. MP: ${scV(d.mpCost)}. КД: ${s.cooldown} ATB.`; },
+    getDesc: (lvl, skill = SKILLS.doubleStrike) => { const s = skill, d = s.levels[lvl-1]; return `Три быстрых удара по ${scX(d.multiplier)}. Крит — отдельно на каждый, и каждый крит — заряд Азарта. <b>Цикл мастера:</b> убийство — КД Веера −1. MP: ${scV(d.mpCost)}. КД: ${s.cooldown} ATB.`; },
     getNextDesc: (lvl) => scNext(SKILLS.doubleStrike, lvl, n => `×${n.multiplier.toFixed(2)} каждый удар, MP ${n.mpCost}`),
   },
   // Круговой удар → Веер
@@ -285,7 +438,7 @@ SUBCLASSES.human_huntsman.mods = {
       { mpCost: 18, multiplier: 1.20, targets: 4 }, { mpCost: 19, multiplier: 1.27, targets: 4 },
       { mpCost: 20, multiplier: 1.35, targets: 4 },
     ],
-    getDesc: (lvl) => { const s = SKILLS.whirlwind, d = s.levels[lvl-1]; return `Веер ударов или стрел: до ${scV(d.targets)} врагов на ${scX(d.multiplier)}. Каждый крит — заряд Азарта. <b>Цикл мастера:</b> убил хоть одного — КД Добивания −1. MP: ${scV(d.mpCost)}. КД: ${s.cooldown}.`; },
+    getDesc: (lvl, skill = SKILLS.whirlwind) => { const s = skill, d = s.levels[lvl-1]; return `Веер ударов или стрел: до ${scV(d.targets)} врагов на ${scX(d.multiplier)}. Каждый крит — заряд Азарта. <b>Цикл мастера:</b> убил хоть одного — КД Добивания −1. MP: ${scV(d.mpCost)}. КД: ${s.cooldown}.`; },
     getNextDesc: (lvl) => scNext(SKILLS.whirlwind, lvl, n => `${n.targets} цели, ×${n.multiplier.toFixed(2)}, MP ${n.mpCost}`),
   },
 };
@@ -304,7 +457,7 @@ SUBCLASSES.human_templar.mods = {
       { mpCost: 15, multiplier: 3.0 }, { mpCost: 16, multiplier: 3.25 },
       { mpCost: 17, multiplier: 3.5 },
     ],
-    getDesc: (lvl) => { const s = SKILLS.powerStrike, mod = SUBCLASSES.human_templar.mods.powerStrike, d = s.levels[lvl-1]; return `Удар светом: (атака + маг. атака ×${mod.magPart}) × ${scX(d.multiplier)}. Нежить оглушает с шансом ${scV(mod.stunUndead + '%')}. <b>Цикл мастера:</b> убийство — КД Удара с молитвой −1. MP: ${scV(d.mpCost)}. КД: ${s.cooldown} ATB.`; },
+    getDesc: (lvl, skill = SKILLS.powerStrike) => { const s = skill, mod = SUBCLASSES.human_templar.mods.powerStrike, d = s.levels[lvl-1]; return `Удар светом: (атака + маг. атака ×${mod.magPart}) × ${scX(d.multiplier)}. Нежить оглушает с шансом ${scV(mod.stunUndead + '%')}. <b>Цикл мастера:</b> убийство — КД Удара с молитвой −1. MP: ${scV(d.mpCost)}. КД: ${s.cooldown} ATB.`; },
     getNextDesc: (lvl) => scNext(SKILLS.powerStrike, lvl, n => `×${n.multiplier.toFixed(2)}, MP ${n.mpCost}`),
   },
   // Двойной удар → Удар с молитвой
@@ -316,7 +469,7 @@ SUBCLASSES.human_templar.mods = {
       { mpCost: 15, multiplier: 1.10, heal: 17 }, { mpCost: 16, multiplier: 1.15, heal: 18 },
       { mpCost: 17, multiplier: 1.20, heal: 20 },
     ],
-    getDesc: (lvl) => { const s = SKILLS.doubleStrike, d = s.levels[lvl-1]; return `Два удара по ${scX(d.multiplier)}, каждый лечит ${scV(d.heal + '%')} нанесённого. <b>Цикл мастера:</b> убийство — КД Волны света −1. MP: ${scV(d.mpCost)}. КД: ${s.cooldown} ATB.`; },
+    getDesc: (lvl, skill = SKILLS.doubleStrike) => { const s = skill, d = s.levels[lvl-1]; return `Два удара по ${scX(d.multiplier)}, каждый лечит ${scV(d.heal + '%')} нанесённого. <b>Цикл мастера:</b> убийство — КД Волны света −1. MP: ${scV(d.mpCost)}. КД: ${s.cooldown} ATB.`; },
     getNextDesc: (lvl) => scNext(SKILLS.doubleStrike, lvl, n => `×${n.multiplier.toFixed(2)}, лечение ${n.heal}%, MP ${n.mpCost}`),
   },
   // Круговой удар → Волна света
@@ -329,7 +482,7 @@ SUBCLASSES.human_templar.mods = {
       { mpCost: 18, multiplier: 1.20, targets: 4, heal: 3.3 }, { mpCost: 19, multiplier: 1.27, targets: 4, heal: 3.7 },
       { mpCost: 20, multiplier: 1.35, targets: 4, heal: 4 },
     ],
-    getDesc: (lvl) => { const s = SKILLS.whirlwind, mod = SUBCLASSES.human_templar.mods.whirlwind, d = s.levels[lvl-1]; return `Волна по кругу: до ${scV(d.targets)} врагов — удар на ${scX(d.multiplier)} и свет на ${scX(d.multiplier * mod.magPart)} от маг. атаки. За каждого задетого лечит ${scV(d.heal + '%')} макс. HP. <b>Цикл мастера:</b> убил хоть одного — КД Карающего удара −1. MP: ${scV(d.mpCost)}. КД: ${s.cooldown}.`; },
+    getDesc: (lvl, skill = SKILLS.whirlwind) => { const s = skill, mod = SUBCLASSES.human_templar.mods.whirlwind, d = s.levels[lvl-1]; return `Волна по кругу: до ${scV(d.targets)} врагов — удар на ${scX(d.multiplier)} и свет на ${scX(d.multiplier * mod.magPart)} от маг. атаки. За каждого задетого лечит ${scV(d.heal + '%')} макс. HP. <b>Цикл мастера:</b> убил хоть одного — КД Карающего удара −1. MP: ${scV(d.mpCost)}. КД: ${s.cooldown}.`; },
     getNextDesc: (lvl) => scNext(SKILLS.whirlwind, lvl, n => `${n.targets} цели, ×${n.multiplier.toFixed(2)}, лечение ${n.heal}%`),
   },
 };
@@ -434,19 +587,19 @@ SUBCLASSES.human_elementalist.mods = {
   fireball: {
     name: 'Огненный шар', shatterMult: 1.5,
     levels: SC_FIREBALL_LEVELS,
-    getDesc: (lvl) => { const s = SKILLS.fireball, d = s.levels[lvl-1]; return `Огненный удар на ${scX(d.multiplier)}, поджог на ${s.burnTurns} хода по ${scV(d.burnPercent + '%')} маг. атаки. <b>Раскол:</b> по замороженной — ${scX(1.5)}, заморозка спадает. MP: ${scV(d.mpCost)}.`; },
+    getDesc: (lvl, skill = SKILLS.fireball) => { const s = skill, d = s.levels[lvl-1]; return `Огненный удар на ${scX(d.multiplier)}, поджог на ${s.burnTurns} хода по ${scV(d.burnPercent + '%')} маг. атаки. <b>Раскол:</b> по замороженной — ${scX(1.5)}, заморозка спадает. MP: ${scV(d.mpCost)}.`; },
     getNextDesc: (lvl) => scNext(SKILLS.fireball, lvl, n => `×${n.multiplier.toFixed(2)}, поджог ${n.burnPercent}%, MP ${n.mpCost}`),
   },
   iceArrow: {
     name: 'Ледяная стрела', freezeChance: 35,
     levels: SC_ICE_LEVELS,
-    getDesc: (lvl) => { const s = SKILLS.iceArrow, d = s.levels[lvl-1]; return `Ледяной удар на ${scX(d.multiplier)}. Шанс ${scV(s.freezeChance + '%')} заморозить (пропуск удара); замороженную Огненный шар раскалывает. MP: ${scV(d.mpCost)}. КД: ${s.cooldown} ATB.`; },
+    getDesc: (lvl, skill = SKILLS.iceArrow) => { const s = skill, d = s.levels[lvl-1]; return `Ледяной удар на ${scX(d.multiplier)}. Шанс ${scV(s.freezeChance + '%')} заморозить (пропуск удара); замороженную Огненный шар раскалывает. MP: ${scV(d.mpCost)}. КД: ${s.cooldown} ATB.`; },
     getNextDesc: (lvl) => scNext(SKILLS.iceArrow, lvl, n => `×${n.multiplier.toFixed(2)}, MP ${n.mpCost}`),
   },
   elementalVolley: {
     name: 'Буря стихий',
     levels: SC_VOLLEY_LEVELS,
-    getDesc: (lvl) => { const s = SKILLS.elementalVolley, d = s.levels[lvl-1]; return `${scV(d.shots)} снаряда по ${scX(d.multiplier)} — огонь, лёд и молния <b>гарантированно</b> все три. Шанс ${scV(d.effectChance + '%')} эффекта стихии. Резонанс — каждый раз: следующий Шар или Стрела без маны. MP: ${scV(d.mpCost)}. КД: ${s.cooldown}.`; },
+    getDesc: (lvl, skill = SKILLS.elementalVolley) => { const s = skill, d = s.levels[lvl-1]; return `${scV(d.shots)} снаряда по ${scX(d.multiplier)} — огонь, лёд и молния <b>гарантированно</b> все три. Шанс ${scV(d.effectChance + '%')} эффекта стихии. Резонанс — каждый раз: следующий Шар или Стрела без маны. MP: ${scV(d.mpCost)}. КД: ${s.cooldown}.`; },
     getNextDesc: (lvl) => scNext(SKILLS.elementalVolley, lvl, n => `${n.shots} снаряда, ×${n.multiplier.toFixed(2)}, эффект ${n.effectChance}%`),
   },
 };
@@ -458,19 +611,19 @@ SUBCLASSES.human_priest.mods = {
   fireball: {
     name: 'Кара', undeadMult: 1.5, healPct: 20,
     levels: SC_FIREBALL_LEVELS,
-    getDesc: (lvl) => { const s = SKILLS.fireball, d = s.levels[lvl-1]; return `Удар светом на ${scX(d.multiplier)}, нежить — ${scX(1.5)}. Лечит ${scV('20%')} нанесённого. Усиливается и качает Жизнь. MP: ${scV(d.mpCost)}.`; },
+    getDesc: (lvl, skill = SKILLS.fireball) => { const s = skill, d = s.levels[lvl-1]; return `Удар светом на ${scX(d.multiplier)}, нежить — ${scX(1.5)}. Лечит ${scV('20%')} нанесённого. Усиливается и качает Жизнь. MP: ${scV(d.mpCost)}.`; },
     getNextDesc: (lvl) => scNext(SKILLS.fireball, lvl, n => `×${n.multiplier.toFixed(2)}, MP ${n.mpCost}`),
   },
   iceArrow: {
     name: 'Оковы света', weakTurns: 3, weakPct: 20,
     levels: scMap(SC_ICE_LEVELS, (x, i) => ({ stun: [25, 27, 30, 32, 35, 37, 40][i] })),
-    getDesc: (lvl) => { const s = SKILLS.iceArrow, d = s.levels[lvl-1], mod = SUBCLASSES.human_priest.mods.iceArrow; return `Свет на ${scX(d.multiplier)}. Шанс ${scV(d.stun + '%')} оглушить; цель ${mod.weakTurns} хода бьёт на ${scV(mod.weakPct + '%')} слабее. MP: ${scV(d.mpCost)}. КД: ${s.cooldown} ATB.`; },
+    getDesc: (lvl, skill = SKILLS.iceArrow) => { const s = skill, d = s.levels[lvl-1], mod = SUBCLASSES.human_priest.mods.iceArrow; return `Свет на ${scX(d.multiplier)}. Шанс ${scV(d.stun + '%')} оглушить; цель ${mod.weakTurns} хода бьёт на ${scV(mod.weakPct + '%')} слабее. MP: ${scV(d.mpCost)}. КД: ${s.cooldown} ATB.`; },
     getNextDesc: (lvl) => scNext(SKILLS.iceArrow, lvl, n => `×${n.multiplier.toFixed(2)}, оглушение ${n.stun}%`),
   },
   elementalVolley: {
     name: 'Благодатный дождь',
     levels: scMap(SC_VOLLEY_LEVELS, (x, i) => ({ heal: [2, 2.2, 2.5, 2.7, 3, 3.2, 3.5][i] })),
-    getDesc: (lvl) => { const s = SKILLS.elementalVolley, d = s.levels[lvl-1]; return `${scV(d.shots)} капли света по ${scX(d.multiplier)} в случайных врагов, каждое попадание лечит ${scV(d.heal + '%')} макс. HP. Качает Жизнь. MP: ${scV(d.mpCost)}. КД: ${s.cooldown}.`; },
+    getDesc: (lvl, skill = SKILLS.elementalVolley) => { const s = skill, d = s.levels[lvl-1]; return `${scV(d.shots)} капли света по ${scX(d.multiplier)} в случайных врагов, каждое попадание лечит ${scV(d.heal + '%')} макс. HP. Качает Жизнь. MP: ${scV(d.mpCost)}. КД: ${s.cooldown}.`; },
     getNextDesc: (lvl) => scNext(SKILLS.elementalVolley, lvl, n => `${n.shots} капли, ×${n.multiplier.toFixed(2)}, лечение ${n.heal}%`),
   },
 };
@@ -490,19 +643,19 @@ SUBCLASSES.human_necromancer.mods = {
   fireball: {
     name: 'Костяное копьё',
     levels: SC_FIREBALL_LEVELS,
-    getDesc: (lvl) => { const s = SKILLS.fireball, d = s.levels[lvl-1]; return `Копьё Смерти на ${scX(d.multiplier)}. Убило — павший встаёт бесплатно, если есть место (до ${NECRO_ALLY_MAX} слуг). Усиливается и качает Смерть. MP: ${scV(d.mpCost)}.`; },
+    getDesc: (lvl, skill = SKILLS.fireball) => { const s = skill, d = s.levels[lvl-1]; return `Копьё Смерти на ${scX(d.multiplier)}. Убило — павший встаёт бесплатно, если есть место (до ${NECRO_ALLY_MAX} слуг). Усиливается и качает Смерть. MP: ${scV(d.mpCost)}.`; },
     getNextDesc: (lvl) => scNext(SKILLS.fireball, lvl, n => `×${n.multiplier.toFixed(2)}, MP ${n.mpCost}`),
   },
   iceArrow: {
     name: 'Проклятие слабости', weakTurns: 3,
     levels: scMap(SC_ICE_LEVELS, (x, i) => ({ weak: [15, 17, 18, 20, 22, 23, 25][i] })),
-    getDesc: (lvl) => { const s = SKILLS.iceArrow, d = s.levels[lvl-1], mod = SUBCLASSES.human_necromancer.mods.iceArrow; return `Проклятие Смерти на ${scX(d.multiplier)}: цель ${mod.weakTurns} хода бьёт на ${scV(d.weak + '%')} слабее. MP: ${scV(d.mpCost)}. КД: ${s.cooldown} ATB.`; },
+    getDesc: (lvl, skill = SKILLS.iceArrow) => { const s = skill, d = s.levels[lvl-1], mod = SUBCLASSES.human_necromancer.mods.iceArrow; return `Проклятие Смерти на ${scX(d.multiplier)}: цель ${mod.weakTurns} хода бьёт на ${scV(d.weak + '%')} слабее. MP: ${scV(d.mpCost)}. КД: ${s.cooldown} ATB.`; },
     getNextDesc: (lvl) => scNext(SKILLS.iceArrow, lvl, n => `×${n.multiplier.toFixed(2)}, ослабление ${n.weak}%`),
   },
   elementalVolley: {
     name: 'Зов могил',
     levels: scMap(SC_VOLLEY_LEVELS, x => ({ targets: x.shots })),
-    getDesc: (lvl) => { const s = SKILLS.elementalVolley, d = s.levels[lvl-1]; return `Смерть бьёт до ${scV(d.targets)} врагов на ${scX(d.multiplier)} каждого. Убитые встают слугами, пока есть место. MP: ${scV(d.mpCost)}. КД: ${s.cooldown}.`; },
+    getDesc: (lvl, skill = SKILLS.elementalVolley) => { const s = skill, d = s.levels[lvl-1]; return `Смерть бьёт до ${scV(d.targets)} врагов на ${scX(d.multiplier)} каждого. Убитые встают слугами, пока есть место. MP: ${scV(d.mpCost)}. КД: ${s.cooldown}.`; },
     getNextDesc: (lvl) => scNext(SKILLS.elementalVolley, lvl, n => `${n.targets} цели, ×${n.multiplier.toFixed(2)}`),
   },
 };
@@ -586,6 +739,7 @@ Object.assign(SUBCLASS_SKILLS, {
   // ---- Некромант ----
   nmRaise: {
     id: 'nmRaise', subclassId: 'human_necromancer', name: 'Поднять павшего', type: 'active', freeTurn: true,
+    fxAnim: 'summon',
     iconPng: 'img/skills/subclass/nmRaise.webp',
     maxLevel: 5, cooldown: 3,
     levels: [ { mpCost: 14, power: 40 }, { mpCost: 15, power: 45 }, { mpCost: 16, power: 50 }, { mpCost: 17, power: 55 }, { mpCost: 18, power: 60 } ],
@@ -660,19 +814,19 @@ SUBCLASSES.orc_rock.mods = {
   powerStrike: {
     name: 'Таран', stun: 15,
     levels: scMap(SC_WAR_PS_LEVELS, (x, i) => ({ hpPct: [5, 5.5, 6, 6.5, 7, 7.5, 8][i] })),
-    getDesc: (lvl) => { const s = SKILLS.powerStrike, d = s.levels[lvl-1]; return `Таран на ${scX(d.multiplier)} и ещё ${scV(d.hpPct + '%')} вашего макс. HP. Шанс ${scV('15%')} оглушить. MP: ${scV(d.mpCost)}. КД: ${s.cooldown} ATB.`; },
+    getDesc: (lvl, skill = SKILLS.powerStrike) => { const s = skill, d = s.levels[lvl-1]; return `Таран на ${scX(d.multiplier)} и ещё ${scV(d.hpPct + '%')} вашего макс. HP. Шанс ${scV('15%')} оглушить. MP: ${scV(d.mpCost)}. КД: ${s.cooldown} ATB.`; },
     getNextDesc: (lvl) => scNext(SKILLS.powerStrike, lvl, n => `×${n.multiplier.toFixed(2)} + ${n.hpPct}% HP`),
   },
   orcRage: {
     name: 'Ответная ярость', minHpPercent: 0, lifePct: 30,
     levels: scMap(SC_RAGE_LEVELS, () => ({ recoilPercent: 0 })),
-    getDesc: (lvl) => { const s = SKILLS.orcRage, d = s.levels[lvl-1]; return `Удар на ${scX(d.multiplier)}, при любом HP и без отдачи. Чем меньше у вас HP, тем сильнее — до ${scX(2)} на последнем издыхании. ${scV('30%')} урона возвращается здоровьем. Убийство: КД Жатвы −${scV(d.harvestCdCut)}. Качает Смерть. КД: ${s.cooldown} ATB.`; },
+    getDesc: (lvl, skill = SKILLS.orcRage) => { const s = skill, d = s.levels[lvl-1]; return `Удар на ${scX(d.multiplier)}, при любом HP и без отдачи. Чем меньше у вас HP, тем сильнее — до ${scX(2)} на последнем издыхании. ${scV('30%')} урона возвращается здоровьем. Убийство: КД Жатвы −${scV(d.harvestCdCut)}. Качает Смерть. КД: ${s.cooldown} ATB.`; },
     getNextDesc: (lvl) => scNext(SKILLS.orcRage, lvl, n => `×${n.multiplier.toFixed(2)}`),
   },
   bloodHarvest: {
     name: 'Жатва с рыком', roarTurns: 3, roarPct: 15,
     levels: SC_HARVEST_LEVELS,
-    getDesc: (lvl) => { const s = SKILLS.bloodHarvest, d = s.levels[lvl-1]; return `Широкий удар по всем (до ${scV(d.targets)}) на ${scX(d.multiplier)}. <b>Рык:</b> задетые 3 хода бьют только вас и на ${scV('15%')} слабее. За каждого убитого — ${scV(d.healPercent + '%')} макс. HP. MP: ${scV(d.mpCost)}. КД: ${s.cooldown}.`; },
+    getDesc: (lvl, skill = SKILLS.bloodHarvest) => { const s = skill, d = s.levels[lvl-1]; return `Широкий удар по всем (до ${scV(d.targets)}) на ${scX(d.multiplier)}. <b>Рык:</b> задетые 3 хода бьют только вас и на ${scV('15%')} слабее. За каждого убитого — ${scV(d.healPercent + '%')} макс. HP. MP: ${scV(d.mpCost)}. КД: ${s.cooldown}.`; },
     getNextDesc: (lvl) => scNext(SKILLS.bloodHarvest, lvl, n => `×${n.multiplier.toFixed(2)}, лечение ${n.healPercent}%`),
   },
 };
@@ -689,19 +843,19 @@ SUBCLASSES.orc_berserker.mods = {
   powerStrike: {
     name: 'Сокрушить',
     levels: scMap(SC_WAR_PS_LEVELS, (x, i) => ({ mpCost: 0, pierce: [30, 33, 37, 40, 43, 47, 50][i] })),
-    getDesc: (lvl) => { const s = SKILLS.powerStrike, d = s.levels[lvl-1]; return `Сокрушающий удар на ${scX(d.multiplier)}. С двуручным пробивает ${scV(d.pierce + '%')} защиты (против Толстокожих). <b>Кровавая цена:</b> ${BERSERK_HP_COST}% HP вместо маны, убийство возвращает заплаченное. КД: ${s.cooldown} ATB.`; },
+    getDesc: (lvl, skill = SKILLS.powerStrike) => { const s = skill, d = s.levels[lvl-1]; return `Сокрушающий удар на ${scX(d.multiplier)}. С двуручным пробивает ${scV(d.pierce + '%')} защиты (против Толстокожих). <b>Кровавая цена:</b> ${BERSERK_HP_COST}% HP вместо маны, убийство возвращает заплаченное. КД: ${s.cooldown} ATB.`; },
     getNextDesc: (lvl) => scNext(SKILLS.powerStrike, lvl, n => `×${n.multiplier.toFixed(2)}, пробой ${n.pierce}%`),
   },
   orcRage: {
     name: 'Безумная ярость', minHpPercent: 0, maxBonus: 60, noRecoilBelow: 30,
     levels: SC_RAGE_LEVELS,
-    getDesc: (lvl) => { const s = SKILLS.orcRage, d = s.levels[lvl-1]; return `Удар на ${scX(d.multiplier)} при любом HP: ${scV('+1%')} урона за каждый 1% потерянного HP (до ${scV('+60%')}). Отдача ${scV(d.recoilPercent + '%')} HP, ниже 30% HP — без отдачи. Убийство: КД Размаха −${scV(d.harvestCdCut)}. КД: ${s.cooldown} ATB.`; },
+    getDesc: (lvl, skill = SKILLS.orcRage) => { const s = skill, d = s.levels[lvl-1]; return `Удар на ${scX(d.multiplier)} при любом HP: ${scV('+1%')} урона за каждый 1% потерянного HP (до ${scV('+60%')}). Отдача ${scV(d.recoilPercent + '%')} HP, ниже 30% HP — без отдачи. Убийство: КД Размаха −${scV(d.harvestCdCut)}. КД: ${s.cooldown} ATB.`; },
     getNextDesc: (lvl) => scNext(SKILLS.orcRage, lvl, n => `×${n.multiplier.toFixed(2)}`),
   },
   bloodHarvest: {
     name: 'Кровавый размах', twoHandTargets: 1, twoHandMult: 1.0,
     levels: scMap(SC_HARVEST_LEVELS, () => ({ mpCost: 0 })),
-    getDesc: (lvl) => { const s = SKILLS.bloodHarvest, d = s.levels[lvl-1]; return `Широкий удар по всем (до ${scV(d.targets)}) на ${scX(d.multiplier)}; с двуручным — ещё одна цель. За каждого убитого — ${scV(d.healPercent + '%')} макс. HP. <b>Кровавая цена:</b> ${BERSERK_HP_COST}% HP, убийство возвращает заплаченное. КД: ${s.cooldown}.`; },
+    getDesc: (lvl, skill = SKILLS.bloodHarvest) => { const s = skill, d = s.levels[lvl-1]; return `Широкий удар по всем (до ${scV(d.targets)}) на ${scX(d.multiplier)}; с двуручным — ещё одна цель. За каждого убитого — ${scV(d.healPercent + '%')} макс. HP. <b>Кровавая цена:</b> ${BERSERK_HP_COST}% HP, убийство возвращает заплаченное. КД: ${s.cooldown}.`; },
     getNextDesc: (lvl) => scNext(SKILLS.bloodHarvest, lvl, n => `×${n.multiplier.toFixed(2)}, лечение ${n.healPercent}%`),
   },
 };
@@ -713,19 +867,19 @@ SUBCLASSES.orc_chieftain.mods = {
   powerStrike: {
     name: 'Удар предков', magPart: 0.5, enemyHpPct: 2,
     levels: SC_WAR_PS_LEVELS,
-    getDesc: (lvl) => { const s = SKILLS.powerStrike, d = s.levels[lvl-1]; return `(атака + маг. атака ×0.5) × ${scX(d.multiplier)} и ещё ${scV('2%')} от макс. HP врага. Сила предков — Смерть. MP: ${scV(d.mpCost)}. КД: ${s.cooldown} ATB.`; },
+    getDesc: (lvl, skill = SKILLS.powerStrike) => { const s = skill, d = s.levels[lvl-1]; return `(атака + маг. атака ×0.5) × ${scX(d.multiplier)} и ещё ${scV('2%')} от макс. HP врага. Сила предков — Смерть. MP: ${scV(d.mpCost)}. КД: ${s.cooldown} ATB.`; },
     getNextDesc: (lvl) => scNext(SKILLS.powerStrike, lvl, n => `×${n.multiplier.toFixed(2)}`),
   },
   orcRage: {
     name: 'Клинок духов',
     levels: SC_RAGE_LEVELS,
-    getDesc: (lvl) => { const s = SKILLS.orcRage, d = s.levels[lvl-1]; return `Удар на ${scX(d.multiplier)}, половина урона — магия Смерти: защиту режет наполовину физ., наполовину маг. Без маны, отдача ${scV(d.recoilPercent + '%')} HP, только при HP от 50%. Убийство: КД Жатвы −${scV(d.harvestCdCut)}. КД: ${s.cooldown} ATB.`; },
+    getDesc: (lvl, skill = SKILLS.orcRage) => { const s = skill, d = s.levels[lvl-1]; return `Удар на ${scX(d.multiplier)}, половина урона — магия Смерти: защиту режет наполовину физ., наполовину маг. Без маны, отдача ${scV(d.recoilPercent + '%')} HP, только при HP от 50%. Убийство: КД Жатвы −${scV(d.harvestCdCut)}. КД: ${s.cooldown} ATB.`; },
     getNextDesc: (lvl) => scNext(SKILLS.orcRage, lvl, n => `×${n.multiplier.toFixed(2)}`),
   },
   bloodHarvest: {
     name: 'Жатва предков', rotPct: 15,
     levels: scMap(SC_HARVEST_LEVELS, (x, i) => ({ rotTurns: i < 3 ? 2 : 3 })),
-    getDesc: (lvl) => { const s = SKILLS.bloodHarvest, d = s.levels[lvl-1]; return `Широкий удар по всем (до ${scV(d.targets)}) на ${scX(d.multiplier)}, задетые гниют ${scV(d.rotTurns)} хода (${scV('15%')} маг. атаки за ход). За каждого убитого — ${scV(d.healPercent + '%')} макс. HP. MP: ${scV(d.mpCost)}. КД: ${s.cooldown}.`; },
+    getDesc: (lvl, skill = SKILLS.bloodHarvest) => { const s = skill, d = s.levels[lvl-1]; return `Широкий удар по всем (до ${scV(d.targets)}) на ${scX(d.multiplier)}, задетые гниют ${scV(d.rotTurns)} хода (${scV('15%')} маг. атаки за ход). За каждого убитого — ${scV(d.healPercent + '%')} макс. HP. MP: ${scV(d.mpCost)}. КД: ${s.cooldown}.`; },
     getNextDesc: (lvl) => scNext(SKILLS.bloodHarvest, lvl, n => `×${n.multiplier.toFixed(2)}, гниение ${n.rotTurns} хода`),
   },
 };
@@ -737,19 +891,19 @@ SUBCLASSES.orc_hexer.mods = {
   fireball: {
     name: 'Трупный огонь', rotPct: 15, rotTurns: 3,
     levels: SC_FIREBALL_LEVELS,
-    getDesc: (lvl) => { const s = SKILLS.fireball, d = s.levels[lvl-1]; return `Огонь на ${scX(d.multiplier)}: поджог по ${scV(d.burnPercent + '%')} маг. атаки и слой Гниения (${scV('15%')} маг. атаки, 3 хода). MP: ${scV(d.mpCost)}.`; },
+    getDesc: (lvl, skill = SKILLS.fireball) => { const s = skill, d = s.levels[lvl-1]; return `Огонь на ${scX(d.multiplier)}: поджог по ${scV(d.burnPercent + '%')} маг. атаки и слой Гниения (${scV('15%')} маг. атаки, 3 хода). MP: ${scV(d.mpCost)}.`; },
     getNextDesc: (lvl) => scNext(SKILLS.fireball, lvl, n => `×${n.multiplier.toFixed(2)}, MP ${n.mpCost}`),
   },
   spiritWrath: {
     name: 'Гнев',
     levels: SC_WRATH_LEVELS,
-    getDesc: (lvl) => { const s = SKILLS.spiritWrath, d = s.levels[lvl-1]; return `Гнев духов на ${scX(d.multiplier)} и ${scV(DEATH_MAGIC_MAX_HP_PERCENT + '%')} макс. HP врага. ${scV('+10%')} за каждое разное проклятие на цели и ${scV('+5%')} за слой Гниения. Отдача ${scV(d.recoilPercent + '%')}, только при HP от 50%. КД: ${s.cooldown} ATB.`; },
+    getDesc: (lvl, skill = SKILLS.spiritWrath) => { const s = skill, d = s.levels[lvl-1]; return `Гнев духов на ${scX(d.multiplier)} и ${scV(DEATH_MAGIC_MAX_HP_PERCENT + '%')} макс. HP врага. ${scV('+10%')} за каждое разное проклятие на цели и ${scV('+5%')} за слой Гниения. Отдача ${scV(d.recoilPercent + '%')}, только при HP от 50%. КД: ${s.cooldown} ATB.`; },
     getNextDesc: (lvl) => scNext(SKILLS.spiritWrath, lvl, n => `×${n.multiplier.toFixed(2)}`),
   },
   pestilence: {
     name: 'Мор', rotMaxLayers: 4,
     levels: SC_PEST_LEVELS,
-    getDesc: (lvl) => { const s = SKILLS.pestilence, d = s.levels[lvl-1]; return `Гниение на ${scV(d.targets)} врагов: ${scV(d.dotPercent + '%')} маг. атаки и ${scV(DEATH_MAGIC_MAX_HP_PERCENT + '%')} макс. HP за ход, ${scV(d.turns)} хода. До <b>4 слоёв</b>. Перескакивает при смерти. MP: ${scV(d.mpCost)}. КД: ${s.cooldown}.`; },
+    getDesc: (lvl, skill = SKILLS.pestilence) => { const s = skill, d = s.levels[lvl-1]; return `Гниение на ${scV(d.targets)} врагов: ${scV(d.dotPercent + '%')} маг. атаки и ${scV(DEATH_MAGIC_MAX_HP_PERCENT + '%')} макс. HP за ход, ${scV(d.turns)} хода. До <b>4 слоёв</b>. Перескакивает при смерти. MP: ${scV(d.mpCost)}. КД: ${s.cooldown}.`; },
     getNextDesc: (lvl) => scNext(SKILLS.pestilence, lvl, n => `${n.targets} цели, ${n.dotPercent}%, ${n.turns} хода`),
   },
 };
@@ -761,19 +915,19 @@ SUBCLASSES.orc_healer.mods = {
   fireball: {
     name: 'Порча', weakTurns: 3,
     levels: scMap(SC_FIREBALL_LEVELS, (x, i) => ({ weak: [15, 17, 18, 20, 22, 23, 25][i] })),
-    getDesc: (lvl) => { const s = SKILLS.fireball, d = s.levels[lvl-1]; return `Порча Смертью на ${scX(d.multiplier)}: цель 3 хода бьёт на ${scV(d.weak + '%')} слабее. MP: ${scV(d.mpCost)}.`; },
+    getDesc: (lvl, skill = SKILLS.fireball) => { const s = skill, d = s.levels[lvl-1]; return `Порча Смертью на ${scX(d.multiplier)}: цель 3 хода бьёт на ${scV(d.weak + '%')} слабее. MP: ${scV(d.mpCost)}.`; },
     getNextDesc: (lvl) => scNext(SKILLS.fireball, lvl, n => `×${n.multiplier.toFixed(2)}, ослабление ${n.weak}%`),
   },
   spiritWrath: {
     name: 'Кровопуск', minHpPercent: 0,
     levels: scMap(SC_WRATH_LEVELS, (x, i) => ({ recoilPercent: 0, heal: [20, 22, 25, 27, 30, 32, 35][i] })),
-    getDesc: (lvl) => { const s = SKILLS.spiritWrath, d = s.levels[lvl-1]; return `Гнев на ${scX(d.multiplier)} и ${scV(DEATH_MAGIC_MAX_HP_PERCENT + '%')} макс. HP врага — без отдачи и при любом HP: ${scV(d.heal + '%')} урона лечит вас. КД: ${s.cooldown} ATB.`; },
+    getDesc: (lvl, skill = SKILLS.spiritWrath) => { const s = skill, d = s.levels[lvl-1]; return `Гнев на ${scX(d.multiplier)} и ${scV(DEATH_MAGIC_MAX_HP_PERCENT + '%')} макс. HP врага — без отдачи и при любом HP: ${scV(d.heal + '%')} урона лечит вас. КД: ${s.cooldown} ATB.`; },
     getNextDesc: (lvl) => scNext(SKILLS.spiritWrath, lvl, n => `×${n.multiplier.toFixed(2)}, лечение ${n.heal}%`),
   },
   pestilence: {
     name: 'Иссушение',
     levels: scMap(SC_PEST_LEVELS, (x, i) => ({ heal: [20, 22, 25, 27, 30, 32, 35][i] })),
-    getDesc: (lvl) => { const s = SKILLS.pestilence, d = s.levels[lvl-1]; return `Гниение на ${scV(d.targets)} врагов: ${scV(d.dotPercent + '%')} маг. атаки за ход, ${scV(d.turns)} хода. Каждый тик Гниения лечит вас на ${scV(d.heal + '%')} нанесённого. MP: ${scV(d.mpCost)}. КД: ${s.cooldown}.`; },
+    getDesc: (lvl, skill = SKILLS.pestilence) => { const s = skill, d = s.levels[lvl-1]; return `Гниение на ${scV(d.targets)} врагов: ${scV(d.dotPercent + '%')} маг. атаки за ход, ${scV(d.turns)} хода. Каждый тик Гниения лечит вас на ${scV(d.heal + '%')} нанесённого. MP: ${scV(d.mpCost)}. КД: ${s.cooldown}.`; },
     getNextDesc: (lvl) => scNext(SKILLS.pestilence, lvl, n => `${n.dotPercent}%, лечение ${n.heal}%`),
   },
 };
@@ -790,19 +944,19 @@ SUBCLASSES.orc_shaman.mods = {
   fireball: {
     name: 'Искра предков', perTotem: 15,
     levels: SC_FIREBALL_LEVELS,
-    getDesc: (lvl) => { const s = SKILLS.fireball, d = s.levels[lvl-1]; return `Огонь предков на ${scX(d.multiplier)}, поджог по ${scV(d.burnPercent + '%')} маг. атаки. ${scV('+15%')} урона за каждый стоящий тотем. MP: ${scV(d.mpCost)}.`; },
+    getDesc: (lvl, skill = SKILLS.fireball) => { const s = skill, d = s.levels[lvl-1]; return `Огонь предков на ${scX(d.multiplier)}, поджог по ${scV(d.burnPercent + '%')} маг. атаки. ${scV('+15%')} урона за каждый стоящий тотем. MP: ${scV(d.mpCost)}.`; },
     getNextDesc: (lvl) => scNext(SKILLS.fireball, lvl, n => `×${n.multiplier.toFixed(2)}, MP ${n.mpCost}`),
   },
   spiritWrath: {
     name: 'Гнев',
     levels: SC_WRATH_LEVELS,
-    getDesc: (lvl) => { const s = SKILLS.spiritWrath, d = s.levels[lvl-1]; return `Гнев духов на ${scX(d.multiplier)} и ${scV(DEATH_MAGIC_MAX_HP_PERCENT + '%')} макс. HP врага. Отдачу ${scV(d.recoilPercent + '%')} принимает тотем, если он стоит. Только при HP от 50%. КД: ${s.cooldown} ATB.`; },
+    getDesc: (lvl, skill = SKILLS.spiritWrath) => { const s = skill, d = s.levels[lvl-1]; return `Гнев духов на ${scX(d.multiplier)} и ${scV(DEATH_MAGIC_MAX_HP_PERCENT + '%')} макс. HP врага. Отдачу ${scV(d.recoilPercent + '%')} принимает тотем, если он стоит. Только при HP от 50%. КД: ${s.cooldown} ATB.`; },
     getNextDesc: (lvl) => scNext(SKILLS.spiritWrath, lvl, n => `×${n.multiplier.toFixed(2)}`),
   },
   pestilence: {
     name: 'Круг гнили', perTotem: 20,
     levels: SC_PEST_LEVELS,
-    getDesc: (lvl) => { const s = SKILLS.pestilence, d = s.levels[lvl-1]; return `Гниение на ${scV(d.targets)} врагов: ${scV(d.dotPercent + '%')} маг. атаки за ход, ${scV(d.turns)} хода; ${scV('+20%')} урона за каждый тотем в круге. MP: ${scV(d.mpCost)}. КД: ${s.cooldown}.`; },
+    getDesc: (lvl, skill = SKILLS.pestilence) => { const s = skill, d = s.levels[lvl-1]; return `Гниение на ${scV(d.targets)} врагов: ${scV(d.dotPercent + '%')} маг. атаки за ход, ${scV(d.turns)} хода; ${scV('+20%')} урона за каждый тотем в круге. MP: ${scV(d.mpCost)}. КД: ${s.cooldown}.`; },
     getNextDesc: (lvl) => scNext(SKILLS.pestilence, lvl, n => `${n.targets} цели, ${n.dotPercent}%`),
   },
 };
@@ -985,6 +1139,7 @@ Object.assign(SUBCLASS_SKILLS, {
   // ---- Шаман ----
   smTotem: {
     id: 'smTotem', subclassId: 'orc_shaman', name: 'Призыв тотема', type: 'active', freeTurn: 0.15,
+    fxAnim: 'summon',
     iconPng: 'img/allies/totem_spirit.webp',
     maxLevel: 5, cooldown: 1,
     levels: [ { mpCost: 8, power: 60 }, { mpCost: 9, power: 70 }, { mpCost: 10, power: 80 }, { mpCost: 11, power: 90 }, { mpCost: 12, power: 100 } ],
@@ -1045,19 +1200,19 @@ SUBCLASSES.elf_thornguard.mods = {
   powerStrike: {
     name: 'Подсечка', slowTurns: 2, slowPct: 30,
     levels: SC_WAR_PS_LEVELS,
-    getDesc: (lvl) => { const s = SKILLS.powerStrike, d = s.levels[lvl-1]; return `Подсечка на ${scX(d.multiplier)}: цель опутана на 2 хода — её шкала хода растёт на ${scV('30%')} медленнее. MP: ${scV(d.mpCost)}. КД: ${s.cooldown} ATB.`; },
+    getDesc: (lvl, skill = SKILLS.powerStrike) => { const s = skill, d = s.levels[lvl-1]; return `Подсечка на ${scX(d.multiplier)}: цель опутана на 2 хода — её шкала хода растёт на ${scV('30%')} медленнее. MP: ${scV(d.mpCost)}. КД: ${s.cooldown} ATB.`; },
     getNextDesc: (lvl) => scNext(SKILLS.powerStrike, lvl, n => `×${n.multiplier.toFixed(2)}`),
   },
   natureHeal: {
     name: 'Кора', barkTurns: 3,
     levels: scMap(SC_NHEAL_LEVELS, (x, i) => ({ bark: [10, 11, 12, 14, 15, 17, 20][i] })),
-    getDesc: (lvl) => { const s = SKILLS.natureHeal, d = s.levels[lvl-1]; return `Лечение на ${scX(d.multiplier)} от маг. атаки, и 3 хода кора: входящий урон ${scV('−' + d.bark + '%')}. MP: ${scV(d.mpCost)}. КД: ${s.cooldown} ATB.`; },
+    getDesc: (lvl, skill = SKILLS.natureHeal) => { const s = skill, d = s.levels[lvl-1]; return `Лечение на ${scX(d.multiplier)} от маг. атаки, и 3 хода кора: входящий урон ${scV('−' + d.bark + '%')}. MP: ${scV(d.mpCost)}. КД: ${s.cooldown} ATB.`; },
     getNextDesc: (lvl) => scNext(SKILLS.natureHeal, lvl, n => `×${n.multiplier.toFixed(2)}, кора −${n.bark}%`),
   },
   thornWhirl: {
     name: 'Терновый вызов', slowPct: 30, extraTargets: 1,
     levels: SC_THORN_LEVELS,
-    getDesc: (lvl) => { const s = SKILLS.thornWhirl, d = s.levels[lvl-1]; return `Бьёт ${scV(d.targets + 1)} врагов на ${scX(d.multiplier)} и опутывает на ${d.turns} хода: шкала хода опутанных растёт на ${scV('30%')} медленнее, и они бьют только вас. MP: ${scV(d.mpCost)}. КД: ${s.cooldown}.`; },
+    getDesc: (lvl, skill = SKILLS.thornWhirl) => { const s = skill, d = s.levels[lvl-1]; return `Бьёт ${scV(d.targets + 1)} врагов на ${scX(d.multiplier)} и опутывает на ${d.turns} хода: шкала хода опутанных растёт на ${scV('30%')} медленнее, и они бьют только вас. MP: ${scV(d.mpCost)}. КД: ${s.cooldown}.`; },
     getNextDesc: (lvl) => scNext(SKILLS.thornWhirl, lvl, n => `${n.targets + 1} цели, ×${n.multiplier.toFixed(2)}`),
   },
 };
@@ -1070,20 +1225,20 @@ SUBCLASSES.elf_pathfinder.mods = {
   powerStrike: {
     name: 'Прицельный выстрел', seeds: 2,
     levels: scMap(SC_WAR_PS_LEVELS, (x, i) => ({ pierce: [20, 23, 27, 30, 33, 37, 40][i] })),
-    getDesc: (lvl) => { const s = SKILLS.powerStrike, d = s.levels[lvl-1]; return `Выстрел на ${scX(d.multiplier)}: <b>не промахивается</b>, пробивает ${scV(d.pierce + '%')} защиты и сажает ${scV('2')} семени терна. MP: ${scV(d.mpCost)}. КД: ${s.cooldown} ATB.`; },
+    getDesc: (lvl, skill = SKILLS.powerStrike) => { const s = skill, d = s.levels[lvl-1]; return `Выстрел на ${scX(d.multiplier)}: <b>не промахивается</b>, пробивает ${scV(d.pierce + '%')} защиты и сажает ${scV('2')} семени терна. MP: ${scV(d.mpCost)}. КД: ${s.cooldown} ATB.`; },
     getNextDesc: (lvl) => scNext(SKILLS.powerStrike, lvl, n => `×${n.multiplier.toFixed(2)}, пробой ${n.pierce}%`),
   },
   natureHeal: {
     name: 'Цветение', isHeal: false, bloomMult: 1.5, lifePct: 30,
     levels: SC_NHEAL_LEVELS.map(x => ({ mpCost: x.mpCost })),
-    getDesc: (lvl) => { const s = SKILLS.natureHeal, d = s.levels[lvl-1]; return `Все семена на цели распускаются сразу и на ${scX(1.5)}; ${scV('30%')} урона лечит вас. Нужно хоть одно семя. MP: ${scV(d.mpCost)}. КД: ${s.cooldown} ATB.`; },
+    getDesc: (lvl, skill = SKILLS.natureHeal) => { const s = skill, d = s.levels[lvl-1]; return `Все семена на цели распускаются сразу и на ${scX(1.5)}; ${scV('30%')} урона лечит вас. Нужно хоть одно семя. MP: ${scV(d.mpCost)}. КД: ${s.cooldown} ATB.`; },
     getNextDesc: (lvl) => scNext(SKILLS.natureHeal, lvl, n => `MP ${n.mpCost}`),
     useCheck: () => (pathfinderSeeds(getCurrentMonster()).length ? '' : 'на цели нет семян'),
   },
   thornWhirl: {
     name: 'Терновый залп', fixedTargets: 3,
     levels: SC_THORN_LEVELS,
-    getDesc: (lvl) => { const s = SKILLS.thornWhirl, d = s.levels[lvl-1]; return `Залп по ${scV('3')} врагам на ${scX(d.multiplier)}: каждому семя терна, опутывание (точность −${scV(d.accReduction + '%')}). MP: ${scV(d.mpCost)}. КД: ${s.cooldown}.`; },
+    getDesc: (lvl, skill = SKILLS.thornWhirl) => { const s = skill, d = s.levels[lvl-1]; return `Залп по ${scV('3')} врагам на ${scX(d.multiplier)}: каждому семя терна, опутывание (точность −${scV(d.accReduction + '%')}). MP: ${scV(d.mpCost)}. КД: ${s.cooldown}.`; },
     getNextDesc: (lvl) => scNext(SKILLS.thornWhirl, lvl, n => `×${n.multiplier.toFixed(2)}`),
   },
 };
@@ -1099,19 +1254,19 @@ SUBCLASSES.elf_bladesinger.mods = {
   powerStrike: {
     name: 'Поющий клинок', magPart: 0.5,
     levels: SC_WAR_PS_LEVELS,
-    getDesc: (lvl) => { const s = SKILLS.powerStrike, d = s.levels[lvl-1]; return `(атака + маг. атака ×0.5) × ${scX(d.multiplier)}, Жизнь. MP: ${scV(d.mpCost)}. КД: ${s.cooldown} ATB.`; },
+    getDesc: (lvl, skill = SKILLS.powerStrike) => { const s = skill, d = s.levels[lvl-1]; return `(атака + маг. атака ×0.5) × ${scX(d.multiplier)}, Жизнь. MP: ${scV(d.mpCost)}. КД: ${s.cooldown} ATB.`; },
     getNextDesc: (lvl) => scNext(SKILLS.powerStrike, lvl, n => `×${n.multiplier.toFixed(2)}`),
   },
   natureHeal: {
     name: 'Дыхание природы', edgeHits: 2, edgePct: 40,
     levels: SC_NHEAL_LEVELS,
-    getDesc: (lvl) => { const s = SKILLS.natureHeal, d = s.levels[lvl-1]; return `Лечение на ${scX(d.multiplier)} от маг. атаки, и 2 следующих удара оружием добавляют ${scV('40%')} маг. атаки Жизнью. MP: ${scV(d.mpCost)}. КД: ${s.cooldown} ATB.`; },
+    getDesc: (lvl, skill = SKILLS.natureHeal) => { const s = skill, d = s.levels[lvl-1]; return `Лечение на ${scX(d.multiplier)} от маг. атаки, и 2 следующих удара оружием добавляют ${scV('40%')} маг. атаки Жизнью. MP: ${scV(d.mpCost)}. КД: ${s.cooldown} ATB.`; },
     getNextDesc: (lvl) => scNext(SKILLS.natureHeal, lvl, n => `×${n.multiplier.toFixed(2)}`),
   },
   thornWhirl: {
     name: 'Вихрь лепестков',
     levels: scMap(SC_THORN_LEVELS, (x, i) => ({ heal: [2, 2.3, 2.7, 3, 3.3, 3.7, 4][i] })),
-    getDesc: (lvl) => { const s = SKILLS.thornWhirl, d = s.levels[lvl-1]; return `Бьёт ${scV(d.targets)} врагов на ${scX(d.multiplier)}, опутывает (точность −${scV(d.accReduction + '%')}), за каждого задетого лечит ${scV(d.heal + '%')} макс. HP. MP: ${scV(d.mpCost)}. КД: ${s.cooldown}.`; },
+    getDesc: (lvl, skill = SKILLS.thornWhirl) => { const s = skill, d = s.levels[lvl-1]; return `Бьёт ${scV(d.targets)} врагов на ${scX(d.multiplier)}, опутывает (точность −${scV(d.accReduction + '%')}), за каждого задетого лечит ${scV(d.heal + '%')} макс. HP. MP: ${scV(d.mpCost)}. КД: ${s.cooldown}.`; },
     getNextDesc: (lvl) => scNext(SKILLS.thornWhirl, lvl, n => `${n.targets} цели, лечение ${n.heal}%`),
   },
 };
@@ -1123,19 +1278,19 @@ SUBCLASSES.elf_stargazer.mods = {
   fireball: {
     name: 'Падающая звезда', delay: 2,
     levels: scMap(SC_FIREBALL_LEVELS, (x, i) => ({ starMult: [3.5, 3.75, 4.0, 4.25, 4.5, 4.75, 5.0][i] })),
-    getDesc: (lvl) => { const s = SKILLS.fireball, d = s.levels[lvl-1]; return `Звезда падает на цель <b>через 2 хода</b> и бьёт на ${scX(d.starMult)}. Цель погибла раньше — звезда упадёт на соседа. MP: ${scV(d.mpCost)}.`; },
+    getDesc: (lvl, skill = SKILLS.fireball) => { const s = skill, d = s.levels[lvl-1]; return `Звезда падает на цель <b>через 2 хода</b> и бьёт на ${scX(d.starMult)}. Цель погибла раньше — звезда упадёт на соседа. MP: ${scV(d.mpCost)}.`; },
     getNextDesc: (lvl) => scNext(SKILLS.fireball, lvl, n => `×${n.starMult.toFixed(2)}`),
   },
   heal: {
     name: 'Исцеление',
     levels: SC_NHEAL_LEVELS,
-    getDesc: (lvl) => { const s = SKILLS.heal, d = s.levels[lvl-1]; return `Исцеление на ${scX(d.multiplier)} от маг. атаки. При здоровье от 70% — <b>ранит любую тварь</b> с той же силой. MP: ${scV(d.mpCost)}. КД: ${s.cooldown} ATB.`; },
+    getDesc: (lvl, skill = SKILLS.heal) => { const s = skill, d = s.levels[lvl-1]; return `Исцеление на ${scX(d.multiplier)} от маг. атаки. При здоровье от 70% — <b>ранит любую тварь</b> с той же силой. MP: ${scV(d.mpCost)}. КД: ${s.cooldown} ATB.`; },
     getNextDesc: (lvl) => scNext(SKILLS.heal, lvl, n => `×${n.multiplier.toFixed(2)}`),
   },
   lifeDrain: {
     name: 'Звездопад',
     levels: SC_DRAIN_LEVELS,
-    getDesc: (lvl) => { const s = SKILLS.lifeDrain, d = s.levels[lvl-1]; return `Звёзды падают на ${scV(d.targets)} врагов, каждому ${scX(d.multiplier * 0.7)} — без ослабления по цепочке. ${scV(Math.round(d.healPercent / 2) + '%')} урона лечат. MP: ${scV(d.mpCost)}. КД: ${s.cooldown}.`; },
+    getDesc: (lvl, skill = SKILLS.lifeDrain) => { const s = skill, d = s.levels[lvl-1]; return `Звёзды падают на ${scV(d.targets)} врагов, каждому ${scX(d.multiplier * 0.7)} — без ослабления по цепочке. ${scV(Math.round(d.healPercent / 2) + '%')} урона лечат. MP: ${scV(d.mpCost)}. КД: ${s.cooldown}.`; },
     getNextDesc: (lvl) => scNext(SKILLS.lifeDrain, lvl, n => `${n.targets} цели, ×${(n.multiplier * 0.7).toFixed(2)}`),
   },
 };
@@ -1147,19 +1302,19 @@ SUBCLASSES.elf_grovekeeper.mods = {
   fireball: {
     name: 'Колючая лоза', hotPct: 15, hotTurns: 3, dmgMult: 1.2,
     levels: SC_FIREBALL_LEVELS,
-    getDesc: (lvl) => { const s = SKILLS.fireball, d = s.levels[lvl-1]; return `Лоза Жизни на ${scX(d.multiplier * 1.2)}; ${scV('15%')} урона возвращается вам лечением за 3 хода. MP: ${scV(d.mpCost)}.`; },
+    getDesc: (lvl, skill = SKILLS.fireball) => { const s = skill, d = s.levels[lvl-1]; return `Лоза Жизни на ${scX(d.multiplier * 1.2)}; ${scV('15%')} урона возвращается вам лечением за 3 хода. MP: ${scV(d.mpCost)}.`; },
     getNextDesc: (lvl) => scNext(SKILLS.fireball, lvl, n => `×${n.multiplier.toFixed(2)}`),
   },
   heal: {
     name: 'Росток', hotTurns: 4, hotBonus: 1.5,
     levels: SC_NHEAL_LEVELS,
-    getDesc: (lvl) => { const s = SKILLS.heal, d = s.levels[lvl-1]; return `Росток лечит за 4 хода на ${scX(d.multiplier * 1.5)} от маг. атаки (в полтора раза больше обычного Исцеления, но не сразу). MP: ${scV(d.mpCost)}. КД: ${s.cooldown} ATB.`; },
+    getDesc: (lvl, skill = SKILLS.heal) => { const s = skill, d = s.levels[lvl-1]; return `Росток лечит за 4 хода на ${scX(d.multiplier * 1.5)} от маг. атаки (в полтора раза больше обычного Исцеления, но не сразу). MP: ${scV(d.mpCost)}. КД: ${s.cooldown} ATB.`; },
     getNextDesc: (lvl) => scNext(SKILLS.heal, lvl, n => `×${(n.multiplier * 1.5).toFixed(2)} за 4 хода`),
   },
   lifeDrain: {
     name: 'Дыхание рощи', hotBonus: 1.5, hotTurns: 3,
     levels: SC_DRAIN_LEVELS,
-    getDesc: (lvl) => { const s = SKILLS.lifeDrain, d = s.levels[lvl-1]; return `Цепь Жизни по ${scV(d.targets)} врагам: ${scX(d.multiplier)} первому, дальше слабее. Вместо мгновенного лечения — ${scV(Math.round(d.healPercent * 1.5) + '%')} урона лечением за 3 хода. MP: ${scV(d.mpCost)}. КД: ${s.cooldown}.`; },
+    getDesc: (lvl, skill = SKILLS.lifeDrain) => { const s = skill, d = s.levels[lvl-1]; return `Цепь Жизни по ${scV(d.targets)} врагам: ${scX(d.multiplier)} первому, дальше слабее. Вместо мгновенного лечения — ${scV(Math.round(d.healPercent * 1.5) + '%')} урона лечением за 3 хода. MP: ${scV(d.mpCost)}. КД: ${s.cooldown}.`; },
     getNextDesc: (lvl) => scNext(SKILLS.lifeDrain, lvl, n => `${n.targets} цели, ×${n.multiplier.toFixed(2)}`),
   },
 };
@@ -1176,19 +1331,19 @@ SUBCLASSES.elf_druid.mods = {
   fireball: {
     name: 'Зов когтей', spiritPct: 50,
     levels: SC_FIREBALL_LEVELS,
-    getDesc: (lvl) => { const s = SKILLS.fireball, d = s.levels[lvl-1]; return `Огонь на ${scX(d.multiplier)}, поджог по ${scV(d.burnPercent + '%')} маг. атаки — и дух-зверь сразу бьёт ту же цель на ${scV('50%')} своей силы. MP: ${scV(d.mpCost)}.`; },
+    getDesc: (lvl, skill = SKILLS.fireball) => { const s = skill, d = s.levels[lvl-1]; return `Огонь на ${scX(d.multiplier)}, поджог по ${scV(d.burnPercent + '%')} маг. атаки — и дух-зверь сразу бьёт ту же цель на ${scV('50%')} своей силы. MP: ${scV(d.mpCost)}.`; },
     getNextDesc: (lvl) => scNext(SKILLS.fireball, lvl, n => `×${n.multiplier.toFixed(2)}`),
   },
   heal: {
     name: 'Исцеление',
     levels: SC_NHEAL_LEVELS,
-    getDesc: (lvl) => { const s = SKILLS.heal, d = s.levels[lvl-1]; return `Исцеление на ${scX(d.multiplier)} от маг. атаки — лечит и вас, и духа-зверя на ту же силу. При здоровье от 70% ранит мёртвых. MP: ${scV(d.mpCost)}. КД: ${s.cooldown} ATB.`; },
+    getDesc: (lvl, skill = SKILLS.heal) => { const s = skill, d = s.levels[lvl-1]; return `Исцеление на ${scX(d.multiplier)} от маг. атаки — лечит и вас, и духа-зверя на ту же силу. При здоровье от 70% ранит мёртвых. MP: ${scV(d.mpCost)}. КД: ${s.cooldown} ATB.`; },
     getNextDesc: (lvl) => scNext(SKILLS.heal, lvl, n => `×${n.multiplier.toFixed(2)}`),
   },
   lifeDrain: {
     name: 'Похищение жизни',
     levels: SC_DRAIN_LEVELS,
-    getDesc: (lvl) => { const s = SKILLS.lifeDrain, d = s.levels[lvl-1]; return `Цепь Жизни по ${scV(d.targets)} врагам: ${scX(d.multiplier)} первому, дальше слабее. ${scV(d.healPercent + '%')} урона лечат вас, столько же — духа. MP: ${scV(d.mpCost)}. КД: ${s.cooldown}.`; },
+    getDesc: (lvl, skill = SKILLS.lifeDrain) => { const s = skill, d = s.levels[lvl-1]; return `Цепь Жизни по ${scV(d.targets)} врагам: ${scX(d.multiplier)} первому, дальше слабее. ${scV(d.healPercent + '%')} урона лечат вас, столько же — духа. MP: ${scV(d.mpCost)}. КД: ${s.cooldown}.`; },
     getNextDesc: (lvl) => scNext(SKILLS.lifeDrain, lvl, n => `${n.targets} цели, ×${n.multiplier.toFixed(2)}`),
   },
 };
@@ -1367,6 +1522,7 @@ Object.assign(SUBCLASS_SKILLS, {
   // ---- Друид ----
   drSpirit: {
     id: 'drSpirit', subclassId: 'elf_druid', name: 'Дух-зверь', type: 'active',
+    fxAnim: 'summon',
     iconPng: 'img/allies/druid_lynx.webp',
     maxLevel: 5, cooldown: 3,
     levels: [ { mpCost: 14, power: 60, rage: 1.6 }, { mpCost: 15, power: 70, rage: 1.75 }, { mpCost: 16, power: 80, rage: 1.9 }, { mpCost: 17, power: 90, rage: 2.05 }, { mpCost: 18, power: 100, rage: 2.2 } ],
@@ -1430,19 +1586,19 @@ SUBCLASSES.drow_stormguard.mods = {
   powerStrike: {
     name: 'Громовой удар', atbCut: 30,
     levels: SC_WAR_PS_LEVELS,
-    getDesc: (lvl) => { const s = SKILLS.powerStrike, d = s.levels[lvl-1]; return `Громовой удар на ${scX(d.multiplier)}, шкала хода цели ${scV('−30%')}. MP: ${scV(d.mpCost)}. КД: ${s.cooldown} ATB.`; },
+    getDesc: (lvl, skill = SKILLS.powerStrike) => { const s = skill, d = s.levels[lvl-1]; return `Громовой удар на ${scX(d.multiplier)}, шкала хода цели ${scV('−30%')}. MP: ${scV(d.mpCost)}. КД: ${s.cooldown} ATB.`; },
     getNextDesc: (lvl) => scNext(SKILLS.powerStrike, lvl, n => `×${n.multiplier.toFixed(2)}`),
   },
   discharge: {
     name: 'Разряд',
     levels: SC_DISCHARGE_LEVELS,
-    getDesc: (lvl) => SC_DISCHARGE_DESC(SKILLS.discharge, SKILLS.discharge.levels[lvl-1], 'По цели со Статикой <b>паралич гарантирован</b> (невосприимчивость после паралича остаётся).'),
+    getDesc: (lvl, skill = SKILLS.discharge) => SC_DISCHARGE_DESC(skill, skill.levels[lvl-1], 'По цели со Статикой <b>паралич гарантирован</b> (невосприимчивость после паралича остаётся).'),
     getNextDesc: (lvl) => scNext(SKILLS.discharge, lvl, n => `×${n.multiplier.toFixed(2)}, ATB −${n.atbReduction}%`),
   },
   sparkSlash: {
     name: 'Искровой вызов', fixedTargets: 3,
     levels: SC_SPARK_LEVELS,
-    getDesc: (lvl) => { const s = SKILLS.sparkSlash, d = s.levels[lvl-1]; return `Разрез по ${scV('3')} врагам на ${scX(d.multiplier)}, шкала стаи ${scV('−' + d.atbCut + '%')}. Каждому — заряд Статики, и задетые бьют только вас. MP: ${scV(d.mpCost)}. КД: ${s.cooldown}.`; },
+    getDesc: (lvl, skill = SKILLS.sparkSlash) => { const s = skill, d = s.levels[lvl-1]; return `Разрез по ${scV('3')} врагам на ${scX(d.multiplier)}, шкала стаи ${scV('−' + d.atbCut + '%')}. Каждому — заряд Статики, и задетые бьют только вас. MP: ${scV(d.mpCost)}. КД: ${s.cooldown}.`; },
     getNextDesc: (lvl) => scNext(SKILLS.sparkSlash, lvl, n => `×${n.multiplier.toFixed(2)}`),
   },
 };
@@ -1454,19 +1610,19 @@ SUBCLASSES.drow_assassin.mods = {
   powerStrike: {
     name: 'Удар в спину', backMult: 1.5, backAtb: 50,
     levels: SC_WAR_PS_LEVELS,
-    getDesc: (lvl) => { const s = SKILLS.powerStrike, d = s.levels[lvl-1]; return `Удар на ${scX(d.multiplier)}; если цель не готова к удару (её шкала хода ниже половины) — ещё ${scX(1.5)}. MP: ${scV(d.mpCost)}. КД: ${s.cooldown} ATB.`; },
+    getDesc: (lvl, skill = SKILLS.powerStrike) => { const s = skill, d = s.levels[lvl-1]; return `Удар на ${scX(d.multiplier)}; если цель не готова к удару (её шкала хода ниже половины) — ещё ${scX(1.5)}. MP: ${scV(d.mpCost)}. КД: ${s.cooldown} ATB.`; },
     getNextDesc: (lvl) => scNext(SKILLS.powerStrike, lvl, n => `×${n.multiplier.toFixed(2)}`),
   },
   discharge: {
     name: 'Искра в клинке', selfAtb: 30,
     levels: scMap(SC_DISCHARGE_LEVELS, x => ({ mpCost: Math.ceil(x.mpCost * 0.6) })),
-    getDesc: (lvl) => SC_DISCHARGE_DESC(SKILLS.discharge, SKILLS.discharge.levels[lvl-1], `Дешевле обычного, и после — ваша шкала хода ${scV('+30%')}.`),
+    getDesc: (lvl, skill = SKILLS.discharge) => SC_DISCHARGE_DESC(skill, skill.levels[lvl-1], `Дешевле обычного, и после — ваша шкала хода ${scV('+30%')}.`),
     getNextDesc: (lvl) => scNext(SKILLS.discharge, lvl, n => `×${n.multiplier.toFixed(2)}, MP ${n.mpCost}`),
   },
   sparkSlash: {
     name: 'Искровой разрез', fixedTargets: 3,
     levels: SC_SPARK_LEVELS,
-    getDesc: (lvl) => { const s = SKILLS.sparkSlash, d = s.levels[lvl-1]; return `Разрез по ${scV('3')} врагам на ${scX(d.multiplier)}, шкала стаи ${scV('−' + d.atbCut + '%')}. MP: ${scV(d.mpCost)}. КД: ${s.cooldown}.`; },
+    getDesc: (lvl, skill = SKILLS.sparkSlash) => { const s = skill, d = s.levels[lvl-1]; return `Разрез по ${scV('3')} врагам на ${scX(d.multiplier)}, шкала стаи ${scV('−' + d.atbCut + '%')}. MP: ${scV(d.mpCost)}. КД: ${s.cooldown}.`; },
     getNextDesc: (lvl) => scNext(SKILLS.sparkSlash, lvl, n => `×${n.multiplier.toFixed(2)}`),
   },
 };
@@ -1478,19 +1634,19 @@ SUBCLASSES.drow_shadowweaver.mods = {
   powerStrike: {
     name: 'Сумеречный удар', magPart: 0.5, atbCut: 20,
     levels: SC_WAR_PS_LEVELS,
-    getDesc: (lvl) => { const s = SKILLS.powerStrike, d = s.levels[lvl-1]; return `(атака + маг. атака ×0.5) × ${scX(d.multiplier)}, молния, шкала хода цели ${scV('−20%')}. MP: ${scV(d.mpCost)}. КД: ${s.cooldown} ATB.`; },
+    getDesc: (lvl, skill = SKILLS.powerStrike) => { const s = skill, d = s.levels[lvl-1]; return `(атака + маг. атака ×0.5) × ${scX(d.multiplier)}, молния, шкала хода цели ${scV('−20%')}. MP: ${scV(d.mpCost)}. КД: ${s.cooldown} ATB.`; },
     getNextDesc: (lvl) => scNext(SKILLS.powerStrike, lvl, n => `×${n.multiplier.toFixed(2)}`),
   },
   discharge: {
     name: 'Разряд',
     levels: SC_DISCHARGE_LEVELS,
-    getDesc: (lvl) => SC_DISCHARGE_DESC(SKILLS.discharge, SKILLS.discharge.levels[lvl-1], 'Паралич — Теневой двойник держится на 2 хода дольше, а если его нет — появляется на 2 хода.'),
+    getDesc: (lvl, skill = SKILLS.discharge) => SC_DISCHARGE_DESC(skill, skill.levels[lvl-1], 'Паралич — Теневой двойник держится на 2 хода дольше, а если его нет — появляется на 2 хода.'),
     getNextDesc: (lvl) => scNext(SKILLS.discharge, lvl, n => `×${n.multiplier.toFixed(2)}, ATB −${n.atbReduction}%`),
   },
   sparkSlash: {
     name: 'Теневой разрез', extraTargets: 1,
     levels: SC_SPARK_LEVELS,
-    getDesc: (lvl) => { const s = SKILLS.sparkSlash, d = s.levels[lvl-1]; return `Разрез по ${scV(d.targets + 1)} врагам на ${scX(d.multiplier)}, шкала стаи ${scV('−' + d.atbCut + '%')}; двойник режет вместе с вами. MP: ${scV(d.mpCost)}. КД: ${s.cooldown}.`; },
+    getDesc: (lvl, skill = SKILLS.sparkSlash) => { const s = skill, d = s.levels[lvl-1]; return `Разрез по ${scV(d.targets + 1)} врагам на ${scX(d.multiplier)}, шкала стаи ${scV('−' + d.atbCut + '%')}; двойник режет вместе с вами. MP: ${scV(d.mpCost)}. КД: ${s.cooldown}.`; },
     getNextDesc: (lvl) => scNext(SKILLS.sparkSlash, lvl, n => `×${n.multiplier.toFixed(2)}`),
   },
 };
@@ -1503,19 +1659,19 @@ SUBCLASSES.drow_stormcaller.mods = {
   fireball: {
     name: 'Шаровая молния', splash: 50,
     levels: SC_FIREBALL_LEVELS,
-    getDesc: (lvl) => { const s = SKILLS.fireball, d = s.levels[lvl-1]; return `Шаровая молния на ${scX(d.multiplier)}; отскакивает в соседа на ${scV('50%')}. Молния — копит Напряжение. MP: ${scV(d.mpCost)}.`; },
+    getDesc: (lvl, skill = SKILLS.fireball) => { const s = skill, d = s.levels[lvl-1]; return `Шаровая молния на ${scX(d.multiplier)}; отскакивает в соседа на ${scV('50%')}. Молния — копит Напряжение. MP: ${scV(d.mpCost)}.`; },
     getNextDesc: (lvl) => scNext(SKILLS.fireball, lvl, n => `×${n.multiplier.toFixed(2)}`),
   },
   discharge: {
     name: 'Разряд',
     levels: SC_DISCHARGE_LEVELS,
-    getDesc: (lvl) => SC_DISCHARGE_DESC(SKILLS.discharge, SKILLS.discharge.levels[lvl-1], 'Копит Напряжение.'),
+    getDesc: (lvl, skill = SKILLS.discharge) => SC_DISCHARGE_DESC(skill, skill.levels[lvl-1], 'Копит Напряжение.'),
     getNextDesc: (lvl) => scNext(SKILLS.discharge, lvl, n => `×${n.multiplier.toFixed(2)}, ATB −${n.atbReduction}%`),
   },
   chainLightning: {
     name: 'Цепная молния',
     levels: SC_CHAIN_LEVELS,
-    getDesc: (lvl) => { const s = SKILLS.chainLightning, d = s.levels[lvl-1]; return `Молния прыгает по ${scV(d.targets)} врагам: ${scX(d.multiplier)} первому, каждый прыжок −30% (через парализованного — не слабеет). Копит Напряжение. MP: ${scV(d.mpCost)}. КД: ${s.cooldown}.`; },
+    getDesc: (lvl, skill = SKILLS.chainLightning) => { const s = skill, d = s.levels[lvl-1]; return `Молния прыгает по ${scV(d.targets)} врагам: ${scX(d.multiplier)} первому, каждый прыжок −30% (через парализованного — не слабеет). Копит Напряжение. MP: ${scV(d.mpCost)}. КД: ${s.cooldown}.`; },
     getNextDesc: (lvl) => scNext(SKILLS.chainLightning, lvl, n => `${n.targets} цели, ×${n.multiplier.toFixed(2)}`),
   },
 };
@@ -1527,19 +1683,19 @@ SUBCLASSES.drow_dreamweaver.mods = {
   fireball: {
     name: 'Сон', sleepTurns: 3,
     levels: SC_FIREBALL_LEVELS,
-    getDesc: (lvl) => { const s = SKILLS.fireball, d = s.levels[lvl-1]; return `Усыпляет тварь на 3 хода — до первого удара по ней. В стае выбирает <b>лишнюю</b>: не текущую цель. Усыплять некого — <b>Кошмар</b>: молния по текущей цели на ${scX(d.multiplier)}. MP: ${scV(d.mpCost)}.`; },
+    getDesc: (lvl, skill = SKILLS.fireball) => { const s = skill, d = s.levels[lvl-1]; return `Усыпляет тварь на 3 хода — до первого удара по ней. В стае выбирает <b>лишнюю</b>: не текущую цель. Усыплять некого — <b>Кошмар</b>: молния по текущей цели на ${scX(d.multiplier)}. MP: ${scV(d.mpCost)}.`; },
     getNextDesc: (lvl) => scNext(SKILLS.fireball, lvl, n => `×${n.multiplier.toFixed(2)}`),
   },
   discharge: {
     name: 'Живая искра', selfAtb: 30, dmgPart: 0.6,
     levels: SC_DISCHARGE_LEVELS,
-    getDesc: (lvl) => { const s = SKILLS.discharge, d = s.levels[lvl-1]; return `Искра на ${scX(d.multiplier * 0.6)} и лечение на ${scX(d.multiplier)} от маг. атаки; ваша шкала хода ${scV('+30%')}. MP: ${scV(d.mpCost)}. КД: ${s.cooldown} ATB.`; },
+    getDesc: (lvl, skill = SKILLS.discharge) => { const s = skill, d = s.levels[lvl-1]; return `Искра на ${scX(d.multiplier * 0.6)} и лечение на ${scX(d.multiplier)} от маг. атаки; ваша шкала хода ${scV('+30%')}. MP: ${scV(d.mpCost)}. КД: ${s.cooldown} ATB.`; },
     getNextDesc: (lvl) => scNext(SKILLS.discharge, lvl, n => `×${n.multiplier.toFixed(2)}`),
   },
   chainLightning: {
     name: 'Цепь сна', sleepTurns: 2,
     levels: SC_CHAIN_LEVELS,
-    getDesc: (lvl) => { const s = SKILLS.chainLightning, d = s.levels[lvl-1]; return `Молния по ${scV(d.targets)} врагам (${scX(d.multiplier)} первому, дальше слабее); все задетые, кроме текущей цели, засыпают на 2 хода. MP: ${scV(d.mpCost)}. КД: ${s.cooldown}.`; },
+    getDesc: (lvl, skill = SKILLS.chainLightning) => { const s = skill, d = s.levels[lvl-1]; return `Молния по ${scV(d.targets)} врагам (${scX(d.multiplier)} первому, дальше слабее); все задетые, кроме текущей цели, засыпают на 2 хода. MP: ${scV(d.mpCost)}. КД: ${s.cooldown}.`; },
     getNextDesc: (lvl) => scNext(SKILLS.chainLightning, lvl, n => `${n.targets} цели, ×${n.multiplier.toFixed(2)}`),
   },
 };
@@ -1555,19 +1711,19 @@ SUBCLASSES.drow_spiderlord.mods = {
   fireball: {
     name: 'Ядовитый плевок',
     levels: SC_FIREBALL_LEVELS,
-    getDesc: (lvl) => { const s = SKILLS.fireball, d = s.levels[lvl-1]; return `Плевок ядом на ${scX(d.multiplier)} и 2 слоя яда. MP: ${scV(d.mpCost)}.`; },
+    getDesc: (lvl, skill = SKILLS.fireball) => { const s = skill, d = s.levels[lvl-1]; return `Плевок ядом на ${scX(d.multiplier)} и 2 слоя яда. MP: ${scV(d.mpCost)}.`; },
     getNextDesc: (lvl) => scNext(SKILLS.fireball, lvl, n => `×${n.multiplier.toFixed(2)}`),
   },
   discharge: {
     name: 'Разряд',
     levels: SC_DISCHARGE_LEVELS,
-    getDesc: (lvl) => SC_DISCHARGE_DESC(SKILLS.discharge, SKILLS.discharge.levels[lvl-1], 'Паралич — все пауки бросаются на цель.'),
+    getDesc: (lvl, skill = SKILLS.discharge) => SC_DISCHARGE_DESC(skill, skill.levels[lvl-1], 'Паралич — все пауки бросаются на цель.'),
     getNextDesc: (lvl) => scNext(SKILLS.discharge, lvl, n => `×${n.multiplier.toFixed(2)}, ATB −${n.atbReduction}%`),
   },
   chainLightning: {
     name: 'Цепная молния',
     levels: SC_CHAIN_LEVELS,
-    getDesc: (lvl) => { const s = SKILLS.chainLightning, d = s.levels[lvl-1]; return `Молния по ${scV(d.targets)} врагам и ещё по одному за каждого паука (прыгает через паутину). MP: ${scV(d.mpCost)}. КД: ${s.cooldown}.`; },
+    getDesc: (lvl, skill = SKILLS.chainLightning) => { const s = skill, d = s.levels[lvl-1]; return `Молния по ${scV(d.targets)} врагам и ещё по одному за каждого паука (прыгает через паутину). MP: ${scV(d.mpCost)}. КД: ${s.cooldown}.`; },
     getNextDesc: (lvl) => scNext(SKILLS.chainLightning, lvl, n => `${n.targets} цели, ×${n.multiplier.toFixed(2)}`),
   },
 };
@@ -1746,10 +1902,11 @@ Object.assign(SUBCLASS_SKILLS, {
   // ---- Паучий владыка ----
   slMother: {
     id: 'slMother', subclassId: 'drow_spiderlord', name: 'Паучиха-матка', type: 'active', freeTurn: 0.7,
+    fxAnim: 'summon',
     iconPng: 'img/allies/spider_mother.webp',
     maxLevel: 5, cooldown: 3, layEvery: 2,
     levels: [ { mpCost: 14, power: 60 }, { mpCost: 15, power: 70 }, { mpCost: 16, power: 80 }, { mpCost: 17, power: 90 }, { mpCost: 18, power: 100 } ],
-    getDesc: (lvl) => { const d = SKILLS.slMother.levels[lvl-1]; return `Быстрый: ${scV('70%')} хода сразу возвращается. Нет матки — призывает её на весь бой (сила ${scV(d.power + '%')}). Каждые 2 хода она откладывает паучонка (до 2, всего 3 паука). Матка уже есть — она сразу откладывает паучонка. Укусы опутывают паутиной: шкала хода твари медленнее. MP: ${scV(d.mpCost)}. КД: ${SKILLS.slMother.cooldown}.`; },
+    getDesc: (lvl) => { const d = SKILLS.slMother.levels[lvl-1]; return `Быстрый: ${scV('70%')} хода сразу возвращается. Нет матки — призывает её на весь бой (сила ${scV(d.power + '%')}). Каждые 2 хода она откладывает паучонка (до 2, всего 3 паука). Повторное применение сразу добавляет паучонка. Если выводок полный, матка сразу кусает цель. Укусы опутывают паутиной: шкала хода твари медленнее. MP: ${scV(d.mpCost)}. КД: ${SKILLS.slMother.cooldown}.`; },
     getNextDesc: (lvl) => scNext(SKILLS.slMother, lvl, n => `сила ${n.power}%`),
   },
   slVenom: {
@@ -1816,19 +1973,19 @@ SUBCLASSES.dwarf_steelwall.mods = {
   powerStrike: {
     name: 'Удар-наковальня', defPart: 0.6,
     levels: SC_WAR_PS_LEVELS,
-    getDesc: (lvl) => { const s = SKILLS.powerStrike, d = s.levels[lvl-1]; return `(атака + ${scV('60%')} физ. защиты) × ${scX(d.multiplier)}. MP: ${scV(d.mpCost)}. КД: ${s.cooldown} ATB.`; },
+    getDesc: (lvl, skill = SKILLS.powerStrike) => { const s = skill, d = s.levels[lvl-1]; return `(атака + ${scV('60%')} физ. защиты) × ${scX(d.multiplier)}. MP: ${scV(d.mpCost)}. КД: ${s.cooldown} ATB.`; },
     getNextDesc: (lvl) => scNext(SKILLS.powerStrike, lvl, n => `×${n.multiplier.toFixed(2)}`),
   },
   dwarfGreed: {
     name: 'Жадность',
     levels: SC_GREED_W_LEVELS,
-    getDesc: (lvl) => { const s = SKILLS.dwarfGreed, d = s.levels[lvl-1]; return `Удар на ${scX(d.multiplier)} и Метка Жадности на ${scV(d.markTurns)} хода (до 5). Каждая метка: +25% добычи и +10% опыта при убийстве — и ${scV('−4%')} к ударам этой твари по вам. MP: ${scV(d.mpCost)}. КД: ${s.cooldown} ATB.`; },
+    getDesc: (lvl, skill = SKILLS.dwarfGreed) => { const s = skill, d = s.levels[lvl-1]; return `Удар на ${scX(d.multiplier)} и Метка Жадности на ${scV(d.markTurns)} хода (до 5). Каждая метка: +25% добычи и +10% опыта при убийстве — и ${scV('−4%')} к ударам этой твари по вам. MP: ${scV(d.mpCost)}. КД: ${s.cooldown} ATB.`; },
     getNextDesc: (lvl) => scNext(SKILLS.dwarfGreed, lvl, n => `×${n.multiplier.toFixed(2)}, метка ${n.markTurns} хода`),
   },
   frostQuake: {
     name: 'Ледяной вызов',
     levels: SC_QUAKE_LEVELS,
-    getDesc: (lvl) => { const s = SKILLS.frostQuake, d = s.levels[lvl-1]; return `Лёд бьёт всех (до ${scV(d.targets)}) на ${scX(d.multiplier)}, заморозка ${scV(d.freezeChance + '%')}; задетые бьют только вас. Разносит Метки Жадности. MP: ${scV(d.mpCost)}. КД: ${s.cooldown}.`; },
+    getDesc: (lvl, skill = SKILLS.frostQuake) => { const s = skill, d = s.levels[lvl-1]; return `Лёд бьёт всех (до ${scV(d.targets)}) на ${scX(d.multiplier)}, заморозка ${scV(d.freezeChance + '%')}; задетые бьют только вас. Разносит Метки Жадности. MP: ${scV(d.mpCost)}. КД: ${s.cooldown}.`; },
     getNextDesc: (lvl) => scNext(SKILLS.frostQuake, lvl, n => `×${n.multiplier.toFixed(2)}, заморозка ${n.freezeChance}%`),
   },
 };
@@ -1840,19 +1997,19 @@ SUBCLASSES.dwarf_hammerer.mods = {
   powerStrike: {
     name: 'Сокрушающий молот',
     levels: SC_WAR_PS_LEVELS,
-    getDesc: (lvl) => { const s = SKILLS.powerStrike, d = s.levels[lvl-1]; return `Удар на ${scX(d.multiplier)} и <b>Пролом</b>: защита цели ${scV('−' + BREACH_PCT + '%')} до конца боя (до ${BREACH_MAX}). MP: ${scV(d.mpCost)}. КД: ${s.cooldown} ATB.`; },
+    getDesc: (lvl, skill = SKILLS.powerStrike) => { const s = skill, d = s.levels[lvl-1]; return `Удар на ${scX(d.multiplier)} и <b>Пролом</b>: защита цели ${scV('−' + BREACH_PCT + '%')} до конца боя (до ${BREACH_MAX}). MP: ${scV(d.mpCost)}. КД: ${s.cooldown} ATB.`; },
     getNextDesc: (lvl) => scNext(SKILLS.powerStrike, lvl, n => `×${n.multiplier.toFixed(2)}`),
   },
   dwarfGreed: {
     name: 'Жадность',
     levels: SC_GREED_W_LEVELS,
-    getDesc: (lvl) => { const s = SKILLS.dwarfGreed, d = s.levels[lvl-1]; return `Удар на ${scX(d.multiplier)} и Метка Жадности на ${scV(d.markTurns)} хода; по замороженной — ${scV('2')} метки. MP: ${scV(d.mpCost)}. КД: ${s.cooldown} ATB.`; },
+    getDesc: (lvl, skill = SKILLS.dwarfGreed) => { const s = skill, d = s.levels[lvl-1]; return `Удар на ${scX(d.multiplier)} и Метка Жадности на ${scV(d.markTurns)} хода; по замороженной — ${scV('2')} метки. MP: ${scV(d.mpCost)}. КД: ${s.cooldown} ATB.`; },
     getNextDesc: (lvl) => scNext(SKILLS.dwarfGreed, lvl, n => `×${n.multiplier.toFixed(2)}`),
   },
   frostQuake: {
     name: 'Раскол',
     levels: SC_QUAKE_LEVELS,
-    getDesc: (lvl) => { const s = SKILLS.frostQuake, d = s.levels[lvl-1]; return `Лёд бьёт всех (до ${scV(d.targets)}) на ${scX(d.multiplier)}, заморозка ${scV(d.freezeChance + '%')}. Уже замороженные получают ${scX(2)} и оттаивают. MP: ${scV(d.mpCost)}. КД: ${s.cooldown}.`; },
+    getDesc: (lvl, skill = SKILLS.frostQuake) => { const s = skill, d = s.levels[lvl-1]; return `Лёд бьёт всех (до ${scV(d.targets)}) на ${scX(d.multiplier)}, заморозка ${scV(d.freezeChance + '%')}. Уже замороженные получают ${scX(2)} и оттаивают. MP: ${scV(d.mpCost)}. КД: ${s.cooldown}.`; },
     getNextDesc: (lvl) => scNext(SKILLS.frostQuake, lvl, n => `×${n.multiplier.toFixed(2)}`),
   },
 };
@@ -1866,19 +2023,19 @@ SUBCLASSES.dwarf_prospector.mods = {
   powerStrike: {
     name: 'Удар кайлом',
     levels: SC_WAR_PS_LEVELS,
-    getDesc: (lvl) => { const s = SKILLS.powerStrike, d = s.levels[lvl-1]; return `Удар на ${scX(d.multiplier)}; убил — лишний бросок добычи. MP: ${scV(d.mpCost)}. КД: ${s.cooldown} ATB.`; },
+    getDesc: (lvl, skill = SKILLS.powerStrike) => { const s = skill, d = s.levels[lvl-1]; return `Удар на ${scX(d.multiplier)}; убил — лишний бросок добычи. MP: ${scV(d.mpCost)}. КД: ${s.cooldown} ATB.`; },
     getNextDesc: (lvl) => scNext(SKILLS.powerStrike, lvl, n => `×${n.multiplier.toFixed(2)}`),
   },
   dwarfGreed: {
     name: 'Жадность',
     levels: SC_GREED_W_LEVELS,
-    getDesc: (lvl) => { const s = SKILLS.dwarfGreed, d = s.levels[lvl-1]; return `Удар на ${scX(d.multiplier)} и Метка Жадности на ${scV(d.markTurns)} хода — до ${scV(PROSPECTOR_GREED_MAX)} меток, каждая ${scV('+' + PROSPECTOR_GREED_PER + '%')} добычи. MP: ${scV(d.mpCost)}. КД: ${s.cooldown} ATB.`; },
+    getDesc: (lvl, skill = SKILLS.dwarfGreed) => { const s = skill, d = s.levels[lvl-1]; return `Удар на ${scX(d.multiplier)} и Метка Жадности на ${scV(d.markTurns)} хода — до ${scV(PROSPECTOR_GREED_MAX)} меток, каждая ${scV('+' + PROSPECTOR_GREED_PER + '%')} добычи. MP: ${scV(d.mpCost)}. КД: ${s.cooldown} ATB.`; },
     getNextDesc: (lvl) => scNext(SKILLS.dwarfGreed, lvl, n => `×${n.multiplier.toFixed(2)}`),
   },
   frostQuake: {
     name: 'Ледяной раскол',
     levels: SC_QUAKE_LEVELS,
-    getDesc: (lvl) => { const s = SKILLS.frostQuake, d = s.levels[lvl-1]; return `Лёд бьёт всех (до ${scV(d.targets)}) на ${scX(d.multiplier)}, заморозка ${scV(d.freezeChance + '%')}, разносит Метки Жадности. Убитая с метками может выронить руду (10% за метку). MP: ${scV(d.mpCost)}. КД: ${s.cooldown}.`; },
+    getDesc: (lvl, skill = SKILLS.frostQuake) => { const s = skill, d = s.levels[lvl-1]; return `Лёд бьёт всех (до ${scV(d.targets)}) на ${scX(d.multiplier)}, заморозка ${scV(d.freezeChance + '%')}, разносит Метки Жадности. Убитая с метками может выронить руду (10% за метку). MP: ${scV(d.mpCost)}. КД: ${s.cooldown}.`; },
     getNextDesc: (lvl) => scNext(SKILLS.frostQuake, lvl, n => `×${n.multiplier.toFixed(2)}`),
   },
 };
@@ -1890,19 +2047,19 @@ SUBCLASSES.dwarf_forgemaster.mods = {
   fireball: {
     name: 'Огненный шар',
     levels: SC_FIREBALL_LEVELS,
-    getDesc: (lvl) => { const s = SKILLS.fireball, d = s.levels[lvl-1]; return `Огонь на ${scX(d.multiplier)}, поджог по ${scV(d.burnPercent + '%')} маг. атаки и ${scV('+1 Жар')} цели (до ${HEAT_MAX}; каждая единица — ${scV('−5%')} защиты твари). MP: ${scV(d.mpCost)}.`; },
+    getDesc: (lvl, skill = SKILLS.fireball) => { const s = skill, d = s.levels[lvl-1]; return `Огонь на ${scX(d.multiplier)}, поджог по ${scV(d.burnPercent + '%')} маг. атаки и ${scV('+1 Жар')} цели (до ${HEAT_MAX}; каждая единица — ${scV('−5%')} защиты твари). MP: ${scV(d.mpCost)}.`; },
     getNextDesc: (lvl) => scNext(SKILLS.fireball, lvl, n => `×${n.multiplier.toFixed(2)}`),
   },
   dwarfGreedMagic: {
     name: 'Жадность',
     levels: SC_GREED_M_LEVELS,
-    getDesc: (lvl) => { const s = SKILLS.dwarfGreedMagic, d = s.levels[lvl-1]; return `Удар на ${scX(d.multiplier)} и Метка Жадности (+25% Оболов). Раскалённая (с Жаром) тварь с меткой роняет руду. MP: ${scV(d.mpCost)}. КД: ${s.cooldown} ATB.`; },
+    getDesc: (lvl, skill = SKILLS.dwarfGreedMagic) => { const s = skill, d = s.levels[lvl-1]; return `Удар на ${scX(d.multiplier)} и Метка Жадности (+25% Оболов). Раскалённая (с Жаром) тварь с меткой роняет руду. MP: ${scV(d.mpCost)}. КД: ${s.cooldown} ATB.`; },
     getNextDesc: (lvl) => scNext(SKILLS.dwarfGreedMagic, lvl, n => `×${n.multiplier.toFixed(2)}`),
   },
   blizzardRune: {
     name: 'Руна закалки', temperMult: 1.8,
     levels: SC_RUNE_LEVELS,
-    getDesc: (lvl) => { const s = SKILLS.blizzardRune, d = s.levels[lvl-1]; return `Руна, на следующий ход буран: ${scV(d.targets)} врагов по ${scX(d.multiplier)}, шкала стаи −${scV(d.atbCut + '%')}. По раскалённым — <b>Закалка</b>: ${scX(1.8)}, Жар сгорает и оставляет Пролом (защита −15%). MP: ${scV(d.mpCost)}. КД: ${s.cooldown}.`; },
+    getDesc: (lvl, skill = SKILLS.blizzardRune) => { const s = skill, d = s.levels[lvl-1]; return `Руна, на следующий ход буран: ${scV(d.targets)} врагов по ${scX(d.multiplier)}, шкала стаи −${scV(d.atbCut + '%')}. По раскалённым — <b>Закалка</b>: ${scX(1.8)}, Жар сгорает и оставляет Пролом (защита −15%). MP: ${scV(d.mpCost)}. КД: ${s.cooldown}.`; },
     getNextDesc: (lvl) => scNext(SKILLS.blizzardRune, lvl, n => `${n.targets} цели, ×${n.multiplier.toFixed(2)}`),
   },
 };
@@ -1914,19 +2071,19 @@ SUBCLASSES.dwarf_runemaster.mods = {
   fireball: {
     name: 'Руна-ловушка', nowMult: 0.6, trapMult: 1.2,
     levels: SC_FIREBALL_LEVELS,
-    getDesc: (lvl) => { const s = SKILLS.fireball, d = s.levels[lvl-1]; return `Огонь на ${scX(d.multiplier * 0.6)} сразу и руна-ловушка: она взрывается на ${scX(d.multiplier * 1.2)}, когда тварь сама соберётся ударить. Ловушка на твари уже есть — старая взрывается сразу. MP: ${scV(d.mpCost)}.`; },
+    getDesc: (lvl, skill = SKILLS.fireball) => { const s = skill, d = s.levels[lvl-1]; return `Огонь на ${scX(d.multiplier * 0.6)} сразу и руна-ловушка: она взрывается на ${scX(d.multiplier * 1.2)}, когда тварь сама соберётся ударить. Ловушка на твари уже есть — старая взрывается сразу. MP: ${scV(d.mpCost)}.`; },
     getNextDesc: (lvl) => scNext(SKILLS.fireball, lvl, n => `×${(n.multiplier * 0.6).toFixed(2)} + ×${(n.multiplier * 1.2).toFixed(2)}`),
   },
   dwarfGreedMagic: {
     name: 'Жадность', mpBack: 3,
     levels: SC_GREED_M_LEVELS,
-    getDesc: (lvl) => { const s = SKILLS.dwarfGreedMagic, d = s.levels[lvl-1]; return `Удар на ${scX(d.multiplier)} и Метка Жадности (+25% Оболов). Убийство твари с меткой — ${scV('3%')} макс. MP. MP: ${scV(d.mpCost)}. КД: ${s.cooldown} ATB.`; },
+    getDesc: (lvl, skill = SKILLS.dwarfGreedMagic) => { const s = skill, d = s.levels[lvl-1]; return `Удар на ${scX(d.multiplier)} и Метка Жадности (+25% Оболов). Убийство твари с меткой — ${scV('3%')} макс. MP. MP: ${scV(d.mpCost)}. КД: ${s.cooldown} ATB.`; },
     getNextDesc: (lvl) => scNext(SKILLS.dwarfGreedMagic, lvl, n => `×${n.multiplier.toFixed(2)}`),
   },
   blizzardRune: {
     name: 'Руна вьюги', guardTurns: 3, guardCut: 15,
     levels: SC_RUNE_LEVELS,
-    getDesc: (lvl) => { const s = SKILLS.blizzardRune, d = s.levels[lvl-1]; return `Руна, на следующий ход буран: ${scV(d.targets)} врагов по ${scX(d.multiplier)}, шкала стаи −${scV(d.atbCut + '%')}. После бурана 3 хода урон по вам ${scV('−15%')}. MP: ${scV(d.mpCost)}. КД: ${s.cooldown}.`; },
+    getDesc: (lvl, skill = SKILLS.blizzardRune) => { const s = skill, d = s.levels[lvl-1]; return `Руна, на следующий ход буран: ${scV(d.targets)} врагов по ${scX(d.multiplier)}, шкала стаи −${scV(d.atbCut + '%')}. После бурана 3 хода урон по вам ${scV('−15%')}. MP: ${scV(d.mpCost)}. КД: ${s.cooldown}.`; },
     getNextDesc: (lvl) => scNext(SKILLS.blizzardRune, lvl, n => `${n.targets} цели, ×${n.multiplier.toFixed(2)}`),
   },
 };
@@ -1937,26 +2094,26 @@ SUBCLASSES.dwarf_runemaster.mods = {
 const ELEMENTAL_KINDS = {
   stone: { name: 'Элементаль камня', img: 'img/allies/elemental_stone.webp', hp: 0.6, atk: 0.3, taunt: true, desc: 'принимает удары' },
   fire:  { name: 'Элементаль огня',  img: 'img/allies/elemental_fire.webp',  hp: 0.3, atk: 0.5, burn: true, desc: 'поджигает' },
-  vein:  { name: 'Элементаль жилы',  img: 'img/allies/elemental_vein.webp',  hp: 0.35, atk: 0.4, vein: true, desc: 'кристаллы по двум целям, убитые им дают добычу' },
+  vein:  { name: 'Элементаль жилы',  img: 'img/allies/elemental_vein.webp',  hp: 0.35, atk: 0.4, vein: true, desc: 'задевает ещё одного врага и даёт дополнительный шанс добычи с задетых целей' },
 };
 const ELEMENTAL_ORDER = ['stone', 'fire', 'vein'];
 SUBCLASSES.dwarf_stonecaller.mods = {
   fireball: {
     name: 'Огненный шар',
     levels: SC_FIREBALL_LEVELS,
-    getDesc: (lvl) => { const s = SKILLS.fireball, d = s.levels[lvl-1]; return `Огонь на ${scX(d.multiplier)}, поджог по ${scV(d.burnPercent + '%')} маг. атаки. Элементали разгораются: каждый сразу бьёт ещё раз на ${scV('50%')}. MP: ${scV(d.mpCost)}.`; },
+    getDesc: (lvl, skill = SKILLS.fireball) => { const s = skill, d = s.levels[lvl-1]; return `Огонь на ${scX(d.multiplier)}, поджог по ${scV(d.burnPercent + '%')} маг. атаки. Элементали разгораются: каждый сразу бьёт ещё раз на ${scV('50%')}. MP: ${scV(d.mpCost)}.`; },
     getNextDesc: (lvl) => scNext(SKILLS.fireball, lvl, n => `×${n.multiplier.toFixed(2)}`),
   },
   dwarfGreedMagic: {
     name: 'Жадность',
     levels: SC_GREED_M_LEVELS,
-    getDesc: (lvl) => { const s = SKILLS.dwarfGreedMagic, d = s.levels[lvl-1]; return `Удар на ${scX(d.multiplier)} и Метка Жадности (+25% Оболов). Удары элементалей тоже ставят метки. MP: ${scV(d.mpCost)}. КД: ${s.cooldown} ATB.`; },
+    getDesc: (lvl, skill = SKILLS.dwarfGreedMagic) => { const s = skill, d = s.levels[lvl-1]; return `Удар на ${scX(d.multiplier)} и Метка Жадности (+25% Оболов). Удары элементалей тоже ставят метки. MP: ${scV(d.mpCost)}. КД: ${s.cooldown} ATB.`; },
     getNextDesc: (lvl) => scNext(SKILLS.dwarfGreedMagic, lvl, n => `×${n.multiplier.toFixed(2)}`),
   },
   blizzardRune: {
     name: 'Руна вьюги',
     levels: SC_RUNE_LEVELS,
-    getDesc: (lvl) => { const s = SKILLS.blizzardRune, d = s.levels[lvl-1]; return `Руна, на следующий ход буран: ${scV(d.targets)} врагов по ${scX(d.multiplier)}, шкала стаи −${scV(d.atbCut + '%')} — и из бурана бесплатно выходит элементаль. MP: ${scV(d.mpCost)}. КД: ${s.cooldown}.`; },
+    getDesc: (lvl, skill = SKILLS.blizzardRune) => { const s = skill, d = s.levels[lvl-1]; return `Руна, на следующий ход буран: ${scV(d.targets)} врагов по ${scX(d.multiplier)}, шкала стаи −${scV(d.atbCut + '%')} — и из бурана бесплатно выходит элементаль. MP: ${scV(d.mpCost)}. КД: ${s.cooldown}.`; },
     getNextDesc: (lvl) => scNext(SKILLS.blizzardRune, lvl, n => `${n.targets} цели, ×${n.multiplier.toFixed(2)}`),
   },
 };
@@ -2136,11 +2293,13 @@ Object.assign(SUBCLASS_SKILLS, {
   // ---- Заклинатель камня ----
   scSummon: {
     id: 'scSummon', subclassId: 'dwarf_stonecaller', name: 'Призвать элементаля', type: 'active', freeTurn: 0.3,
+    fxAnim: 'summon',
     iconPng: 'img/allies/elemental_stone.webp',
     maxLevel: 5, cooldown: 2,
     levels: [ { mpCost: 12, power: 60 }, { mpCost: 13, power: 70 }, { mpCost: 14, power: 80 }, { mpCost: 15, power: 90 }, { mpCost: 16, power: 100 } ],
-    getDesc: (lvl) => { const d = SKILLS.scSummon.levels[lvl-1]; return `Быстрый: ${scV('30%')} хода сразу возвращается. Призывает следующего по порядку элементаля (сила ${scV(d.power + '%')}): <b>Камня</b> — принимает удары, <b>Огня</b> — поджигает, <b>Жилы</b> — кристаллы по двум целям, убитые им дают добычу. Когда стоят все трое — <b>Слияние</b> в одного Великого (сумма ×1.2, все способности). MP: ${scV(d.mpCost)}. КД: ${SKILLS.scSummon.cooldown}.`; },
+    getDesc: (lvl) => { const d = SKILLS.scSummon.levels[lvl-1]; return `Сразу возвращает ${scV('30%')} шкалы хода. Призывает элементалей по очереди (сила ${scV(d.power + '%')}), пропуская тех, кто уже в бою. <b>Камень</b> принимает удары, <b>Огонь</b> поджигает, <b>Жила</b> задевает ещё одного врага и оставляет ему хотя бы 1 единицу здоровья. Задетые Жилой враги дают дополнительный шанс на добычу. Если все три стихии в бою, следующее применение сливает их в <b>Великого элементаля</b> (сумма ×1.2, все способности). Пока он жив, призыв недоступен. Тратит ${scV(d.mpCost)} маны. Перезарядка занимает ${SKILLS.scSummon.cooldown} хода.`; },
     getNextDesc: (lvl) => scNext(SKILLS.scSummon, lvl, n => `сила ${n.power}%`),
+    useCheck: () => stonecallerSummonBlockReason(),
   },
   scShards: {
     id: 'scShards', subclassId: 'dwarf_stonecaller', name: 'Осколки', type: 'active', semiPassive: true,

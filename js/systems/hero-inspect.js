@@ -47,8 +47,9 @@ function inspectCleanNums(obj) {
 // forceShow — свой герой в своём окне виден всегда, даже если скрыт от других.
 function buildHeroProfile(forceShow) {
   const p = state.player;
+  const vip = vipProfileSnapshot(p);
   // 20.11.2026: sc — подкласс, для портрета в рейтинге и в «Осмотре» (виден и при скрытом профиле: это только облик)
-  if (p.hideProfile && !forceShow) return { v: HERO_PROFILE_VERSION, hidden: true, sc: p.subclass || null };
+  if (p.hideProfile && !forceShow) return { v: HERO_PROFILE_VERSION, hidden: true, sc: p.subclass || null, vip };
 
   const eq = {};
   INSPECT_SLOTS.forEach(({ key }) => {
@@ -86,6 +87,7 @@ function buildHeroProfile(forceShow) {
     },
     sk, ws, el,
     sc: p.subclass || null,
+    vip,
   };
 }
 
@@ -192,11 +194,13 @@ function inspectSafeProfile(raw) {
 //  ОКНО
 // --------------------------------------------------------
 let __inspectItems = {};   // слот → безопасный предмет (для подсказок)
+let inspectRequest = 0;
 
 async function openHeroInspect(row) {
   if (!row) return;
   const overlay = document.getElementById('inspect-overlay');
   if (!overlay) return;
+  const request = ++inspectRequest;
   overlay.classList.add('active');
   renderInspectHeader(row);
 
@@ -204,7 +208,12 @@ async function openHeroInspect(row) {
   if (row.isBot) { body.innerHTML = inspectNote('🛡', 'Наёмник гильдии', 'Снаряжение скрыто.'); return; }
 
   // Свой герой — показываем живые данные, без облака.
-  if (row.isMe) { renderInspectBody(inspectSafeProfile(buildHeroProfile(true))); return; }
+  if (row.isMe) {
+    const raw = buildHeroProfile(true);
+    renderInspectHeader(row, raw.vip);
+    renderInspectBody(inspectSafeProfile(raw));
+    return;
+  }
 
   body.innerHTML = `<div class="inspect-loading">Загружаем героя…</div>`;
   let raw = null;
@@ -215,17 +224,20 @@ async function openHeroInspect(row) {
     if (error) throw error;
     raw = imgPathsToWebp(data && data.profile);   // v0.36.2: старые пути картинок → .webp
   } catch (e) {
+    if (request !== inspectRequest) return;
     console.warn('[inspect]', e);
     body.innerHTML = inspectNote('⚠', 'Не удалось загрузить', 'Проверьте интернет и попробуйте ещё раз.');
     return;
   }
-  if (!overlay.classList.contains('active')) return;
+  if (request !== inspectRequest || !overlay.classList.contains('active')) return;
+  if (raw) renderInspectHeader({ ...row, sc: raw.sc === undefined ? row.sc : raw.sc }, raw.vip);
   const profile = inspectSafeProfile(raw);
   if (!profile) { body.innerHTML = inspectNote('⏳', 'Профиль ещё не обновлён', 'Герой не заходил в игру с новой версией.'); return; }
   renderInspectBody(profile);
 }
 
 function closeHeroInspect() {
+  inspectRequest++;
   document.getElementById('inspect-overlay')?.classList.remove('active');
   if (typeof hideTooltip === 'function') hideTooltip();
 }
@@ -234,16 +246,24 @@ function inspectNote(icon, title, text) {
   return `<div class="inspect-note"><div class="inspect-note-ico">${icon}</div><b>${title}</b><span>${text}</span></div>`;
 }
 
-function renderInspectHeader(row) {
+function renderInspectHeader(row, rawVip = null) {
   const head = document.getElementById('inspect-head');
   if (!head) return;
   const raceId = hasOwnKey(RACES, row.race_id) ? row.race_id : 'human';
   const classId = hasOwnKey(CLASSES, row.class_id) ? row.class_id : 'warrior';
+  const vip = vipPublicProfile(rawVip, raceId, classId, lbRowSubclassId(row, raceId, classId));
+  const portraitUrl = lbRowPortrait(row, raceId, classId);
+  const portrait = vip?.look
+    ? `<picture><source media="(prefers-reduced-motion: reduce)" srcset="${vip.look.art}"><img src="${vip.look.motion}" alt="${vip.look.name}"></picture>`
+    : '';
+  head.closest('.inspect-head-row').classList.toggle('inspect-has-vip', !!vip);
   head.innerHTML = `
-    <div class="inspect-portrait" style="background-image:url('${lbRowPortrait(row, raceId, classId)}')"></div>
+    <div class="inspect-portrait" style="background-image:url('${portraitUrl}')"${vip ? ` data-frame="${vip.frame}"` : ''}>${portrait}</div>
     <div class="inspect-title">
-      <div class="inspect-name">${escapeHtml(row.character_name || 'Безымянный')}</div>
-      <div class="inspect-sub">${RACES[raceId].name} · ${CLASSES[classId].name} · ур. ${inspectInt(row.level, 1, 999)}</div>
+      <div class="inspect-name-row"><div class="inspect-name">${escapeHtml(row.character_name || 'Безымянный')}</div>${vip ? '<span class="vip-chip">VIP</span>' : ''}</div>
+      ${vip?.title ? `<div class="inspect-signature">${vip.title}</div>` : ''}
+      <div class="inspect-sub">${RACES[raceId].name} · ${lbRowClassLabel(row, raceId, classId)} · ур. ${inspectInt(row.level, 1, 999)}</div>
+      ${vip?.look ? `<div class="inspect-sub dim">${vip.look.name}</div>` : ''}
       <div class="inspect-sub dim">💀 ${formatNumber(row.kills || 0)} · 🪙 ${formatNumber(row.gold || 0)}</div>
     </div>`;
 }

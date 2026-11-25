@@ -204,7 +204,10 @@ function addChronicleEntry(text, opts) {
     if (typeof o.ask.answer === 'number') { entry.ask.answer = o.ask.answer; entry.ask.answeredAt = entry.at; }
   }
   c.entries.push(entry);
-  if (c.entries.length > CHRONICLE_MAX_ENTRIES) c.entries.splice(0, c.entries.length - CHRONICLE_MAX_ENTRIES);
+  while (c.entries.length > CHRONICLE_MAX_ENTRIES) {
+    const oldestUnsealed = c.entries.findIndex(row => !vipSealMatches(row));
+    c.entries.splice(oldestUnsealed, 1);
+  }
   updateChronicleDot();
   if (isChronicleOpen()) renderChronicle();
   return entry;
@@ -284,6 +287,7 @@ function isChronicleOpen() {
 let __chronicleSection = 'annals';
 function switchChronicleSection(id) {
   __chronicleSection = id;
+  if (id !== 'annals') vipPickingSeal = false;
   renderChronicle();
 }
 
@@ -350,11 +354,34 @@ function renderChronicle() {
     ${renderChronicleBagCall()}
     ${pending.map(({ entry, milestone }) => renderAnnalsEntry(entry, milestone)).join('')}
     <h2 class="chron-section-title">Путь героя</h2>
+    ${vipSealCanPlace() && history.length + (featured ? 1 : 0) > 0 ? renderChronicleSealOffer() : ''}
     ${featured ? renderAnnalsEntry(featured.entry, featured.milestone, featured.milestone.scene) : ''}
     ${timeline ? `<ol class="chron-timeline">${timeline}</ol>` : ''}
     ${!entries.length ? '<p class="chron-soon">Летопись пока пуста.</p>' : ''}
   `;
 }
+
+function renderChronicleSealOffer() {
+  return `<aside class="chron-seal-offer">
+    <div><strong>Памятная печать</strong>
+      <p>${vipPickingSeal ? 'Выбери запись, которую отметит печать.' : 'Награда за первое продление VIP.'}</p>
+    </div>
+    <button class="btn" type="button" data-seal-action="pick"${vipSealWrite ? ' disabled' : ''}>
+      ${vipPickingSeal ? 'Отмена' : 'Выбрать запись'}
+    </button>
+  </aside>`;
+}
+
+document.getElementById('chronicle-body').addEventListener('click', event => {
+  const btn = event.target.closest('button');
+  if (!btn || __chronicleSection !== 'annals' || !vipSealCanPlace() || vipSealWrite) return;
+  if (btn.dataset.sealAction === 'pick') {
+    vipPickingSeal = !vipPickingSeal;
+    renderChronicle();
+    const next = vipPickingSeal ? '[data-seal-entry]' : '[data-seal-action="pick"]';
+    document.getElementById('chronicle-body').querySelector(next)?.focus({ preventScroll: true });
+  } else if (btn.dataset.sealEntry) vipPlaceSeal(Number(btn.dataset.sealEntry));
+});
 
 function chronicleMilestone(entry) {
   if (entry.firstKey) return ANNALS_MILESTONES[entry.firstKey];
@@ -386,6 +413,7 @@ function renderAnnalsEntry(entry, milestone, scene) {
   const where = chronicleWhere(entry);
   const bag = entry.speaker === 'bag';
   const pending = entry.ask?.answer === null;
+  const sealed = vipSealMatches(entry);
   const meta = [bag && bagSpeakerName(), where, `${entry.lvl} ур.`].filter(Boolean).join(' · ');
   let title = entry.title || milestone?.title;
   let text = entry.text;
@@ -396,7 +424,8 @@ function renderAnnalsEntry(entry, milestone, scene) {
       text = text.slice(stop + 2);
     }
   }
-  let html = `<article class="chron-entry${bag ? ' bag' : ''}${pending ? ' pending' : ''}${scene ? ' chron-feature' : ''}"${scene ? ` data-scene="${scene}"` : ''}>`;
+  let html = `<article class="chron-entry${bag ? ' bag' : ''}${pending ? ' pending' : ''}${scene ? ' chron-feature' : ''}${sealed ? ' chron-sealed' : ''}"${scene ? ` data-scene="${scene}"` : ''}>`;
+  if (sealed) html += '<span class="chron-seal-wax" aria-hidden="true"><span>✦</span></span>';
   html += `<div class="chron-meta">${escChronicle(meta)}${pending ? ' · <b>Ждёт ответа</b>' : ''}</div>`;
   if (title) html += `<h3 class="chron-title">${chronicleTextHtml(title)}</h3>`;
   html += `<div class="chron-text">${bag ? chronicleSpeechHtml(text) : chronicleTextHtml(text)}</div>`;
@@ -408,6 +437,10 @@ function renderAnnalsEntry(entry, milestone, scene) {
       html += `<div class="chron-reply">${chronicleAnswerHtml(option.text)}</div>`;
       if (option.reply) html += `<div class="chron-text">${chronicleSpeechHtml(option.reply)}</div>`;
     }
+  }
+  if (sealed) html += '<div class="chron-seal-caption">Печать первого продления VIP</div>';
+  if (!pending && vipPickingSeal && vipSealCanPlace() && Number.isSafeInteger(entry.id) && Number.isSafeInteger(entry.at)) {
+    html += `<button class="chron-link chron-seal-place" type="button" data-seal-entry="${entry.id}"${vipSealWrite ? ' disabled' : ''}>Поставить печать сюда</button>`;
   }
   return html + '</article>';
 }
@@ -421,6 +454,7 @@ function openChroniclePanel() {
     if (typeof saveCurrentSlotSoon === 'function') saveCurrentSlotSoon();   // v0.36.4: прочитанное — сразу в сейв
   }
   renderChronicle();
+  vipRefreshSeal();
   updateChronicleDot();
 }
 

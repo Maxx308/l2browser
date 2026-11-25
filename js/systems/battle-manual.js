@@ -114,7 +114,7 @@ function manualSkillCheck(id) {
   if (!skill || skill.type !== 'active' || !p.learnedSkills[id]) return { ok: false, why: 'не изучен' };
   if (skill.semiPassive) return { ok: false, why: 'срабатывает сам' };   // v0.38
   if (skill.subclassId && p.subclass !== skill.subclassId) return { ok: false, why: 'не твой путь' };
-  { const why = skill.useCheck ? skill.useCheck() : ''; if (why) return { ok: false, why }; }   // v0.38: Азарт Егеря
+  { const why = skill.useCheck ? skill.useCheck() : ''; if (why) return { ok: false, why, blockedBySkill: true }; }
   const cd = state.battle.skillCooldowns[id] || 0;
   if (cd > 0) return { ok: false, why: `перезарядка ${Math.ceil(cd)}`, cd };
   const data = getSkillData(id);
@@ -232,8 +232,11 @@ function renderManualPanel(force) {
     const data = getSkillData(id);
     const cd = c.cd ? `<span class="bxm-cd">${Math.ceil(c.cd)}</span>` : '';
     const mp = data && data.mpCost ? `<span class="bxm-mp">${data.mpCost}</span>` : '';
-    mk('bxm-skill' + (c.ok ? '' : ' bxm-off'), `<span class="bxm-ic">${s.icon || '✦'}</span><span class="bxm-nm">${s.name}</span>${cd}${mp}`,
+    const showReason = id === 'scSummon' && c.blockedBySkill;
+    const label = showReason ? `<span class="bxm-nm">${c.why}</span>` : `<span class="bxm-nm">${s.name}</span>${cd}${mp}`;
+    const btn = mk('bxm-skill' + (c.ok ? '' : ' bxm-off') + (showReason ? ' bxm-summon-blocked' : ''), `<span class="bxm-ic">${s.icon || '✦'}</span>${label}`,
       c.ok ? s.name : `${s.name}: ${c.why}`, waiting && c.ok, () => manualAct({ type: 'skill', id }));
+    if (showReason) btn.setAttribute('aria-label', btn.title);
   });
   mk('bxm-guard', '<span class="bxm-ic">🛡</span><span class="bxm-nm">Защита</span>', `Пропустить ход: −${GUARD_DAMAGE_CUT}% урона до следующего хода`, waiting, () => manualAct({ type: 'guard' }));
   const potionLabel = pot.item ? `Зелье ${getPotionThresholdResource(pot.item.id)}` : 'Зелье';
